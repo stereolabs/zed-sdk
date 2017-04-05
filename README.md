@@ -1,4 +1,4 @@
-# ZED SDK Example projects
+# Stereolabs ZED -Example projects
 
 Links
 ---------------
