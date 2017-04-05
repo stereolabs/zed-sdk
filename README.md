@@ -1,10 +1,12 @@
-# Stereolabs ZED -Example projects
+# Stereolabs ZED - Example projects
 
 Links
 ---------------
 ZED SDK Download - https://www.stereolabs.com/developers/downloads/
 
-Documentation - https://www.stereolabs.com/documentation/
+General documentation - https://www.stereolabs.com/documentation/
+
+ZED SDK API Documentation - https://www.stereolabs.com/developers/documentation/API
 
 Contents
 --------
