@@ -10,6 +10,8 @@ Contents
 --------
 This contains the ZED SDK examples to demonstrate how to use each module.
 
+* **Tutorials** - A series of simple projects to get started on each module.
+
 * **Camera Control** - This sample shows how to tweak the ZED Camera parameters.
 
 * **Depth Sensing** - This sample demonstrates how to grab the current point cloud with the ZED SDK and how to display it in a 3D view with OpenGL / freeGLUT. It also allows you to save depth information (depth map image and point cloud) in different formats.
@@ -19,6 +21,7 @@ This contains the ZED SDK examples to demonstrate how to use each module.
 * **Spatial Mapping** - This sample demonstrates how to get a mesh with the ZED. This sample demonstrates how to use the asynchronous function of the ZED mapping API for live preview, and the synchronous function to extract, filter and save a mesh in a obj file.
 
 * **SVO Recording** - This sample demonstrates how to use the recording capabilities of the SDK. The SVO file is used to simulate a ZED. This sample allows the recording of such a file and also the decoding. The decoding provides a way to convert the file into a standard video file or into a sequence of images.
+
 
 Support
 -------
