@@ -14,6 +14,8 @@ This contains the ZED SDK examples to demonstrate how to use each module.
 
 * **Tutorials** - A series of simple projects to get started on each module.
 
+* **Others** - A series of projects containing useful features.
+
 * **Camera Control** - This sample shows how to tweak the ZED Camera parameters.
 
 * **Depth Sensing** - This sample demonstrates how to grab the current point cloud with the ZED SDK and how to display it in a 3D view with OpenGL / freeGLUT. It also allows you to save depth information (depth map image and point cloud) in different formats.
