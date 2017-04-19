@@ -305,7 +305,7 @@ void TrackingViewer::redraw() {
     glDisable(GL_LIGHTING);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glClearColor(0.12, 0.12, 0.12, 1.0f);
+    glClearColor(50.f/255.f, 95.f/255.f, 90.f / 255.f, 130.0f);
 
     path_locker.lock();
     drawGridPlan();
