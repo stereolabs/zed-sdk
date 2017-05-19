@@ -22,7 +22,7 @@ IF(WIN32) # Windows
         message(FATAL_ERROR "You've selected the 32bit version of ${CMAKE_GENERATOR}. \n Please delete the cache (file->Delete Cache) and use the 64bit version. (${CMAKE_GENERATOR} Win64)")
     endif()
 ELSE() # Linux
-    find_package(ZED 2.0 REQUIRED)
+    find_package(ZED 2 REQUIRED)
 
     ##For Jetson, OpenCV4Tegra is based on OpenCV2.4
     exec_program(uname ARGS -p OUTPUT_VARIABLE CMAKE_SYSTEM_NAME2)
@@ -40,7 +40,7 @@ ELSE() # Linux
     SET(SPECIAL_OS_LIBS "pthread" "X11")
 ENDIF(WIN32)
 
-find_package(OpenCV ${VERSION_REQ_OCV} REQUIRED)
+find_package(OpenCV REQUIRED)
 find_package(CUDA ${VERSION_REQ_CUDA} REQUIRED)
  
 include_directories(${CUDA_INCLUDE_DIRS})

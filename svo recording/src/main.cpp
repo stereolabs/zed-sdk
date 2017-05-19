@@ -43,6 +43,7 @@ int main(int argc, char **argv) {
     sl::InitParameters initParameters;
     if (!modes.recordingMode) initParameters.svo_input_filename = modes.svo_path.c_str();
     else initParameters.camera_fps = 30;
+	initParameters.svo_real_time_mode = true;
 
     if (!modes.computeDisparity) initParameters.depth_mode = sl::DEPTH_MODE_NONE;
 
@@ -80,7 +81,7 @@ int main(int argc, char **argv) {
 
     // Enter main loop
     while (key != 'q') {
-        if (!zed.grab()) {
+        if (zed.grab() == sl::SUCCESS) {
 
             // Get the side by side image
             zed.retrieveImage(view, sl::VIEW_SIDE_BY_SIDE);
@@ -102,6 +103,7 @@ int main(int argc, char **argv) {
                 //Check if we are at the end of the svo file, then close the actions (close the avi file for example) and exit the while loop
                 if (zed.getSVOPosition() >= (zed.getSVONumberOfFrames() - 2)) { // end of SVO
                     exitActions();
+                    std::cout<<"Finished... exiting now"<<std::endl;
                     break;
                 }
             }

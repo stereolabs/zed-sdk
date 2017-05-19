@@ -30,7 +30,7 @@ Open a terminal in build directory and execute the following command:
 
 Example :
 
-     ./ZED_SVO_Recording -f="./mysvo.svo" -v="./mysvo_converted.avi"  -z
+     ./ZED_SVO_Recording -f="./mysvo.svo" -o="./mysvo_converted.avi"  -z
 
 **NOTE :** Make sure you put a '=' between the option and the argument.
 
@@ -41,7 +41,7 @@ Option                    |               Descriptions             |            
  -----------------------------------------|----------------------------------------|-----------------------------------------------------
  --help                | Display help message.                   |                                                  
  -f, --filename      | SVO input filename                          | Path to an input SVO file    
- -v, --video      | Name of the output file, Left+Disparity with -z option, Left+Right otherwise                           |      filename with ".avi" extension for a video file, if no extension is given a sequence of images is then recorded (png file)
+ -o, --output      | Name of the output file, Left+Disparity with -z option, Left+Right otherwise                           |      filename with ".avi" extension for a video file, if no extension is given a sequence of images is then recorded (png file)
  -z, --disparity          | Compute disparity      |   
 
 ## Troubleshooting

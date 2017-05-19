@@ -85,7 +85,19 @@ void parse_args(int argc, char **argv, InfoOption &info) {
 }
 
 void initActions(sl::Camera *zed, InfoOption &modes) {
-    if (modes.videoMode && !video_writer) video_writer = new cv::VideoWriter(modes.output_path, CV_FOURCC('M', '4', 'S', '2'), 25,
+    if (!zed->isOpened())
+        return;
+
+    //get SVO FPS to have the same in opencv video file.
+    int svo_fps = (int)zed->getCameraFPS();
+
+    //security
+    if (svo_fps<=0)
+        svo_fps = 25;
+
+    int fourcc = CV_FOURCC('M', '4', 'S', '2');
+
+    if (modes.videoMode && !video_writer) video_writer = new cv::VideoWriter(modes.output_path, fourcc, svo_fps,
             cv::Size(zed->getResolution().width * 2, zed->getResolution().height));
     else image_name = modes.output_path;
 
@@ -93,12 +105,16 @@ void initActions(sl::Camera *zed, InfoOption &modes) {
 }
 
 void exitActions() {
-    if (video_writer) delete video_writer;
+    if (video_writer)
+    {
+        video_writer->release();
+        delete video_writer;
+    }
 }
 
 void recordVideo(sl::Mat &image) {
     
-    video_writer->write(cv::Mat(image.getHeight(), image.getWidth(), CV_8UC4, image.getPtr<sl::uchar1>(sl::MEM_CPU)));
+    video_writer->write(cv::Mat(image.getHeight(), image.getWidth(), CV_8UC3, image.getPtr<sl::uchar1>(sl::MEM_CPU)));
 }
 
 void recordImages(sl::Mat &image) {
@@ -122,8 +138,9 @@ void generateImageToRecord(sl::Camera *zed, InfoOption &modes, sl::Mat &out) {
     tmp_cv.copyTo(sbsIm(cv::Rect(0, 0, zed->getResolution().width, zed->getResolution().height)));
     tmp_cv = cv::Mat(rightIm.getHeight(), rightIm.getWidth(), CV_8UC4, rightIm.getPtr<sl::uchar1>(sl::MEM_CPU));
     tmp_cv.copyTo(sbsIm(cv::Rect(zed->getResolution().width, 0, zed->getResolution().width, zed->getResolution().height)));
-    tmp_cv = cv::Mat(out.getHeight(), out.getWidth(), CV_8UC4, out.getPtr<sl::uchar1>(sl::MEM_CPU));
+    tmp_cv = cv::Mat(out.getHeight(), out.getWidth(), CV_8UC3, out.getPtr<sl::uchar1>(sl::MEM_CPU));
     cv::cvtColor(sbsIm, tmp_cv, CV_RGBA2RGB);
+
 }
 
 void manageActions(sl::Camera *zed, char &key, InfoOption &modes) {
