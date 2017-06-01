@@ -1,34 +1,32 @@
-# Stereolabs ZED - Example projects
+# Stereolabs ZED - Examples
 
 Links
----------------
-ZED SDK Download - https://www.stereolabs.com/developers/downloads/
+--------
+ZED SDK - https://www.stereolabs.com/developers/downloads/
 
-General documentation - https://www.stereolabs.com/documentation/
+General Documentation - https://www.stereolabs.com/documentation/
 
-ZED SDK API Documentation - https://www.stereolabs.com/developers/documentation/API
+API Documentation - https://www.stereolabs.com/developers/documentation/API
 
 Contents
 --------
-This contains the ZED SDK examples to demonstrate how to use each module.
+The ZED SDK includes tutorials and samples that demonstrate the API features and code.
 
-* **Tutorials** - A series of simple projects to get started on each module.
+* **Tutorials** - A series of basic tutorials that demonstrate the use of each API module.
 
-* **Others** - A series of projects containing useful features.
+* **Camera Control** - This sample shows how to adjust the ZED camera parameters.
 
-* **Camera Control** - This sample shows how to tweak the ZED Camera parameters.
+* **Depth Sensing** - This sample shows how to capture a 3D point cloud and display with OpenGL. It also shows how to save depth data in different formats.
 
-* **Depth Sensing** - This sample demonstrates how to grab the current point cloud with the ZED SDK and how to display it in a 3D view with OpenGL / freeGLUT. It also allows you to save depth information (depth map image and point cloud) in different formats.
+* **Positional Tracking** - This sample shows how to use positional tracking and display the result with OpenGL.
 
-* **Positional Tracking** - This sample demonstrates a simple way to use the ZED as a positional tracker and show the result in a OpenGL window.
+* **Spatial Mapping** - This sample shows how to capture a mesh with the ZED and display it with OpenGL
 
-* **Spatial Mapping** - This sample demonstrates how to get a mesh with the ZED. This sample demonstrates how to use the asynchronous function of the ZED mapping API for live preview, and the synchronous function to extract, filter and save a mesh in a obj file.
+* **SVO Recording** - This sample shows how to record and playback video files in SVO format. SVO files lets you use all the ZED SDK features without having a ZED connected.
 
-* **SVO Recording** - This sample demonstrates how to use the recording capabilities of the SDK. The SVO file is used to simulate a ZED. This sample allows the recording of such a file and also the decoding. The decoding provides a way to convert the file into a standard video file or into a sequence of images.
+* **Other** - Other general samples that demonstrate the use of the ZED SDK.
 
 
 Support
 -------
-If you need assistance with the ZED SDK please contact the support at support@stereolabs.com
-
-You can also visit the Help Center at https://support.stereolabs.com
+If you need assistance with the ZED, visit our Help Center at https://support.stereolabs.com or contact us at support@stereolabs.com.
