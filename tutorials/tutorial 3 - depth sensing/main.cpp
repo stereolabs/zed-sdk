@@ -45,25 +45,32 @@ int main(int argc, char **argv) {
 
     // Capture 50 images and depth, then stop
     int i = 0;
-    sl::Mat image, depth;
+    sl::Mat image, depth, point_cloud;
+
     while (i < 50) {
-        // Grab an image
+        // A new image is available if grab() returns SUCCESS
         if (zed.grab(runtime_parameters) == SUCCESS) {
+            // Retrieve left image
+            zed.retrieveImage(image, VIEW_LEFT);
+            // Retrieve depth map. Depth is aligned on the left image
+            zed.retrieveMeasure(depth, MEASURE_DEPTH);
+            // Retrieve colored point cloud. Point cloud is aligned on the left image.
+			zed.retrieveMeasure(point_cloud, MEASURE_XYZRGBA);
 
-            // A new image is available if grab() returns SUCCESS
-            zed.retrieveImage(image, VIEW_LEFT); // Get the left image
-            zed.retrieveMeasure(depth, MEASURE_DEPTH); // Retrieve depth Mat. Depth is aligned on the left image
-
-            // Get and print depth value in mm at the center of the image
+            // Get and print distance value in mm at the center of the image
+            // We measure the distance camera - object using Euclidean distance
             int x = image.getWidth() / 2;
             int y = image.getHeight() / 2;
-            float depth_value = 0.f;
-            depth.getValue(x, y, &depth_value);
-            printf("Depth at (%d, %d): %f mm\n", x, y, depth_value);
+			sl::float4 point_cloud_value;
+			point_cloud.getValue(x, y, &point_cloud_value);
+
+            float distance = sqrt(point_cloud_value.x*point_cloud_value.x + point_cloud_value.y*point_cloud_value.y + point_cloud_value.z*point_cloud_value.z);
+            printf("Distance to Camera at (%d, %d): %f mm\n", x, y, distance);
+
+      		// Increment the loop
             i++;
         }
     }
-
     // Close the camera
     zed.close();
     return 0;

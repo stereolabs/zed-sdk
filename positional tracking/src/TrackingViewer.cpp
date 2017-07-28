@@ -22,12 +22,12 @@ TrackBallCamera::TrackBallCamera(vect3 p, vect3 la) {
 
 void TrackBallCamera::applyTransformations() {
     forward = vect3(lookAt.x - position.x,
-            lookAt.y - position.y,
-            lookAt.z - position.z);
+                    lookAt.y - position.y,
+                    lookAt.z - position.z);
     left = vect3(forward.z, 0, -forward.x);
     up = vect3(left.y * forward.z - left.z * forward.y,
-            left.z * forward.x - left.x * forward.z,
-            left.x * forward.y - left.y * forward.x);
+               left.z * forward.x - left.x * forward.z,
+               left.x * forward.y - left.y * forward.x);
     forward.normalise();
     left.normalise();
     up.normalise();
@@ -35,8 +35,8 @@ void TrackBallCamera::applyTransformations() {
 
 void TrackBallCamera::show() {
     gluLookAt(position.x, position.y, position.z,
-            lookAt.x, lookAt.y, lookAt.z,
-            0.0, 1.0, 0.0);
+              lookAt.x, lookAt.y, lookAt.z,
+              0.0, 1.0, 0.0);
 }
 
 void TrackBallCamera::rotation(float angle, vect3 v) {
@@ -122,8 +122,8 @@ void TrackBallCamera::setLookAt(vect3 p) {
 
 void TrackBallCamera::setAngleX() {
     angleX = vect3::getAngle(vect3(position.x, position.y + 1, position.z),
-            vect3(position.x, position.y, position.z),
-            vect3(lookAt.x, lookAt.y, lookAt.z));
+                             vect3(position.x, position.y, position.z),
+                             vect3(lookAt.x, lookAt.y, lookAt.z));
 }
 
 TrackingViewer::TrackingViewer() {
@@ -210,26 +210,25 @@ void TrackingViewer::init() {
     glDepthFunc(GL_LEQUAL);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
-
-	zed_path.clear();
+    zed_path.clear();
     isInit = true;
     run = true;
 }
 
 void getColor(int num_segments, int i, float &c1, float &c2, float &c3) {
-    float r = fabs(1. - (float(i)*2.) / float(num_segments));
-    c1 = (0.1 * r);
-    c2 = (0.3 * r);
-    c3 = (0.8 * r);
+    float r = fabs(1.f - (float(i)*2.f) / float(num_segments));
+    c1 = (0.1f * r);
+    c2 = (0.3f * r);
+    c3 = (0.8f * r);
 }
 
 void TrackingViewer::drawRepere() {
     int num_segments = 60;
-    float rad = 0.2;
+    float rad = 0.2f;
 
-    float c1 = (0.09 * 0.5);
-    float c2 = (0.725 * 0.5);
-    float c3 = (0.925 * 0.5);
+    float c1 = (0.09f * 0.5f);
+    float c2 = (0.725f * 0.5f);
+    float c3 = (0.925f * 0.5f);
 
     glLineWidth(2.f);
 
@@ -252,8 +251,8 @@ void TrackingViewer::drawRepere() {
 
     glBegin(GL_LINE_LOOP);
     for (int ii = 0; ii < num_segments; ii++) {
-        float theta = 2.0f * M_PI * (ii + num_segments / 4.) / float(num_segments); //get the current angle
-        theta = theta > (2. * M_PI) ? theta - (2. * M_PI) : theta;
+        float theta = 2.0f * M_PI * (ii + num_segments / 4.f) / float(num_segments); //get the current angle
+        theta = theta > (2.f * M_PI) ? theta - (2.f * M_PI) : theta;
         getColor(num_segments, ii, c1, c2, c3);
         glColor3f(c2, c3, c1);
         glVertex3f(rad * cosf(theta), 0, rad * sinf(theta)); //output vertex
@@ -274,7 +273,7 @@ void TrackingViewer::drawGridPlan() {
     color c1(13.f / 255.f, 17.f / 255.f, 20.f / 255.f);
     color c2(213.f / 255.f, 207.f / 255.f, 200.f / 255.f);
     float span = 20.f;
-    for (int i = -span; i <= span; i++) {
+    for (int i = (int) -span; i <= (int) span; i++) {
         drawLine(i, -span, i, span, c1, c2);
         float clr = (i + span) / (span * 2);
         color c3(clr, clr, clr);
@@ -284,10 +283,10 @@ void TrackingViewer::drawGridPlan() {
 
 void TrackingViewer::updateZEDPosition(sl::Transform pose) {
 
-	if (!getViewerState())
-		return;
+    if (!getViewerState())
+        return;
 
-	zed_path.push_back(pose.getTranslation());
+    zed_path.push_back(pose.getTranslation());
 
     path_locker.lock();
     zed3d.setPath(pose, zed_path);
@@ -305,7 +304,7 @@ void TrackingViewer::redraw() {
     glDisable(GL_LIGHTING);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glClearColor(50.f/255.f, 95.f/255.f, 90.f / 255.f, 130.0f);
+    glClearColor(0.12f, 0.12f, 0.12f, 1.0f);
 
     path_locker.lock();
     drawGridPlan();
@@ -383,7 +382,7 @@ void TrackingViewer::motion(int x, int y) {
 
     if (Rotate) {
         float sensitivity = 100.0f;
-        float Rot = y - starty;
+        float Rot = (float) (y - starty);
         vect3 tmp = camera.getPositionFromLookAt();
         tmp.y = tmp.x;
         tmp.x = -tmp.z;
@@ -392,7 +391,7 @@ void TrackingViewer::motion(int x, int y) {
         tmp.normalise();
         camera.rotate(Rot * sensitivity, tmp);
 
-        Rot = x - startx;
+        Rot = (float) (x - startx);
         camera.rotate(-Rot * sensitivity, vect3(0.0f, 1.0f, 0.0f));
 
         startx = x;
@@ -402,32 +401,29 @@ void TrackingViewer::motion(int x, int y) {
 }
 
 void TrackingViewer::reshape(int width, int height) {
-    float windowWidth = width;
-    float windowHeight = height;
-
-    glViewport(0, 0, windowWidth, windowHeight);
+    glViewport(0, 0, width, height);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(75.0, windowWidth / windowHeight, .002, 40.0);
+    gluPerspective(75.0, (double) (width / (double) height), .002, 40.0);
     glMatrixMode(GL_MODELVIEW);
 }
 
 void TrackingViewer::key(unsigned char c, int x, int y) {
     switch (c) {
         case 'o':
-            camera.setPosition(vect3(2.56f, 1.2f, 0.6f));
-            camera.setLookAt(vect3(0.79f, 0.02f, -1.53f));
-            break;
+        camera.setPosition(vect3(2.56f, 1.2f, 0.6f));
+        camera.setLookAt(vect3(0.79f, 0.02f, -1.53f));
+        break;
 
         case 'q':
         case 'Q':
         case 27:
-            currentInstance_->run = false;
-            glutLeaveMainLoop();
-            break;
+        currentInstance_->run = false;
+        glutLeaveMainLoop();
+        break;
 
         default:
-            break;
+        break;
     }
     glutPostRedisplay();
 }
@@ -444,17 +440,17 @@ void TrackingViewer::specialkey(int key, int x, int y) {
 
     switch (key) {
         case GLUT_KEY_UP:
-            camera.rotate(-sensitivity, tmp);
-            break;
+        camera.rotate(-sensitivity, tmp);
+        break;
         case GLUT_KEY_DOWN:
-            camera.rotate(sensitivity, tmp);
-            break;
+        camera.rotate(sensitivity, tmp);
+        break;
         case GLUT_KEY_LEFT:
-            camera.rotate(sensitivity, vect3(0.0f, 1.0f, 0.0f));
-            break;
+        camera.rotate(sensitivity, vect3(0.0f, 1.0f, 0.0f));
+        break;
         case GLUT_KEY_RIGHT:
-            camera.rotate(-sensitivity, vect3(0.0f, 1.0f, 0.0f));
-            break;
+        camera.rotate(-sensitivity, vect3(0.0f, 1.0f, 0.0f));
+        break;
     }
 }
 
@@ -474,35 +470,26 @@ void TrackingViewer::printText() {
 
     int start_w = 20;
     int start_h = h_wnd - 40;
-    
+
     bool trackingIsOK = trackState == sl::TRACKING_STATE_OK;
 
-	trackingIsOK ? glColor3f(0.2, 0.65, 0.2) : glColor3f(0.85, 0.2, 0.2);
+    trackingIsOK ? glColor3f(0.2f, 0.65f, 0.2f) : glColor3f(0.85f, 0.2f, 0.2f);
     glRasterPos2i(start_w, start_h);
     safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, sl::trackingState2str(trackState).c_str());
 
-   /* glColor3f(0.9255, 0.9412, 0.9451);
-    glRasterPos2i(300, start_h);
-    safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, "Confidence : ");
-
-	trackingIsOK ? glColor3f(0.2, 0.65, 0.2) : glColor3f(0.85, 0.2, 0.2);
-    std::string strConf = std::to_string(trackConf);
-    glRasterPos2i(410, start_h);
-    safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, strConf.c_str());*/
-
-    glColor3f(0.9255, 0.9412, 0.9451);
+    glColor3f(0.9255f, 0.9412f, 0.9451f);
     glRasterPos2i(start_w, start_h - 25);
     safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, "Translation (m) :");
 
-    glColor3f(0.4980, 0.5490, 0.5529);
+    glColor3f(0.4980f, 0.5490f, 0.5529f);
     glRasterPos2i(155, start_h - 25);
     safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, txtT.c_str());
 
-    glColor3f(0.9255, 0.9412, 0.9451);
+    glColor3f(0.9255f, 0.9412f, 0.9451f);
     glRasterPos2i(start_w, start_h - 50);
     safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, "Rotation   (rad) :");
 
-    glColor3f(0.4980, 0.5490, 0.5529);
+    glColor3f(0.4980f, 0.5490f, 0.5529f);
     glRasterPos2i(155, start_h - 50);
     safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, txtR.c_str());
 
@@ -515,11 +502,10 @@ void TrackingViewer::printText() {
 
 void TrackingViewer::updateText(std::string stringT, std::string stringR, sl::TRACKING_STATE state) {
 
-	if (!getViewerState())
-		return;
+    if (!getViewerState())
+        return;
 
     txtT = stringT;
     txtR = stringR;
     trackState = state;
-    //trackConf = conf;
 }

@@ -39,13 +39,11 @@ int main(int argc, char **argv) {
     if (err != SUCCESS)
         exit(-1);
 
-
     // Enable positional tracking with default parameters. Positional tracking needs to be enabled before using spatial mapping
     sl::TrackingParameters tracking_parameters;
     err = zed.enableTracking(tracking_parameters);
     if (err != SUCCESS)
         exit(-1);
-
 
     // Enable spatial mapping
     sl::SpatialMappingParameters mapping_parameters;
@@ -57,10 +55,11 @@ int main(int argc, char **argv) {
     int i = 0;
     sl::Mesh mesh; // Create a mesh object
     while (i < 500) {
+		// For each new grab, mesh data is updated 
         if (zed.grab() == SUCCESS) {
-            // In background, spatial mapping will use new images, depth and pose to create and update the mesh. No specific functions are required here
+            // In the background, spatial mapping will use newly retrieved images, depth and pose to update the mesh
             sl::SPATIAL_MAPPING_STATE mapping_state = zed.getSpatialMappingState();
-             
+
             // Print spatial mapping state
             std::cout << "\rImages captured: " << i << " / 500  ||  Spatial mapping state: " << spatialMappingState2str(mapping_state) << "                     " << std::flush;
             i++;
@@ -83,4 +82,3 @@ int main(int argc, char **argv) {
     zed.close();
     return 0;
 }
-

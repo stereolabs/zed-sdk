@@ -20,9 +20,8 @@
 
 
 /******************************************************************************************************************
- ** This sample demonstrates how to use two ZEDs with the ZED SDK, each grab are in a separated thread            **
- ** This sample has been tested with 3 ZEDs in HD720@30fps resolution                                             **
- ** This only works for Linux                                                                                     **
+ ** This sample demonstrates how to use two ZEDs with the ZED SDK, each grab are in a separate thread             **
+ ** This sample has been tested with 3 ZEDs in HD720@30fps resolution. Linux only.                                **
  *******************************************************************************************************************/
 
 #include <stdio.h>
@@ -39,16 +38,13 @@
 
 using namespace std;
 
-const int NUM_CAMERAS = 2;
-const int FPS = 15;
-const sl::RESOLUTION ZED_RES = sl::RESOLUTION_HD720;
+const int MAX_ZED = 12;
 
-
-sl::Camera* zed[NUM_CAMERAS];
-cv::Mat SbSResult[NUM_CAMERAS];
-cv::Mat ZED_LRes[NUM_CAMERAS];
+sl::Camera* zed[MAX_ZED];
+cv::Mat SbSResult[MAX_ZED];
+cv::Mat ZED_LRes[MAX_ZED];
 int width, height;
-long long ZED_Timestamp[NUM_CAMERAS];
+long long ZED_Timestamp[MAX_ZED];
 
 bool stop_signal;
 
@@ -67,6 +63,7 @@ void grab_run(int x) {
         }
         sl::sleep_ms(1);
     }
+    zed[x]->close();
     delete zed[x];
 }
 
@@ -79,17 +76,19 @@ int main(int argc, char **argv) {
 
     sl::InitParameters params;
     params.depth_mode = sl::DEPTH_MODE_PERFORMANCE;
-    params.camera_resolution = ZED_RES;
-    params.camera_fps = FPS;
+    params.camera_resolution = sl::RESOLUTION_HD720;
+    params.camera_fps = 15;
+
+    int nb_detected_zed = sl::Camera::isZEDconnected();
 
     // Create every ZED and init them
-    for (int i = 0; i < NUM_CAMERAS; i++) {
+    for (int i = 0; i < nb_detected_zed; i++) {
         zed[i] = new sl::Camera();
         params.camera_linux_id = i;
 
         sl::ERROR_CODE err = zed[i]->open(params);
 
-        cout << "ZED no. " << i << " -> Result : " << sl::errorCode2str(err) << endl;
+        cout << "ZED no. " << i << " -> Result: " << sl::errorCode2str(err) << endl;
         if (err != sl::SUCCESS) {
             delete zed[i];
             return 1;
@@ -102,21 +101,21 @@ int main(int argc, char **argv) {
 
     char key = ' ';
 
-    // Create each grabbing thread with the camera number as parameters
+    // Create each grab thread with camera id as parameter
     std::vector<std::thread*> thread_vec;
-    for (int i = 0; i < NUM_CAMERAS; i++)
+    for (int i = 0; i < nb_detected_zed; i++)
         thread_vec.push_back(new std::thread(grab_run, i));
 
-    // Create windows for viewing results with OpenCV
+    // Create display windows with OpenCV
     cv::Size DisplaySize(720, 404);
 
-    for (int i = 0; i < NUM_CAMERAS; i++)
+    for (int i = 0; i < nb_detected_zed; i++)
         ZED_LRes[i] = cv::Mat(DisplaySize, CV_8UC4);
 
     // Loop until 'q' is pressed
     while (key != 'q') {
-        // Resize and imshow
-        for (int i = 0; i < NUM_CAMERAS; i++) {
+        // Resize and show images
+        for (int i = 0; i < nb_detected_zed; i++) {
             char wnd_name[21];
             sprintf(wnd_name, "ZED no. %d", i);
             cv::resize(SbSResult[i], ZED_LRes[i], DisplaySize);
@@ -129,7 +128,7 @@ int main(int argc, char **argv) {
         key = cv::waitKey(20);
     }
 
-    // Send the signal to stop every threads to finish
+    // Send stop signal to end threads
     stop_signal = true;
 
     // Wait for every thread to be stopped

@@ -1,8 +1,7 @@
 #ifndef __UTILS_HPP__
 #define __UTILS_HPP__
- 
-////Shaders GLSL for image and mesh //////////
 
+////Shaders GLSL for image and mesh //////////
 
 const char* MESH_VERTEX_SHADER =
 "#version 330 core\n"
@@ -20,7 +19,7 @@ const char* MESH_FRAGMENT_SHADER =
 "in vec3 b_color;\n"
 "layout(location = 0) out vec4 color;\n"
 "void main() {\n"
-"   color = vec4(b_color, 0.7);\n"
+"   color = vec4(b_color,1);\n"
 "}";
 
 
@@ -36,7 +35,7 @@ const char* IMAGE_FRAGMENT_SHADER =
 "    vec3 rgbcolor = rgbflip?vec3(texture(texImage, scaler).zyx):vec3(texture(texImage, scaler).xyz);\n"
 "    color = vec4(rgbcolor,1);\n"
 "}";
- 
+
 const char* IMAGE_VERTEX_SHADER =
 "#version 330\n"
 "layout(location = 0) in vec3 vert;\n"
@@ -46,9 +45,30 @@ const char* IMAGE_VERTEX_SHADER =
 "	gl_Position = vec4(vert, 1);\n"
 "}\n";
 
- 
+
 #ifndef M_PI
-#define M_PI 3.141592653
+#define M_PI 3.141592653f
 #endif
+
+#if _WIN32
+#include <windows.h>
+#include <iostream>
+#include <shlobj.h>
+#pragma comment(lib, "shell32.lib")
+#endif 
+
+/* Find MyDocuments directory for windows platforms.*/
+std::string getDir() {
+    std::string myDir;
+#if _WIN32
+    CHAR my_documents[MAX_PATH];
+    HRESULT result = SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, my_documents);
+    if (result == S_OK)
+        myDir = std::string(my_documents) + '/';
+#else
+    myDir = "./";
+#endif
+    return myDir;
+}
 
 #endif

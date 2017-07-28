@@ -1,12 +1,12 @@
 # Tutorial 4: Spatial mapping with the ZED
 
-This tutorial shows how to use the spatial mapping module with the ZED. It will loop until 500 frames are grabbed, then extract a mesh, filter it and save it as a obj file.<br/>
-We assume that you have read previous tutorials.
+This tutorial shows how to use the spatial mapping module with the ZED. It will loop until 500 frames are grabbed, extract a mesh, filter it and save it as a obj file.<br/>
+We assume that you have followed previous tutorials.
 
 
 ## Create a camera
 
-As with previous tutorial, we create, configure and open the ZED. In this example, we choose to have a coordinate system right-handed with Y axis going up, since it is the most common system chosen in mesh viewer softwares (meshlab for example).
+As in previous tutorials, we create, configure and open the ZED. In this example, we choose to have a right-handed coordinate system  with Y axis up, since it is the most common system chosen in 3D viewing software (meshlab for example).
 
 ```
 // Create a ZED camera object
@@ -65,10 +65,10 @@ In this tutorial, we grab 500 frames and then stop the loop to extract mesh.
 		if (zed.grab() == SUCCESS) {
 			// In background, spatial mapping will use new images, depth and pose to create and update the mesh. No specific functions are required here
 			sl::SPATIAL_MAPPING_STATE mapping_state = zed.getSpatialMappingState();
-				
+
 			// Print spatial mapping state
 			std::cout << "\rImages captured: " << i << " / 500  ||  Spatial mapping state: " << spatialMappingState2str(mapping_state) << "                     " << std::flush;
-            
+
 			i++;
 		}
 	}
@@ -101,8 +101,8 @@ mesh.save("mesh.obj"); // Save the mesh in an obj file
 
 ## Disable modules and exit
 
-Once done, never forget to disable the modules and close the camera before exiting the program.<br/>
-Since spatial mapping requires the tracking, always disable the spatial mapping first before disabling the tracking. Then close the camera.
+Once the mesh is extracted and saved, don't forget to disable the modules and close the camera before exiting the program.<br/>
+Since spatial mapping requires positional tracking, always disable spatial mapping before disabling tracking.
 
 ```
 // Disable tracking and mapping and close the camera

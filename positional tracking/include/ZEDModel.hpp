@@ -207,9 +207,9 @@ public:
     ~Zed3D();
 
     void draw();
-    void setPath(sl::Transform &Path,std::vector<sl::Translation> path_history);
+    void setPath(sl::Transform &Path, std::vector<sl::Translation> path_history);
     std::vector<double3color> body_io;
-	std::vector<sl::Translation> path_mem;
+    std::vector<sl::Translation> path_mem;
 };
 
 #endif /* __ZED3D_INCLUDE__ */

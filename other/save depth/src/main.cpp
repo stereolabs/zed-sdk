@@ -35,9 +35,6 @@
 #include <thread>
 
 #include <opencv2/opencv.hpp>
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 
 #include <sl/Camera.hpp>
 
@@ -63,19 +60,19 @@ std::string getFormatNamePC(sl::POINT_CLOUD_FORMAT f) {
     std::string str_;
     switch (f) {
         case sl::POINT_CLOUD_FORMAT_XYZ_ASCII:
-            str_ = "XYZ";
-            break;
+        str_ = "XYZ";
+        break;
         case sl::POINT_CLOUD_FORMAT_PCD_ASCII:
-            str_ = "PCD";
-            break;
+        str_ = "PCD";
+        break;
         case sl::POINT_CLOUD_FORMAT_PLY_ASCII:
-            str_ = "PLY";
-            break;
+        str_ = "PLY";
+        break;
         case sl::POINT_CLOUD_FORMAT_VTK_ASCII:
-            str_ = "VTK";
-            break;
+        str_ = "VTK";
+        break;
         default:
-            break;
+        break;
     }
     return str_;
 }
@@ -84,16 +81,16 @@ std::string getFormatNameD(sl::DEPTH_FORMAT f) {
     std::string str_;
     switch (f) {
         case sl::DEPTH_FORMAT_PNG:
-            str_ = "PNG";
-            break;
+        str_ = "PNG";
+        break;
         case sl::DEPTH_FORMAT_PFM:
-            str_ = "PFM";
-            break;
+        str_ = "PFM";
+        break;
         case sl::DEPTH_FORMAT_PGM:
-            str_ = "PGM";
-            break;
+        str_ = "PGM";
+        break;
         default:
-            break;
+        break;
     }
     return str_;
 }
@@ -104,13 +101,13 @@ std::string getFormatNameD(sl::DEPTH_FORMAT f) {
 
 BOOL CtrlHandler(DWORD fdwCtrlType) {
     switch (fdwCtrlType) {
-            //Handle the CTRL-C signal.
+        //Handle the CTRL-C signal.
         case CTRL_C_EVENT:
-            printf("\nQuitting...\n");
-            delete zed_ptr;
-            exit(0);
+        printf("\nQuitting...\n");
+        delete zed_ptr;
+        exit(0);
         default:
-            return FALSE;
+        return FALSE;
     }
 }
 #else
@@ -189,12 +186,12 @@ int main(int argc, char **argv) {
 #else
 
     const cv::String keys =
-            "{help h usage ? || print this message}"
-            "{filename f||SVO filename (ex : -f=test.svo  or --filename=test.svo) }"
-            "{resolution r|2|ZED Camera resolution, ENUM 0: HD2K   1: HD1080   2: HD720   3: VGA (ex : -r=1  or --resolution=1 for HD1080)}"
-            "{mode m|2|Disparity Map mode, ENUM 1: PERFORMANCE  2: MEDIUM   3: QUALITY  (ex : -m=1  or --mode=1)}"
-            "{path p|./|Output path (can include output filename prefix) (ex : -p=./../ or --path=./../)}"
-            "{device d|-1|CUDA device (ex : -d=0 or --device=0) }";
+        "{help h usage ? || print this message}"
+        "{filename f||SVO filename (ex : -f=test.svo  or --filename=test.svo) }"
+        "{resolution r|2|ZED Camera resolution, ENUM 0: HD2K   1: HD1080   2: HD720   3: VGA (ex : -r=1  or --resolution=1 for HD1080)}"
+        "{mode m|2|Disparity Map mode, ENUM 1: PERFORMANCE  2: MEDIUM   3: QUALITY  (ex : -m=1  or --mode=1)}"
+        "{path p|./|Output path (can include output filename prefix) (ex : -p=./../ or --path=./../)}"
+        "{device d|-1|CUDA device (ex : -d=0 or --device=0) }";
 
     cv::CommandLineParser parser(argc, argv, keys);
     parser.about("Sample from ZED SDK" + std::string(sl::Camera::getSDKVersion())); //about is not available under OpenCV2.4
@@ -240,20 +237,20 @@ int main(int argc, char **argv) {
     int mode = parser.get<int>("mode");
     switch (mode) {
         case 1:
-            cout << "Mode set to PERFORMANCE" << endl;
-            depth_mode = sl::DEPTH_MODE_PERFORMANCE;
-            break;
+        cout << "Mode set to PERFORMANCE" << endl;
+        depth_mode = sl::DEPTH_MODE_PERFORMANCE;
+        break;
         case 2:
-            cout << "Mode set to MEDIUM" << endl;
-            depth_mode = sl::DEPTH_MODE_MEDIUM;
-            break;
+        cout << "Mode set to MEDIUM" << endl;
+        depth_mode = sl::DEPTH_MODE_MEDIUM;
+        break;
         case 3:
-            cout << "Mode set to QUALITY" << endl;
-            depth_mode = sl::DEPTH_MODE_QUALITY;
-            break;
+        cout << "Mode set to QUALITY" << endl;
+        depth_mode = sl::DEPTH_MODE_QUALITY;
+        break;
         default:
-            cout << "Invalid depth quality " << mode << endl;
-            break;
+        cout << "Invalid depth quality " << mode << endl;
+        break;
     }
     depth_mode = static_cast<sl::DEPTH_MODE> (mode);
     string path = parser.get<std::string>("path");
@@ -347,15 +344,15 @@ int main(int argc, char **argv) {
         switch (key) {
             case 'p':
             case 'P':
-                param->saveName = std::string(path + prefixPC + to_string(count)).c_str();
-                param->askSavePC = true;
-                break;
+            param->saveName = std::string(path + prefixPC + to_string(count)).c_str();
+            param->askSavePC = true;
+            break;
 
             case 'd':
             case 'D':
-                param->saveName =  std::string(path + prefixDepth + to_string(count)).c_str();
-                param->askSaveDepth = true;
-                break;
+            param->saveName = std::string(path + prefixDepth + to_string(count)).c_str();
+            param->askSaveDepth = true;
+            break;
 
             case 'm': // point cloud format
             case 'M':
@@ -364,7 +361,7 @@ int main(int argc, char **argv) {
                 param->PC_Format = static_cast<sl::POINT_CLOUD_FORMAT> (mode_PC % 4);
                 std::cout << "Format Point Cloud " << getFormatNamePC(param->PC_Format) << std::endl;
             }
-                break;
+            break;
 
             case 'n': // depth format
             case 'N':
@@ -373,22 +370,22 @@ int main(int argc, char **argv) {
                 param->Depth_Format = static_cast<sl::DEPTH_FORMAT> (mode_Depth % 3);
                 std::cout << "Format Depth " << getFormatNameD(param->Depth_Format) << std::endl;
             }
-                break;
+            break;
 
             case 'h': // print help
             case 'H':
-                printHelp = !printHelp;
-                cout << helpString << endl;
-                break;
+            printHelp = !printHelp;
+            cout << helpString << endl;
+            break;
 
             case 's': // save side by side images
-                saveSbSimage(std::string("ZEDImage") + std::to_string(count) + std::string(".png"));
-                break;
+            saveSbSimage(std::string("ZEDImage") + std::to_string(count) + std::string(".png"));
+            break;
             case 'q': // quit
             case 'Q':
             case 27:
-                quit_ = true;
-                break;
+            quit_ = true;
+            break;
         }
         count++;
     }

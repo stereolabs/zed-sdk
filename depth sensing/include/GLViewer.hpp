@@ -9,7 +9,7 @@
 #include <sl/Camera.hpp>
 
 #include <GL/glew.h>
-#include <GL/freeglut.h> 
+#include <GL/freeglut.h>
 #include <GL/gl.h>
 #include <GL/glut.h>   /* OpenGL Utility Toolkit header */
 
@@ -18,9 +18,8 @@
 #include <cuda_gl_interop.h>
 
 #ifndef M_PI
-#define M_PI 3.141592653
+#define M_PI 3.141592653f
 #endif
-
 
 #define SAFE_DELETE( res ) if( res!=NULL )  { delete res; res = NULL; }
 
@@ -33,14 +32,10 @@
 class CameraGL {
 public:
 
-    CameraGL() {
-
-    }
-
+    CameraGL() {}
     enum DIRECTION {
         UP, DOWN, LEFT, RIGHT, FORWARD, BACK
     };
-
     CameraGL(sl::Translation position, sl::Translation direction, sl::Translation vertical = sl::Translation(0, 1, 0)); // vertical = Eigen::Vector3f(0, 1, 0)
     ~CameraGL();
 
@@ -51,11 +46,9 @@ public:
     float getHorizontalFOV() const;
     float getVerticalFOV() const;
 
-    /*
-            Set an offset between the eye of the camera and its position.
-            Note: Useful to use the camera as a trackball camera with z>0 and x = 0, y = 0.
-            Note: coordinates are in local space.
-     */
+    // Set an offset between the eye of the camera and its position
+    // Note: Useful to use the camera as a trackball camera with z>0 and x = 0, y = 0
+    // Note: coordinates are in local space
     void setOffsetFromPosition(const sl::Translation& offset);
     const sl::Translation& getOffsetFromPosition() const;
 
@@ -105,12 +98,9 @@ private:
 class Shader {
 public:
 
-    Shader() {
-    }
-
+    Shader() {}
     Shader(GLchar* vs, GLchar* fs);
     ~Shader();
-
     GLuint getProgramId();
 
     static const GLint ATTRIB_VERTICES_POS = 0;
@@ -125,9 +115,7 @@ private:
 class Simple3DObject {
 public:
 
-    Simple3DObject() {
-    }
-
+    Simple3DObject() {}
     Simple3DObject(sl::Translation position, bool isStatic);
     ~Simple3DObject();
 
@@ -164,9 +152,9 @@ private:
     GLuint vaoID_;
     /*
             Vertex buffer IDs:
-            - [0]: vertices coordinates;
+            - [0]: Vertices coordinates;
             - [1]: RGB color values;
-            - [2]: indices;
+            - [2]: Indices;
      */
     GLuint vboID_[3];
 
@@ -180,31 +168,20 @@ public:
     PointCloud();
     ~PointCloud();
 
-    /*
-      Initialize Opengl and Cuda buffers.
-      Warning!: must be called in the Opengl thread
-     */
+    // Initialize Opengl and Cuda buffers
+    // Warning: must be called in the Opengl thread
     void initialize(unsigned int width, unsigned int height, CUcontext ctx);
-    /*
-      Push a new PointCloud.
-      Warning!: can be called from any thread but previously, the mutex "mutexData" must be locked
-     */
+    // Push a new point cloud
+    // Warning: can be called from any thread but the mutex "mutexData" must be locked
     void pushNewPC(sl::Mat &matXYZRGBA);
-    /*
-      Update the Opengl buffer
-      Warning!: must be called in the Opengl thread
-     */
+    // Update the Opengl buffer
+    // Warning: must be called in the Opengl thread
     void update();
-    /*
-      Draw the PointCloud
-      Warning!: must be called in the Opengl thread
-     */
+    // Draw the point cloud
+    // Warning: must be called in the Opengl thread
     void draw(const sl::Transform& vp);
-
-    /*Close PointCloud (disable update)
-     */
+    // Close (disable update)
     void close();
-
 
     unsigned int getWidth();
     unsigned int getHeight();
@@ -226,44 +203,32 @@ private:
     cudaGraphicsResource* bufferCudaID_;
 };
 
-/*
- * This class manages the window, input events and Opengl rendering pipeline
- */
+// This class manages input events, window and Opengl rendering pipeline
 class GLViewer {
 public:
-	GLViewer();
+    GLViewer();
     ~GLViewer();
     void exit();
     bool isEnded();
     bool isInitialized();
-    void init(sl::Resolution res);
+    void init(int w, int h);
     void updatePointCloud(sl::Mat &matXYZRGBA);
 
 private:
-    /*
-  Initialize OpenGL context and variables, and other Viewer's variables
-     */
+    // Initialize OpenGL context and variables, and other Viewer's variables
     void initialize();
-    /*
-      Rendering loop method called each frame by glutDisplayFunc
-     */
+    // Rendering loop method called each frame by glutDisplayFunc
     void render();
-    /*
-      Everything that needs to be updated before rendering must be done in this method
-     */
+    // Everything that needs to be updated before rendering must be done in this method
     void update();
-    /*
-      Once everything is updated, every renderable objects must be drawn in this method
-     */
+    // Once everything is updated, every renderable objects must be drawn in this method
     void draw();
-    /*
-      Clear and refresh inputs' data
-     */
+    // Clear and refresh inputs' data
     void clearInputs();
 
     static GLViewer* currentInstance_;
 
-    //! Glut Functions CALLBACKs
+    // Glut functions callbacks
     static void drawCallback();
     static void mouseButtonCallback(int button, int state, int x, int y);
     static void mouseMotionCallback(int x, int y);
@@ -273,13 +238,11 @@ private:
     static void idle();
 
     bool ended_;
-
-    // color settings
+    // Color settings
     float cr;
     float cg;
     float cb;
-
-    // window size
+    // Window size
     int wnd_w;
     int wnd_h;
 

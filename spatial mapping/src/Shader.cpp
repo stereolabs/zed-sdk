@@ -15,8 +15,6 @@ Shader::Shader(GLchar* vs, GLchar* fs){
     glAttachShader(programId_, fragmentId_);
 
     glBindAttribLocation(programId_, ATTRIB_VERTICES_POS, "in_vertex");
-    glBindAttribLocation(programId_, ATTRIB_COLOR_POS, "in_texCoord");
-    glBindAttribLocation(programId_, ATTRIB_NORM_POS, "in_normal");
 
     glLinkProgram(programId_);
 

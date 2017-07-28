@@ -9,13 +9,12 @@
 
 #include "ZEDModel.hpp"    /* OpenGL Utility Toolkit header */
 #include <sl/Camera.hpp>
-#include "opencv2/opencv.hpp"
+
 
 class TrackBallCamera {
 public:
 
-    TrackBallCamera() {
-    };
+    TrackBallCamera() {};
     TrackBallCamera(vect3 p, vect3 la);
     void applyTransformations();
     void show();
@@ -50,7 +49,7 @@ private:
 class TrackingViewer {
 public:
 
-	TrackingViewer();
+    TrackingViewer();
     virtual ~TrackingViewer();
 
 
@@ -96,14 +95,12 @@ private:
     void motion(int x, int y);
     void reshape(int width, int height);
 
-    int windowWidth, windowHeight;
-
     //text
     void printText();
     std::string txtT;
     std::string txtR;
     sl::TRACKING_STATE trackState;
-	std::vector<sl::Translation> zed_path;
+    std::vector<sl::Translation> zed_path;
     //int trackConf;
 
     //! Mouse Save Position

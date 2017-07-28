@@ -15,7 +15,6 @@ Zed3D::~Zed3D() {
 void Zed3D::setPath(sl::Transform &Path,std::vector<sl::Translation> path_history) {
     body_io.clear();
     for (int i = 0; i < NB_ALLUMINIUM_TRIANGLES * 3; i += 3) {
-
         for (int j = 0; j < 3; j++) {
             double3color tmp;
             int index = alluminiumTriangles[i + j] - 1;
@@ -38,12 +37,10 @@ void Zed3D::setPath(sl::Transform &Path,std::vector<sl::Translation> path_histor
     }
 
 	path_mem = path_history;
-
 }
 
 void Zed3D::draw() {
     glPushMatrix();
-
     glBegin(GL_TRIANGLES);
     for (int i = 0; i < NB_ALLUMINIUM_TRIANGLES * 3; i++) {
         double3color tmp = body_io.at(i);
@@ -58,8 +55,6 @@ void Zed3D::draw() {
     }
 	glEnd();
 
- 
-
 	if (path_mem.size() > 1)
 	{
 		glBegin(GL_LINES);
@@ -71,7 +66,5 @@ void Zed3D::draw() {
 		}
 		glEnd();
 	}
-
-
-    glPopMatrix();
+  glPopMatrix();
 }

@@ -4,54 +4,52 @@ This tutorial simply shows how to configure and open the ZED, then print its ser
 
 
 ## Overview
+The ZED API provides low-level access to camera control and configuration. To use the ZED in your application, you will need to create and open a Camera object. The API can be used with two different video inputs: the ZED live video (Live mode) or video files recorded in SVO format with the ZED API (Playback mode).
 
-In order to use the ZED in your application, you will need to create a Camera object, then configure and open it.
-The SDK can handle two different inputs: the ZED itself (Live mode) or a SVO file created by the ZED (playback mode). The configuration is done before opening the camera and cannot be changed while the camera is in use.
+## Camera Configuration
+To configure the camera, create a Camera object and specify your `InitParameters`. Initial parameters let you adjust camera resolution, FPS, depth sensing parameters and more. These parameters can only be set before opening the camera and cannot be changed while the camera is in use.
 
-## Configure your ZED
-
- First, we need to create an ZED camera object. Since we provide a default constructor, it will be as simple as :
-
-```
+```cpp
 // Create a ZED camera object
 Camera zed;
-```
 
-
-The ZED camera object is now created but not configured.This configuration is done  using the initialization parameters `InitParameters`.<br/>
-This class has different options you can configure. Note that those parameters cannot be changed during use. If you want to change them, you need to close the camera and open it again with a new set of parameters. <br/>
-Those parameters are classified with their scope :
-
-You can setup:
-* the camera configuration parameters, using the `camera_*` entries (resolution, image flip...).
-* the SDK configuration parameters, using the `sdk_*` entries (verbosity, GPU device used...).
-* the depth configuration parameters, using the `depth_*` entries (depth mode, minimum distance...).
-* the coordinates configuration parameters, using the `coordinate_*` entries (coordinate system, coordinates unit...).
-* the SVO parameters if you want to work with SVO file in playback mode (filename, real-time mode...)
-
-
-
-## Open the ZED and retrieve information
-
-In this tutorial, we will mostly use the default parameters (no need to configure them) and just set the SDK verbosity at false (no console messages).
-
-```
 // Set configuration parameters
 InitParameters init_params;
-init_params.sdk_verbose = false; // Disable verbose mode
+init_params.camera_resolution = RESOLUTION_HD1080 ;
+init_params.camera_fps = 30 ;
 ```
 
-Since initialization parameters are created and set, we can now open the camera. To do it, just call Camera::open() function with the initialization parameters we have just created.
-Always check the status of this function to know if everything went well. If open() returns an error code different from SUCCESS, then refers to the API documentation for more information. In the example below, we exit the program, since there is no reason to keep on if camera didn't successfully open.
+`InitParameters` contains a configuration by default. To get the list of available parameters, see [API](https://www.stereolabs.com/developers/documentation/API/classsl_1_1InitParameters.html) documentation.   
 
-```
+Once initial configuration is done, open the camera.
+
+```cpp
 // Open the camera
-ERROR_CODE err = zed.open(init_params);  
+err = zed.open(init_params);
 if (err != SUCCESS)
     exit(-1);
 ```
 
-Since open() is done, we can now get the camera information such as the serial number:
+You can set the following initial parameters:
+* Camera configuration parameters, using the `camera_*` entries (resolution, image flip...).
+* SDK configuration parameters, using the `sdk_*` entries (verbosity, GPU device used...).
+* Depth configuration parameters, using the `depth_*` entries (depth mode, minimum distance...).
+* Coordinate frames configuration parameters, using the `coordinate_*` entries (coordinate system, coordinate units...).
+* SVO parameters to use Stereolabs video files with the ZED SDK (filename, real-time mode...)
+
+
+### Getting Camera Information
+Camera parameters such as focal length, field of view or stereo calibration can be retrieved for each eye and resolution:
+
+- Focal length: fx, fy.
+- Principal points: cx, cy.
+- Lens distortion: k1, k2.
+- Horizontal and vertical field of view.
+- Stereo calibration: rotation and translation between left and right eye.
+
+Those values are available in `CalibrationParameters`. They can be accessed using `getCameraInformation()`.
+
+In this tutorial, we simplfy retrieve the serial number of the camera:
 
 ```
 // Get camera information (serial number)
@@ -59,18 +57,14 @@ int zed_serial = zed.getCameraInformation().serial_number;
 printf("Hello! This is my serial number: %d\n", zed_serial);
 ```
 
-In the console window, you should see a line with the serial number of your camera (also available on the ZED USB cable).
+In the console window, you should now see the serial number of the camera (also available on a sticker on the ZED USB cable).
 
-<i> Note: </i>The `CameraInformation` class also contains the firmware version of the ZED, as well as calibration parameters.
+<i> Note: </i>`CameraInformation` also contains the firmware version of the ZED, as well as calibration parameters.
 
-Once done, just close the camera and exit the program.
+To close the camera properly, use zed.close() and exit the program.
 
 ```
 // Close the camera
 zed.close();
 return 0;
 ```
-
-And this is it!<br/>
-
-*You can find the complete source code of this sample here*

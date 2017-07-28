@@ -1,9 +1,11 @@
 # Stereolabs ZED - Spatial Mapping
 
-This sample demonstrates how to get a mesh with the ZED.
-We show the mesh on a wireframe overlay display on top of the image.
-This sample demonstrates how to use the asynchronous function of the  ZED mapping API for live preview, 
-and the synchronous function to extract, filter and save a mesh in a obj file  
+This sample shows how to capture a real-time 3D map of the scene with the ZED API. It demonstrates how to:
+- Start spatial mapping to capture the surrounding area.
+- Display the live reconstruction as a wireframe mesh over the image using OpenGL.
+- Process and save the mesh in OBJ format.
+- Use the lower-level API to asynchronously capture, update and display the mesh.
+- Access and retrieve chunks of the entire mesh.
 
 ## Build the program
 
