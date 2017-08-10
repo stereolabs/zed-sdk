@@ -7,6 +7,16 @@ This sample shows how to track camera motion in space and display it in an OpenG
 - Write pose data and timestamps in a CSV file
 - Display camera motion in an OpenGL window
 
+## Getting started
+
+- First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
+- For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
+
+### Prerequisites
+
+- Windows 7 64bits or later, Ubuntu 16.04
+- [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
+
 ## Build the program
 
 #### Build for Windows

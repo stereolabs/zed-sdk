@@ -1,6 +1,6 @@
 SET(execName ZED_SVO_Recording)
-
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
+PROJECT(${execName})
 
 if(COMMAND cmake_policy)
 	cmake_policy(SET CMP0003 OLD)
@@ -33,7 +33,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 link_directories(${ZED_LIBRARY_DIR})
 link_directories(${CUDA_LIBRARY_DIRS})
 
-ADD_EXECUTABLE(${execName} src/main.cpp)
+ADD_EXECUTABLE(${execName} include/utils.hpp src/main.cpp)
 add_definitions(-std=c++0x -g -O3)
 
 # Add the required libraries for linking:

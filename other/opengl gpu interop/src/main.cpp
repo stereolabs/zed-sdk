@@ -72,16 +72,13 @@ string strFragmentShad = ("uniform sampler2D texImage;\n"
                           " gl_FragColor = vec4(color.b, color.g, color.r, color.a);\n}");
 
 // GLUT main loop: grab --> extract GPU Mat --> send to OpenGL and quad
-
 void draw() {
-    // Used for jetson only, the calling thread will be executed on core n2.
-    // does nothing for Linux/windows.
+    // Used for jetson only, the calling thread will be executed on the 2nd core.
     Camera::sticktoCPUCore(2);
 
     int res = zed.grab();
 
     if (res == 0) {
-
         // Count dropped frames
 #ifdef DROPPED_FRAME_COUNT
         grab_counter++;
@@ -93,8 +90,8 @@ void draw() {
 #endif
 
         // Map GPU Ressource for Image
-        // With Gl texture, we have to use the cudaGraphicsSubResourceGetMappedArray cuda functions. It will link the gl texture with a cuArray.
-        // Then, we just have to copy our GPU Buffer to the CudaArray (D2D copy).
+        // With Gl texture, we have to use the cudaGraphicsSubResourceGetMappedArray cuda functions. It will link the gl texture with a cuArray
+        // Then, we just have to copy our GPU Buffer to the CudaArray (D2D copy)
         if (zed.retrieveImage(gpuLeftImage, VIEW_LEFT, MEM_GPU) == SUCCESS) {
             cudaArray_t ArrIm;
             cudaGraphicsMapResources(1, &pcuImageRes, 0);
@@ -192,7 +189,7 @@ int main(int argc, char **argv) {
     glutInitWindowSize(1280, 480);
 
     // Create Window
-    glutCreateWindow("ZED DISPARITY Viewer");
+    glutCreateWindow("ZED OGL interop");
 
     // init GLEW Library
     glewInit();
@@ -207,8 +204,8 @@ int main(int argc, char **argv) {
 
     init_parameters.depth_mode = DEPTH_MODE_PERFORMANCE;
     ERROR_CODE err = zed.open(init_parameters);
-    // ERRCODE display
 
+    // ERRCODE display
     if (err != SUCCESS) {
         cout << "ZED Opening Error: " << errorCode2str(err) << endl;
         zed.close();
@@ -274,6 +271,3 @@ int main(int argc, char **argv) {
 
     return 0;
 }
-
-
-

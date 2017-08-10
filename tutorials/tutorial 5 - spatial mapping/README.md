@@ -3,7 +3,31 @@
 This tutorial shows how to use the spatial mapping module with the ZED. It will loop until 500 frames are grabbed, extract a mesh, filter it and save it as a obj file.<br/>
 We assume that you have followed previous tutorials.
 
+### Prerequisites
 
+- Windows 7 64bits or later, Ubuntu 16.04
+- [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
+
+## Build the program
+
+#### Build for Windows
+
+- Create a "build" folder in the source folder
+- Open cmake-gui and select the source and build folders
+- Generate the Visual Studio `Win64` solution
+- Open the resulting solution and change configuration to `Release`
+- Build solution
+
+#### Build for Linux
+
+Open a terminal in the sample directory and execute the following command:
+
+    mkdir build
+    cd build
+    cmake ..
+    make
+	
+# Code overview
 ## Create a camera
 
 As in previous tutorials, we create, configure and open the ZED. In this example, we choose to have a right-handed coordinate system  with Y axis up, since it is the most common system chosen in 3D viewing software (meshlab for example).

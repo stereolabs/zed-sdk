@@ -45,7 +45,6 @@ sl::Camera zed;
 sl::Pose camera_pose;
 std::thread zed_callback;
 bool quit = false;
-std::string csvName; // CSV file to log camera motion and timestamp
 
 // OpenGL window to display camera motion
 TrackingViewer viewer;
@@ -57,7 +56,6 @@ void startZED();
 void run();
 void close();
 void transformPose(sl::Transform &pose, float tx);
-void parse_args(int argc, char **argv, sl::InitParameters &initParameters);
 
 int main(int argc, char **argv) {
 
@@ -67,9 +65,6 @@ int main(int argc, char **argv) {
     initParameters.depth_mode = DEPTH_MODE_PERFORMANCE;
     initParameters.coordinate_units = UNIT_METER;
     initParameters.coordinate_system = COORDINATE_SYSTEM_RIGHT_HANDED_Y_UP;
-    initParameters.sdk_verbose = true;
-
-    parse_args(argc, argv, initParameters);
 
     // Open the camera
     ERROR_CODE err = zed.open(initParameters);
@@ -82,7 +77,7 @@ int main(int argc, char **argv) {
     // Set positional tracking parameters
     TrackingParameters trackingParameters;
     trackingParameters.initial_world_transform = sl::Transform::identity();
-    trackingParameters.enable_spatial_memory = true;     // Enable Spatial memory
+    trackingParameters.enable_spatial_memory = true; // Enable Spatial memory
 
     // Start motion tracking
     zed.enableTracking(trackingParameters);
@@ -125,15 +120,15 @@ void run() {
     char text_rotation[MAX_CHAR];
     char text_translation[MAX_CHAR];
 
-    // If activated, create a CSV file to log motion tracking data
+    // Create a CSV file to log motion tracking data
     std::ofstream outputFile;
-    if (!csvName.empty()) {
+    std::string csvName = "Motion_data";
         outputFile.open(csvName + ".csv");
         if (!outputFile.is_open())
             cout << "WARNING: Can't create CSV file. Run the application with administrator rights." << endl;
-        else
-            outputFile << "Timestamp(ns);Rotation_X(rad);Rotation_Y(rad);Rotation_Z(rad);Position_X(m);Position_Y(m);Position_Z(m);" << endl;
-    }
+         else
+             outputFile << "Timestamp(ns);Rotation_X(rad);Rotation_Y(rad);Rotation_Z(rad);Position_X(m);Position_Y(m);Position_Z(m);" << endl;
+    
 
     while (!quit) {
         if (zed.grab() == SUCCESS) {
@@ -179,17 +174,6 @@ void transformPose(sl::Transform &pose, float tx) {
     transform_.tx = tx;
     // Apply the transformation
     pose = Transform::inverse(transform_) * pose * transform_;
-}
-
-/**
- *  This function parses and checks command line arguments
- **/
-void parse_args(int argc, char **argv, sl::InitParameters &initParameters) {
-    // Check number of arguments. Cannot be higher than 3
-    if (argc > 3) {
-        cout << "Only an SVO path or a CSV name can be passed as an argument." << endl;
-        exit(0);
-    }
 }
 
 /**

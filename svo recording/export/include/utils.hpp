@@ -57,7 +57,7 @@ void ProgressBar(float ratio, unsigned int w) {
 }
 
 // If the current project uses openCV
-#ifdef __OPENCV_ALL_HPP__
+#if defined (__OPENCV_ALL_HPP__) or defined(OPENCV_ALL_HPP)
 // Conversion function between sl::Mat and cv::Mat
 cv::Mat slMat2cvMat(sl::Mat &input) {
     int cv_type = -1;

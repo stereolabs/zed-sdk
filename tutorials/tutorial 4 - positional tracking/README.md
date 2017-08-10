@@ -1,9 +1,33 @@
 # Tutorial 4: Positional tracking with the ZED
 
-
 This tutorial shows how to use the ZED as a positional tracker. The program will loop until 1000 position are grabbed.
 We assume that you have followed previous tutorials.
 
+### Prerequisites
+
+- Windows 7 64bits or later, Ubuntu 16.04
+- [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
+
+## Build the program
+
+#### Build for Windows
+
+- Create a "build" folder in the source folder
+- Open cmake-gui and select the source and build folders
+- Generate the Visual Studio `Win64` solution
+- Open the resulting solution and change configuration to `Release`
+- Build solution
+
+#### Build for Linux
+
+Open a terminal in the sample directory and execute the following command:
+
+    mkdir build
+    cd build
+    cmake ..
+    make
+	
+# Code overview
 ## Create a camera
 
 As in previous tutorials, we create, configure and open the ZED. 

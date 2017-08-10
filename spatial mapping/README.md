@@ -7,6 +7,16 @@ This sample shows how to capture a real-time 3D map of the scene with the ZED AP
 - Use the lower-level API to asynchronously capture, update and display the mesh.
 - Access and retrieve chunks of the entire mesh.
 
+## Getting started
+
+- First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
+- For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
+
+### Prerequisites
+
+- Windows 7 64bits or later, Ubuntu 16.04
+- [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
+
 ## Build the program
 
 #### Build for Windows

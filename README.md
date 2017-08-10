@@ -2,7 +2,7 @@
 
 Links
 --------
-ZED SDK - https://www.stereolabs.com/developers/downloads/
+ZED SDK - https://www.stereolabs.com/developers/
 
 General Documentation - https://www.stereolabs.com/documentation/
 

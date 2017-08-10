@@ -2,6 +2,16 @@
 
 This sample shows how to capture images with the ZED SDK and adjust camera settings.
 
+## Getting started
+
+- First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
+- For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
+
+### Prerequisites
+
+- Windows 7 64bits or later, Ubuntu 16.04
+- [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
+
 ## Build the program
 
 #### Build for Windows

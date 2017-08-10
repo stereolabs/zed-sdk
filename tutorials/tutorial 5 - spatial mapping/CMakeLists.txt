@@ -1,6 +1,6 @@
 SET(execName ZED_Tutorial_5)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
-PROJECT(execName)
+PROJECT(${execName})
 
 if(COMMAND cmake_policy)
 	cmake_policy(SET CMP0003 OLD)
@@ -35,5 +35,5 @@ ADD_EXECUTABLE(${execName} "main.cpp")
 add_definitions(-std=c++0x -g -O3)
 
 TARGET_LINK_LIBRARIES(${execName}
-						${ZED_LIBRARIES}
-						${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_npp_LIBRARY} )
+                        ${ZED_LIBRARIES}
+                        ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_npp_LIBRARY} )

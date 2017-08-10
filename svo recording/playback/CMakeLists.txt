@@ -1,6 +1,6 @@
 SET(execName ZED_SVO_Playback)
-
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
+PROJECT(${execName})
 
 if(COMMAND cmake_policy)
 	cmake_policy(SET CMP0003 OLD)
@@ -8,8 +8,7 @@ if(COMMAND cmake_policy)
 endif(COMMAND cmake_policy)
 
 SET(EXECUTABLE_OUTPUT_PATH ".")
-
-SET(VERSION_REQ_OCV "3.1")
+SET(VERSION_REQ_OCV "3")
 SET(VERSION_REQ_CUDA "8.0")
 
 IF(WIN32) # Windows
@@ -27,20 +26,20 @@ ELSE() # Linux
     ##For Jetson, OpenCV4Tegra is based on OpenCV2.4
     exec_program(uname ARGS -p OUTPUT_VARIABLE CMAKE_SYSTEM_NAME2)
     if ( CMAKE_SYSTEM_NAME2 MATCHES "aarch64" )
-       SET(VERSION_REQ_OCV "2.4")
-       SET(VERSION_REQ_CUDA "")
+        SET(VERSION_REQ_OCV "2.4")
+        SET(VERSION_REQ_CUDA "")
 
-       unset(CUDA_USE_STATIC_CUDA_RUNTIME CACHE)
-       option(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
-       message ("CUDA_USE_STATIC_CUDA_RUNTIME : ${CUDA_USE_STATIC_CUDA_RUNTIME}")
-       ##to prevent from opencv_dep_cudart dependencies error...
-       ## cmake with -DCUDA_USE_STATIC_CUDA_RUNTIME=false can also be called.
+        unset(CUDA_USE_STATIC_CUDA_RUNTIME CACHE)
+        option(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
+        message ("CUDA_USE_STATIC_CUDA_RUNTIME : ${CUDA_USE_STATIC_CUDA_RUNTIME}")
+        ##to prevent from opencv_dep_cudart dependencies error...
+        ## cmake with -DCUDA_USE_STATIC_CUDA_RUNTIME=false can also be called.
     endif()
 
     SET(SPECIAL_OS_LIBS "pthread" "X11")
 ENDIF(WIN32)
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV ${VERSION_REQ_OCV} REQUIRED)
 find_package(CUDA ${VERSION_REQ_CUDA} REQUIRED)
  
 include_directories(${CUDA_INCLUDE_DIRS})
@@ -52,7 +51,7 @@ link_directories(${ZED_LIBRARY_DIR})
 link_directories(${CUDA_LIBRARY_DIRS})
 link_directories(${OpenCV_LIBRARY_DIRS})
 
-ADD_EXECUTABLE(${execName} src/main.cpp)
+ADD_EXECUTABLE(${execName} include/utils.hpp src/main.cpp)
 add_definitions(-std=c++0x -g -O3)
 
 # Add the required libraries for linking:

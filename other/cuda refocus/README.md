@@ -1,10 +1,19 @@
-# ZED_CUDA_Refocus
+# Stereolabs ZED - CUDA Refocus
 
 This sample demonstrates how to grab and process images/depth on a CUDA kernel for a depth-based focusing application.
 It creates a simple layered depth-of-filed rendering based on a gaussian blur effect where the kernel size depends on the actual depth.
 
 It is based on the separable convolution CUDA samples to provide optimal performances.
 
+## Getting started
+
+- First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
+- For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
+
+### Prerequisites
+
+- Windows 7 64bits or later, Ubuntu 16.04
+- [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
 
 ## Build the program
 
