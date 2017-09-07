@@ -19,6 +19,8 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include <sys/types.h>
+#include <sys/stat.h>
 
 static bool exit_app = false;
 
@@ -77,3 +79,13 @@ cv::Mat slMat2cvMat(sl::Mat &input) {
     return cv::Mat(input.getHeight(), input.getWidth(), cv_type, input.getPtr<sl::uchar1>(sl::MEM_CPU));
 }
 #endif
+
+bool directoryExists(std::string diectory) {
+    struct stat info;
+    if (stat(diectory.c_str(), &info) != 0)
+        return false;
+    else if (info.st_mode & S_IFDIR)  // S_ISDIR() doesn't exist on my windows 
+        return true;
+    else
+        return false;
+}

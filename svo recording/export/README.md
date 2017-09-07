@@ -1,6 +1,7 @@
 # Stereolabs ZED - SVO Recording utilities
 
-This sample demonstrates how to read a SVO file and convert it into an AVI file (LEFT + RIGHT) or (LEFT + DEPTH).
+This sample demonstrates how to read a SVO file and convert it into an AVI file (LEFT + RIGHT) or (LEFT + DEPTH_VIEW).
+It can also caonvert a SVO in the following png image sequences: LEFT+RIGHT, LEFT+DEPTH_VIEW, and LEFT+DEPTH_16Bit.
 
 ## Getting started
 
@@ -33,20 +34,30 @@ Open a terminal in the sample directory and execute the following command:
 
 ## Run the program
 
-Open a terminal in build directory and execute the following command:
+Open a command terminal in build directory and follow the instructions bellow:
 
-     ./ZED_SVO_Recording [arg]
+```
+Usage:
 
-Example :
+ZED_SVO_Export A B C
 
-     ./ZED_SVO_Recording "./mysvo.svo" "./mysvo_converted.avi"
-     ./ZED_SVO_Recording "./mysvo.svo" "./mysvo_with_depth.avi" 1
+Please use the following parameters from the command line:
+ A - SVO file path (input) : "path/to/file.svo"
+ B - AVI file path (output) or image sequence folder(output) : "path/to/output/file.avi" or "path/to/output/folder/"
+ C - Export mode:  0=Export LEFT+RIGHT AVI.
+				   1=Export LEFT+DEPTH_VIEW AVI.
+				   2=Export LEFT+RIGHT image sequence.
+				   3=Export LEFT+DEPTH_VIEW image sequence.
+				   4=Export LEFT+DEPTH_16Bit image sequence.
+ A and B need to end with '/' or '\'
 
-### Launch options
-You should provide at least two arguments :
-  - 1st : SVO file path (input)
-  - 2nd : AVI file path (output)
-  - 3rd : (optional) (bool) to export colored representation of the depth instead of the right image
+Examples:
+  (AVI LEFT+RIGHT)              ZED_SVO_Export "path/to/file.svo" "path/to/output/file.avi" 0
+  (AVI LEFT+DEPTH)              ZED_SVO_Export "path/to/file.svo" "path/to/output/file.avi" 1
+  (SEQUENCE LEFT+RIGHT)         ZED_SVO_Export "path/to/file.svo" "path/to/output/folder/" 2
+  (SEQUENCE LEFT+DEPTH)         ZED_SVO_Export "path/to/file.svo" "path/to/output/folder/" 3
+  (SEQUENCE LEFT+DEPTH_16Bit)   ZED_SVO_Export "path/to/file.svo" "path/to/output/folder/" 4
+```
 
 ## Troubleshooting
 
