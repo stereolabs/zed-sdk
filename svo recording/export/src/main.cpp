@@ -28,6 +28,7 @@
 
 // Sample includes
 #include <iostream>
+#include <sstream>
 #include <opencv2/opencv.hpp>
 #include "utils.hpp"
 
