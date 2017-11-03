@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
     int i = 0;
     sl::Mesh mesh; // Create a mesh object
     while (i < 500) {
-		// For each new grab, mesh data is updated 
+        // For each new grab, mesh data is updated 
         if (zed.grab() == SUCCESS) {
             // In the background, spatial mapping will use newly retrieved images, depth and pose to update the mesh
             sl::SPATIAL_MAPPING_STATE mapping_state = zed.getSpatialMappingState();
@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
     printf("Extracting Mesh...\n");
     zed.extractWholeMesh(mesh); // Extract the whole mesh
     printf("Filtering Mesh...\n");
-    mesh.filter(sl::MeshFilterParameters::FILTER_LOW); // Filter the mesh (remove unnecessary vertices and faces)
+    mesh.filter(sl::MeshFilterParameters::MESH_FILTER_LOW); // Filter the mesh (remove unnecessary vertices and faces)
     printf("Saving Mesh...\n");
     mesh.save("mesh.obj"); // Save the mesh in an obj file
 

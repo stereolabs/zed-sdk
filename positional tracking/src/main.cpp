@@ -66,6 +66,9 @@ int main(int argc, char **argv) {
     initParameters.coordinate_units = UNIT_METER;
     initParameters.coordinate_system = COORDINATE_SYSTEM_RIGHT_HANDED_Y_UP;
 
+    if (argc > 1 && std::string(argv[1]).find(".svo"))
+        initParameters.svo_input_filename.set(argv[1]);
+
     // Open the camera
     ERROR_CODE err = zed.open(initParameters);
     if (err != sl::SUCCESS) {
@@ -77,7 +80,7 @@ int main(int argc, char **argv) {
     // Set positional tracking parameters
     TrackingParameters trackingParameters;
     trackingParameters.initial_world_transform = sl::Transform::identity();
-    trackingParameters.enable_spatial_memory = true; // Enable Spatial memory
+    trackingParameters.enable_spatial_memory = true;
 
     // Start motion tracking
     zed.enableTracking(trackingParameters);
@@ -123,14 +126,14 @@ void run() {
     // Create a CSV file to log motion tracking data
     std::ofstream outputFile;
     std::string csvName = "Motion_data";
-        outputFile.open(csvName + ".csv");
-        if (!outputFile.is_open())
-            cout << "WARNING: Can't create CSV file. Run the application with administrator rights." << endl;
-         else
-             outputFile << "Timestamp(ns);Rotation_X(rad);Rotation_Y(rad);Rotation_Z(rad);Position_X(m);Position_Y(m);Position_Z(m);" << endl;
-    
+    outputFile.open(csvName + ".csv");
+    if (!outputFile.is_open())
+        cout << "WARNING: Can't create CSV file. Run the application with administrator rights." << endl;
+    else
+        outputFile << "Timestamp(ns);Rotation_X(rad);Rotation_Y(rad);Rotation_Z(rad);Position_X(m);Position_Y(m);Position_Z(m);" << endl;
 
-    while (!quit) {
+
+    while (!quit && zed.getSVOPosition() != zed.getSVONumberOfFrames() - 1) {
         if (zed.grab() == SUCCESS) {
             // Get the position of the camera in a fixed reference frame (the World Frame)
             TRACKING_STATE tracking_state = zed.getPosition(camera_pose, sl::REFERENCE_FRAME_WORLD);

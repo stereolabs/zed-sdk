@@ -47,6 +47,7 @@ private:
 };
 
 class TrackingViewer {
+    const std::string str_tracking = "POSITIONAL TRACKING : ";
 public:
 
     TrackingViewer();

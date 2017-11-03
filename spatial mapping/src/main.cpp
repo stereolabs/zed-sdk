@@ -121,13 +121,13 @@ int main(int argc, char** argv) {
     glutCreateWindow("ZED Spatial Mapping");
 
     // Configure Spatial Mapping and filtering parameters
-    spatial_mapping_params.range_meter.second = sl::SpatialMappingParameters::get(sl::SpatialMappingParameters::RANGE_FAR);
-    spatial_mapping_params.resolution_meter = sl::SpatialMappingParameters::get(sl::SpatialMappingParameters::RESOLUTION_LOW);
+    spatial_mapping_params.range_meter = sl::SpatialMappingParameters::get(sl::SpatialMappingParameters::MAPPING_RANGE_FAR);
+    spatial_mapping_params.resolution_meter = sl::SpatialMappingParameters::get(sl::SpatialMappingParameters::MAPPING_RESOLUTION_LOW);
     spatial_mapping_params.save_texture = false;
     spatial_mapping_params.max_memory_usage = 512;
-    spatial_mapping_params.keep_mesh_consistent = !USE_CHUNKS; // If we use chunks we do not need to keep the mesh consistent
+    spatial_mapping_params.use_chunk_only = USE_CHUNKS; // If we use chunks we do not need to keep the mesh consistent
 
-    filter_params.set(sl::MeshFilterParameters::FILTER_LOW);
+    filter_params.set(sl::MeshFilterParameters::MESH_FILTER_LOW);
 
     // Initialize OpenGL
     int res = initGL();
@@ -189,7 +189,6 @@ void startMapping() {
 
     mapping_is_started = true;
     std::cout << "** Spatial Mapping is started ... **" << std::endl;
-    return;
 }
 
 /**
@@ -206,7 +205,7 @@ void stopMapping() {
     std::cout << ">> Mesh has been extracted..." << std::endl;
 
     // Filter the extracted mesh
-    wholeMesh.filter(filter_params, !USE_CHUNKS);
+    wholeMesh.filter(filter_params, USE_CHUNKS);
     std::cout << ">> Mesh has been filtered..." << std::endl;
 
     // If textures have been saved during spatial mapping, apply them to the mesh
@@ -222,11 +221,14 @@ void stopMapping() {
     else std::cout << ">> Failed to save the mesh under  " << saveName << std::endl;
 
     // Update the displayed Mesh
+#if USE_CHUNKS
     mesh_object.clear();
     mesh_object.resize(wholeMesh.chunks.size());
     for (int c = 0; c < wholeMesh.chunks.size(); c++)
         mesh_object[c].updateMesh(wholeMesh.chunks[c].vertices, wholeMesh.chunks[c].triangles);
-    return;
+#else
+    mesh_object[0].updateMesh(wholeMesh.vertices, wholeMesh.triangles);
+#endif
 }
 
 /**
@@ -258,7 +260,6 @@ void run() {
             }
 
             if (zed.getMeshRequestStatusAsync() == sl::SUCCESS) {
-
                 // Get the current mesh generated and send it to opengl
                 if (zed.retrieveMeshAsync(mesh) == sl::SUCCESS) {
 #if USE_CHUNKS
@@ -436,7 +437,7 @@ void drawGL() {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 #if USE_CHUNKS
-        for (int c = 0; c < mesh.chunks.size(); c++)
+        for (int c = 0; c < mesh_object.size(); c++)
             mesh_object[c].draw(GL_TRIANGLES);
 #else
         mesh_object[0].draw(GL_TRIANGLES);
@@ -466,29 +467,33 @@ void drawGL() {
     // Show actions
     glColor4f(0.25f, 0.99f, 0.25f, 1.f);
     if (!mapping_is_started)
-        printGL(-0.99f, 0.9f, "* Press Space Bar to activate Spatial Mapping.");
+        printGL(-0.99f, 0.9f, "Press Space Bar to activate Spatial Mapping.");
     else
-        printGL(-0.99f, 0.9f, "* Press Space Bar to stop spatial mapping.");
+        printGL(-0.99f, 0.9f, "Press Space Bar to stop spatial mapping.");
 
+    std::string positional_tracking_state_str("POSITIONAL TRACKING STATE : ");
+    std::string spatial_mapping_state_str("SPATIAL MAPPING STATE : ");
+    std::string state_str;
     // Show mapping state
     if ((tracking_state == sl::TRACKING_STATE_OK)) {
-        sl::SPATIAL_MAPPING_STATE state = zed.getSpatialMappingState();
-        if (state == sl::SPATIAL_MAPPING_STATE_OK || state == sl::SPATIAL_MAPPING_STATE_INITIALIZING)
+        sl::SPATIAL_MAPPING_STATE spatial_mapping_state = zed.getSpatialMappingState();
+        if (spatial_mapping_state == sl::SPATIAL_MAPPING_STATE_OK || spatial_mapping_state == sl::SPATIAL_MAPPING_STATE_INITIALIZING)
             glColor4f(0.25f, 0.99f, 0.25f, 1.f);
-        else if (state == sl::SPATIAL_MAPPING_STATE_NOT_ENABLED)
+        else if (spatial_mapping_state == sl::SPATIAL_MAPPING_STATE_NOT_ENABLED)
             glColor4f(0.55f, 0.65f, 0.55f, 1.f);
         else
             glColor4f(0.95f, 0.25f, 0.25f, 1.f);
-        printGL(-0.99f, 0.83f, (std::string("** ") + sl::spatialMappingState2str(state)).c_str());
+        state_str = spatial_mapping_state_str + sl::toString(spatial_mapping_state).c_str();
     } else {
         if (mapping_is_started) {
             glColor4f(0.95f, 0.25f, 0.25f, 1.f);
-            printGL(-0.99f, 0.83f, (std::string("** ") + sl::trackingState2str(tracking_state)).c_str());
+            state_str = positional_tracking_state_str + sl::toString(tracking_state).c_str();
         } else {
             glColor4f(0.55f, 0.65f, 0.55f, 1.f);
-            printGL(-0.99f, 0.83f, (std::string("** ") + sl::spatialMappingState2str(sl::SPATIAL_MAPPING_STATE_NOT_ENABLED)).c_str());
+            state_str = spatial_mapping_state_str + sl::toString(sl::SPATIAL_MAPPING_STATE_NOT_ENABLED).c_str();
         }
     }
+    printGL(-0.99f, 0.83f, state_str.c_str());
 
     // Swap buffers
     glutSwapBuffers();

@@ -321,7 +321,8 @@ void TrackingViewer::idle() {
 
 void TrackingViewer::exit() {
     run = false;
-    glutLeaveMainLoop();
+    if (isInit)
+        glutLeaveMainLoop();
 }
 
 void TrackingViewer::mouse(int button, int state, int x, int y) {
@@ -471,11 +472,10 @@ void TrackingViewer::printText() {
     int start_w = 20;
     int start_h = h_wnd - 40;
 
-    bool trackingIsOK = trackState == sl::TRACKING_STATE_OK;
-
-    trackingIsOK ? glColor3f(0.2f, 0.65f, 0.2f) : glColor3f(0.85f, 0.2f, 0.2f);
+    (trackState == sl::TRACKING_STATE_OK) ? glColor3f(0.2f, 0.65f, 0.2f) : glColor3f(0.85f, 0.2f, 0.2f);
     glRasterPos2i(start_w, start_h);
-    safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, sl::trackingState2str(trackState).c_str());
+    std::string track_str = (str_tracking + sl::toString(trackState).c_str());
+    safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, track_str.c_str());
 
     glColor3f(0.9255f, 0.9412f, 0.9451f);
     glRasterPos2i(start_w, start_h - 25);
@@ -483,6 +483,7 @@ void TrackingViewer::printText() {
 
     glColor3f(0.4980f, 0.5490f, 0.5529f);
     glRasterPos2i(155, start_h - 25);
+
     safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, txtT.c_str());
 
     glColor3f(0.9255f, 0.9412f, 0.9451f);
@@ -501,7 +502,6 @@ void TrackingViewer::printText() {
 }
 
 void TrackingViewer::updateText(std::string stringT, std::string stringR, sl::TRACKING_STATE state) {
-
     if (!getViewerState())
         return;
 
