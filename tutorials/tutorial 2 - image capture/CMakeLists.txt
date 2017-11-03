@@ -7,22 +7,10 @@ if(COMMAND cmake_policy)
 	cmake_policy(SET CMP0015 OLD)
 endif(COMMAND cmake_policy)
 
-SET(EXECUTABLE_OUTPUT_PATH ".")    
-SET(VERSION_REQ_CUDA "8.0")
+SET(EXECUTABLE_OUTPUT_PATH ".")
 
-IF(WIN32) # Windows
-    if (CMAKE_CL_64)  
-        SET(ZED_INCLUDE_DIRS $ENV{ZED_INCLUDE_DIRS})
-        SET(ZED_LIBRARIES $ENV{ZED_LIBRARIES_64})
-        SET(ZED_LIBRARY_DIR $ENV{ZED_LIBRARY_DIR})
-    else()
-        message(FATAL_ERROR "You've selected the 32bit version of ${CMAKE_GENERATOR}. \n Please delete the cache (file->Delete Cache) and use the 64bit version. (${CMAKE_GENERATOR} Win64)")
-    endif()
-ELSE() # Linux
-    find_package(ZED 2.1 REQUIRED)
-ENDIF(WIN32)
-
-find_package(CUDA ${VERSION_REQ_CUDA} REQUIRED)
+find_package(ZED 2 REQUIRED)
+find_package(CUDA REQUIRED)
 
 include_directories(${CUDA_INCLUDE_DIRS})
 include_directories(${ZED_INCLUDE_DIRS})
@@ -32,8 +20,8 @@ link_directories(${ZED_LIBRARY_DIR})
 link_directories(${CUDA_LIBRARY_DIRS})
 
 ADD_EXECUTABLE(${execName} "main.cpp")
-add_definitions(-std=c++0x -g -O3)
+add_definitions(-std=c++11 -g -O3)
 
 TARGET_LINK_LIBRARIES(${execName}
                         ${ZED_LIBRARIES}
-                        ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_npp_LIBRARY} )
+                        ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_NPP_LIBRARIES_ZED} )
