@@ -19,7 +19,7 @@
 ///////////////////////////////////////////////////////////////////////////
 
 
-#include <sl/Camera.hpp>
+#include <sl_zed/Camera.hpp>
 
 using namespace sl;
 
@@ -50,18 +50,18 @@ int main(int argc, char **argv) {
     // Track the camera position during 1000 frames
     int i = 0;
     sl::Pose zed_pose;
-    
+
     while (i < 1000) {
         if (zed.grab() == SUCCESS) {
             zed.getPosition(zed_pose, REFERENCE_FRAME_WORLD); // Get the pose of the left eye of the camera with reference to the world frame
-           
+
             // Display the translation and timestamp
-            printf("Translation: Tx: %.3f, Ty: %.3f, Tz: %.3f, Timestamp: %llu\n", zed_pose.getTranslation().tx, 
-                    zed_pose.getTranslation().ty, zed_pose.getTranslation().tz, zed_pose.timestamp); 
-            
+            printf("Translation: Tx: %.3f, Ty: %.3f, Tz: %.3f, Timestamp: %llu\n", zed_pose.getTranslation().tx,
+                    zed_pose.getTranslation().ty, zed_pose.getTranslation().tz, zed_pose.timestamp);
+
             // Display the orientation quaternion
-            printf("Orientation: Ox: %.3f, Oy: %.3f, Oz: %.3f, Ow: %.3f\n\n", zed_pose.getOrientation().ox, 
-                    zed_pose.getOrientation().oy, zed_pose.getOrientation().oz, zed_pose.getOrientation().ow); 
+            printf("Orientation: Ox: %.3f, Oy: %.3f, Oz: %.3f, Ow: %.3f\n\n", zed_pose.getOrientation().ox,
+                    zed_pose.getOrientation().oy, zed_pose.getOrientation().oz, zed_pose.getOrientation().ow);
             i++;
         }
     }

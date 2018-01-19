@@ -31,7 +31,7 @@
 #include <fstream>
 
 // ZED includes
-#include <sl/Camera.hpp>
+#include <sl_zed/Camera.hpp>
 
 // Sample includes
 #include "TrackingViewer.hpp"
@@ -47,7 +47,7 @@ std::thread zed_callback;
 bool quit = false;
 
 // OpenGL window to display camera motion
-TrackingViewer viewer;
+GLViewer viewer;
 
 const int MAX_CHAR = 128;
 
@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
     // Open the camera
     ERROR_CODE err = zed.open(initParameters);
     if (err != sl::SUCCESS) {
-        std::cout << sl::errorCode2str(err) << std::endl;
+        std::cout << sl::toString(err) << std::endl;
         zed.close();
         return 1; // Quit if an error occurred
     }
@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
     zed.enableTracking(trackingParameters);
 
     // Initialize OpenGL viewer
-    viewer.init();
+    viewer.init(zed.getCameraInformation().camera_model);
 
     // Start ZED callback
     startZED();
@@ -158,7 +158,7 @@ void run() {
 
                 // Save the pose data in a csv file
                 if (outputFile.is_open())
-                    outputFile << zed.getCameraTimestamp() << "; " << text_rotation << "; " << text_translation << ";" << endl;
+                    outputFile << zed.getTimestamp(sl::TIME_REFERENCE::TIME_REFERENCE_IMAGE) << "; " << text_rotation << "; " << text_translation << ";" << endl;
             }
 
             // Update rotation, translation and tracking state values in the OpenGL window

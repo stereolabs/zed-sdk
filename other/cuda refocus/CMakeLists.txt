@@ -11,14 +11,14 @@ endif(COMMAND cmake_policy)
 SET(EXECUTABLE_OUTPUT_PATH ".")
 
 find_package(ZED 2 REQUIRED)
-find_package(CUDA REQUIRED)
+find_package(CUDA ${ZED_CUDA_VERSION} EXACT REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
 find_package(GLEW REQUIRED)
 
 IF(NOT WIN32)
      SET(SPECIAL_OS_LIBS "X11" "pthread")
-ENDIF(WIN32)
+ENDIF()
 
 include_directories(${ZED_INCLUDE_DIRS})
 include_directories(${GLUT_INCLUDE_PATH})
@@ -49,4 +49,4 @@ TARGET_LINK_LIBRARIES(${execName}
 			${GLEW_LIBRARIES}
 			${OPENGL_LIBRARIES}
 			${GLUT_LIBRARY}
-			${CUDA_LIBRARIES} ${CUDA_nppi_LIBRARY} ${CUDA_NPP_LIBRARIES_ZED} )
+			${CUDA_LIBRARIES} ${CUDA_NPP_LIBRARIES_ZED} )

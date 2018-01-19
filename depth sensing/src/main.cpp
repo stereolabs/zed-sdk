@@ -29,7 +29,7 @@
 #include <string.h>
 
 // ZED includes
-#include <sl/Camera.hpp>
+#include <sl_zed/Camera.hpp>
 
 // Sample includes
 #include "GLViewer.hpp"
@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
     // Open the camera
     ERROR_CODE err = zed.open(initParameters);
     if (err != SUCCESS) {
-        cout << errorCode2str(err) << endl;
+        cout << toString(err) << endl;
         zed.close();
         viewer.exit();
         return 1; // Quit if an error occurred

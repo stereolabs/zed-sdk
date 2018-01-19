@@ -30,7 +30,7 @@
 #include <string.h>
 
 // ZED include
-#include <sl/Camera.hpp>
+#include <sl_zed/Camera.hpp>
 
 // OpenCV include (for display)
 #include "opencv2/opencv.hpp"
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
     // Open the camera
     ERROR_CODE err = zed.open();
     if (err != SUCCESS) {
-        cout << errorCode2str(err) << endl;
+        cout << toString(err) << endl;
         zed.close();
         return 1; // Quit if an error occurred
     }
@@ -67,6 +67,7 @@ int main(int argc, char **argv) {
     printHelp();
 
     // Print camera information
+    printf("ZED Model                 : %s\n", toString(zed.getCameraInformation().camera_model).c_str());
     printf("ZED Serial Number         : %d\n", zed.getCameraInformation().serial_number);
     printf("ZED Firmware              : %d\n", zed.getCameraInformation().firmware_version);
     printf("ZED Camera Resolution     : %dx%d\n", (int) zed.getResolution().width, (int) zed.getResolution().height);

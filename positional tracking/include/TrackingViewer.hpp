@@ -1,121 +1,240 @@
 #ifndef __CLOUD_VIEWER_INCLUDE__
 #define __CLOUD_VIEWER_INCLUDE__
 
-#include "utils.hpp"
+#include "GL/glew.h"
+#include "GL/glut.h"    /* OpenGL Utility Toolkit header */
+
+#include <GL/freeglut.h>
+
+#include <sl/Core.hpp>
 
 #include <math.h>
 #include <thread>         // std::thread
 #include <mutex>          // std::mutex
 
 #include "ZEDModel.hpp"    /* OpenGL Utility Toolkit header */
-#include <sl/Camera.hpp>
+#include <sl_zed/Camera.hpp>
+
+#ifndef M_PI
+#define M_PI 3.1416f
+#endif
 
 
-class TrackBallCamera {
+#define SAFE_DELETE( res ) if( res!=NULL )  { delete res; res = NULL; }
+
+#define MOUSE_R_SENSITIVITY 0.015f
+#define MOUSE_UZ_SENSITIVITY 0.75f
+#define MOUSE_DZ_SENSITIVITY 1.25f
+#define MOUSE_T_SENSITIVITY 0.1f
+#define KEY_T_SENSITIVITY 0.1f
+
+class CameraGL {
 public:
 
-    TrackBallCamera() {};
-    TrackBallCamera(vect3 p, vect3 la);
-    void applyTransformations();
-    void show();
-    void rotation(float angle, vect3 v);
-    void rotate(float speed, vect3 v);
-    void translate(vect3 v);
-    void translateLookAt(vect3 v);
-    void translateAll(vect3 v);
-    void zoom(float z);
+    CameraGL() {}
+    enum DIRECTION {
+        UP, DOWN, LEFT, RIGHT, FORWARD, BACK
+    };
+    CameraGL(sl::Translation position, sl::Translation direction, sl::Translation vertical = sl::Translation(0, 1, 0)); // vertical = Eigen::Vector3f(0, 1, 0)
+    ~CameraGL();
 
-    vect3 getPosition();
-    vect3 getPositionFromLookAt();
-    vect3 getLookAt();
-    vect3 getForward();
-    vect3 getUp();
-    vect3 getLeft();
+    void update();
+    void setProjection(float horizontalFOV, float verticalFOV, float znear, float zfar);
+    const sl::Transform& getViewProjectionMatrix() const;
 
-    void setPosition(vect3 p);
-    void setLookAt(vect3 p);
+    float getHorizontalFOV() const;
+    float getVerticalFOV() const;
 
+    // Set an offset between the eye of the camera and its position
+    // Note: Useful to use the camera as a trackball camera with z>0 and x = 0, y = 0
+    // Note: coordinates are in local space
+    void setOffsetFromPosition(const sl::Translation& offset);
+    const sl::Translation& getOffsetFromPosition() const;
+
+    void setDirection(const sl::Translation& direction, const sl::Translation &vertical);
+    void translate(const sl::Translation& t);
+    void setPosition(const sl::Translation& p);
+    void rotate(const sl::Orientation& rot);
+    void rotate(const sl::Rotation& m);
+    void setRotation(const sl::Orientation& rot);
+    void setRotation(const sl::Rotation& m);
+
+    const sl::Translation& getPosition() const;
+    const sl::Translation& getForward() const;
+    const sl::Translation& getRight() const;
+    const sl::Translation& getUp() const;
+    const sl::Translation& getVertical() const;
+    float getZNear() const;
+    float getZFar() const;
+
+    static const sl::Translation ORIGINAL_FORWARD;
+    static const sl::Translation ORIGINAL_UP;
+    static const sl::Translation ORIGINAL_RIGHT;
+
+    sl::Transform projection_;
 private:
-    vect3 position;
-    vect3 lookAt;
-    vect3 forward;
-    vect3 up;
-    vect3 left;
-    float angleX;
+    void updateVectors();
+    void updateView();
+    void updateVPMatrix();
 
-    void setAngleX();
+    sl::Translation offset_;
+    sl::Translation position_;
+    sl::Translation forward_;
+    sl::Translation up_;
+    sl::Translation right_;
+    sl::Translation vertical_;
+
+    sl::Orientation rotation_;
+
+    sl::Transform view_;
+    sl::Transform vpMatrix_;
+    float horizontalFieldOfView_;
+    float verticalFieldOfView_;
+    float znear_;
+    float zfar_;
 };
 
-class TrackingViewer {
-    const std::string str_tracking = "POSITIONAL TRACKING : ";
+class Shader {
 public:
 
-    TrackingViewer();
-    virtual ~TrackingViewer();
+    Shader() {}
+    Shader(GLchar* vs, GLchar* fs);
+    ~Shader();
+    GLuint getProgramId();
 
+    static const GLint ATTRIB_VERTICES_POS = 0;
+    static const GLint ATTRIB_COLOR_POS = 1;
+private:
+    bool compile(GLuint &shaderId, GLenum type, GLchar* src);
+    GLuint verterxId_;
+    GLuint fragmentId_;
+    GLuint programId_;
+};
 
-    void init();
-    unsigned char getKey();
-    void updateText(std::string stringT, std::string stringR, sl::TRACKING_STATE stringState);
-    void updateZEDPosition(sl::Transform);
+class Simple3DObject {
+public:
 
-    bool getViewerState() {
-        return isInit;
-    }
+    Simple3DObject();
+    Simple3DObject(sl::Translation position, bool isStatic);
+    ~Simple3DObject();
 
-    bool runs() {
-        return run;
-    }
+    void addPoint(float x, float y, float z, float r, float g, float b);
+    void addPoint(sl::float3 position, sl::float3 color);
+    void pushToGPU();
+    void clear();
 
+    void setDrawingType(GLenum type);
+
+    void draw();
+
+    void translate(const sl::Translation& t);
+    void setPosition(const sl::Translation& p);
+
+    void setRT(const sl::Transform& mRT);
+
+    void rotate(const sl::Orientation& rot);
+    void rotate(const sl::Rotation& m);
+    void setRotation(const sl::Orientation& rot);
+    void setRotation(const sl::Rotation& m);
+
+    const sl::Translation& getPosition() const;
+
+    sl::Transform getModelMatrix() const;
+private:
+    std::vector<float> vertices_;
+    std::vector<float> colors_;
+    std::vector<unsigned int> indices_;
+
+    bool isStatic_;
+
+    GLenum drawingType_;
+
+    GLuint vaoID_;
+    /*
+    Vertex buffer IDs:
+    - [0]: Vertices coordinates;
+    - [1]: RGB color values;
+    - [2]: Indices;
+    */
+    GLuint vboID_[3];
+
+    sl::Translation position_;
+    sl::Orientation rotation_;
+
+};
+
+// This class manages input events, window and Opengl rendering pipeline
+class GLViewer {
+public:
+    GLViewer();
+    ~GLViewer();
     void exit();
-    std::mutex path_locker;
+    bool isEnded();
+    void init(sl::MODEL camera_model);
+    void updateZEDPosition(sl::Transform zed_rt);
+    void updateText(std::string str_t, std::string str_r, sl::TRACKING_STATE state);
 
 private:
-    static TrackingViewer* currentInstance_;
-    //OGL functions
-    static void redrawCallback();
-    static void mouseCallback(int button, int state, int x, int y);
-    static void keyCallback(unsigned char c, int x, int y);
-    static void specialKeyCallback(int key, int x, int y);
-    static void motionCallback(int x, int y);
-    static void reshapeCallback(int width, int height);
-    static void closeCallback();
+    // Rendering loop method called each frame by glutDisplayFunc
+    void render();
+    // Everything that needs to be updated before rendering must be done in this method
+    void update();
+    // Once everything is updated, every renderable objects must be drawn in this method
+    void draw();
+    // Clear and refresh inputs' data
+    void clearInputs();
 
-    // drawing
-    void drawGridPlan();
-    void drawRepere();
-
-    // ZED model
-    Zed3D zed3d;
-
-    void idle();
-    void redraw();
-    void mouse(int button, int state, int x, int y);
-    void key(unsigned char c, int x, int y);
-    void specialkey(int key, int x, int y);
-    void motion(int x, int y);
-    void reshape(int width, int height);
-
-    //text
     void printText();
-    std::string txtT;
+
+    static GLViewer* currentInstance_;
+
+    // Glut functions callbacks
+    static void drawCallback();
+    static void mouseButtonCallback(int button, int state, int x, int y);
+    static void mouseMotionCallback(int x, int y);
+    static void reshapeCallback(int width, int height);
+    static void keyPressedCallback(unsigned char c, int x, int y);
+    static void keyReleasedCallback(unsigned char c, int x, int y);
+    static void idle();
+
+    bool ended_;
+
+    enum MOUSE_BUTTON {
+        LEFT = 0,
+        MIDDLE = 1,
+        RIGHT = 2,
+        WHEEL_UP = 3,
+        WHEEL_DOWN = 4
+    };
+
+    enum KEY_STATE {
+        UP = 'u',
+        DOWN = 'd',
+        FREE = 'f'
+    };
+
+    bool mouseButton_[3];
+    int mouseWheelPosition_;
+    int mouseCurrentPosition_[2];
+    int mouseMotion_[2];
+    int previousMouseMotion_[2];
+    KEY_STATE keyStates_[256];
+
+    Simple3DObject grill;
+    Simple3DObject zedModel;
+    Simple3DObject zedPath;
+    std::vector<sl::float3> vecPath;
+    std::mutex mtx;
+    bool updateZEDposition;
+
     std::string txtR;
+    std::string txtT;
     sl::TRACKING_STATE trackState;
-    std::vector<sl::Translation> zed_path;
-    //int trackConf;
+    const std::string str_tracking = "POSITIONAL TRACKING : ";
 
-    //! Mouse Save Position
-    bool Rotate;
-    bool Translate;
-    bool Zoom;
-    int startx;
-    int starty;
-
-    TrackBallCamera camera;
-
-    bool isInit;
-    bool run;
+    CameraGL camera_;
+    Shader shader_;
+    GLuint shMVPMatrixLoc_;
 };
-
 
 #endif

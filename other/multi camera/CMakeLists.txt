@@ -15,7 +15,7 @@ ENDIF(WIN32)
 
 find_package(ZED 2.0 REQUIRED)
 find_package(OpenCV COMPONENTS core highgui imgproc REQUIRED)
-find_package(CUDA REQUIRED)
+find_package(CUDA ${ZED_CUDA_VERSION} EXACT REQUIRED)
     
 include_directories(${CUDA_INCLUDE_DIRS})
 include_directories(${ZED_INCLUDE_DIRS})

@@ -24,7 +24,7 @@
 *****************************************************************************************/
 
 // ZED includes
-#include <sl/Camera.hpp>
+#include <sl_zed/Camera.hpp>
 
 // Sample includes
 #include "utils.hpp"
@@ -50,17 +50,17 @@ int main(int argc, char **argv) {
     // Open the camera
     ERROR_CODE err = zed.open(initParameters);
     if (err != SUCCESS) {
-        std::cout << errorCode2str(err) << std::endl;
+        std::cout << toString(err) << std::endl;
         zed.close();
         return 1; // Quit if an error occurred
     }
 
     // Enable recording with the filename specified in argument
     String path_output(argv[1]);
-    err = zed.enableRecording(path_output, SVO_COMPRESSION_MODE_LOSSLESS);
+    err = zed.enableRecording(path_output, SVO_COMPRESSION_MODE_LOSSY);
 
     if (err != SUCCESS) {
-        std::cout << "Recording initialization error. " << errorCode2str(err) << std::endl;
+        std::cout << "Recording initialization error. " << toString(err) << std::endl;
         if (err == ERROR_CODE_SVO_RECORDING_ERROR) std::cout << " Note : This error mostly comes from a wrong path or missing writing permissions." << std::endl;
         zed.close();
         return 1;

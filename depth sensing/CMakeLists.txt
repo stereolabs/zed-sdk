@@ -20,7 +20,7 @@ IF(NOT WIN32)
     add_definitions(-Wno-write-strings)
 ENDIF()
 
-find_package(CUDA REQUIRED)
+find_package(CUDA ${ZED_CUDA_VERSION} EXACT REQUIRED)
 
 include_directories(${ZED_INCLUDE_DIRS})
 include_directories(${GLEW_INCLUDE_DIRS})

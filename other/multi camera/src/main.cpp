@@ -34,7 +34,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include <sl/Camera.hpp>
+#include <sl_zed/Camera.hpp>
 
 using namespace std;
 
@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
         }
 
         // Compare Timestamp between both camera (uncomment following line)
-        //for (int i = 0; i < NUM_CAMERAS; i++) std::cout << " Timestamp " << i << ": " << ZED_Timestamp[i] << std::endl;
+        for (int i = 0; i < MAX_ZED; i++) std::cout << " Timestamp " << i << ": " << ZED_Timestamp[i] << std::endl;
 
         key = cv::waitKey(20);
     }

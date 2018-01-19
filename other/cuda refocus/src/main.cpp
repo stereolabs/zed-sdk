@@ -25,7 +25,7 @@
  ****************************************************************************************************/
 
  // ZED SDK include
-#include <sl/Camera.hpp>
+#include <sl_zed/Camera.hpp>
 
 // OpenGL extensions
 #include "GL/glew.h"
@@ -145,7 +145,7 @@ int main(int argc, char **argv) {
 
     ERROR_CODE err = zed.open(parameters);
     if (err != SUCCESS) {
-        cout << "ZED Err on open : " << errorCode2str(err) << endl;
+        cout << "ZED Err on open : " << toString(err) << endl;
         zed.close();
         return -1;
     }

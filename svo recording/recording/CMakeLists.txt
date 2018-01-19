@@ -10,7 +10,7 @@ endif(COMMAND cmake_policy)
 SET(EXECUTABLE_OUTPUT_PATH ".")
 
 find_package(ZED 2 REQUIRED)
-find_package(CUDA REQUIRED)
+find_package(CUDA ${ZED_CUDA_VERSION} EXACT REQUIRED)
 
 IF(NOT WIN32) 
     SET(SPECIAL_OS_LIBS "pthread" "X11")

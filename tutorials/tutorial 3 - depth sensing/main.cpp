@@ -19,7 +19,7 @@
 ///////////////////////////////////////////////////////////////////////////
 
 
-#include <sl/Camera.hpp>
+#include <sl_zed/Camera.hpp>
 
 using namespace sl;
 
@@ -55,19 +55,19 @@ int main(int argc, char **argv) {
             // Retrieve depth map. Depth is aligned on the left image
             zed.retrieveMeasure(depth, MEASURE_DEPTH);
             // Retrieve colored point cloud. Point cloud is aligned on the left image.
-			zed.retrieveMeasure(point_cloud, MEASURE_XYZRGBA);
+            zed.retrieveMeasure(point_cloud, MEASURE_XYZRGBA);
 
             // Get and print distance value in mm at the center of the image
             // We measure the distance camera - object using Euclidean distance
             int x = image.getWidth() / 2;
             int y = image.getHeight() / 2;
-			sl::float4 point_cloud_value;
-			point_cloud.getValue(x, y, &point_cloud_value);
+            sl::float4 point_cloud_value;
+            point_cloud.getValue(x, y, &point_cloud_value);
 
-            float distance = sqrt(point_cloud_value.x*point_cloud_value.x + point_cloud_value.y*point_cloud_value.y + point_cloud_value.z*point_cloud_value.z);
+            float distance = sqrt(point_cloud_value.x * point_cloud_value.x + point_cloud_value.y * point_cloud_value.y + point_cloud_value.z * point_cloud_value.z);
             printf("Distance to Camera at (%d, %d): %f mm\n", x, y, distance);
 
-      		// Increment the loop
+            // Increment the loop
             i++;
         }
     }

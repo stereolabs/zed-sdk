@@ -35,7 +35,7 @@
 #include "GL/freeglut.h"
 
 // ZED includes
-#include <sl/Camera.hpp>
+#include <sl_zed/Camera.hpp>
 
 // Sample includes
 #include "GLObject.hpp"
@@ -108,7 +108,7 @@ int main(int argc, char** argv) {
     // Open the ZED
     sl::ERROR_CODE err = zed.open(parameters);
     if (err != sl::ERROR_CODE::SUCCESS) {
-        std::cout << sl::errorCode2str(err) << std::endl;
+        std::cout << sl::toString(err) << std::endl;
         zed.close();
         return -1;
     }

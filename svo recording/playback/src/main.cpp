@@ -24,7 +24,7 @@
 *************************************************************/
 
 // ZED include
-#include <sl/Camera.hpp>
+#include <sl_zed/Camera.hpp>
 
 // Sample includes
 #include <opencv2/opencv.hpp>
@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
     // Open the ZED
     ERROR_CODE err = zed.open(initParameters);
     if (err != SUCCESS) {
-        cout << errorCode2str(err) << endl;
+        cout << toString(err) << endl;
         zed.close();
         return 1; // Quit if an error occurred
     }

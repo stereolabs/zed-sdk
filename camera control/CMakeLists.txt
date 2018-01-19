@@ -11,7 +11,7 @@ SET(EXECUTABLE_OUTPUT_PATH ".")
 
 find_package(ZED 2 REQUIRED)
 find_package(OpenCV REQUIRED)
-find_package(CUDA REQUIRED)
+find_package(CUDA ${ZED_CUDA_VERSION} EXACT REQUIRED)
 
 include_directories(${CUDA_INCLUDE_DIRS})
 include_directories(${ZED_INCLUDE_DIRS})
@@ -26,6 +26,9 @@ FILE(GLOB_RECURSE SRC_FILES src/*.cpp)
 
 ADD_EXECUTABLE(${execName} ${SRC_FILES})
 add_definitions(-std=c++11 -g -O3)
+
+message(${ZED_DIR})
+message( ${ZED_LIBRARIES})
 
 TARGET_LINK_LIBRARIES(${execName}
                         ${ZED_LIBRARIES}

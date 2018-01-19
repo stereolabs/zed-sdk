@@ -24,7 +24,7 @@
 ************************************************************************/
 
 // ZED includes
-#include <sl/Camera.hpp>
+#include <sl_zed/Camera.hpp>
 
 // Sample includes
 #include <iostream>
@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
     // Open the SVO file specified as a parameter
     ERROR_CODE err = zed.open(initParameters);
     if (err != SUCCESS) {
-        cout << errorCode2str(err) << endl;
+        cout << toString(err) << endl;
         zed.close();
         return 1; // Quit if an error occurred
     }
