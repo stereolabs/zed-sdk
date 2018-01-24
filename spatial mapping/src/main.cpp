@@ -35,7 +35,7 @@
 #include "GL/freeglut.h"
 
 // ZED includes
-#include <sl_zed/Camera.hpp>
+#include <sl/Camera.hpp>
 
 // Sample includes
 #include "GLObject.hpp"

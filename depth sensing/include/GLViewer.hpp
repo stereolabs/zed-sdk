@@ -6,7 +6,7 @@
 #include <vector>
 #include <mutex>
 
-#include <sl_zed/Camera.hpp>
+#include <sl/Camera.hpp>
 
 #include <GL/glew.h>
 #include <GL/freeglut.h>

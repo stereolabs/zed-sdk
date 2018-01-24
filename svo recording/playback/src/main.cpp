@@ -24,7 +24,7 @@
 *************************************************************/
 
 // ZED include
-#include <sl_zed/Camera.hpp>
+#include <sl/Camera.hpp>
 
 // Sample includes
 #include <opencv2/opencv.hpp>

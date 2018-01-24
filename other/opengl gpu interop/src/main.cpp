@@ -30,7 +30,7 @@
 #include <string.h>
 #include <ctime>
 
-#include <sl_zed/Camera.hpp>
+#include <sl/Camera.hpp>
 #include <thread>
 
 #include <GL/glew.h>

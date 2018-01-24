@@ -13,7 +13,7 @@
 #include <mutex>          // std::mutex
 
 #include "ZEDModel.hpp"    /* OpenGL Utility Toolkit header */
-#include <sl_zed/Camera.hpp>
+#include <sl/Camera.hpp>
 
 #ifndef M_PI
 #define M_PI 3.1416f

@@ -3,7 +3,7 @@
 
 #include <GL/glew.h>
 #include <vector>
-#include <sl_zed/Camera.hpp>
+#include <sl/Camera.hpp>
 #include "Shader.hpp"
 
 class MeshObject {

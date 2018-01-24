@@ -31,7 +31,7 @@
 #include <fstream>
 
 // ZED includes
-#include <sl_zed/Camera.hpp>
+#include <sl/Camera.hpp>
 
 // Sample includes
 #include "TrackingViewer.hpp"

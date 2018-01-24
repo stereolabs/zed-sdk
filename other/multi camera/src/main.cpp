@@ -34,7 +34,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include <sl_zed/Camera.hpp>
+#include <sl/Camera.hpp>
 
 using namespace std;
 

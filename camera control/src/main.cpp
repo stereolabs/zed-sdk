@@ -30,7 +30,7 @@
 #include <string.h>
 
 // ZED include
-#include <sl_zed/Camera.hpp>
+#include <sl/Camera.hpp>
 
 // OpenCV include (for display)
 #include "opencv2/opencv.hpp"

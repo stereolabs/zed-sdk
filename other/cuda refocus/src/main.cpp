@@ -25,7 +25,7 @@
  ****************************************************************************************************/
 
  // ZED SDK include
-#include <sl_zed/Camera.hpp>
+#include <sl/Camera.hpp>
 
 // OpenGL extensions
 #include "GL/glew.h"

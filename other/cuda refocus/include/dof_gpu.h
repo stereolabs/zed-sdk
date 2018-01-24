@@ -18,7 +18,7 @@
 #include "npp.h" 
 #include "device_functions.h"
 #include <stdint.h>
-#include <sl_zed/Camera.hpp>
+#include <sl/Camera.hpp>
 
 #define KERNEL_RADIUS 32 //see assert in convolution kernel to see the limitations of size
 #define KERNEL_LENGTH_X(x) (2 * x + 1)
