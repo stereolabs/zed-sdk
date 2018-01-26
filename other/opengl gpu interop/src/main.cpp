@@ -34,7 +34,7 @@
 #include <thread>
 
 #include <GL/glew.h>
-#include "GL/freeglut.h"
+#include <GL/freeglut.h>
 
 #include <cuda.h>
 #include <cuda_runtime.h>

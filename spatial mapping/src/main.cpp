@@ -32,15 +32,15 @@
 
 // OpenGL includes
 #include <GL/glew.h>
-#include "GL/freeglut.h"
+#include <GL/freeglut.h>
 
 // ZED includes
 #include <sl/Camera.hpp>
 
 // Sample includes
-#include "GLObject.hpp"
+#include <GLObject.hpp>
 #include "utils.hpp"
-#include "cuda_gl_interop.h"
+#include <cuda_gl_interop.h>
 
 // Define if you want to use the mesh as a set of chunks or as a global entity.
 #define USE_CHUNKS 1

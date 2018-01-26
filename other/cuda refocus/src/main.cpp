@@ -28,8 +28,8 @@
 #include <sl/Camera.hpp>
 
 // OpenGL extensions
-#include "GL/glew.h"
-#include "GL/freeglut.h"
+#include <GL/glew.h>
+#include <GL/freeglut.h>
 
 // CUDA specific for OpenGL interoperability
 #include <cuda_gl_interop.h>

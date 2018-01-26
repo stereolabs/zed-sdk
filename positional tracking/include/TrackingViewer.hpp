@@ -1,8 +1,8 @@
 #ifndef __CLOUD_VIEWER_INCLUDE__
 #define __CLOUD_VIEWER_INCLUDE__
 
-#include "GL/glew.h"
-#include "GL/glut.h"    /* OpenGL Utility Toolkit header */
+#include <GL/glew.h>
+#include <GL/glut.h>    /* OpenGL Utility Toolkit header */
 
 #include <GL/freeglut.h>
 

@@ -33,7 +33,7 @@
 #include <sl/Camera.hpp>
 
 // OpenCV include (for display)
-#include "opencv2/opencv.hpp"
+#include <opencv2/opencv.hpp>
 
 // Using std and sl namespaces
 using namespace std;

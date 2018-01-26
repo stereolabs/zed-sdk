@@ -9,14 +9,14 @@
  * Separable convolution is based on convolution CUDA Sample with kernel-size adaptation
  */
 
-#include "cuda.h"
-#include "cuda_runtime.h"
+#include <cuda.h>
+#include <cuda_runtime.h>
 #include <npp.h>
-#include "device_launch_parameters.h" 
+#include <device_launch_parameters.h>
 #include <math.h> 
 #include <algorithm>
-#include "npp.h" 
-#include "device_functions.h"
+#include <npp.h>
+#include <device_functions.h>
 #include <stdint.h>
 #include <sl/Camera.hpp>
 
