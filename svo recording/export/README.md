@@ -1,4 +1,4 @@
-# Stereolabs ZED - SVO Export
+# Stereolabs ZED - SVO Recording utilities
 
 This sample demonstrates how to read a SVO file and convert it into an AVI file (LEFT + RIGHT) or (LEFT + DEPTH_VIEW).
 

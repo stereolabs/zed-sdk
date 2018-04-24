@@ -19,7 +19,7 @@
 ///////////////////////////////////////////////////////////////////////////
 
 
-#include <sl/Camera.hpp>
+#include <sl_zed/Camera.hpp>
 
 using namespace sl;
 
@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
         exit(-1);
 
     // Enable positional tracking with default parameters
-    sl::TrackingParameters tracking_parameters;
+    TrackingParameters tracking_parameters;
     err = zed.enableTracking(tracking_parameters);
     if (err != SUCCESS)
         exit(-1);
@@ -49,19 +49,38 @@ int main(int argc, char **argv) {
 
     // Track the camera position during 1000 frames
     int i = 0;
-    sl::Pose zed_pose;
+    Pose zed_pose;
+
+    // Check if the camera is a ZED M and therefore if an IMU is available
+    bool zed_mini = (zed.getCameraInformation().camera_model == MODEL_ZED_M);
+    IMUData imu_data;
 
     while (i < 1000) {
         if (zed.grab() == SUCCESS) {
             zed.getPosition(zed_pose, REFERENCE_FRAME_WORLD); // Get the pose of the left eye of the camera with reference to the world frame
 
             // Display the translation and timestamp
-            printf("Translation: Tx: %.3f, Ty: %.3f, Tz: %.3f, Timestamp: %llu\n", zed_pose.getTranslation().tx,
+            printf("\nTranslation: Tx: %.3f, Ty: %.3f, Tz: %.3f, Timestamp: %llu\n", zed_pose.getTranslation().tx,
                     zed_pose.getTranslation().ty, zed_pose.getTranslation().tz, zed_pose.timestamp);
 
             // Display the orientation quaternion
-            printf("Orientation: Ox: %.3f, Oy: %.3f, Oz: %.3f, Ow: %.3f\n\n", zed_pose.getOrientation().ox,
+            printf("Orientation: Ox: %.3f, Oy: %.3f, Oz: %.3f, Ow: %.3f\n", zed_pose.getOrientation().ox,
                     zed_pose.getOrientation().oy, zed_pose.getOrientation().oz, zed_pose.getOrientation().ow);
+
+            
+            if (zed_mini) { // Display IMU data
+
+                 // Get IMU data
+                zed.getIMUData(imu_data, TIME_REFERENCE_IMAGE);
+
+                // Filtered orientation quaternion
+                printf("IMU Orientation: Ox: %.3f, Oy: %.3f, Oz: %.3f, Ow: %.3f\n", imu_data.getOrientation().ox,
+                        imu_data.getOrientation().oy, imu_data.getOrientation().oz, zed_pose.getOrientation().ow);
+                // Raw acceleration
+                printf("IMU Acceleration: x: %.3f, y: %.3f, z: %.3f\n", imu_data.linear_acceleration.x,
+                        imu_data.linear_acceleration.y, imu_data.linear_acceleration.z);
+            }
+
             i++;
         }
     }

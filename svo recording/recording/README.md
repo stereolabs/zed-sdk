@@ -1,4 +1,4 @@
-# Stereolabs ZED - SVO Recording
+# Stereolabs ZED - SVO Recording utilities
 
 This sample shows how to record video in Stereolabs SVO format.
 SVO video files can be played with the ZED API and used with its different modules.

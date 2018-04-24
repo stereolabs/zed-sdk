@@ -22,17 +22,19 @@ We assume that you have followed previous tutorials.
 
 Open a terminal in the sample directory and execute the following command:
 
+```bash
     mkdir build
     cd build
     cmake ..
     make
-	
+```
+
 # Code overview
 ## Create a camera
 
 As in previous tutorials, we create, configure and open the ZED. 
 
-```
+```c++
 // Create a ZED camera object
 Camera zed;
 
@@ -52,7 +54,7 @@ if (err != SUCCESS)
 
 Once the camera is opened, we must enable the positional tracking module in order to get the position and orientation of the ZED.
 
-```
+```c++
 // Enable positional tracking with default parameters
 sl::TrackingParameters tracking_parameters;
 err = zed.enableTracking(tracking_parameters);
@@ -70,7 +72,7 @@ The camera position is given by the class sl::Pose. This class contains the tran
 A pose is always linked to a reference frame. The SDK provides two reference frame : REFERENCE_FRAME_WORLD and REFERENCE_FRAME_CAMERA.<br/> It is not the purpose of this tutorial to go into the details of these reference frame. Read the documentation for more information.<br/>
 In the example, we get the device position in the World Frame.
 
-```
+```c++
 // Track the camera position during 1000 frames
 int i = 0;
 sl::Pose zed_pose;
@@ -90,7 +92,32 @@ while (i < 1000) {
 }
 ```
 
-This will loop until the ZED has been tracked for 1000 frames. We display the camera translation (in meters) in the console window and close the camera before exiting the application.
+### Inertial Data
+
+If a ZED Mini is open, we can have access to the inertial data from the integrated IMU
+
+```c++
+bool zed_mini = (zed.getCameraInformation().camera_model == MODEL_ZED_M);
+```
+
+First, we test that the opened camera is a ZED Mini, then, we display some useful IMU data, such as the quaternion and the linear acceleration.
+
+```c++
+if (zed_mini) { // Display IMU data
+
+    // Get IMU data
+    zed.getIMUData(imu_data, TIME_REFERENCE_IMAGE); // Get the data
+
+    // Filtered orientation quaternion
+    printf("IMU Orientation: Ox: %.3f, Oy: %.3f, Oz: %.3f, Ow: %.3f\n", imu_data.getOrientation().ox,
+            imu_data.getOrientation().oy, imu_data.getOrientation().oz, zed_pose.getOrientation().ow);
+    // Raw acceleration
+    printf("IMU Acceleration: x: %.3f, y: %.3f, z: %.3f\n", imu_data.linear_acceleration.x,
+            imu_data.linear_acceleration.y, imu_data.linear_acceleration.z);
+}
+```
+
+This will loop until the ZED has been tracked during 1000 frames. We display the camera translation (in meters) in the console window and close the camera before exiting the application.
 
 ```
 // Disable positional tracking and close the camera
@@ -99,4 +126,4 @@ zed.close();
 return 0;
 ```
 
-You can now use the ZED as an inside-out positional tracker. You can also read on the next tutorial to learn how to use Spatial Mapping.
+You can now use the ZED as an inside-out positional tracker. You can now read the next tutorial to learn how to use the Spatial Mapping.
