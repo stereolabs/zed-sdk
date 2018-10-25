@@ -4,9 +4,9 @@ Links
 --------
 ZED SDK - https://www.stereolabs.com/developers/
 
-General Documentation - https://www.stereolabs.com/documentation/
+General Documentation - https://docs.stereolabs.com/
 
-API Documentation - https://www.stereolabs.com/developers/documentation/API
+API Documentation - https://www.stereolabs.com/developers/documentation/API/latest
 
 Contents
 --------
