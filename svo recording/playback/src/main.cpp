@@ -36,15 +36,13 @@ using namespace std;
 
 int main(int argc, char **argv) {
 
-    if (argc != 2) {
-        cout << "Only the path of the input SVO file should be passed as argument.\n";
-        return 1;
-    }
+  
 
     // Create ZED objects
     Camera zed;
     InitParameters initParameters;
     initParameters.svo_input_filename.set(argv[1]);
+	initParameters.depth_mode = DEPTH_MODE_PERFORMANCE;
 
     // Open the ZED
     ERROR_CODE err = zed.open(initParameters);
@@ -54,12 +52,14 @@ int main(int argc, char **argv) {
         return 1; // Quit if an error occurred
     }
 
+	std::cout << " Resolution ZED : " << zed.getResolution().width << "," << zed.getResolution().height << std::endl;
+
     cv::Size size(zed.getResolution().width, zed.getResolution().height);
     cv::Size size_sbs(size.width * 2, size.height);
 
-    // Define OpenCV window size
-    int width = 720;
-    int height = 404;
+    // Define OpenCV window size (resize to max 720/404)
+    int width = std::min(720, size.width);
+    int height = std::min(404, size.height);
     Mat svo_image(width * 2, height, MAT_TYPE_8U_C4, MEM_CPU);
     cv::Mat svo_image_ocv = slMat2cvMat(svo_image);
 
@@ -75,38 +75,45 @@ int main(int argc, char **argv) {
 
     // Start SVO playback
     while (key != 'q') {
-        if (zed.grab() == SUCCESS) {
+		if (zed.grab() == SUCCESS) {
 
-            // Get the side by side image
-            zed.retrieveImage(svo_image, VIEW_SIDE_BY_SIDE, MEM_CPU, width, height);
+			// Get the side by side image
+			zed.retrieveImage(svo_image, VIEW_SIDE_BY_SIDE, MEM_CPU, width, height);
+                int svo_position2 = zed.getSVOPosition();
+			// Display the frame
+			cv::imshow("View", svo_image_ocv);
 
-            // Display the frame
-            cv::imshow("View", svo_image_ocv);
+			key = cv::waitKey(2);
 
-            key = cv::waitKey(15);
+				int svo_position = zed.getSVOPosition();
 
-            int svo_position = zed.getSVOPosition();
 
-            switch (key) {
-                case 's':
-                svo_image.write(("capture_" + to_string(svo_position) + ".png").c_str());
-                break;
-                case 'f':
-                zed.setSVOPosition(svo_position + svo_frame_rate);
-                break;
-                case 'b':
-                zed.setSVOPosition(svo_position - svo_frame_rate);
-                break;
-            }
+				switch (key) {
+				case 's':
+					svo_image.write(("capture_" + to_string(svo_position) + ".png").c_str());
+					break;
+				case 'f':
+					zed.setSVOPosition(svo_position + svo_frame_rate);
+					break;
+				case 'b':
+					zed.setSVOPosition(svo_position - svo_frame_rate);
+					break;
+				}
 
-            // Check if we have reached the end of the video
-            if (svo_position >= (nb_frames - 1)) { // End of SVO
-                cout << "\nSVO end has been reached. Exiting now.\n";
-                break;
-            }
+				// Check if we have reached the end of the video
+				if (svo_position >= (nb_frames - 1)) { // End of SVO
+                    zed.setSVOPosition(0);
+                    cout << "\nSVO end has been reached. Looping back to 0.\n";
+				}
 
-            ProgressBar((float) (svo_position / (float) nb_frames), 30);
-        }
+                ProgressBar((float)(svo_position / (float)nb_frames), 30);
+		}
+		else
+		{
+			sl::sleep_ms(1);
+		}
+			
+
     }
 
     zed.close();

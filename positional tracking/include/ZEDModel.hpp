@@ -1,7 +1,9 @@
 #pragma once
 
-#ifndef __ZED3D_INCLUDE__
-#define __ZED3D_INCLUDE__
+#ifndef __ZED3D_HDR__
+#define __ZED3D_HDR__
+
+#include <sl/types.hpp>
 
 namespace ZED_model {
     const float vertices[] = {
@@ -2772,4 +2774,4 @@ struct Model3D_ZED_M:Model3D {
     }
 };
 
-#endif /* __ZED3D_INCLUDE__ */
+#endif /* __ZED3D_HDR__ */

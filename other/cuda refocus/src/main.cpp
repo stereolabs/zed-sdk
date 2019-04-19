@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2018, STEREOLABS.
+// Copyright (c) 2016, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -25,11 +25,11 @@
  ****************************************************************************************************/
 
  // ZED SDK include
-#include <sl/Camera.hpp>
+#include <sl_zed/Camera.hpp>
 
 // OpenGL extensions
-#include <GL/glew.h>
-#include <GL/freeglut.h>
+#include "GL/glew.h"
+#include "GL/freeglut.h"
 
 // CUDA specific for OpenGL interoperability
 #include <cuda_gl_interop.h>

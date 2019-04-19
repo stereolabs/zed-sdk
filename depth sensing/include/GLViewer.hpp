@@ -1,8 +1,6 @@
 #ifndef __VIEWER_INCLUDE__
 #define __VIEWER_INCLUDE__
 
-#include <iostream>
-#include <thread>
 #include <vector>
 #include <mutex>
 
@@ -14,19 +12,16 @@
 #include <GL/glut.h>   /* OpenGL Utility Toolkit header */
 
 #include <cuda.h>
-#include <cuda_runtime.h>
 #include <cuda_gl_interop.h>
 
 #ifndef M_PI
 #define M_PI 3.141592653f
 #endif
 
-#define SAFE_DELETE( res ) if( res!=NULL )  { delete res; res = NULL; }
-
 #define MOUSE_R_SENSITIVITY 0.015f
 #define MOUSE_UZ_SENSITIVITY 0.75f
 #define MOUSE_DZ_SENSITIVITY 1.25f
-#define MOUSE_T_SENSITIVITY 0.1f
+#define MOUSE_T_SENSITIVITY 10.f
 #define KEY_T_SENSITIVITY 0.1f
 
 class CameraGL {
@@ -119,7 +114,8 @@ public:
     Simple3DObject(sl::Translation position, bool isStatic);
     ~Simple3DObject();
 
-    void addPoint(float x, float y, float z, float r, float g, float b);
+    void addPoint(sl::float3 pt, sl::float3 clr);
+    void addFace(sl::float3 p1, sl::float3 p2, sl::float3 p3, sl::float3 clr);
     void pushToGPU();
     void clear();
 
@@ -153,10 +149,9 @@ private:
     /*
             Vertex buffer IDs:
             - [0]: Vertices coordinates;
-            - [1]: RGB color values;
-            - [2]: Indices;
+            - [1]: Indices;
      */
-    GLuint vboID_[3];
+    GLuint vboID_[2];
 
     sl::Translation position_;
     sl::Orientation rotation_;
@@ -170,7 +165,7 @@ public:
 
     // Initialize Opengl and Cuda buffers
     // Warning: must be called in the Opengl thread
-    void initialize(unsigned int width, unsigned int height, CUcontext ctx);
+    void initialize(sl::Resolution res);
     // Push a new point cloud
     // Warning: can be called from any thread but the mutex "mutexData" must be locked
     void pushNewPC(sl::Mat &matXYZRGBA);
@@ -182,19 +177,11 @@ public:
     void draw(const sl::Transform& vp);
     // Close (disable update)
     void close();
-
-    unsigned int getWidth();
-    unsigned int getHeight();
-
+    
     std::mutex mutexData;
-    CUcontext cuda_zed_ctx;
 private:
-    unsigned int width_ = 0;
-    unsigned int height_ = 0;
-
     sl::Mat matGPU_;
     bool hasNewPCL_ = false;
-    bool initialized_ = false;
     Shader shader_;
     GLuint shMVPMatrixLoc_;
     size_t numBytes_;
@@ -208,15 +195,13 @@ class GLViewer {
 public:
     GLViewer();
     ~GLViewer();
-    void exit();
-    bool isEnded();
-    bool isInitialized();
-    void init(int w, int h);
+    bool isAvailable();
+
+    void init(int argc, char **argv, sl::CameraParameters param);
     void updatePointCloud(sl::Mat &matXYZRGBA);
 
+    void exit();
 private:
-    // Initialize OpenGL context and variables, and other Viewer's variables
-    void initialize();
     // Rendering loop method called each frame by glutDisplayFunc
     void render();
     // Everything that needs to be updated before rendering must be done in this method
@@ -225,9 +210,7 @@ private:
     void draw();
     // Clear and refresh inputs' data
     void clearInputs();
-
-    static GLViewer* currentInstance_;
-
+    
     // Glut functions callbacks
     static void drawCallback();
     static void mouseButtonCallback(int button, int state, int x, int y);
@@ -237,14 +220,7 @@ private:
     static void keyReleasedCallback(unsigned char c, int x, int y);
     static void idle();
 
-    bool ended_;
-    // Color settings
-    float cr;
-    float cg;
-    float cb;
-    // Window size
-    int wnd_w;
-    int wnd_h;
+    bool available;
 
     enum MOUSE_BUTTON {
         LEFT = 0,
@@ -266,17 +242,13 @@ private:
     int mouseMotion_[2];
     int previousMouseMotion_[2];
     KEY_STATE keyStates_[256];
+    sl::float3 bckgrnd_clr;
 
-    Simple3DObject axis_X;
-    Simple3DObject axis_Y;
-    Simple3DObject axis_Z;
+    Simple3DObject frustum;
     PointCloud pointCloud_;
     CameraGL camera_;
     Shader shader_;
     GLuint shMVPMatrixLoc_;
-    sl::Resolution res;
-    CUcontext ctx;
-    bool initialized_;
 };
 
 #endif /* __VIEWER_INCLUDE__ */

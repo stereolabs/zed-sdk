@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2018, STEREOLABS.
+// Copyright (c) 2017, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -18,17 +18,12 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-
 /*************************************************************************
  ** This sample demonstrates how to capture images and 3D point cloud   **
- ** with the ZED SDK and display the result in an OpenGL window. 		    **
+ ** with the ZED SDK and display the result in an OpenGL window. 	    **
  *************************************************************************/
 
- // Standard includes
-#include <stdio.h>
-#include <string.h>
-
-// ZED includes
+ // ZED includes
 #include <sl/Camera.hpp>
 
 // Sample includes
@@ -38,93 +33,48 @@
 using namespace std;
 using namespace sl;
 
-// Create ZED objects (camera, callback, images)
-sl::Camera zed;
-sl::Mat point_cloud;
-std::thread zed_callback;
-int width, height;
-bool quit;
-
-// Point cloud viewer
-GLViewer viewer;
-
-// Sample functions
-void startZED();
-void run();
-void close();
-
 int main(int argc, char **argv) {
-
+    Camera zed;
     // Set configuration parameters for the ZED
     InitParameters initParameters;
-    if (argc == 2) initParameters.svo_input_filename = argv[1];
-    initParameters.camera_resolution = RESOLUTION_HD720;
-    initParameters.depth_mode = DEPTH_MODE_PERFORMANCE;
+    initParameters.depth_mode = DEPTH_MODE_ULTRA;
     initParameters.coordinate_system = COORDINATE_SYSTEM_RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
-    initParameters.coordinate_units = UNIT_METER;
+    // open SVO if one given as parameter
+    if(argc > 1 && string(argv[1]).find(".svo"))
+        initParameters.svo_input_filename = argv[1];
 
     // Open the camera
-    ERROR_CODE err = zed.open(initParameters);
-    if (err != SUCCESS) {
-        cout << toString(err) << endl;
+    ERROR_CODE zed_error = zed.open(initParameters);
+
+    if(zed_error != SUCCESS) {// Quit if an error occurred
+        cout << zed_error << endl;
         zed.close();
-        viewer.exit();
-        return 1; // Quit if an error occurred
+        return 1;
     }
 
-    // Initialize point cloud viewer in half-size
-    width = (int) zed.getResolution().width / 2;
-    height = (int) zed.getResolution().height / 2;
-    viewer.init(width, height);
+    Resolution resolution = zed.getResolution();
+    CameraParameters camera_parameters = zed.getCameraInformation().calibration_parameters.left_cam;
 
-    // Start the camera thread
-    startZED();
+    // Point cloud viewer
+    GLViewer viewer;
+    // Initialize point cloud viewer 
+    viewer.init(argc, argv, camera_parameters);
 
-    // Set the display callback
-    glutCloseFunc(close);
-    glutMainLoop();
-    return 0;
-}
+    // Allocation of 4 channels of float on GPU
+    Mat point_cloud(resolution, MAT_TYPE_32F_C4, MEM_GPU);
 
-/**
-    Launch ZED thread. Using a thread here allows to capture a point cloud and update the GL window concurrently.
- **/
-void startZED() {
-    quit = false;
-    zed_callback = std::thread(run);
-}
-
-/**
-    This function loops to get image and motion data from the ZED. It is similar to a callback.
-    Add your own code here.
- **/
-void run() {
-
-    while (!quit) {
-        if (zed.grab() == SUCCESS) {
-            // Retrieve a colored RGBA point cloud in GPU memory and update GL viewing window
-            // width and height specify the total number of columns and rows for the point cloud dataset
-            // In this example, we retrieve and display a half size point cloud using width and height parameters
-            zed.retrieveMeasure(point_cloud, MEASURE_XYZRGBA, MEM_GPU, width, height);
+    // Main Loop
+    while(viewer.isAvailable()) {
+        if(zed.grab() == SUCCESS) {
+            zed.retrieveMeasure(point_cloud, MEASURE_XYZRGBA, MEM_GPU);
             viewer.updatePointCloud(point_cloud);
-
-        } else sl::sleep_ms(1);
+        } else sleep_ms(1);
     }
-}
+    // free allocated memory before closing the ZED
+    point_cloud.free();
 
-/**
-    This function closes the ZED camera, its callback (thread) and the GL viewer
- **/
-void close() {
-    quit = true;
-
-    // Stop callback
-    zed_callback.join();
-
-    // Exit point cloud viewer
-    viewer.exit();
-
-    // Free buffer and close the ZED
-    point_cloud.free(MEM_GPU);
+    // close the ZED
     zed.close();
+
+    return 0;
 }
