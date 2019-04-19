@@ -9,16 +9,16 @@
  * Separable convolution is based on convolution CUDA Sample with kernel-size adaptation
  */
 
-#include <cuda.h>
-#include <cuda_runtime.h>
+#include "cuda.h"
+#include "cuda_runtime.h"
 #include <npp.h>
-#include <device_launch_parameters.h>
+#include "device_launch_parameters.h" 
 #include <math.h> 
 #include <algorithm>
-#include <npp.h>
-#include <device_functions.h>
+#include "npp.h" 
+#include "device_functions.h"
 #include <stdint.h>
-#include <sl/Camera.hpp>
+#include <sl_zed/Camera.hpp>
 
 #define KERNEL_RADIUS 32 //see assert in convolution kernel to see the limitations of size
 #define KERNEL_LENGTH_X(x) (2 * x + 1)

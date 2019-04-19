@@ -16,6 +16,8 @@ The ZED SDK includes tutorials and samples that demonstrate the API features and
 
 * **Camera Control** - This sample shows how to adjust the ZED camera parameters.
 
+* **Camera Streaming** - This sample shows how to stream on local network the ZED camera images.
+
 * **Depth Sensing** - This sample shows how to capture a 3D point cloud and display with OpenGL. It also shows how to save depth data in different formats.
 
 * **Positional Tracking** - This sample shows how to use positional tracking and display the result with OpenGL.

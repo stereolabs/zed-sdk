@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2018, STEREOLABS.
+// Copyright (c) 2017, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
 
     // Set configuration parameters for the ZED
     InitParameters initParameters;
-    initParameters.camera_resolution = RESOLUTION_HD720;
+    initParameters.camera_resolution = RESOLUTION_HD2K;
     initParameters.depth_mode = DEPTH_MODE_NONE;
 
     // Open the camera
@@ -57,11 +57,15 @@ int main(int argc, char **argv) {
 
     // Enable recording with the filename specified in argument
     String path_output(argv[1]);
-    err = zed.enableRecording(path_output, SVO_COMPRESSION_MODE_LOSSY);
+    err = zed.enableRecording(path_output, SVO_COMPRESSION_MODE_AVCHD);
 
     if (err != SUCCESS) {
         std::cout << "Recording initialization error. " << toString(err) << std::endl;
-        if (err == ERROR_CODE_SVO_RECORDING_ERROR) std::cout << " Note : This error mostly comes from a wrong path or missing writing permissions." << std::endl;
+        if (err == ERROR_CODE_SVO_RECORDING_ERROR)
+            std::cout << " Note : This error mostly comes from a wrong path or missing writing permissions." << std::endl;
+        if (err == ERROR_CODE_SVO_UNSUPPORTED_COMPRESSION)
+            std::cout << " Note : This error mostly comes from a non-compatible graphic card. If you are using HEVC compression (H265), please note that most of the graphic card below pascal architecture will not support it. Prefer to use AVCHD compression which is supported on most of NVIDIA graphic cards" << std::endl;
+
         zed.close();
         return 1;
     }
@@ -74,8 +78,9 @@ int main(int argc, char **argv) {
     while (!exit_app) {
         if (zed.grab() == SUCCESS) {
             // Each new frame is added to the SVO file
-            zed.record();
-            frames_recorded++;
+            sl::RecordingState state = zed.record();
+            if (state.status)
+                frames_recorded++;
             std::cout << "Frame count: " << frames_recorded << "\r";
         }
     }

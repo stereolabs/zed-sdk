@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2018, STEREOLABS.
+// Copyright (c) 2017, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -130,7 +130,7 @@ int main(int argc, char **argv) {
     // Create video writer
     cv::VideoWriter* video_writer;
     if (output_as_video) {
-        int fourcc = CV_FOURCC('M', '4', 'S', '2'); // MPEG-4 part 2 codec
+        int fourcc = cv::VideoWriter::fourcc('M', '4', 'S', '2'); // MPEG-4 part 2 codec
         int frame_rate = fmax(zed.getCameraFPS(), 25); // Minimum write rate in OpenCV is 25
         video_writer = new cv::VideoWriter(output_path, fourcc, frame_rate, image_size_sbs);
         if (!video_writer->isOpened()) {
@@ -180,7 +180,7 @@ int main(int argc, char **argv) {
                 right_image_ocv.copyTo(svo_image_sbs_rgba(cv::Rect(width, 0, width, height)));
 
                 // Convert SVO image from RGBA to RGB
-                cv::cvtColor(svo_image_sbs_rgba, ocv_image_sbs_rgb, CV_RGBA2RGB);
+                cv::cvtColor(svo_image_sbs_rgba, ocv_image_sbs_rgb, cv::COLOR_RGBA2RGB);
 
                 // Write the RGB image in the video
                 video_writer->write(ocv_image_sbs_rgb);

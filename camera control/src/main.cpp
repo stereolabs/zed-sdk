@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2018, STEREOLABS.
+// Copyright (c) 2017, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -55,8 +55,11 @@ int main(int argc, char **argv) {
     // Create a ZED Camera object
     Camera zed;
 
+    sl::InitParameters param;
+    param.camera_resolution= sl::RESOLUTION_HD720;
+
     // Open the camera
-    ERROR_CODE err = zed.open();
+    ERROR_CODE err = zed.open(param);
     if (err != SUCCESS) {
         cout << toString(err) << endl;
         zed.close();
@@ -78,8 +81,8 @@ int main(int argc, char **argv) {
 
     // Capture new images until 'q' is pressed
     char key = ' ';
+    int fc = 0;
     while (key != 'q') {
-
         // Check that grab() is successful
         if (zed.grab() == SUCCESS) {
             // Retrieve left image
@@ -87,12 +90,18 @@ int main(int argc, char **argv) {
 
             // Display image with OpenCV
             cv::imshow("VIEW", cv::Mat((int) zed_image.getHeight(), (int) zed_image.getWidth(), CV_8UC4, zed_image.getPtr<sl::uchar1>(sl::MEM_CPU)));
-            key = cv::waitKey(5);
+            key = cv::waitKey(10);
 
             // Change camera settings with keyboard
             updateCameraSettings(key, zed);
-        } else
-            key = cv::waitKey(5);
+
+            fc++;
+
+        }
+        else
+        {
+            key = cv::waitKey(20);
+        }
     }
 
     // Exit
@@ -116,19 +125,32 @@ void updateCameraSettings(char key, sl::Camera &zed) {
 
         // Increase camera settings value ('+' key)
         case '+':
-        current_value = zed.getCameraSettings(camera_settings_);
-        zed.setCameraSettings(camera_settings_, current_value + step_camera_setting);
-        std::cout << str_camera_settings << ": " << current_value + step_camera_setting << std::endl;
+		{
+			current_value = zed.getCameraSettings(camera_settings_);
+			zed.setCameraSettings(camera_settings_, current_value + step_camera_setting);
+			std::cout << str_camera_settings << ": " << zed.getCameraSettings(camera_settings_) << std::endl;
+		}
         break;
 
         // Decrease camera settings value ('-' key)
         case '-':
-        current_value = zed.getCameraSettings(camera_settings_);
-        if (current_value >= 1) {
-            zed.setCameraSettings(camera_settings_, current_value - step_camera_setting);
-            std::cout << str_camera_settings << ": " << current_value - step_camera_setting << std::endl;
-        }
+			current_value = zed.getCameraSettings(camera_settings_);
+			if (current_value >= 1) {
+				zed.setCameraSettings(camera_settings_, current_value - step_camera_setting);
+				std::cout << str_camera_settings << ": " << zed.getCameraSettings(camera_settings_) << std::endl;
+			}
         break;
+
+        //switch LED On :
+        case 'e':
+        zed.setCameraSettings(sl::CAMERA_SETTINGS_LED_STATUS,1);
+        break;
+
+        //switch LED Off :
+        case 'd':
+        zed.setCameraSettings(sl::CAMERA_SETTINGS_LED_STATUS,0);
+        break;
+
 
         // Reset to default parameters
         case 'r':
