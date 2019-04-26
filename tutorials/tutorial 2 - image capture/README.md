@@ -15,6 +15,8 @@ We assume that you have read the tutorial 1 and successfully opened your ZED.
 
 ## Build the program
 
+Download the sample and follow the instructions below: [More](https://www.stereolabs.com/docs/getting-started/application-development/)
+
 #### Build for Windows
 
 - Create a "build" folder in the source folder
