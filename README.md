@@ -8,6 +8,8 @@ General Documentation - https://docs.stereolabs.com/
 
 API Documentation - https://www.stereolabs.com/developers/documentation/API/latest
 
+Compilation Instructions - https://www.stereolabs.com/docs/getting-started/application-development/
+
 Contents
 --------
 The ZED SDK includes tutorials and samples that demonstrate the API features and code.
