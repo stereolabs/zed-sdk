@@ -41,6 +41,7 @@ int main(int argc, char **argv) {
     initParameters.camera_resolution = RESOLUTION_HD2K;
     initParameters.depth_mode = DEPTH_MODE_NONE;
 	initParameters.sdk_verbose = true;
+
     // Open the camera
     ERROR_CODE err = zed.open(initParameters);
     if (err != SUCCESS) {
@@ -49,17 +50,19 @@ int main(int argc, char **argv) {
         return -1; // Quit if an error occurred
     }
 
-
-
     sl::StreamingParameters stream_params;
     stream_params.codec = sl::STREAMING_CODEC_AVCHD;
     stream_params.bitrate = 8000;
+    if(argc > 1) stream_params.port = atoi(argv[1]);
+
     err = zed.enableStreaming(stream_params);
     if (err != SUCCESS) {
         std::cout << "Streaming initialization error. " << toString(err) << std::endl;
         zed.close();
         return -2;
     }
+
+    std::cout << "Streaming on port " << stream_params.port << std::endl;
 
     SetCtrlHandler();
 
