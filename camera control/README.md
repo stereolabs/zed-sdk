@@ -9,7 +9,7 @@ This sample shows how to capture images with the ZED SDK and adjust camera setti
 
 ### Prerequisites
 
-- Windows 7 64bits or later, Ubuntu 16.04
+- Windows 10, Ubuntu LTS
 - [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
 - OpenCV
 
