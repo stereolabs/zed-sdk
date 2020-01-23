@@ -1,4 +1,4 @@
-# Stereolabs ZED - SVO Playback utilities
+# Stereolabs ZED - SVO Playback
 
 This sample demonstrates how to read a SVO video file.
 We use OpenCV to display the video.
