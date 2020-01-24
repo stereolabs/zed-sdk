@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2020, STEREOLABS.
+// Copyright (c) 2019, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -36,20 +36,21 @@ using namespace std;
 using namespace sl;
 
 #define CREATE_MESH 1
+void parseArgs(int argc, char **argv,sl::InitParameters& param);
+
 
 int main(int argc, char** argv) {
     Camera zed;
     // Setup configuration parameters for the ZED    
     InitParameters parameters;
-    parameters.coordinate_units = UNIT_METER;
-    parameters.coordinate_system = COORDINATE_SYSTEM_RIGHT_HANDED_Y_UP; // OpenGL coordinates system
-    if(argc > 1 && string(argv[1]).find(".svo"))
-        parameters.svo_input_filename = argv[1];
+    parameters.coordinate_units = UNIT::METER;
+    parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL coordinates system
+    parseArgs(argc,argv,parameters);
 
     // Open the ZED
     ERROR_CODE zed_error = zed.open(parameters);
     if(zed_error != ERROR_CODE::SUCCESS) {
-        cout << zed_error << endl;
+        print("Opening camera failed: ",zed_error);
         zed.close();
         return -1;
     }
@@ -75,18 +76,23 @@ int main(int argc, char** argv) {
 #endif
 
     SpatialMappingParameters spatial_mapping_parameters;
-    TRACKING_STATE tracking_state = TRACKING_STATE_OFF;
-    SPATIAL_MAPPING_STATE mapping_state = SPATIAL_MAPPING_STATE_NOT_ENABLED;
+    POSITIONAL_TRACKING_STATE tracking_state = POSITIONAL_TRACKING_STATE::OFF;
+    SPATIAL_MAPPING_STATE mapping_state = SPATIAL_MAPPING_STATE::NOT_ENABLED;
     bool mapping_activated = false; // indicates if the spatial mapping is running or not
     chrono::high_resolution_clock::time_point ts_last; // time stamp of the last mesh request
     
     // Enable positional tracking before starting spatial mapping
-    zed.enableTracking();
+    zed_error = zed.enablePositionalTracking();
+    if(zed_error != ERROR_CODE::SUCCESS) {
+        print("Enabling positionnal tracking failed: ",zed_error);
+        zed.close();
+        return 1; // Quit if an error occurred
+    }
 
     while(viewer.isAvailable()) {
-        if(zed.grab() == SUCCESS) {
+        if(zed.grab() == ERROR_CODE::SUCCESS) {
             // Retrieve image in GPU memory
-            zed.retrieveImage(image, VIEW_LEFT, MEM_GPU);
+            zed.retrieveImage(image, VIEW::LEFT, MEM::GPU);
             // Update pose data (used for projection of the mesh over the current image)
             tracking_state = zed.getPosition(pose);
 
@@ -100,7 +106,7 @@ int main(int argc, char** argv) {
                     ts_last = chrono::high_resolution_clock::now();
                 }
 
-                if(zed.getSpatialMapRequestStatusAsync() == SUCCESS) {
+                if(zed.getSpatialMapRequestStatusAsync() == ERROR_CODE::SUCCESS) {
                     zed.retrieveSpatialMapAsync(map);
                     viewer.updateMap(map);
                 }
@@ -111,23 +117,23 @@ int main(int argc, char** argv) {
             if(change_state) {
                 if(!mapping_activated) {
                     Transform init_pose;
-                    zed.resetTracking(init_pose);
+                    zed.resetPositionalTracking(init_pose);
 
                     // Configure Spatial Mapping parameters
-                    spatial_mapping_parameters.resolution_meter = SpatialMappingParameters::get(SpatialMappingParameters::MAPPING_RESOLUTION_MEDIUM);
+					spatial_mapping_parameters.resolution_meter = SpatialMappingParameters::get(SpatialMappingParameters::MAPPING_RESOLUTION::MEDIUM);
                     spatial_mapping_parameters.use_chunk_only = true;
                     spatial_mapping_parameters.save_texture = false;
 #if CREATE_MESH
-					spatial_mapping_parameters.map_type = SpatialMappingParameters::SPATIAL_MAP_TYPE_MESH;
+					spatial_mapping_parameters.map_type = SpatialMappingParameters::SPATIAL_MAP_TYPE::MESH;
 #else
-					spatial_mapping_parameters.map_type = SpatialMappingParameters::SPATIAL_MAP_TYPE_FUSED_POINT_CLOUD;
+					spatial_mapping_parameters.map_type = SpatialMappingParameters::SPATIAL_MAP_TYPE::FUSED_POINT_CLOUD;
 #endif					
                     // Enable spatial mapping
                     try {
                         zed.enableSpatialMapping(spatial_mapping_parameters);
-						std::cout << "Spatial Mapping will output a " << spatial_mapping_parameters.map_type << "\n";
+                        print("Spatial Mapping will output a " + std::string(toString(spatial_mapping_parameters.map_type).c_str()));
                     } catch(std::string e) {
-                        std::cout <<"Error enable Spatial Mapping "<< e << std::endl;
+                        print("Error enable Spatial Mapping "+ e);
                     }
                     // Start a timer, we retrieve the mesh every XXms.
                     ts_last = chrono::high_resolution_clock::now();
@@ -141,7 +147,7 @@ int main(int argc, char** argv) {
                     zed.extractWholeSpatialMap(map);
 #if CREATE_MESH
                     MeshFilterParameters filter_params;
-                    filter_params.set(MeshFilterParameters::MESH_FILTER_MEDIUM);
+                    filter_params.set(MeshFilterParameters::MESH_FILTER::MEDIUM);
                     // Filter the extracted mesh
                     map.filter(filter_params, true);
 
@@ -150,17 +156,17 @@ int main(int argc, char** argv) {
 
                     // If textures have been saved during spatial mapping, apply them to the mesh
                     if(spatial_mapping_parameters.save_texture)
-                        map.applyTexture(MESH_TEXTURE_RGB);
+                        map.applyTexture(MESH_TEXTURE_FORMAT::RGB);
 #endif
                     //Save as an OBJ file
                     string saveName = getDir() + "mesh_gen.obj";
                     bool error_save = map.save(saveName.c_str());
                     if(error_save)
-						cout << ">> Mesh saved under: " << saveName << endl;
+                        print("Mesh saved under: " +saveName);
 					else
-						cout << ">> Failed to save the mesh under: " << saveName << endl;
+                        print("Failed to save the mesh under: " +saveName);
 
-                    mapping_state = SPATIAL_MAPPING_STATE_NOT_ENABLED;
+                    mapping_state = SPATIAL_MAPPING_STATE::NOT_ENABLED;
                     mapping_activated = false;
                 }
             }
@@ -171,7 +177,49 @@ int main(int argc, char** argv) {
     map.clear();
 
     zed.disableSpatialMapping();
-    zed.disableTracking();
+    zed.disablePositionalTracking();
     zed.close();
     return 0;
 }
+
+
+
+void parseArgs(int argc, char **argv,sl::InitParameters& param)
+{
+    if (argc > 1 && string(argv[1]).find(".svo")!=string::npos) {
+        // SVO input mode
+        param.input.setFromSVOFile(argv[1]);
+        cout<<"[Sample] Using SVO File input: "<<argv[1]<<endl;
+    } else if (argc > 1 && string(argv[1]).find(".svo")==string::npos) {
+        string arg = string(argv[1]);
+        unsigned int a,b,c,d,port;
+        if (sscanf(arg.c_str(),"%u.%u.%u.%u:%d", &a, &b, &c, &d,&port) == 5) {
+            // Stream input mode - IP + port
+            string ip_adress = to_string(a)+"."+to_string(b)+"."+to_string(c)+"."+to_string(d);
+            param.input.setFromStream(sl::String(ip_adress.c_str()),port);
+            cout<<"[Sample] Using Stream input, IP : "<<ip_adress<<", port : "<<port<<endl;
+        }
+        else  if (sscanf(arg.c_str(),"%u.%u.%u.%u", &a, &b, &c, &d) == 4) {
+            // Stream input mode - IP only
+            param.input.setFromStream(sl::String(argv[1]));
+            cout<<"[Sample] Using Stream input, IP : "<<argv[1]<<endl;
+        }
+        else if (arg.find("HD2K")!=string::npos) {
+            param.camera_resolution = sl::RESOLUTION::HD2K;
+            cout<<"[Sample] Using Camera in resolution HD2K"<<endl;
+        } else if (arg.find("HD1080")!=string::npos) {
+            param.camera_resolution = sl::RESOLUTION::HD1080;
+            cout<<"[Sample] Using Camera in resolution HD1080"<<endl;
+        } else if (arg.find("HD720")!=string::npos) {
+            param.camera_resolution = sl::RESOLUTION::HD720;
+            cout<<"[Sample] Using Camera in resolution HD720"<<endl;
+        } else if (arg.find("VGA")!=string::npos) {
+            param.camera_resolution = sl::RESOLUTION::VGA;
+            cout<<"[Sample] Using Camera in resolution VGA"<<endl;
+        }
+    } else {
+        // Default
+    }
+}
+
+

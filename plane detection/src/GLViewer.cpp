@@ -2,6 +2,24 @@
 
 #include <cuda_gl_interop.h>
 
+
+void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suffix) {
+    cout <<"[Sample]";
+    if (err_code != sl::ERROR_CODE::SUCCESS)
+        cout << "[Error] ";
+    else
+        cout<<" ";
+    cout << msg_prefix << " ";
+    if (err_code != sl::ERROR_CODE::SUCCESS) {
+        cout << " | " << toString(err_code) << " : ";
+        cout << toVerbose(err_code);
+    }
+    if (!msg_suffix.empty())
+        cout << " " << msg_suffix;
+    cout << endl;
+}
+
+
 GLchar* MESH_VERTEX_SHADER =
 "#version 330 core\n"
 "layout(location = 0) in vec3 in_Vertex;\n"
@@ -72,10 +90,10 @@ void MeshObject::updateMesh(std::vector<sl::float3> &vertices, std::vector<sl::u
 
         edge_dist.resize(vertices.size());
 
-        for(int i = 0; i < edge_dist.size(); i++) {
+        for (unsigned int i = 0; i < edge_dist.size(); i++) {
             float d_min = std::numeric_limits<float>::max();
             sl::float3 v_current = vertices[i];
-            for(int j = 0; j < border.size(); j++) {
+            for (unsigned int j = 0; j < border.size(); j++) {
                 float dist_current = sl::float3::distance(v_current, vertices[border[j]]);
                 if(dist_current < d_min) {
                     d_min = dist_current;
@@ -132,7 +150,7 @@ GLViewer* currentInstance_ = nullptr;
 GLViewer::GLViewer() :available(false) {
     currentInstance_ = this;
     pose.setIdentity();
-    tracking_state = sl::TRACKING_STATE_OFF;
+    tracking_state = sl::POSITIONAL_TRACKING_STATE::OFF;
     change_state = false;
     new_data = false;
 
@@ -172,13 +190,13 @@ bool GLViewer::isAvailable() {
 
 void CloseFunc(void) { if(currentInstance_) currentInstance_->exit(); }
 
-bool GLViewer::init(int argc, char **argv, sl::CameraParameters camLeft, sl::MODEL camera_model) {
+bool GLViewer::init(int argc, char **argv, sl::CameraInformation &cam_infos) {
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
 
     // Create GLUT window
-    glutInitWindowSize(camLeft.image_size.width, camLeft.image_size.height);
+    glutInitWindowSize(cam_infos.camera_resolution.width, cam_infos.camera_resolution.height);
     glutCreateWindow("ZED Spatial Mapping");
 
     // Init glew after window has been created
@@ -190,7 +208,7 @@ bool GLViewer::init(int argc, char **argv, sl::CameraParameters camLeft, sl::MOD
     glBindTexture(GL_TEXTURE_2D, imageTex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, camLeft.image_size.width, camLeft.image_size.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, cam_infos.camera_resolution.width, cam_infos.camera_resolution.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
     glBindTexture(GL_TEXTURE_2D, 0);
 
     cudaSafeCall(cudaGraphicsGLRegisterImage(&cuda_gl_ressource, imageTex, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard));
@@ -212,7 +230,7 @@ bool GLViewer::init(int argc, char **argv, sl::CameraParameters camLeft, sl::MOD
     glBindTexture(GL_TEXTURE_2D, renderedTexture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, camLeft.image_size.width, camLeft.image_size.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cam_infos.camera_resolution.width, cam_infos.camera_resolution.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
     // Set "renderedTexture" as our color attachment #0
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture, 0);
@@ -224,7 +242,7 @@ bool GLViewer::init(int argc, char **argv, sl::CameraParameters camLeft, sl::MOD
 
     // Always check that our framebuffer is ok
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        std::cout << "invalid FrameBuffer" << std::endl;
+        print("Error : invalid FrameBuffer");
         return true;
     }
 
@@ -256,26 +274,26 @@ bool GLViewer::init(int argc, char **argv, sl::CameraParameters camLeft, sl::MOD
     glutMouseFunc(GLViewer::mouseButtonCallback);
     glutCloseFunc(CloseFunc);
 
-    cam_model = camera_model;
+    cam_model = cam_infos.camera_model;
     available = true;
 
-    image.alloc(camLeft.image_size, sl::MAT_TYPE_8U_C4, sl::MEM_GPU);
+    image.alloc(cam_infos.camera_resolution, sl::MAT_TYPE::U8_C4, sl::MEM::GPU);
     cudaSafeCall(cudaGetLastError());
 
-    // Create Projection Matrix for OpenGL. We will use this matrix in combination with the Pose (on REFERENCE_FRAME_WORLD) to project the mesh on the 2D Image.
-    camera_projection(0, 0) = 1.0f / tanf(camLeft.h_fov * 3.1416f / 180.f * 0.5f);
-    camera_projection(1, 1) = 1.0f / tanf(camLeft.v_fov * 3.1416f / 180.f * 0.5f);
+    // Create Projection Matrix for OpenGL. We will use this matrix in combination with the Pose (on REFERENCE_FRAME::WORLD) to project the mesh on the 2D Image.
+    camera_projection(0, 0) = 1.0f / tanf(cam_infos.calibration_parameters.left_cam.h_fov * 3.1416f / 180.f * 0.5f);
+    camera_projection(1, 1) = 1.0f / tanf(cam_infos.calibration_parameters.left_cam.v_fov * 3.1416f / 180.f * 0.5f);
     float znear = 0.001f;
     float zfar = 100.f;
     camera_projection(2, 2) = -(zfar + znear) / (zfar - znear);
     camera_projection(2, 3) = -(2.f * zfar * znear) / (zfar - znear);
     camera_projection(3, 2) = -1.f;
-    camera_projection(0, 2) = (camLeft.image_size.width - 2.f * camLeft.cx) / camLeft.image_size.width;
-    camera_projection(1, 2) = (-1.f * camLeft.image_size.height + 2.f * camLeft.cy) / camLeft.image_size.height;
+    camera_projection(0, 2) = (cam_infos.camera_resolution.width - 2.f * cam_infos.calibration_parameters.left_cam.cx) / cam_infos.camera_resolution.width;
+    camera_projection(1, 2) = (-1.f * cam_infos.camera_resolution.height + 2.f * cam_infos.calibration_parameters.left_cam.cy) / cam_infos.camera_resolution.height;
     camera_projection(3, 3) = 0.f;
 
-    user_action.hit_coord.x = camLeft.image_size.width / 2.;
-    user_action.hit_coord.y = camLeft.image_size.height / 2.;
+    user_action.hit_coord.x = cam_infos.camera_resolution.width / 2.;
+    user_action.hit_coord.y = cam_infos.camera_resolution.height / 2.;
 
     glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
 
@@ -309,10 +327,10 @@ void GLViewer::mouseButtonCallback(int button, int state, int x, int y) {
     }
 }
 
-UserAction GLViewer::updateImageAndState(sl::Mat &im, sl::Transform &pose_, sl::TRACKING_STATE track_state) {
+UserAction GLViewer::updateImageAndState(sl::Mat &im, sl::Transform &pose_, sl::POSITIONAL_TRACKING_STATE track_state) {
     if(mtx.try_lock()) {
         if(available) {
-            image.setFrom(im, sl::COPY_TYPE_GPU_GPU);
+            image.setFrom(im, sl::COPY_TYPE::GPU_GPU);
             cudaSafeCall(cudaGetLastError());
             pose = pose_;
             tracking_state = track_state;
@@ -353,7 +371,7 @@ void GLViewer::update() {
         cudaArray_t ArrIm;
         cudaSafeCall(cudaGraphicsMapResources(1, &cuda_gl_ressource, 0));
         cudaSafeCall(cudaGraphicsSubResourceGetMappedArray(&ArrIm, cuda_gl_ressource, 0, 0));
-        cudaSafeCall(cudaMemcpy2DToArray(ArrIm, 0, 0, image.getPtr<sl::uchar1>(sl::MEM_GPU), image.getStepBytes(sl::MEM_GPU), image.getPixelBytes()*image.getWidth(), image.getHeight(), cudaMemcpyDeviceToDevice));
+        cudaSafeCall(cudaMemcpy2DToArray(ArrIm, 0, 0, image.getPtr<sl::uchar1>(sl::MEM::GPU), image.getStepBytes(sl::MEM::GPU), image.getPixelBytes()*image.getWidth(), image.getHeight(), cudaMemcpyDeviceToDevice));
         cudaSafeCall(cudaGraphicsUnmapResources(1, &cuda_gl_ressource, 0));
 
         mesh_object.pushToGPU();
@@ -364,11 +382,11 @@ void GLViewer::update() {
 sl::float3 getPlaneColor(sl::PLANE_TYPE type) {
     sl::float3 clr;
     switch(type) {
-    case sl::PLANE_TYPE_HORIZONTAL: clr = sl::float3(0.65f, 0.95f, 0.35f);
+    case sl::PLANE_TYPE::HORIZONTAL: clr = sl::float3(0.65f, 0.95f, 0.35f);
         break;
-    case sl::PLANE_TYPE_VERTICAL: clr = sl::float3(0.95f, 0.35f, 0.65f);
+    case sl::PLANE_TYPE::VERTICAL: clr = sl::float3(0.95f, 0.35f, 0.65f);
         break;
-    case sl::PLANE_TYPE_UNKNOWN: clr = sl::float3(0.35f, 0.65f, 0.95f);
+    case sl::PLANE_TYPE::UNKNOWN: clr = sl::float3(0.35f, 0.65f, 0.95f);
         break;
     default: break;
     }
@@ -402,7 +420,7 @@ void GLViewer::draw() {
         glUseProgram(0);
 
         // If the Positional tracking is good, we can draw the mesh over the current image
-        if((tracking_state == sl::TRACKING_STATE_OK)) {
+        if ((tracking_state == sl::POSITIONAL_TRACKING_STATE::OK)) {
             glDisable(GL_TEXTURE_2D);
             // Send the projection and the Pose to the GLSL shader to make the projection of the 2D image.
             sl::Transform vpMatrix = camera_projection * sl::Transform::inverse(pose);
@@ -466,7 +484,7 @@ void printGL(float x, float y, const char *string) {
 
 void GLViewer::printText() {
     if(available) {
-        if(tracking_state != sl::TRACKING_STATE_OK) {
+        if (tracking_state != sl::POSITIONAL_TRACKING_STATE::OK) {
             glColor4f(0.85f, 0.25f, 0.15f, 1.f);
             std::string state_str;
             std::string positional_tracking_state_str("POSITIONAL TRACKING STATE : ");
@@ -478,9 +496,9 @@ void GLViewer::printText() {
             printGL(-0.99f, 0.85f, "Press 'p' key to get plane at hit.");
         }
 
-        if(cam_model == sl::MODEL_ZED_M) {
+        if(cam_model == sl::MODEL::ZED_M) {
             float y_start = -0.99f;
-            for(int t = 0; t < sl::PLANE_TYPE_LAST; t++) {
+            for(int t = 0; t < static_cast<int>(sl::PLANE_TYPE::LAST); t++) {
                 sl::PLANE_TYPE type = static_cast<sl::PLANE_TYPE> (t);
                 sl::float3 clr = getPlaneColor(type);
                 glColor4f(clr.r, clr.g, clr.b, 1.f);

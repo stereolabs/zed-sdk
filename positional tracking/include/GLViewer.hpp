@@ -21,11 +21,19 @@
 
 #define SAFE_DELETE( res ) if( res!=NULL )  { delete res; res = NULL; }
 
-#define MOUSE_R_SENSITIVITY 0.015f
-#define MOUSE_UZ_SENSITIVITY 0.75f
-#define MOUSE_DZ_SENSITIVITY 1.25f
-#define MOUSE_T_SENSITIVITY 0.1f
-#define KEY_T_SENSITIVITY 0.1f
+#define MOUSE_R_SENSITIVITY 0.005f
+#define MOUSE_WHEEL_SENSITIVITY 0.065f
+#define MOUSE_T_SENSITIVITY 0.01f
+#define KEY_T_SENSITIVITY 0.01f
+
+
+
+//// UTILS //////
+using namespace std;
+void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, std::string msg_suffix = "") ;
+
+/////////////////
+
 
 class CameraGL {
 public:
@@ -81,6 +89,9 @@ private:
     sl::Translation vertical_;
 
     sl::Orientation rotation_;
+
+
+
 
     sl::Transform view_;
     sl::Transform vpMatrix_;
@@ -173,7 +184,7 @@ public:
     void exit();
     bool isAvailable();
     void init(int argc, char **argv, sl::MODEL camera_model);
-    void updateData(sl::Transform zed_rt, std::string str_t, std::string str_r, sl::TRACKING_STATE state);
+    void updateData(sl::Transform zed_rt, std::string str_t, std::string str_r, sl::POSITIONAL_TRACKING_STATE state);
 
 private:
     // Rendering loop method called each frame by glutDisplayFunc
@@ -229,7 +240,7 @@ private:
 
     std::string txtR;
     std::string txtT;
-    sl::TRACKING_STATE trackState;
+    sl::POSITIONAL_TRACKING_STATE trackState;
     const std::string str_tracking = "POSITIONAL TRACKING : ";
 
     sl::float3 bckgrnd_clr;

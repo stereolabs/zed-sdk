@@ -13,6 +13,24 @@
 
 #include <cuda_gl_interop.h>
 
+void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suffix) {
+    cout <<"[Sample]";
+    if (err_code != sl::ERROR_CODE::SUCCESS)
+        cout << "[Error] ";
+    else
+        cout<<" ";
+    cout << msg_prefix << " ";
+    if (err_code != sl::ERROR_CODE::SUCCESS) {
+        cout << " | " << toString(err_code) << " : ";
+        cout << toVerbose(err_code);
+    }
+    if (!msg_suffix.empty())
+        cout << " " << msg_suffix;
+    cout << endl;
+}
+
+
+
 GLchar* MESH_VERTEX_SHADER =
 "#version 330 core\n"
 "layout(location = 0) in vec3 in_Vertex;\n"
@@ -144,8 +162,8 @@ GLViewer* currentInstance_ = nullptr;
 GLViewer::GLViewer() :available(false) {
     currentInstance_ = this;
     pose.setIdentity();
-    tracking_state = sl::TRACKING_STATE_OFF;
-    mapping_state = sl::SPATIAL_MAPPING_STATE_NOT_ENABLED;
+    tracking_state = sl::POSITIONAL_TRACKING_STATE::OFF;
+    mapping_state = sl::SPATIAL_MAPPING_STATE::NOT_ENABLED;
     change_state = false;
     new_data = false;
 }
@@ -235,7 +253,7 @@ bool GLViewer::init(int argc, char **argv, sl::CameraParameters camLeft) {
 
     // Always check that our framebuffer is ok
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        std::cout << "invalid FrameBuffer" << std::endl;
+        print("Error : invalid FrameBuffer");
         return true;
     }
 
@@ -266,10 +284,10 @@ bool GLViewer::init(int argc, char **argv, sl::CameraParameters camLeft) {
     ask_clear = false;
     available = true;
     
-    image.alloc(camLeft.image_size, sl::MAT_TYPE_8U_C4, sl::MEM_GPU);
+    image.alloc(camLeft.image_size, sl::MAT_TYPE::U8_C4, sl::MEM::GPU);
     cudaSafeCall(cudaGetLastError());
 
-    // Create Projection Matrix for OpenGL. We will use this matrix in combination with the Pose (on REFERENCE_FRAME_WORLD) to project the mesh on the 2D Image.
+    // Create Projection Matrix for OpenGL. We will use this matrix in combination with the Pose (on REFERENCE_FRAME::WORLD) to project the mesh on the 2D Image.
     camera_projection(0, 0) = 1.0f / tanf(camLeft.h_fov * 3.1416f / 180.f * 0.5f);
     camera_projection(1, 1) = 1.0f / tanf(camLeft.v_fov * 3.1416f / 180.f * 0.5f);
     float znear = 0.001f;
@@ -312,10 +330,10 @@ void GLViewer::keyReleasedCallback(unsigned char c, int x, int y) {
         currentInstance_->exit();
 }
 
-bool GLViewer::updateImageAndState(sl::Mat &im, sl::Transform &pose_, sl::TRACKING_STATE track_state, sl::SPATIAL_MAPPING_STATE mapp_state) {
+bool GLViewer::updateImageAndState(sl::Mat &im, sl::Transform &pose_, sl::POSITIONAL_TRACKING_STATE track_state, sl::SPATIAL_MAPPING_STATE mapp_state) {
     if(mtx.try_lock()) {
         if(available) {
-            image.setFrom(im, sl::COPY_TYPE_GPU_GPU);
+            image.setFrom(im, sl::COPY_TYPE::GPU_GPU);
             cudaSafeCall(cudaGetLastError());
             pose = pose_;
             tracking_state = track_state;
@@ -347,7 +365,7 @@ void GLViewer::updateMap(T &map) {
             force_update = true;
         }
 
-        for(int c = 0; c < map.chunks.size(); c++) {
+        for (unsigned int c = 0; c < map.chunks.size(); c++) {
             // If the chunck has been updated by the spatial mapping, update it for rendering
             if(map.chunks[c].has_been_updated || force_update)
                 sub_maps[c].update(map.chunks[c]);
@@ -379,10 +397,10 @@ void GLViewer::update() {
         cudaArray_t ArrIm;
         cudaSafeCall(cudaGraphicsMapResources(1, &cuda_gl_ressource, 0));
         cudaSafeCall(cudaGraphicsSubResourceGetMappedArray(&ArrIm, cuda_gl_ressource, 0, 0));
-        cudaSafeCall(cudaMemcpy2DToArray(ArrIm, 0, 0, image.getPtr<sl::uchar1>(sl::MEM_GPU), image.getStepBytes(sl::MEM_GPU), image.getPixelBytes()*image.getWidth(), image.getHeight(), cudaMemcpyDeviceToDevice));
+        cudaSafeCall(cudaMemcpy2DToArray(ArrIm, 0, 0, image.getPtr<sl::uchar1>(sl::MEM::GPU), image.getStepBytes(sl::MEM::GPU), image.getPixelBytes()*image.getWidth(), image.getHeight(), cudaMemcpyDeviceToDevice));
         cudaSafeCall(cudaGraphicsUnmapResources(1, &cuda_gl_ressource, 0));
-        
-        for(int c = 0; c < sub_maps.size(); c++)
+
+        for (unsigned int c = 0; c < sub_maps.size(); c++)
             sub_maps[c].pushToGPU();
 
         new_data = false;
@@ -392,7 +410,7 @@ void GLViewer::update() {
 void GLViewer::printText() {
     if(available) {
         // Show actions
-        if(mapping_state == sl::SPATIAL_MAPPING_STATE_NOT_ENABLED) {
+        if(mapping_state == sl::SPATIAL_MAPPING_STATE::NOT_ENABLED) {
             glColor4f(0.15f, 0.15f, 0.15f, 1.f);
             printGL(-0.99f, 0.9f, "Hit Space Bar to activate Spatial Mapping.");
         } else {
@@ -404,21 +422,21 @@ void GLViewer::printText() {
         std::string spatial_mapping_state_str("SPATIAL MAPPING STATE : ");
         std::string state_str;
         // Show mapping state
-        if((tracking_state == sl::TRACKING_STATE_OK)) {
-            if(mapping_state == sl::SPATIAL_MAPPING_STATE_OK || mapping_state == sl::SPATIAL_MAPPING_STATE_INITIALIZING)
+        if ((tracking_state == sl::POSITIONAL_TRACKING_STATE::OK)) {
+            if(mapping_state == sl::SPATIAL_MAPPING_STATE::OK || mapping_state == sl::SPATIAL_MAPPING_STATE::INITIALIZING)
                 glColor4f(0.25f, 0.99f, 0.25f, 1.f);
-            else if(mapping_state == sl::SPATIAL_MAPPING_STATE_NOT_ENABLED)
+            else if(mapping_state == sl::SPATIAL_MAPPING_STATE::NOT_ENABLED)
                 glColor4f(0.55f, 0.65f, 0.55f, 1.f);
             else
                 glColor4f(0.95f, 0.25f, 0.25f, 1.f);
             state_str = spatial_mapping_state_str + sl::toString(mapping_state).c_str();
         } else {
-            if(mapping_state != sl::SPATIAL_MAPPING_STATE_NOT_ENABLED) {
+            if(mapping_state != sl::SPATIAL_MAPPING_STATE::NOT_ENABLED) {
                 glColor4f(0.95f, 0.25f, 0.25f, 1.f);
                 state_str = positional_tracking_state_str + sl::toString(tracking_state).c_str();
             } else {
                 glColor4f(0.55f, 0.65f, 0.55f, 1.f);
-                state_str = spatial_mapping_state_str + sl::toString(sl::SPATIAL_MAPPING_STATE_NOT_ENABLED).c_str();
+                state_str = spatial_mapping_state_str + sl::toString(sl::SPATIAL_MAPPING_STATE::NOT_ENABLED).c_str();
             }
         }
         printGL(-0.99f, 0.83f, state_str.c_str());
@@ -452,7 +470,7 @@ void GLViewer::draw() {
         glUseProgram(0);
 
         // If the Positional tracking is good, we can draw the mesh over the current image
-        if((tracking_state == sl::TRACKING_STATE_OK) && sub_maps.size()) {
+        if ((tracking_state == sl::POSITIONAL_TRACKING_STATE::OK) && sub_maps.size()) {
             glLineWidth(1.f);
             glPointSize(4.f);
             glDisable(GL_TEXTURE_2D);
@@ -465,7 +483,7 @@ void GLViewer::draw() {
             // Draw the mesh in GL_TRIANGLES with a polygon mode in line (wire)
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-            for(int c = 0; c < sub_maps.size(); c++)
+            for (unsigned int c = 0; c < sub_maps.size(); c++)
                 sub_maps[c].draw();
 
             glUseProgram(0);

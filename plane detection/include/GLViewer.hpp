@@ -8,6 +8,16 @@
 
 #include <mutex>
 
+//// UTILS //////
+using namespace std;
+
+
+//// UTILS //////
+using namespace std;
+void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, std::string msg_suffix = "") ;
+
+/////////////////
+
 struct UserAction {
     bool press_space;
     bool hit;
@@ -60,8 +70,8 @@ public:
     GLViewer();
     ~GLViewer();
     bool isAvailable();
-    bool init(int argc, char **argv, sl::CameraParameters, sl::MODEL cam_model);
-    UserAction updateImageAndState(sl::Mat &image, sl::Transform &pose, sl::TRACKING_STATE track_state);
+    bool init(int argc, char **argv, sl::CameraInformation &cam_infos);
+    UserAction updateImageAndState(sl::Mat &image, sl::Transform &pose, sl::POSITIONAL_TRACKING_STATE track_state);
     void updateMesh(sl::Mesh &mesh, sl::PLANE_TYPE type);
     
     void exit();
@@ -91,7 +101,7 @@ private:
     
     sl::Mat image;
     sl::Transform pose;
-    sl::TRACKING_STATE tracking_state;
+    sl::POSITIONAL_TRACKING_STATE tracking_state;
     sl::MODEL cam_model;
     UserAction user_action;
 

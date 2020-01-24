@@ -46,7 +46,7 @@ Camera zed;
 
 // Set configuration parameters
 InitParameters init_params;
-init_params.camera_resolution = RESOLUTION_HD1080 ;
+init_params.camera_resolution = RESOLUTION::HD1080 ;
 init_params.camera_fps = 30 ;
 ```
 
@@ -57,7 +57,7 @@ Once initial configuration is done, open the camera.
 ```cpp
 // Open the camera
 err = zed.open(init_params);
-if (err != SUCCESS)
+if (err != ERROR_CODE::SUCCESS)
     exit(-1);
 ```
 

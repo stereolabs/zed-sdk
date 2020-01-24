@@ -61,11 +61,13 @@ void mouseButtonCallback(int button, int state, int x, int y) {
     if (button == 0 && state) {
         // Get the depth at the mouse click point
         float depth_focus_point = 0.f;
-        gpu_depth.getValue<sl::float1>(x, y, &depth_focus_point, MEM_GPU);
+        float max_range = zed.getInitParameters().depth_maximum_distance;
+        float min_range = zed.getInitParameters().depth_minimum_distance;
+        gpu_depth.getValue<sl::float1>(x, y, &depth_focus_point, MEM::GPU);
         // Check that the value is valid
         if (isValidMeasure(depth_focus_point)) {
             cout << " Focus point set at : " << depth_focus_point << "mm {" << x << "," << y << "}" << endl;
-            norm_depth_focus_point = (zed.getDepthMaxRangeValue() - depth_focus_point) / (zed.getDepthMaxRangeValue() - zed.getDepthMinRangeValue());
+            norm_depth_focus_point = (max_range - depth_focus_point) / (max_range - min_range);
             norm_depth_focus_point = norm_depth_focus_point > 1.f ? 1.f : (norm_depth_focus_point < 0.f ? 0.f : norm_depth_focus_point);
         }
     }
@@ -73,24 +75,28 @@ void mouseButtonCallback(int button, int state, int x, int y) {
 
 void draw() {
     RuntimeParameters params;
-    params.sensing_mode = SENSING_MODE_FILL;
+    params.sensing_mode = SENSING_MODE::FILL;
 
-    if (zed.grab(params) == SUCCESS) {
+    if (zed.grab(params) == ERROR_CODE::SUCCESS) {
         // Retrieve Image and Depth
-        zed.retrieveImage(gpu_image_left, VIEW_LEFT, MEM_GPU);
-        zed.retrieveMeasure(gpu_depth, MEASURE_DEPTH, MEM_GPU);
+        zed.retrieveImage(gpu_image_left, VIEW::LEFT, MEM::GPU);
+        zed.retrieveMeasure(gpu_depth, MEASURE::DEPTH, MEM::GPU);
 
         // Process Image with CUDA
         // Normalize the depth map and make separable convolution
-        normalizeDepth(gpu_depth.getPtr<float>(MEM_GPU), gpu_depth_normalized.getPtr<float>(MEM_GPU), gpu_depth.getStep(MEM_GPU), zed.getDepthMinRangeValue(), zed.getDepthMaxRangeValue(), gpu_depth.getWidth(), gpu_depth.getHeight());
-        convolutionRows(gpu_image_convol.getPtr<sl::uchar4>(MEM_GPU), gpu_image_left.getPtr<sl::uchar4>(MEM_GPU), gpu_depth_normalized.getPtr<float>(MEM_GPU), gpu_image_left.getWidth(), gpu_image_left.getHeight(), gpu_depth_normalized.getStep(MEM_GPU), norm_depth_focus_point);
-        convolutionColumns(gpu_Image_render.getPtr<sl::uchar4>(MEM_GPU), gpu_image_convol.getPtr<sl::uchar4>(MEM_GPU), gpu_depth_normalized.getPtr<float>(MEM_GPU), gpu_image_left.getWidth(), gpu_image_left.getHeight(), gpu_depth_normalized.getStep(MEM_GPU), norm_depth_focus_point);
+        float max_range = zed.getInitParameters().depth_maximum_distance;
+        float min_range = zed.getInitParameters().depth_minimum_distance;
+
+
+        normalizeDepth(gpu_depth.getPtr<float>(MEM::GPU), gpu_depth_normalized.getPtr<float>(MEM::GPU), gpu_depth.getStep(MEM::GPU), min_range, max_range, gpu_depth.getWidth(), gpu_depth.getHeight());
+        convolutionRows(gpu_image_convol.getPtr<sl::uchar4>(MEM::GPU), gpu_image_left.getPtr<sl::uchar4>(MEM::GPU), gpu_depth_normalized.getPtr<float>(MEM::GPU), gpu_image_left.getWidth(), gpu_image_left.getHeight(), gpu_depth_normalized.getStep(MEM::GPU), norm_depth_focus_point);
+        convolutionColumns(gpu_Image_render.getPtr<sl::uchar4>(MEM::GPU), gpu_image_convol.getPtr<sl::uchar4>(MEM::GPU), gpu_depth_normalized.getPtr<float>(MEM::GPU), gpu_image_left.getWidth(), gpu_image_left.getHeight(), gpu_depth_normalized.getStep(MEM::GPU), norm_depth_focus_point);
 
         // Map to OpenGL and display
         cudaArray_t ArrIm;
         cudaGraphicsMapResources(1, &pcuImageRes, 0);
         cudaGraphicsSubResourceGetMappedArray(&ArrIm, pcuImageRes, 0, 0);
-        cudaMemcpy2DToArray(ArrIm, 0, 0, gpu_Image_render.getPtr<sl::uchar4>(MEM_GPU), gpu_Image_render.getStepBytes(MEM_GPU), gpu_Image_render.getWidth() * sizeof(sl::uchar4), gpu_Image_render.getHeight(), cudaMemcpyDeviceToDevice);
+        cudaMemcpy2DToArray(ArrIm, 0, 0, gpu_Image_render.getPtr<sl::uchar4>(MEM::GPU), gpu_Image_render.getStepBytes(MEM::GPU), gpu_Image_render.getWidth() * sizeof(sl::uchar4), gpu_Image_render.getHeight(), cudaMemcpyDeviceToDevice);
         cudaGraphicsUnmapResources(1, &pcuImageRes, 0);
 
         //OpenGL Part
@@ -138,21 +144,22 @@ int main(int argc, char **argv) {
 
     // Initialisation of the ZED camera
     InitParameters parameters;
-    parameters.depth_mode = DEPTH_MODE_PERFORMANCE;
-    parameters.camera_resolution = RESOLUTION_HD720;
-    parameters.coordinate_units = UNIT_MILLIMETER;
+    parameters.depth_mode = DEPTH_MODE::PERFORMANCE;
+    parameters.camera_resolution = RESOLUTION::HD720;
+    parameters.coordinate_units = UNIT::MILLIMETER;
     parameters.depth_minimum_distance = 400.0f;
 
     ERROR_CODE err = zed.open(parameters);
-    if (err != SUCCESS) {
+    if (err != ERROR_CODE::SUCCESS) {
         cout << "ZED Err on open : " << toString(err) << endl;
         zed.close();
         return -1;
     }
 
     // Get Image Size
-    int image_width_ = zed.getResolution().width;
-    int image_height_ = zed.getResolution().height;
+    sl::Resolution camera_resolution_ = zed.getCameraInformation().camera_resolution;
+    int image_width_ = camera_resolution_.width;
+    int image_height_ = camera_resolution_.height;
 
     cudaError_t err1;
 
@@ -170,11 +177,11 @@ int main(int argc, char **argv) {
     glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
 
     // Alloc Mat and tmp buffer
-    gpu_image_left.alloc(zed.getResolution(), MAT_TYPE_8U_C4, MEM_GPU);
-    gpu_Image_render.alloc(zed.getResolution(), MAT_TYPE_8U_C4, MEM_GPU);
-    gpu_depth.alloc(zed.getResolution(), MAT_TYPE_32F_C1, MEM_GPU);
-    gpu_depth_normalized.alloc(zed.getResolution(), MAT_TYPE_32F_C1, MEM_GPU);
-    gpu_image_convol.alloc(zed.getResolution(), MAT_TYPE_8U_C4, MEM_GPU);
+    gpu_image_left.alloc(camera_resolution_, MAT_TYPE::U8_C4, MEM::GPU);
+    gpu_Image_render.alloc(camera_resolution_, MAT_TYPE::U8_C4, MEM::GPU);
+    gpu_depth.alloc(camera_resolution_, MAT_TYPE::F32_C1, MEM::GPU);
+    gpu_depth_normalized.alloc(camera_resolution_, MAT_TYPE::F32_C1, MEM::GPU);
+    gpu_image_convol.alloc(camera_resolution_, MAT_TYPE::U8_C4, MEM::GPU);
 
     vector<float> gauss_vec;
     // Create all the gaussien kernel for different radius and copy them to GPU

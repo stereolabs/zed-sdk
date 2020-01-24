@@ -42,13 +42,13 @@ Camera zed;
 
 // Set configuration parameters
 InitParameters init_params;
-init_params.camera_resolution = RESOLUTION_HD720; // Use HD720 video mode (default fps: 60)
-init_params.coordinate_system = COORDINATE_SYSTEM_RIGHT_HANDED_Y_UP; // Use a right-handed Y-up coordinate system
-init_params.coordinate_units = UNIT_METER; // Set units in meters
+init_params.camera_resolution = RESOLUTION::HD720; // Use HD720 video mode (default fps: 60)
+init_params.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // Use a right-handed Y-up coordinate system
+init_params.coordinate_units = UNIT::METER; // Set units in meters
 
 // Open the camera
 ERROR_CODE err = zed.open(init_params);
-if (err != SUCCESS)
+if (err != ERROR_CODE::SUCCESS)
     exit(-1);
 ```
 
@@ -58,9 +58,9 @@ Once the camera is opened, we must enable the positional tracking module in orde
 
 ```c++
 // Enable positional tracking with default parameters
-sl::TrackingParameters tracking_parameters;
-err = zed.enableTracking(tracking_parameters);
-if (err != SUCCESS)
+sl::PositionalTrackingParameters tracking_parameters;
+err = zed.enablePositionalTracking(tracking_parameters);
+if (err != ERROR_CODE::SUCCESS)
     exit(-1);
 ```
 
@@ -71,7 +71,7 @@ In the above example, we leave the default tracking parameters. For the list of 
 Now that the ZED is opened and the positional tracking enabled, we create a loop to grab and retrieve the camera position.
 
 The camera position is given by the class sl::Pose. This class contains the translation and orientation of the camera, as well as image timestamp and tracking confidence (quality).<br/>
-A pose is always linked to a reference frame. The SDK provides two reference frame : REFERENCE_FRAME_WORLD and REFERENCE_FRAME_CAMERA.<br/> It is not the purpose of this tutorial to go into the details of these reference frame. Read the documentation for more information.<br/>
+A pose is always linked to a reference frame. The SDK provides two reference frame : REFERENCE_FRAME::WORLD and REFERENCE_FRAME::CAMERA.<br/> It is not the purpose of this tutorial to go into the details of these reference frame. Read the documentation for more information.<br/>
 In the example, we get the device position in the World Frame.
 
 ```c++
@@ -79,9 +79,9 @@ In the example, we get the device position in the World Frame.
 int i = 0;
 sl::Pose zed_pose;
 while (i < 1000) {
-    if (zed.grab() == SUCCESS) {
+    if (zed.grab() == ERROR_CODE::SUCCESS) {
 
-        zed.getPosition(zed_pose, REFERENCE_FRAME_WORLD); // Get the pose of the left eye of the camera with reference to the world frame
+        zed.getPosition(zed_pose, REFERENCE_FRAME::WORLD); // Get the pose of the left eye of the camera with reference to the world frame
 
         // Display the translation and timestamp
         printf("Translation: Tx: %.3f, Ty: %.3f, Tz: %.3f, Timestamp: %llu\n", zed_pose.getTranslation().tx, zed_pose.getTranslation().ty, zed_pose.getTranslation().tz, zed_pose.timestamp);
@@ -99,7 +99,7 @@ while (i < 1000) {
 If a ZED Mini is open, we can have access to the inertial data from the integrated IMU
 
 ```c++
-bool zed_mini = (zed.getCameraInformation().camera_model == MODEL_ZED_M);
+bool zed_mini = (zed.getCameraInformation().camera_model == MODEL::ZED_M);
 ```
 
 First, we test that the opened camera is a ZED Mini, then, we display some useful IMU data, such as the quaternion and the linear acceleration.
@@ -108,7 +108,7 @@ First, we test that the opened camera is a ZED Mini, then, we display some usefu
 if (zed_mini) { // Display IMU data
 
     // Get IMU data
-    zed.getIMUData(imu_data, TIME_REFERENCE_IMAGE); // Get the data
+    zed.getIMUData(imu_data, TIME_REFERENCE::IMAGE); // Get the data
 
     // Filtered orientation quaternion
     printf("IMU Orientation: Ox: %.3f, Oy: %.3f, Oz: %.3f, Ow: %.3f\n", imu_data.getOrientation().ox,
@@ -123,7 +123,7 @@ This will loop until the ZED has been tracked during 1000 frames. We display the
 
 ```
 // Disable positional tracking and close the camera
-zed.disableTracking();
+zed.disablePositionalTracking();
 zed.close();
 return 0;
 ```

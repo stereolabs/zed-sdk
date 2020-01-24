@@ -1,5 +1,8 @@
-#ifndef __SIMPLE3DOBJECT_INCLUDE__
-#define __SIMPLE3DOBJECT_INCLUDE__
+#pragma once
+
+
+#ifndef __SIMPLE3DOBJECT_INCLUDE_H_
+#define __SIMPLE3DOBJECT_INCLUDE_H_
 
 #include <sl/Camera.hpp>
 
@@ -7,6 +10,13 @@
 #include <GL/freeglut.h>
 
 #include <mutex>
+
+//// UTILS //////
+using namespace std;
+void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, std::string msg_suffix = "") ;
+
+/////////////////
+
 
 class Shader{
 public:
@@ -50,7 +60,7 @@ public:
     ~GLViewer();
     bool isAvailable();
     bool init(int argc, char **argv, sl::CameraParameters);
-    bool updateImageAndState(sl::Mat &image,  sl::Transform &pose, sl::TRACKING_STATE track_state, sl::SPATIAL_MAPPING_STATE mapp_state);
+    bool updateImageAndState(sl::Mat &image,  sl::Transform &pose, sl::POSITIONAL_TRACKING_STATE track_state, sl::SPATIAL_MAPPING_STATE mapp_state);
 
     template<typename T>
     void updateMap(T &map);
@@ -87,7 +97,7 @@ private:
 
     sl::Mat image;
     sl::Transform pose;
-    sl::TRACKING_STATE tracking_state;
+    sl::POSITIONAL_TRACKING_STATE tracking_state;
     sl::SPATIAL_MAPPING_STATE mapping_state;
 
     bool new_data;

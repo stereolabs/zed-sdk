@@ -43,65 +43,70 @@ using namespace sl;
 void updateCameraSettings(char key, sl::Camera &zed);
 void switchCameraSettings();
 void printHelp();
+void print(std::string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, std::string msg_suffix = "");
+void parseArgs(int argc, char **argv,sl::InitParameters& param);
 
 // Sample variables
-CAMERA_SETTINGS camera_settings_ = CAMERA_SETTINGS_BRIGHTNESS;
+VIDEO_SETTINGS camera_settings_ = VIDEO_SETTINGS::BRIGHTNESS;
 string str_camera_settings = "BRIGHTNESS";
 int step_camera_setting = 1;
+bool led_on = true;
 
 
 int main(int argc, char **argv) {
-
     // Create a ZED Camera object
     Camera zed;
 
     sl::InitParameters param;
-    param.camera_resolution= sl::RESOLUTION_HD720;
+    param.sdk_verbose = true;
+    param.camera_resolution= sl::RESOLUTION::HD2K;
+    parseArgs(argc,argv,param);
 
     // Open the camera
     ERROR_CODE err = zed.open(param);
-    if (err != SUCCESS) {
-        cout << toString(err) << endl;
+    if (err != ERROR_CODE::SUCCESS) {
+        print("Opening ZED : ",err);
         zed.close();
         return 1; // Quit if an error occurred
     }
-
+    
+    // Print camera information
+    auto camera_info = zed.getCameraInformation();
+    printf("\n");
+    printf("ZED Model                 : %s\n", toString(camera_info.camera_model).c_str());
+    printf("ZED Serial Number         : %d\n", camera_info.serial_number);
+    printf("ZED Camera Firmware       : %d-%d\n", camera_info.camera_firmware_version,camera_info.sensors_firmware_version);
+    printf("ZED Camera Resolution     : %dx%d\n", (int) camera_info.camera_resolution.width, (int) camera_info.camera_resolution.height);
+    printf("ZED Camera FPS            : %d\n", (int) zed.getInitParameters().camera_fps);
+    
     // Print help in console
     printHelp();
-
-    // Print camera information
-    printf("ZED Model                 : %s\n", toString(zed.getCameraInformation().camera_model).c_str());
-    printf("ZED Serial Number         : %d\n", zed.getCameraInformation().serial_number);
-    printf("ZED Firmware              : %d\n", zed.getCameraInformation().firmware_version);
-    printf("ZED Camera Resolution     : %dx%d\n", (int) zed.getResolution().width, (int) zed.getResolution().height);
-    printf("ZED Camera FPS            : %d\n", (int) zed.getCameraFPS());
 
     // Create a Mat to store images
     Mat zed_image;
 
+    // Initialise camera setting
+    switchCameraSettings();
+
     // Capture new images until 'q' is pressed
     char key = ' ';
-    int fc = 0;
     while (key != 'q') {
         // Check that grab() is successful
-        if (zed.grab() == SUCCESS) {
+        err = zed.grab();
+        if ( err == ERROR_CODE::SUCCESS) {
             // Retrieve left image
-            zed.retrieveImage(zed_image, VIEW_LEFT);
+            zed.retrieveImage(zed_image, VIEW::LEFT);
 
             // Display image with OpenCV
-            cv::imshow("VIEW", cv::Mat((int) zed_image.getHeight(), (int) zed_image.getWidth(), CV_8UC4, zed_image.getPtr<sl::uchar1>(sl::MEM_CPU)));
-            key = cv::waitKey(10);
-
-            // Change camera settings with keyboard
-            updateCameraSettings(key, zed);
-
-            fc++;
-
+            cv::imshow("VIEW", cv::Mat((int) zed_image.getHeight(), (int) zed_image.getWidth(), CV_8UC4, zed_image.getPtr<sl::uchar1>(sl::MEM::CPU)));           
+        }else {
+            print("Error during capture : ",err);
+            break;
         }
-        else
-        {
-            key = cv::waitKey(20);
-        }
+        
+        key = cv::waitKey(10);
+        // Change camera settings with keyboard
+        updateCameraSettings(key, zed);        
     }
 
     // Exit
@@ -121,47 +126,35 @@ void updateCameraSettings(char key, sl::Camera &zed) {
         // Switch to the next camera parameter
         case 's':
         switchCameraSettings();
+        current_value = zed.getCameraSettings(camera_settings_);
         break;
 
         // Increase camera settings value ('+' key)
         case '+':
-		{
-			current_value = zed.getCameraSettings(camera_settings_);
-			zed.setCameraSettings(camera_settings_, current_value + step_camera_setting);
-			std::cout << str_camera_settings << ": " << zed.getCameraSettings(camera_settings_) << std::endl;
-		}
+		current_value = zed.getCameraSettings(camera_settings_);
+		zed.setCameraSettings(camera_settings_, current_value + step_camera_setting);
+        print(str_camera_settings+": "+std::to_string(zed.getCameraSettings(camera_settings_)));
         break;
 
         // Decrease camera settings value ('-' key)
         case '-':
-			current_value = zed.getCameraSettings(camera_settings_);
-			if (current_value >= 1) {
-				zed.setCameraSettings(camera_settings_, current_value - step_camera_setting);
-				std::cout << str_camera_settings << ": " << zed.getCameraSettings(camera_settings_) << std::endl;
-			}
+		current_value = zed.getCameraSettings(camera_settings_);
+        current_value = current_value > 0 ? current_value - step_camera_setting : 0; // take care of the 'default' value parameter:  VIDEO_SETTINGS_VALUE_AUTO
+        zed.setCameraSettings(camera_settings_, current_value);
+        print(str_camera_settings+": "+std::to_string(zed.getCameraSettings(camera_settings_)));
         break;
 
         //switch LED On :
-        case 'e':
-        zed.setCameraSettings(sl::CAMERA_SETTINGS_LED_STATUS,1);
+        case 'l':
+        led_on = !led_on;
+        zed.setCameraSettings(sl::VIDEO_SETTINGS::LED_STATUS, led_on);
         break;
-
-        //switch LED Off :
-        case 'd':
-        zed.setCameraSettings(sl::CAMERA_SETTINGS_LED_STATUS,0);
-        break;
-
 
         // Reset to default parameters
         case 'r':
-        std::cout << "Reset all settings to default" << std::endl;
-        zed.setCameraSettings(sl::CAMERA_SETTINGS_BRIGHTNESS, -1, true);
-        zed.setCameraSettings(sl::CAMERA_SETTINGS_CONTRAST, -1, true);
-        zed.setCameraSettings(sl::CAMERA_SETTINGS_HUE, -1, true);
-        zed.setCameraSettings(sl::CAMERA_SETTINGS_SATURATION, -1, true);
-        zed.setCameraSettings(sl::CAMERA_SETTINGS_GAIN, -1, true);
-        zed.setCameraSettings(sl::CAMERA_SETTINGS_EXPOSURE, -1, true);
-        zed.setCameraSettings(sl::CAMERA_SETTINGS_WHITEBALANCE, -1, true);
+        print("Reset all settings to default");
+        for(int s = (int)VIDEO_SETTINGS::BRIGHTNESS; s <= (int)VIDEO_SETTINGS::WHITEBALANCE_TEMPERATURE; s++)
+            zed.setCameraSettings(static_cast<VIDEO_SETTINGS>(s), sl::VIDEO_SETTINGS_VALUE_AUTO);
         break;
     }
 }
@@ -170,67 +163,83 @@ void updateCameraSettings(char key, sl::Camera &zed) {
     This function toggles between camera settings
  **/
 void switchCameraSettings() {
-    step_camera_setting = 1;
-    switch (camera_settings_) {
-        case CAMERA_SETTINGS_BRIGHTNESS:
-        camera_settings_ = CAMERA_SETTINGS_CONTRAST;
-        str_camera_settings = "Contrast";
-        std::cout << "Camera Settings: CONTRAST" << std::endl;
-        break;
+    camera_settings_ = static_cast<VIDEO_SETTINGS>((int)camera_settings_ + 1);
 
-        case CAMERA_SETTINGS_CONTRAST:
-        camera_settings_ = CAMERA_SETTINGS_HUE;
-        str_camera_settings = "Hue";
-        std::cout << "Camera Settings: HUE" << std::endl;
-        break;
+    // reset to 1st setting
+    if (camera_settings_ == VIDEO_SETTINGS::LED_STATUS)
+        camera_settings_ = VIDEO_SETTINGS::BRIGHTNESS;
+    
+    // select the right step
+    step_camera_setting = (camera_settings_ == VIDEO_SETTINGS::WHITEBALANCE_TEMPERATURE) ? 100 : 1;
 
-        case CAMERA_SETTINGS_HUE:
-        camera_settings_ = CAMERA_SETTINGS_SATURATION;
-        str_camera_settings = "Saturation";
-        std::cout << "Camera Settings: SATURATION" << std::endl;
-        break;
-
-        case CAMERA_SETTINGS_SATURATION:
-        camera_settings_ = CAMERA_SETTINGS_GAIN;
-        str_camera_settings = "Gain";
-        std::cout << "Camera Settings: GAIN" << std::endl;
-        break;
-
-        case CAMERA_SETTINGS_GAIN:
-        camera_settings_ = CAMERA_SETTINGS_EXPOSURE;
-        str_camera_settings = "Exposure";
-        std::cout << "Camera Settings: EXPOSURE" << std::endl;
-        break;
-
-        case CAMERA_SETTINGS_EXPOSURE:
-        camera_settings_ = CAMERA_SETTINGS_WHITEBALANCE;
-        str_camera_settings = "White Balance";
-        step_camera_setting = 100;
-        std::cout << "Camera Settings: WHITE BALANCE" << std::endl;
-        break;
-
-        case CAMERA_SETTINGS_WHITEBALANCE:
-        camera_settings_ = CAMERA_SETTINGS_BRIGHTNESS;
-        str_camera_settings = "Brightness";
-        std::cout << "Camera Settings: BRIGHTNESS" << std::endl;
-        break;
-    }
+    // get the name of the selected SETTING
+    str_camera_settings = string(sl::toString(camera_settings_).c_str());
+    
+    print("Switch to camera settings: ",ERROR_CODE::SUCCESS,str_camera_settings);
 }
 
 /**
     This function displays help
  **/
 void printHelp() {
+    cout << "\n\nCamera controls hotkeys:\n";
+    cout << "* Increase camera settings value:  '+'\n";
+    cout << "* Decrease camera settings value:  '-'\n";
+    cout << "* Toggle camera settings:          's'\n";
+    cout << "* Toggle camera LED:               'l' (lower L)\n";
+    cout << "* Reset all parameters:            'r'\n";
+    cout << "* Exit :                           'q'\n\n";
+}
+
+void print(std::string msg_prefix, ERROR_CODE err_code, std::string msg_suffix) {
+    cout <<"[Sample]";
+    if (err_code != ERROR_CODE::SUCCESS)
+        cout << "[Error] ";
+    else
+        cout<<" ";
+    cout << msg_prefix << " ";
+    if (err_code != ERROR_CODE::SUCCESS) {
+        cout << " | " << toString(err_code) << " : ";
+        cout << toVerbose(err_code);
+    }
+    if (!msg_suffix.empty())
+        cout << " " << msg_suffix;
     cout << endl;
-    cout << endl;
-    cout << "Camera controls hotkeys: " << endl;
-    cout << "  Increase camera settings value:            '+'" << endl;
-    cout << "  Decrease camera settings value:            '-'" << endl;
-    cout << "  Toggle camera settings:                    's'" << endl;
-    cout << "  Reset all parameters:                      'r'" << endl;
-    cout << endl;
-    cout << "Exit : 'q'" << endl;
-    cout << endl;
-    cout << endl;
-    cout << endl;
+}
+
+void parseArgs(int argc, char **argv,sl::InitParameters& param)
+{
+    if (argc > 1 && string(argv[1]).find(".svo")!=string::npos) {
+        // SVO input mode not available in camera control
+	std::cout<<"SVO Input mode is not available for camera control sample"<<std::endl;
+    } else if (argc > 1 && string(argv[1]).find(".svo")==string::npos) {
+        string arg = string(argv[1]);
+        unsigned int a,b,c,d,port;
+        if (sscanf(arg.c_str(),"%u.%u.%u.%u:%d", &a, &b, &c, &d,&port) == 5) {
+            // Stream input mode - IP + port
+            string ip_adress = to_string(a)+"."+to_string(b)+"."+to_string(c)+"."+to_string(d);
+            param.input.setFromStream(sl::String(ip_adress.c_str()),port);
+            cout<<"[Sample] Using Stream input, IP : "<<ip_adress<<", port : "<<port<<endl;
+        }
+        else  if (sscanf(arg.c_str(),"%u.%u.%u.%u", &a, &b, &c, &d) == 4) {
+            // Stream input mode - IP only
+            param.input.setFromStream(sl::String(argv[1]));
+            cout<<"[Sample] Using Stream input, IP : "<<argv[1]<<endl;
+        }
+        else if (arg.find("HD2K")!=string::npos) {
+            param.camera_resolution = sl::RESOLUTION::HD2K;
+            cout<<"[Sample] Using Camera in resolution HD2K"<<endl;
+        } else if (arg.find("HD1080")!=string::npos) {
+            param.camera_resolution = sl::RESOLUTION::HD1080;
+            cout<<"[Sample] Using Camera in resolution HD1080"<<endl;
+        } else if (arg.find("HD720")!=string::npos) {
+            param.camera_resolution = sl::RESOLUTION::HD720;
+            cout<<"[Sample] Using Camera in resolution HD720"<<endl;
+        } else if (arg.find("VGA")!=string::npos) {
+            param.camera_resolution = sl::RESOLUTION::VGA;
+            cout<<"[Sample] Using Camera in resolution VGA"<<endl;
+        }
+    } else {
+        // Default
+    }
 }

@@ -16,7 +16,7 @@ endif(COMMAND cmake_policy)
 SET(EXECUTABLE_OUTPUT_PATH ".")
 SET(SPECIAL_OS_LIBS "")
  
-find_package(ZED 2 REQUIRED)
+find_package(ZED 3 REQUIRED)
 find_package(GLUT REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(OpenGL REQUIRED)
@@ -45,10 +45,10 @@ FILE(GLOB_RECURSE SRC_FILES src/*.cpp)
 FILE(GLOB_RECURSE HDR_FILES include/*.hpp)
 
 ADD_EXECUTABLE(${execName} ${HDR_FILES} ${SRC_FILES})
-add_definitions(-std=c++11 -g -O3 )
+add_definitions(-std=c++14 -g -O3 )
 
 if (LINK_SHARED_ZED)
-    SET(ZED_LIBS ${ZED_LIBRARIES} ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_NPP_LIBRARIES_ZED})
+    SET(ZED_LIBS ${ZED_LIBRARIES} ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY})
 else()
     SET(ZED_LIBS ${ZED_STATIC_LIBRARIES} ${CUDA_CUDA_LIBRARY} ${CUDA_LIBRARY})
 endif()
@@ -58,4 +58,4 @@ TARGET_LINK_LIBRARIES(${execName}
                         ${ZED_LIBS} 
                         ${OPENGL_LIBRARIES}
                         ${GLUT_LIBRARY}
-                        ${GLEW_LIBRARY})
+                        ${GLEW_LIBRARIES})

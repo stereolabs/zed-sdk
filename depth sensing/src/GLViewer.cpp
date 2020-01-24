@@ -1,5 +1,26 @@
 #include "GLViewer.hpp"
 
+
+
+
+void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suffix) {
+    cout <<"[Sample]";
+    if (err_code != sl::ERROR_CODE::SUCCESS)
+        cout << "[Error] ";
+    else
+        cout<<" ";
+    cout << msg_prefix << " ";
+    if (err_code != sl::ERROR_CODE::SUCCESS) {
+        cout << " | " << toString(err_code) << " : ";
+        cout << toVerbose(err_code);
+    }
+    if (!msg_suffix.empty())
+        cout << " " << msg_suffix;
+    cout << endl;
+}
+
+
+
 GLchar* VERTEX_SHADER =
 "#version 330 core\n"
 "layout(location = 0) in vec3 in_Vertex;\n"
@@ -32,7 +53,7 @@ GLViewer::~GLViewer() {}
 
 void GLViewer::exit() {
     if (currentInstance_) {
-        pointCloud_.close();
+        //pointCloud_.close();
         available = false;
     }
 }
@@ -82,9 +103,9 @@ Simple3DObject createFrustum(sl::CameraParameters param) {
     return it;
 }
 
-void CloseFunc(void) { if(currentInstance_) currentInstance_->exit(); }
+void CloseFunc(void) { if(currentInstance_)  currentInstance_->exit();}
 
-void GLViewer::init(int argc, char **argv, sl::CameraParameters param) {
+GLenum GLViewer::init(int argc, char **argv, sl::CameraParameters param) {
 
     glutInit(&argc, argv);
     int wnd_w = glutGet(GLUT_SCREEN_WIDTH);
@@ -96,7 +117,8 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters param) {
 
     GLenum err = glewInit();
     if (GLEW_OK != err)
-        std::cout << "ERROR: glewInit failed: " << glewGetErrorString(err) << "\n";
+        return err;
+
 
     glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
     glEnable(GL_DEPTH_TEST);
@@ -127,6 +149,7 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters param) {
     glutCloseFunc(CloseFunc);
 
     available = true;
+    return err;
 }
 
 void GLViewer::render() {
@@ -150,6 +173,7 @@ void GLViewer::updatePointCloud(sl::Mat &matXYZRGBA) {
 
 void GLViewer::update() {
     if (keyStates_['q'] == KEY_STATE::UP || keyStates_['Q'] == KEY_STATE::UP || keyStates_[27] == KEY_STATE::UP) {
+        pointCloud_.close();
         currentInstance_->exit();
         return;
     }
@@ -392,10 +416,10 @@ sl::Transform Simple3DObject::getModelMatrix() const {
 
 Shader::Shader(GLchar* vs, GLchar* fs) {
     if (!compile(verterxId_, GL_VERTEX_SHADER, vs)) {
-        std::cout << "ERROR: while compiling vertex shader" << std::endl;
+        print("ERROR: while compiling vertex shader");
     }
     if (!compile(fragmentId_, GL_FRAGMENT_SHADER, fs)) {
-        std::cout << "ERROR: while compiling fragment shader" << std::endl;
+        print("ERROR: while compiling fragment shader");
     }
 
     programId_ = glCreateProgram();
@@ -411,7 +435,7 @@ Shader::Shader(GLchar* vs, GLchar* fs) {
     GLint errorlk(0);
     glGetProgramiv(programId_, GL_LINK_STATUS, &errorlk);
     if (errorlk != GL_TRUE) {
-        std::cout << "ERROR: while linking Shader :" << std::endl;
+        print("ERROR: while linking shader : ");
         GLint errorSize(0);
         glGetProgramiv(programId_, GL_INFO_LOG_LENGTH, &errorSize);
 
@@ -441,7 +465,6 @@ GLuint Shader::getProgramId() {
 bool Shader::compile(GLuint &shaderId, GLenum type, GLchar* src) {
     shaderId = glCreateShader(type);
     if (shaderId == 0) {
-        std::cout << "ERROR: shader type (" << type << ") does not exist" << std::endl;
         return false;
     }
     glShaderSource(shaderId, 1, (const char**) &src, 0);
@@ -450,7 +473,7 @@ bool Shader::compile(GLuint &shaderId, GLenum type, GLchar* src) {
     GLint errorCp(0);
     glGetShaderiv(shaderId, GL_COMPILE_STATUS, &errorCp);
     if (errorCp != GL_TRUE) {
-        std::cout << "ERROR: while compiling Shader :" << std::endl;
+        print("ERROR: while compiling shader : ");
         GLint errorSize(0);
         glGetShaderiv(shaderId, GL_INFO_LOG_LENGTH, &errorSize);
 
@@ -518,7 +541,7 @@ void PointCloud::initialize(sl::Resolution res) {
     shader_ = Shader(POINTCLOUD_VERTEX_SHADER, POINTCLOUD_FRAGMENT_SHADER);
     shMVPMatrixLoc_ = glGetUniformLocation(shader_.getProgramId(), "u_mvpMatrix");
 
-    matGPU_.alloc(res, sl::MAT_TYPE_32F_C4, sl::MEM_GPU);
+    matGPU_.alloc(res, sl::MAT_TYPE::F32_C4, sl::MEM::GPU);
 
     checkError(cudaGraphicsMapResources(1, &bufferCudaID_, 0));
     checkError(cudaGraphicsResourceGetMappedPointer((void**) &xyzrgbaMappedBuf_, &numBytes_, bufferCudaID_));
@@ -526,14 +549,14 @@ void PointCloud::initialize(sl::Resolution res) {
 
 void PointCloud::pushNewPC(sl::Mat &matXYZRGBA) {
     if (matGPU_.isInit()) {
-        matGPU_.setFrom(matXYZRGBA, sl::COPY_TYPE_GPU_GPU);
+        matGPU_.setFrom(matXYZRGBA, sl::COPY_TYPE::GPU_GPU);
         hasNewPCL_ = true;
     }
 }
 
 void PointCloud::update() {
     if (hasNewPCL_ && matGPU_.isInit()) {
-        checkError(cudaMemcpy(xyzrgbaMappedBuf_, matGPU_.getPtr<sl::float4>(sl::MEM_GPU), numBytes_, cudaMemcpyDeviceToDevice));
+        checkError(cudaMemcpy(xyzrgbaMappedBuf_, matGPU_.getPtr<sl::float4>(sl::MEM::GPU), numBytes_, cudaMemcpyDeviceToDevice));
         hasNewPCL_ = false;
     }
 }
