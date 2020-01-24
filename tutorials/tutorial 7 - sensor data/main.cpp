@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
 
     // Check camera model
     MODEL cam_model = zed.getCameraInformation().camera_model;
-    if (cam_model != MODEL::ZED) {
+    if (cam_model == MODEL::ZED) {
         printf("This tutorial only supports ZED-M and ZED2 camera models\n");
         return 1;
     }
