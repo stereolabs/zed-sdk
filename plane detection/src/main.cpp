@@ -34,28 +34,29 @@
 // Using std and sl namespaces
 using namespace std;
 using namespace sl;
+ 
+void parseArgs(int argc, char **argv,sl::InitParameters& param);
 
 int main(int argc, char** argv) {
     Camera zed;
     // Setup configuration parameters for the ZED    
     InitParameters parameters;
-    parameters.coordinate_units = UNIT_METER;
-    parameters.coordinate_system = COORDINATE_SYSTEM_RIGHT_HANDED_Y_UP; // OpenGL coordinates system
-    if(argc > 1 && string(argv[1]).find(".svo"))
-        parameters.svo_input_filename = argv[1];
+    parameters.coordinate_units = UNIT::METER;
+    parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL coordinates system
+    parameters.sensors_required = true;
+    parseArgs(argc,argv,parameters);
 
     // Open the ZED
     ERROR_CODE zed_error = zed.open(parameters);
     if(zed_error != ERROR_CODE::SUCCESS) {
-        cout << zed_error << endl;
+        print("Opening camera failed: ",zed_error);
         zed.close();
         return -1;
     }
 
-    CameraParameters camera_parameters = zed.getCameraInformation().calibration_parameters.left_cam;
-    sl::MODEL camera_model = zed.getCameraInformation().camera_model;
+    auto camera_infos = zed.getCameraInformation();
     GLViewer viewer;
-    bool error_viewer = viewer.init(argc, argv, camera_parameters, camera_model);
+    bool error_viewer = viewer.init(argc, argv, camera_infos);
     if(error_viewer) {
         viewer.exit();
         zed.close();
@@ -67,8 +68,8 @@ int main(int argc, char** argv) {
     Plane plane; // detected plane 
     Mesh mesh; // plane mesh
 
-    ERROR_CODE find_plane_status;
-    TRACKING_STATE tracking_state = TRACKING_STATE_OFF;
+    ERROR_CODE find_plane_status = ERROR_CODE::SUCCESS;
+    POSITIONAL_TRACKING_STATE tracking_state = POSITIONAL_TRACKING_STATE::OFF;
 
     // time stamp of the last mesh request
     chrono::high_resolution_clock::time_point ts_last;
@@ -77,21 +78,21 @@ int main(int argc, char** argv) {
     user_action.clear();
 
     // Enable positional tracking before starting spatial mapping
-    zed.enableTracking();
+    zed.enablePositionalTracking();
     
     RuntimeParameters runtime_parameters;
-    runtime_parameters.measure3D_reference_frame = REFERENCE_FRAME_WORLD;
+    runtime_parameters.measure3D_reference_frame = REFERENCE_FRAME::WORLD;
     
     while(viewer.isAvailable()) {
-        if(zed.grab(runtime_parameters) == SUCCESS) {
+        if(zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS) {
             // Retrieve image in GPU memory
-            zed.retrieveImage(image, VIEW_LEFT, MEM_GPU);
+            zed.retrieveImage(image, VIEW::LEFT, MEM::GPU);
             // Update pose data (used for projection of the mesh over the current image)
             tracking_state = zed.getPosition(pose);
 
-            if(tracking_state == sl::TRACKING_STATE_OK) {
+            if (tracking_state == POSITIONAL_TRACKING_STATE::OK) {
                 // Compute elapse time since the last call of plane detection
-                auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - ts_last).count();
+                auto duration = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - ts_last).count();
                 // Ask for a mesh update 
                 if(user_action.hit)
                     find_plane_status = zed.findPlaneAtHit(user_action.hit_coord, plane);
@@ -99,12 +100,12 @@ int main(int argc, char** argv) {
                 //if 500ms have spend since last request
                 if((duration > 500) && user_action.press_space) {
                     // Update pose data (used for projection of the mesh over the current image)
-                    sl::Transform resetTrackingFloorFrame;
+                    Transform resetTrackingFloorFrame;
                     find_plane_status = zed.findFloorPlane(plane, resetTrackingFloorFrame);
-                    ts_last = std::chrono::high_resolution_clock::now();
+                    ts_last = chrono::high_resolution_clock::now();
                 }
 
-                if(find_plane_status == sl::SUCCESS) {
+                if(find_plane_status == ERROR_CODE::SUCCESS) {
                     mesh = plane.extractMesh();
                     viewer.updateMesh(mesh, plane.type);
                 }
@@ -117,7 +118,45 @@ int main(int argc, char** argv) {
     image.free();
     mesh.clear();
 
-    zed.disableTracking();
+    zed.disablePositionalTracking();
     zed.close();
     return 0;
+}
+
+void parseArgs(int argc, char **argv,sl::InitParameters& param)
+{
+    if (argc > 1 && string(argv[1]).find(".svo")!=string::npos) {
+        // SVO input mode
+        param.input.setFromSVOFile(argv[1]);
+        cout<<"[Sample] Using SVO File input: "<<argv[1]<<endl;
+    } else if (argc > 1 && string(argv[1]).find(".svo")==string::npos) {
+        string arg = string(argv[1]);
+        unsigned int a,b,c,d,port;
+        if (sscanf(arg.c_str(),"%u.%u.%u.%u:%d", &a, &b, &c, &d,&port) == 5) {
+            // Stream input mode - IP + port
+            string ip_adress = to_string(a)+"."+to_string(b)+"."+to_string(c)+"."+to_string(d);
+            param.input.setFromStream(sl::String(ip_adress.c_str()),port);
+            cout<<"[Sample] Using Stream input, IP : "<<ip_adress<<", port : "<<port<<endl;
+        }
+        else  if (sscanf(arg.c_str(),"%u.%u.%u.%u", &a, &b, &c, &d) == 4) {
+            // Stream input mode - IP only
+            param.input.setFromStream(sl::String(argv[1]));
+            cout<<"[Sample] Using Stream input, IP : "<<argv[1]<<endl;
+        }
+        else if (arg.find("HD2K")!=string::npos) {
+            param.camera_resolution = sl::RESOLUTION::HD2K;
+            cout<<"[Sample] Using Camera in resolution HD2K"<<endl;
+        } else if (arg.find("HD1080")!=string::npos) {
+            param.camera_resolution = sl::RESOLUTION::HD1080;
+            cout<<"[Sample] Using Camera in resolution HD1080"<<endl;
+        } else if (arg.find("HD720")!=string::npos) {
+            param.camera_resolution = sl::RESOLUTION::HD720;
+            cout<<"[Sample] Using Camera in resolution HD720"<<endl;
+        } else if (arg.find("VGA")!=string::npos) {
+            param.camera_resolution = sl::RESOLUTION::VGA;
+            cout<<"[Sample] Using Camera in resolution VGA"<<endl;
+        }
+    } else {
+        // Default
+    }
 }

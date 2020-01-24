@@ -28,18 +28,16 @@ int main(int argc, char **argv) {
     // Create a ZED camera object
     Camera zed;
 
-    // Set configuration parameters
-    InitParameters init_params;
-    init_params.sdk_verbose = false; // Disable verbose mode
-
     // Open the camera
-    ERROR_CODE err = zed.open(init_params);
-    if (err != SUCCESS)
-        exit(-1);
+    ERROR_CODE err = zed.open();
+    if (err != ERROR_CODE::SUCCESS) {
+        std::cout << "Error " << err << ", exit program.\n";
+        return -1;
+    }
 
     // Get camera information (ZED serial number)
-    int zed_serial = zed.getCameraInformation().serial_number;
-    printf("Hello! This is my serial number: %d\n", zed_serial);
+    auto camera_infos = zed.getCameraInformation();
+    printf("Hello! This is my serial number: %d\n", camera_infos.serial_number);
 
     // Close the camera
     zed.close();

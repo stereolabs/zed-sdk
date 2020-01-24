@@ -30,32 +30,33 @@ int main(int argc, char **argv) {
 
     // Set configuration parameters
     InitParameters init_params;
-    init_params.depth_mode = DEPTH_MODE_PERFORMANCE; // Use PERFORMANCE depth mode
-    init_params.coordinate_units = UNIT_MILLIMETER; // Use millimeter units (for depth measurements)
-
-
+    init_params.depth_mode = DEPTH_MODE::PERFORMANCE; // Use PERFORMANCE depth mode
+    init_params.coordinate_units = UNIT::MILLIMETER; // Use millimeter units (for depth measurements)
+    
     // Open the camera
     ERROR_CODE err = zed.open(init_params);
-    if (err != SUCCESS)
-        exit(-1);
+    if (err != ERROR_CODE::SUCCESS) {
+        std::cout << "Error " << err << ", exit program.\n";
+        return -1;
+    }
 
     // Set runtime parameters after opening the camera
     RuntimeParameters runtime_parameters;
-    runtime_parameters.sensing_mode = SENSING_MODE_STANDARD; // Use STANDARD sensing mode
+    runtime_parameters.sensing_mode = SENSING_MODE::STANDARD; // Use STANDARD sensing mode
 
     // Capture 50 images and depth, then stop
     int i = 0;
     sl::Mat image, depth, point_cloud;
 
     while (i < 50) {
-        // A new image is available if grab() returns SUCCESS
-        if (zed.grab(runtime_parameters) == SUCCESS) {
+        // A new image is available if grab() returns ERROR_CODE::SUCCESS
+        if (zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS) {
             // Retrieve left image
-            zed.retrieveImage(image, VIEW_LEFT);
+            zed.retrieveImage(image, VIEW::LEFT);
             // Retrieve depth map. Depth is aligned on the left image
-            zed.retrieveMeasure(depth, MEASURE_DEPTH);
+            zed.retrieveMeasure(depth, MEASURE::DEPTH);
             // Retrieve colored point cloud. Point cloud is aligned on the left image.
-            zed.retrieveMeasure(point_cloud, MEASURE_XYZRGBA);
+            zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA);
 
             // Get and print distance value in mm at the center of the image
             // We measure the distance camera - object using Euclidean distance

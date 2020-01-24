@@ -30,24 +30,26 @@ int main(int argc, char **argv) {
 
     // Set configuration parameters
     InitParameters init_params;
-    init_params.camera_resolution = RESOLUTION_HD1080; // Use HD1080 video mode
+    init_params.camera_resolution = RESOLUTION::HD1080; // Use HD1080 video mode
     init_params.camera_fps = 30; // Set fps at 30
 
     // Open the camera
     ERROR_CODE err = zed.open(init_params);
-    if (err != SUCCESS)
-        exit(-1);
+    if (err != ERROR_CODE::SUCCESS) {
+        std::cout << "Error " << err << ", exit program.\n";
+        return -1;
+    }
 
     // Capture 50 frames and stop
     int i = 0;
     sl::Mat image;
     while (i < 50) {
         // Grab an image
-        if (zed.grab() == SUCCESS) {
-            // A new image is available if grab() returns SUCCESS
-            zed.retrieveImage(image, VIEW_LEFT); // Get the left image
-            unsigned long long timestamp = zed.getCameraTimestamp(); // Get the timestamp at the time the image was captured
-            printf("Image resolution: %d x %d  || Image timestamp: %llu\n", image.getWidth(), image.getHeight(), timestamp);
+        if (zed.grab() == ERROR_CODE::SUCCESS) {
+            // A new image is available if grab() returns ERROR_CODE::SUCCESS
+            zed.retrieveImage(image, VIEW::LEFT); // Get the left image
+            auto timestamp = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE); // Get the timestamp at the time the image was captured
+            printf("Image resolution: %d x %d  || Image timestamp: %llu\n", (int) image.getWidth(), (int) image.getHeight(), (unsigned long long int) timestamp.getNanoseconds());
             i++;
         }
     }

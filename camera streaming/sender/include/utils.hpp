@@ -24,6 +24,7 @@ static bool exit_app = false;
 
 // Handle the CTRL-C keyboard signal
 #ifdef _WIN32
+#include <Windows.h>
 void CtrlHandler(DWORD fdwCtrlType) {
     exit_app = (fdwCtrlType == CTRL_C_EVENT);
 }

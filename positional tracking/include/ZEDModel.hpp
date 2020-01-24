@@ -3,7 +3,7 @@
 #ifndef __ZED3D_HDR__
 #define __ZED3D_HDR__
 
-#include <sl/types.hpp>
+#include <sl/Camera.hpp>
 
 namespace ZED_model {
     const float vertices[] = {
@@ -2746,6 +2746,20 @@ struct Model3D_ZED:Model3D {
         part.back().triangles = (int*) ZED_model::alluminiumTriangles;
         part.emplace_back();
         part.back().color = ZED_model::darkColor;
+        part.back().nb_triangles = ZED_model::nb_darkTriangle;
+        part.back().triangles = (int*) ZED_model::darkTriangles;
+        vertices = (float*) ZED_model::vertices;
+    }
+};
+
+struct Model3D_ZED2:Model3D {
+    Model3D_ZED2() {
+        part.emplace_back();
+        part.back().color = ZED_model::darkColor;
+        part.back().nb_triangles = ZED_model::nb_aluTriangle;
+        part.back().triangles = (int*) ZED_model::alluminiumTriangles;
+        part.emplace_back();
+        part.back().color = ZED_M_model::greyColor;
         part.back().nb_triangles = ZED_model::nb_darkTriangle;
         part.back().triangles = (int*) ZED_model::darkTriangles;
         vertices = (float*) ZED_model::vertices;

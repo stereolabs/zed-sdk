@@ -40,13 +40,13 @@ Camera zed;
 
 // Set configuration parameters
 InitParameters init_params;
-init_params.camera_resolution = RESOLUTION_HD720; // Use HD720 video mode (default fps: 60)
-init_params.coordinate_system = COORDINATE_SYSTEM_RIGHT_HANDED_Y_UP; // Use a right-handed Y-up coordinate system
-init_params.coordinate_units = UNIT_METER; // Set units in meters
+init_params.camera_resolution = RESOLUTION::HD720; // Use HD720 video mode (default fps: 60)
+init_params.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // Use a right-handed Y-up coordinate system
+init_params.coordinate_units = UNIT::METER; // Set units in meters
 
 // Open the camera
 ERROR_CODE err = zed.open(init_params);
-if (err != SUCCESS)
+if (err != ERROR_CODE::SUCCESS)
     exit(-1);
 ```
 
@@ -56,9 +56,9 @@ The spatial mapping needs the positional tracking to be activated. Therefore, as
 
 
 ```
-sl::TrackingParameters tracking_parameters;
-err = zed.enableTracking(tracking_parameters);
-if (err != SUCCESS)
+sl::PositionalTrackingParameters tracking_parameters;
+err = zed.enablePositionalTracking(tracking_parameters);
+if (err != ERROR_CODE::SUCCESS)
     exit(-1);
 ```
 
@@ -69,7 +69,7 @@ Now that tracking is enabled, we need to enable the spatial mapping module. You 
 ```
 sl::SpatialMappingParameters mapping_parameters;
 err = zed.enableSpatialMapping(mapping_parameters);
-if (err != SUCCESS)
+if (err != ERROR_CODE::SUCCESS)
     exit(-1);
 ```
 
@@ -88,7 +88,7 @@ In this tutorial, we grab 500 frames and then stop the loop to extract mesh.
 	int i = 0;
 	sl::Mesh mesh; // Create a mesh object
 	while (i < 500) {
-		if (zed.grab() == SUCCESS) {
+		if (zed.grab() == ERROR_CODE::SUCCESS) {
 			// In background, spatial mapping will use new images, depth and pose to create and update the mesh. No specific functions are required here
 			sl::SPATIAL_MAPPING_STATE mapping_state = zed.getSpatialMappingState();
 
@@ -113,7 +113,7 @@ We have now a mesh. This mesh can be filtered (if needed) to remove duplicate ve
 Since we are manipulating the mesh, this function is a function member of `sl::Mesh`.<br/>
 
 ```
-mesh.filter(sl::MeshFilterParameters::FILTER_LOW); // Filter the mesh (remove unnecessary vertices and faces)
+mesh.filter(sl::MeshFilterParameters::MESH_FILTER::LOW); // Filter the mesh (remove unnecessary vertices and faces)
  ```
 
 You can see that filter takes a filtering parameter. This allows you to fine tuning the processing. Likewise, more information are given in the API documentation regarding filtering parameters.
@@ -133,7 +133,7 @@ Since spatial mapping requires positional tracking, always disable spatial mappi
 ```
 // Disable tracking and mapping and close the camera
  zed.disableSpatialMapping();
- zed.disableTracking();
+ zed.disablePositionalTracking();
  zed.close();
  return 0;
 ```

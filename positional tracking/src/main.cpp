@@ -19,9 +19,9 @@
 ///////////////////////////////////////////////////////////////////////////
 
 /*************************************************************************
-** This sample demonstrates how to use the ZED for positional tracking  **
-** and display camera motion in an OpenGL window. 		                **
-**************************************************************************/
+ ** This sample demonstrates how to use the ZED for positional tracking  **
+ ** and display camera motion in an OpenGL window. 		                **
+ **************************************************************************/
 
 // ZED includes
 #include <sl/Camera.hpp>
@@ -35,25 +35,35 @@ using namespace sl;
 
 const int MAX_CHAR = 128;
 
+
+//#define ZED_IMU_ONLY
+
+inline void setTxt(sl::float3 value, char* ptr_txt) {
+    snprintf(ptr_txt, MAX_CHAR, "%3.2f; %3.2f; %3.2f", value.x, value.y, value.z);
+}
+
+void parseArgs(int argc, char **argv, sl::InitParameters& param);
+
 int main(int argc, char **argv) {
 
     Camera zed;
     // Set configuration parameters for the ZED
     InitParameters initParameters;
-    initParameters.coordinate_units = UNIT_METER;
-    initParameters.coordinate_system = COORDINATE_SYSTEM_RIGHT_HANDED_Y_UP;
-
-    if(argc > 1 && string(argv[1]).find(".svo"))
-        initParameters.svo_input_filename.set(argv[1]);
+    initParameters.coordinate_units = UNIT::METER;
+    initParameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
+    initParameters.sdk_verbose = true;
+    initParameters.sensors_required = true;
+    parseArgs(argc, argv, initParameters);
 
     // Open the camera
-    ERROR_CODE zed_error = zed.open(initParameters);
-    if(zed_error != SUCCESS) {
-        cout << zed_error << endl;
+    auto zed_error = zed.open(initParameters);
+    if (zed_error != ERROR_CODE::SUCCESS) {
+        print("Opening camera failed: ", zed_error);
         zed.close();
         return 1; // Quit if an error occurred
     }
-    
+
+
     auto camera_model = zed.getCameraInformation().camera_model;
     GLViewer viewer;
     // Initialize OpenGL viewer
@@ -63,31 +73,116 @@ int main(int argc, char **argv) {
     char text_rotation[MAX_CHAR];
     char text_translation[MAX_CHAR];
 
-    // Start motion 
-    zed.enableTracking();
+    // Set parameters for Positional Tracking
+    PositionalTrackingParameters positional_tracking_param;
+    positional_tracking_param.enable_area_memory = true;
+    // enable Positional Tracking
+    zed_error = zed.enablePositionalTracking(positional_tracking_param);
+    if (zed_error != ERROR_CODE::SUCCESS) {
+        print("Enabling positionnal tracking failed: ", zed_error);
+        zed.close();
+        return 1; // Quit if an error occurred
+    }
+
     Pose camera_path;
-    TRACKING_STATE tracking_state;
+    POSITIONAL_TRACKING_STATE tracking_state;
 
-    while(viewer.isAvailable()) {
-        if(zed.grab() == SUCCESS) {
+    /*sl::RecordingParameters rec_parm;
+    rec_parm.video_filename = "test.svo";
+    zed.enableRecording(rec_parm);*/
+    int grab_count = 0;
+    while (viewer.isAvailable()) {
+        if (zed.grab() == ERROR_CODE::SUCCESS) {
             // Get the position of the camera in a fixed reference frame (the World Frame)
-            tracking_state = zed.getPosition(camera_path, REFERENCE_FRAME_WORLD);
+            tracking_state = zed.getPosition(camera_path, REFERENCE_FRAME::WORLD);
+            grab_count++;
 
-            if(tracking_state == TRACKING_STATE_OK) {
-                // Get rotation and translation
-                sl::float3 rotation = camera_path.getEulerAngles();
-                sl::float3 translation = camera_path.getTranslation();
+            // Get sensors data if available
+            sl::SensorsData s_data;
+            sl::ERROR_CODE s_err = zed.getSensorsData(s_data, sl::TIME_REFERENCE::IMAGE);
 
-                // Display translation and rotation (pitch, yaw, roll in OpenGL coordinate system)
-                snprintf(text_rotation, MAX_CHAR, "%3.2f; %3.2f; %3.2f", rotation.x, rotation.y, rotation.z);
-                snprintf(text_translation, MAX_CHAR, "%3.2f; %3.2f; %3.2f", translation.x, translation.y, translation.z);
+            if (s_err == sl::ERROR_CODE::SUCCESS) {
+                float imu_temperature = 0; //Temperature given by the IMU device
+                float onboard_left_temperature = 0; //Temperature given by the analog temperature sensor located alongside the left image sensor. Only for ZED2
+                float onboard_right_temperature = 0; //Temperature given by the analog temperature sensor located alongside the right image sensor. Only for ZED2
+
+                if (s_data.temperature.get(sl::SensorsData::TemperatureData::SENSOR_LOCATION::IMU, imu_temperature) == sl::ERROR_CODE::SUCCESS && grab_count % 20 == 0)
+                    print("IMU Temperature " + to_string(imu_temperature));
+
+                if (s_data.temperature.get(sl::SensorsData::TemperatureData::SENSOR_LOCATION::ONBOARD_LEFT, onboard_left_temperature) == sl::ERROR_CODE::SUCCESS && grab_count % 20 == 0)
+                    print("Onboard left Temperature " + to_string(onboard_left_temperature));
+
+                if (s_data.temperature.get(sl::SensorsData::TemperatureData::SENSOR_LOCATION::ONBOARD_RIGHT, onboard_right_temperature) == sl::ERROR_CODE::SUCCESS && grab_count % 20 == 0)
+                    print("Onboard right Temperature " + to_string(onboard_right_temperature));
+
+                // Barometer is only available for ZED2
+                if (s_data.barometer.is_available && grab_count % 20 == 0) {
+                    float rel_altitude = s_data.barometer.relative_altitude;
+                    print("Barometer relative altitude : " + to_string(rel_altitude));
+                }
+            }
+
+
+#ifdef ZED_IMU_ONLY
+            if (s_err == sl::ERROR_CODE::SUCCESS) {
+            setTxt(s_data.imu.pose.getEulerAngles(), text_rotation); //only rotation is computed for IMU
+            viewer.updateData(s_data.imu.pose, string(text_translation), string(text_rotation), sl::POSITIONAL_TRACKING_STATE::OK);
+            }
+#else
+
+            if (tracking_state == POSITIONAL_TRACKING_STATE::OK) {
+                // Get rotation and translation and displays it
+                setTxt(camera_path.getEulerAngles(), text_rotation);
+                setTxt(camera_path.getTranslation(), text_translation);
             }
 
             // Update rotation, translation and tracking state values in the OpenGL window
             viewer.updateData(camera_path.pose_data, string(text_translation), string(text_rotation), tracking_state);
+#endif
+
         } else
             sleep_ms(1);
     }
+
+    zed.disablePositionalTracking();
+
+    //zed.disableRecording();
     zed.close();
     return 0;
 }
+
+void parseArgs(int argc, char **argv, sl::InitParameters& param) {
+    if (argc > 1 && string(argv[1]).find(".svo") != string::npos) {
+        // SVO input mode
+        param.input.setFromSVOFile(argv[1]);
+        cout << "[Sample] Using SVO File input: " << argv[1] << endl;
+    } else if (argc > 1 && string(argv[1]).find(".svo") == string::npos) {
+        string arg = string(argv[1]);
+        unsigned int a, b, c, d, port;
+        if (sscanf(arg.c_str(), "%u.%u.%u.%u:%d", &a, &b, &c, &d, &port) == 5) {
+            // Stream input mode - IP + port
+            string ip_adress = to_string(a) + "." + to_string(b) + "." + to_string(c) + "." + to_string(d);
+            param.input.setFromStream(sl::String(ip_adress.c_str()), port);
+            cout << "[Sample] Using Stream input, IP : " << ip_adress << ", port : " << port << endl;
+        } else if (sscanf(arg.c_str(), "%u.%u.%u.%u", &a, &b, &c, &d) == 4) {
+            // Stream input mode - IP only
+            param.input.setFromStream(sl::String(argv[1]));
+            cout << "[Sample] Using Stream input, IP : " << argv[1] << endl;
+        } else if (arg.find("HD2K") != string::npos) {
+            param.camera_resolution = sl::RESOLUTION::HD2K;
+            cout << "[Sample] Using Camera in resolution HD2K" << endl;
+        } else if (arg.find("HD1080") != string::npos) {
+            param.camera_resolution = sl::RESOLUTION::HD1080;
+            cout << "[Sample] Using Camera in resolution HD1080" << endl;
+        } else if (arg.find("HD720") != string::npos) {
+            param.camera_resolution = sl::RESOLUTION::HD720;
+            cout << "[Sample] Using Camera in resolution HD720" << endl;
+        } else if (arg.find("VGA") != string::npos) {
+            param.camera_resolution = sl::RESOLUTION::VGA;
+            cout << "[Sample] Using Camera in resolution VGA" << endl;
+        }
+    } else {
+        // Default
+    }
+}
+

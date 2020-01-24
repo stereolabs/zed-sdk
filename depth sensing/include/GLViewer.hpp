@@ -24,6 +24,13 @@
 #define MOUSE_T_SENSITIVITY 10.f
 #define KEY_T_SENSITIVITY 0.1f
 
+
+//// UTILS //////
+using namespace std;
+void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, std::string msg_suffix = "") ;
+
+/////////////////
+
 class CameraGL {
 public:
 
@@ -149,9 +156,10 @@ private:
     /*
             Vertex buffer IDs:
             - [0]: Vertices coordinates;
-            - [1]: Indices;
+            - [1]: Vertices colors;
+            - [2]: Indices;
      */
-    GLuint vboID_[2];
+    GLuint vboID_[3];
 
     sl::Translation position_;
     sl::Orientation rotation_;
@@ -197,7 +205,7 @@ public:
     ~GLViewer();
     bool isAvailable();
 
-    void init(int argc, char **argv, sl::CameraParameters param);
+    GLenum init(int argc, char **argv, sl::CameraParameters param);
     void updatePointCloud(sl::Mat &matXYZRGBA);
 
     void exit();

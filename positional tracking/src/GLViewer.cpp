@@ -1,5 +1,24 @@
 #include "GLViewer.hpp"
 
+
+void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suffix) {
+    cout <<"[Sample]";
+    if (err_code != sl::ERROR_CODE::SUCCESS)
+        cout << "[Error] ";
+    else
+        cout<<" ";
+    cout << msg_prefix << " ";
+    if (err_code != sl::ERROR_CODE::SUCCESS) {
+        cout << " | " << toString(err_code) << " : ";
+        cout << toVerbose(err_code);
+    }
+    if (!msg_suffix.empty())
+        cout << " " << msg_suffix;
+    cout << endl;
+}
+
+
+
 GLchar* VERTEX_SHADER =
 "#version 330 core\n"
 "layout(location = 0) in vec3 in_Vertex;\n"
@@ -78,7 +97,7 @@ void GLViewer::init(int argc, char **argv, sl::MODEL camera_model) {
 
     GLenum err = glewInit();
     if (GLEW_OK != err)
-        std::cout << "ERROR: glewInit failed: " << glewGetErrorString(err) << "\n";
+        print("ERROR: glewInit failed: " + std::string((char*)glewGetErrorString(err)));
 
     glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
     glEnable(GL_DEPTH_TEST);
@@ -127,10 +146,17 @@ void GLViewer::init(int argc, char **argv, sl::MODEL camera_model) {
     zedPath.setDrawingType(GL_LINE_STRIP);
 
     Model3D *model;
-    if (camera_model == sl::MODEL_ZED)
-        model = new Model3D_ZED;
-    else
-        model = new Model3D_ZED_M;
+    switch(camera_model){
+        case sl::MODEL::ZED:
+            model = new Model3D_ZED;
+            break;
+        case sl::MODEL::ZED_M:
+            model = new Model3D_ZED_M;
+            break;
+        case sl::MODEL::ZED2:
+            model = new Model3D_ZED2;
+            break;
+    };
     for (auto it: model->part)
         fillZED(it.nb_triangles, model->vertices, it.triangles, it.color, &zedModel);
     delete model;
@@ -164,11 +190,25 @@ void GLViewer::render() {
 }
 
 void GLViewer::update() {
+    //Quit the software
     if (keyStates_['q'] == KEY_STATE::UP || keyStates_['Q'] == KEY_STATE::UP || keyStates_[27] == KEY_STATE::UP) {
         currentInstance_->exit();
         return;
     }
 
+
+    //Reset the position to "origin"
+    if (keyStates_['r'] == KEY_STATE::UP)
+    {
+        camera_.setPosition(sl::Translation(0.3, 3.3, -3.3));
+        camera_.setDirection(sl::Translation(0, 0, -4), sl::Translation(0, 1, 0));
+        camera_.setOffsetFromPosition(sl::Translation(0, 0, 0));
+        sl::float3 euler(-50, 180, 0);
+        sl::Rotation cam_rot;
+        cam_rot.setEulerAngles(euler, 0);
+        camera_.setRotation(sl::Rotation(cam_rot));
+
+    }
     // Rotate camera with mouse
     if (mouseButton_[MOUSE_BUTTON::LEFT]) {
         camera_.rotate(sl::Rotation((float) mouseMotion_[1] * MOUSE_R_SENSITIVITY, camera_.getRight()));
@@ -181,15 +221,10 @@ void GLViewer::update() {
         camera_.translate(camera_.getRight() * (float) mouseMotion_[0] * MOUSE_T_SENSITIVITY);
     }
 
-    // Zoom in with mouse wheel
-    if (mouseWheelPosition_ != 0) {
-        float distance = sl::Translation(camera_.getOffsetFromPosition()).norm();
-        if (mouseWheelPosition_ > 0 && distance > camera_.getZNear()) { // zoom
-            camera_.setOffsetFromPosition(camera_.getOffsetFromPosition() * MOUSE_UZ_SENSITIVITY);
-        } else if (distance < camera_.getZFar()) {// unzoom
-            camera_.setOffsetFromPosition(camera_.getOffsetFromPosition() * MOUSE_DZ_SENSITIVITY);
-        }
-    }
+    // Zoom in with mouse wheel (translate in projZ)
+    if (mouseWheelPosition_ != 0)
+        camera_.translate(-1.0*camera_.getForward() * mouseWheelPosition_ * MOUSE_WHEEL_SENSITIVITY);
+
     
     // update 
     camera_.update();
@@ -198,7 +233,7 @@ void GLViewer::update() {
     if (updateZEDposition) {
         zedPath.clear();
         sl::float3 clr(0.1f, 0.5f, 0.9f);
-        for (int i = 1; i < vecPath.size(); i++) {
+        for (unsigned int i = 1; i < vecPath.size(); i++) {
             float fade = (i*1.f) / vecPath.size();
             sl::float3 new_color = clr * fade;
             zedPath.addPoint(vecPath[i], new_color);
@@ -232,7 +267,7 @@ void GLViewer::draw() {
     glUseProgram(0);
 }
 
-void GLViewer::updateData(sl::Transform zed_rt, std::string str_t, std::string str_r, sl::TRACKING_STATE state) {
+void GLViewer::updateData(sl::Transform zed_rt, std::string str_t, std::string str_r, sl::POSITIONAL_TRACKING_STATE state) {
     mtx.lock();
     vecPath.push_back(zed_rt.getTranslation());
     zedModel.setRT(zed_rt);
@@ -263,7 +298,7 @@ void GLViewer::printText() {
     int start_w = 20;
     int start_h = h_wnd - 40;
 
-    (trackState == sl::TRACKING_STATE_OK) ? glColor3f(0.2f, 0.65f, 0.2f) : glColor3f(0.85f, 0.2f, 0.2f);
+    (trackState == sl::POSITIONAL_TRACKING_STATE::OK) ? glColor3f(0.2f, 0.65f, 0.2f) : glColor3f(0.85f, 0.2f, 0.2f);
     glRasterPos2i(start_w, start_h);
     std::string track_str = (str_tracking + sl::toString(trackState).c_str());
     safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, track_str.c_str());
@@ -329,7 +364,7 @@ void GLViewer::mouseMotionCallback(int x, int y) {
 void GLViewer::reshapeCallback(int width, int height) {
     glViewport(0, 0, width, height);
     float hfov = currentInstance_->camera_.getHorizontalFOV();
-    currentInstance_->camera_.setProjection(hfov, hfov * (float) height / (float) width, currentInstance_->camera_.getZNear(), currentInstance_->camera_.getZFar());
+    currentInstance_->camera_.setProjection(hfov, hfov * (float) height / (float) width,currentInstance_->camera_.getZNear(), currentInstance_->camera_.getZFar());
 }
 
 void GLViewer::keyPressedCallback(unsigned char c, int x, int y) {
@@ -408,18 +443,24 @@ void Simple3DObject::pushToGPU() {
             glGenBuffers(3, vboID_);
         }
         glBindVertexArray(vaoID_);
-        glBindBuffer(GL_ARRAY_BUFFER, vboID_[0]);
-        glBufferData(GL_ARRAY_BUFFER, vertices_.size() * sizeof(float), &vertices_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
-        glVertexAttribPointer(Shader::ATTRIB_VERTICES_POS, 3, GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray(Shader::ATTRIB_VERTICES_POS);
+		if (vertices_.size()) {
+			glBindBuffer(GL_ARRAY_BUFFER, vboID_[0]);
+			glBufferData(GL_ARRAY_BUFFER, vertices_.size() * sizeof(float), &vertices_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
+			glVertexAttribPointer(Shader::ATTRIB_VERTICES_POS, 3, GL_FLOAT, GL_FALSE, 0, 0);
+			glEnableVertexAttribArray(Shader::ATTRIB_VERTICES_POS);
+		}
 
-        glBindBuffer(GL_ARRAY_BUFFER, vboID_[1]);
-        glBufferData(GL_ARRAY_BUFFER, colors_.size() * sizeof(float), &colors_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
-        glVertexAttribPointer(Shader::ATTRIB_COLOR_POS, 3, GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray(Shader::ATTRIB_COLOR_POS);
+		if (colors_.size()) {
+			glBindBuffer(GL_ARRAY_BUFFER, vboID_[1]);
+			glBufferData(GL_ARRAY_BUFFER, colors_.size() * sizeof(float), &colors_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
+			glVertexAttribPointer(Shader::ATTRIB_COLOR_POS, 3, GL_FLOAT, GL_FALSE, 0, 0);
+			glEnableVertexAttribArray(Shader::ATTRIB_COLOR_POS);
+		}
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID_[2]);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_.size() * sizeof(unsigned int), &indices_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
+		if (indices_.size()) {
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID_[2]);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_.size() * sizeof(unsigned int), &indices_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
+		}
 
         glBindVertexArray(0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -569,11 +610,13 @@ CameraGL::CameraGL(Translation position, Translation direction, Translation vert
     this->position_ = position;
     setDirection(direction, vertical);
 
+
     offset_ = sl::Translation(0, 0, 0);
     view_.setIdentity();
     updateView();
     setProjection(60, 60, 0.01f, 100.f);
     updateVPMatrix();
+
 }
 
 CameraGL::~CameraGL() {}
@@ -584,6 +627,8 @@ void CameraGL::update() {
     updateView();
     updateVPMatrix();
 }
+
+
 
 void CameraGL::setProjection(float horizontalFOV, float verticalFOV, float znear, float zfar) {
     horizontalFieldOfView_ = horizontalFOV;

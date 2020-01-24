@@ -1,4 +1,4 @@
-# Stereolabs ZED - SVO Recording
+# Stereolabs ZED - SVO Recording utilities
 
 This sample shows how to record video in Stereolabs SVO format.
 SVO video files can be played with the ZED API and used with its different modules.
@@ -10,7 +10,7 @@ SVO video files can be played with the ZED API and used with its different modul
 
 ### Prerequisites
 
-- Windows 10, Ubuntu LTS
+- Windows 7 64bits or later, Ubuntu 16.04
 - [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
 
 ## Build the program

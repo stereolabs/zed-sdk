@@ -51,7 +51,7 @@ init_params.camera_fps = 30; // Set fps at 30
 
 // Open the camera
 ERROR_CODE err = zed.open(init_params);
-if (err != SUCCESS)
+if (err != ERROR_CODE::SUCCESS)
     exit(-1);
 ```
 
@@ -62,12 +62,12 @@ Now that the ZED is opened, we can now capture the images coming from it.
 We create a loop that capture 50 images and exit.
 
 To capture an image and process it, you need to call Camera::grab() function. This function take runtime parameters as well, but we leave them to default in this tutorial.
-Each time you want a new image, you need to call this function. if grab() returns SUCCESS, a new image has been capture and is now available. Otherwise, you can check the status of grab() which will tell you if there is no new frame available (depending on the framerate of the camera) or if something wrong happened.
+Each time you want a new image, you need to call this function. if grab() returns ERROR_CODE::SUCCESS, a new image has been capture and is now available. Otherwise, you can check the status of grab() which will tell you if there is no new frame available (depending on the framerate of the camera) or if something wrong happened.
 
 ```
 // Grab an image
-if (zed.grab() == SUCCESS) {
-	// A new image is available if grab() returns SUCCESS
+if (zed.grab() == ERROR_CODE::SUCCESS) {
+	// A new image is available if grab() returns ERROR_CODE::SUCCESS
 }
 ```
 
@@ -89,10 +89,10 @@ int i = 0;
 sl::Mat image;
 while (i < 50) {
     // Grab an image
-    if (zed.grab() == SUCCESS) {
-        // A new image is available if grab() returns SUCCESS
-        zed.retrieveImage(image, VIEW_LEFT); // Get the left image
-        unsigned long long timestamp = zed.getCameraTimestamp(); // Get the timestamp at the time the image was captured
+    if (zed.grab() == ERROR_CODE::SUCCESS) {
+        // A new image is available if grab() returns ERROR_CODE::SUCCESS
+        zed.retrieveImage(image, VIEW::LEFT); // Get the left image
+        auto timestamp = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE); // Get the timestamp at the time the image was captured
         printf("Image resolution: %d x %d  || Image timestamp: %llu\n", image.getWidth(), image.getHeight(), timestamp);
         i++;
     }
