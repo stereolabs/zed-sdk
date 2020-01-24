@@ -26,6 +26,8 @@ The ZED SDK includes tutorials and samples that demonstrate the API features and
 
 * **Spatial Mapping** - This sample shows how to capture a mesh with the ZED and display it with OpenGL
 
+* **Object Detection** - This sample shows how to use the object detection module with the ZED 2
+
 * **SVO Recording** - This sample shows how to record and playback video files in SVO format. SVO files lets you use all the ZED SDK features without having a ZED connected.
 
 * **Other** - Other general samples that demonstrate the use of the ZED SDK.
