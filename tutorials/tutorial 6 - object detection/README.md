@@ -1,4 +1,4 @@
-# Tutorial 6: Object Detection with the ZED 2
+# Tutorial 6: 3D Object Detection with the ZED 2
 
 This tutorial shows how to use the object detection module with the ZED 2.<br/>
 We assume that you have followed previous tutorials.

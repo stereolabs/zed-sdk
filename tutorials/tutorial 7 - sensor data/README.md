@@ -1,4 +1,4 @@
-# Tutorial 6: Getting sensor data from ZED Mini and ZED2
+# Tutorial 6: Getting Sensors Data
 
 This tutorial shows how to use retrieve sensor data from ZED Mini and ZED2. It will loop until 800 data samples are grabbed, printing the updated values on console.<br/>
 We assume that you have followed previous tutorials.
