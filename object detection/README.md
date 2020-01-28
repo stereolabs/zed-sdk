@@ -16,6 +16,7 @@ This sample shows how to detect and track objects in space and display it in an 
 
 - Windows 10, Ubuntu LTS
 - [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
+- ZED 2 Camera
 
 ## Build the program
 

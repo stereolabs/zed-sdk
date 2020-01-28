@@ -7,6 +7,7 @@ We assume that you have followed previous tutorials.
 
 - Windows 10, Ubuntu LTS
 - [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
+- ZED 2 Camera
 
 ## Build the program
 
