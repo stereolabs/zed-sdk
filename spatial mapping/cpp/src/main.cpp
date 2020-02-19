@@ -35,9 +35,10 @@
 using namespace std;
 using namespace sl;
 
+// set to 0 to create a Fused Point Cloud
 #define CREATE_MESH 1
-void parseArgs(int argc, char **argv,sl::InitParameters& param);
 
+void parseArgs(int argc, char **argv,sl::InitParameters& param);
 
 int main(int argc, char** argv) {
     Camera zed;
@@ -48,17 +49,23 @@ int main(int argc, char** argv) {
     parseArgs(argc,argv,parameters);
 
     // Open the ZED
-    ERROR_CODE zed_error = zed.open(parameters);
-    if(zed_error != ERROR_CODE::SUCCESS) {
-        print("Opening camera failed: ",zed_error);
+    ERROR_CODE zed_open_state = zed.open(parameters);
+    if(zed_open_state != ERROR_CODE::SUCCESS) {
+        print("Opening camera failed: ", zed_open_state);
         zed.close();
         return -1;
     }
 
+#if CREATE_MESH
+    Mesh map; // current incemental mesh
+#else
+    FusedPointCloud map; // current incemental fused point cloud
+#endif
+
     CameraParameters camera_parameters = zed.getCameraInformation().calibration_parameters.left_cam;
 
     GLViewer viewer;
-    bool error_viewer = viewer.init(argc, argv, camera_parameters);
+    bool error_viewer = viewer.init(argc, argv, camera_parameters, &map);
 
     if(error_viewer) {
         viewer.exit();
@@ -69,12 +76,6 @@ int main(int argc, char** argv) {
     Mat image; // current left image
     Pose pose; // positional tracking data
 
-#if CREATE_MESH
-    Mesh map; // current incemental mesh
-#else
-    FusedPointCloud map; // current incemental fused point cloud
-#endif
-
     SpatialMappingParameters spatial_mapping_parameters;
     POSITIONAL_TRACKING_STATE tracking_state = POSITIONAL_TRACKING_STATE::OFF;
     SPATIAL_MAPPING_STATE mapping_state = SPATIAL_MAPPING_STATE::NOT_ENABLED;
@@ -82,9 +83,9 @@ int main(int argc, char** argv) {
     chrono::high_resolution_clock::time_point ts_last; // time stamp of the last mesh request
     
     // Enable positional tracking before starting spatial mapping
-    zed_error = zed.enablePositionalTracking();
-    if(zed_error != ERROR_CODE::SUCCESS) {
-        print("Enabling positionnal tracking failed: ",zed_error);
+    zed_open_state = zed.enablePositionalTracking();
+    if(zed_open_state != ERROR_CODE::SUCCESS) {
+        print("Enabling positionnal tracking failed: ", zed_open_state);
         zed.close();
         return 1; // Quit if an error occurred
     }
@@ -101,14 +102,14 @@ int main(int argc, char** argv) {
                 // Compute elapse time since the last call of Camera::requestMeshAsync()
                 auto duration = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - ts_last).count();
                 // Ask for a mesh update if 500ms have spend since last request
-                if(duration > 500) {
+                if((duration > 500) && viewer.chunksUpdated()) {
                     zed.requestSpatialMapAsync();
                     ts_last = chrono::high_resolution_clock::now();
                 }
 
                 if(zed.getSpatialMapRequestStatusAsync() == ERROR_CODE::SUCCESS) {
                     zed.retrieveSpatialMapAsync(map);
-                    viewer.updateMap(map);
+                    viewer.updateChunks();
                 }
             }
 
@@ -135,11 +136,13 @@ int main(int argc, char** argv) {
                     } catch(std::string e) {
                         print("Error enable Spatial Mapping "+ e);
                     }
-                    // Start a timer, we retrieve the mesh every XXms.
-                    ts_last = chrono::high_resolution_clock::now();
 
                     // clear previous Mesh data
+                    map.clear();
                     viewer.clearCurrentMesh();
+
+                    // Start a timer, we retrieve the mesh every XXms.
+                    ts_last = chrono::high_resolution_clock::now();
 
                     mapping_activated = true;
                 } else {
@@ -150,9 +153,7 @@ int main(int argc, char** argv) {
                     filter_params.set(MeshFilterParameters::MESH_FILTER::MEDIUM);
                     // Filter the extracted mesh
                     map.filter(filter_params, true);
-
 					viewer.clearCurrentMesh();
-					viewer.updateMap(map);
 
                     // If textures have been saved during spatial mapping, apply them to the mesh
                     if(spatial_mapping_parameters.save_texture)
@@ -181,8 +182,6 @@ int main(int argc, char** argv) {
     zed.close();
     return 0;
 }
-
-
 
 void parseArgs(int argc, char **argv,sl::InitParameters& param)
 {
@@ -221,5 +220,3 @@ void parseArgs(int argc, char **argv,sl::InitParameters& param)
         // Default
     }
 }
-
-

@@ -29,8 +29,6 @@ void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suff
     cout << endl;
 }
 
-
-
 GLchar* MESH_VERTEX_SHADER =
 "#version 330 core\n"
 "layout(location = 0) in vec3 in_Vertex;\n"
@@ -42,7 +40,18 @@ GLchar* MESH_VERTEX_SHADER =
 "   gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
 "}";
 
-GLchar* MESH_FRAGMENT_SHADER =
+GLchar* FPC_VERTEX_SHADER =
+"#version 330 core\n"
+"layout(location = 0) in vec4 in_Vertex;\n"
+"uniform mat4 u_mvpMatrix;\n"
+"uniform vec3 u_color;\n"
+"out vec3 b_color;\n"
+"void main() {\n"
+"   b_color = u_color;\n"
+"   gl_Position = u_mvpMatrix * vec4(in_Vertex.xyz, 1);\n"
+"}";
+
+GLchar* FRAGMENT_SHADER =
 "#version 330 core\n"
 "in vec3 b_color;\n"
 "layout(location = 0) out vec4 color;\n"
@@ -75,16 +84,10 @@ GLchar* IMAGE_VERTEX_SHADER =
 SubMapObj::SubMapObj() {
     current_fc = 0;
     vaoID_ = 0;
-    need_update = false;
-    isUpdating = false;
-    display_mesh = false;
 }
 
 SubMapObj::~SubMapObj() {
-    need_update = false;
     current_fc = 0;
-    vert.clear();
-    tri.clear();
     if(vaoID_) {
         glDeleteBuffers(2, vboID_);
         glDeleteVertexArrays(1, &vaoID_);
@@ -93,66 +96,60 @@ SubMapObj::~SubMapObj() {
 
 template <>
 void SubMapObj::update(sl::Chunk &chunk) {
-    if(!need_update) {
-        vert = chunk.vertices;
-        tri = chunk.triangles;
-        need_update = true;
-        display_mesh = true;
+    
+    if (vaoID_ == 0) {
+        glGenVertexArrays(1, &vaoID_);
+        glGenBuffers(2, vboID_);
     }
+
+    glBindVertexArray(vaoID_);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vboID_[0]);
+    glBufferData(GL_ARRAY_BUFFER, chunk.vertices.size() * sizeof(sl::float3), &chunk.vertices[0], GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(Shader::ATTRIB_VERTICES_POS, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(Shader::ATTRIB_VERTICES_POS);
+    
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID_[1]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, chunk.triangles.size() * sizeof(sl::uint3), &chunk.triangles[0], GL_DYNAMIC_DRAW);
+    current_fc = (int)chunk.triangles.size() * 3; 
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
 }
 
 template <>
 void SubMapObj::update(sl::PointCloudChunk &chunk) {
-    if(!need_update) {
-	int nb_v = chunk.vertices.size();
-        vert.resize(nb_v);
-        index.resize(nb_v);
-        for(int c = 0; c < nb_v; c++){
-	    index[c] = c;
-	    vert[c] = chunk.vertices[c];
-	}
-        need_update = true;
-        display_mesh = false;
+    if (vaoID_ == 0) {
+        glGenVertexArrays(1, &vaoID_);
+        glGenBuffers(2, vboID_);
     }
-}
+    
+	const auto nb_v = chunk.vertices.size();
+    index.resize(nb_v);
+    for (int c = 0; c < nb_v; c++) index[c] = c;
+    
+    glBindVertexArray(vaoID_);
 
-void SubMapObj::pushToGPU() {
-    if(need_update) {
-        isUpdating = true;
-        if(vaoID_ == 0) {
-            glGenVertexArrays(1, &vaoID_);
-            glGenBuffers(2, vboID_);
-        }
+    glBindBuffer(GL_ARRAY_BUFFER, vboID_[0]);
+    glBufferData(GL_ARRAY_BUFFER, chunk.vertices.size() * sizeof(sl::float4), &chunk.vertices[0], GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(Shader::ATTRIB_VERTICES_POS, 4, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(Shader::ATTRIB_VERTICES_POS);
 
-        glBindVertexArray(vaoID_);
-
-        glBindBuffer(GL_ARRAY_BUFFER, vboID_[0]);
-        glBufferData(GL_ARRAY_BUFFER, vert.size() * sizeof(sl::float3), &vert[0], GL_DYNAMIC_DRAW);
-        glVertexAttribPointer(Shader::ATTRIB_VERTICES_POS, 3, GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray(Shader::ATTRIB_VERTICES_POS);
-        if(display_mesh) {
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID_[1]);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, tri.size() * sizeof(sl::uint3), &tri[0], GL_DYNAMIC_DRAW);
-            current_fc = (int) tri.size() * 3;
-        } else {
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID_[1]);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, index.size() * sizeof(sl::uint1), &index[0], GL_DYNAMIC_DRAW);
-            current_fc = (int) index.size();
-        }
-
-        glBindVertexArray(0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        need_update = false;
-
-        isUpdating = false;
-    }
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID_[1]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, index.size() * sizeof(sl::uint1), &index[0], GL_DYNAMIC_DRAW);
+    current_fc = (int)index.size();
+    
+    glBindVertexArray(0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void SubMapObj::draw() {
-    if(current_fc && vaoID_ && !isUpdating) {
+    if(current_fc && vaoID_) {
         glBindVertexArray(vaoID_);
-        glDrawElements(display_mesh ? GL_TRIANGLES : GL_POINTS, (GLsizei) current_fc, GL_UNSIGNED_INT, 0);
+        glDrawElements(index.size() ? GL_POINTS : GL_TRIANGLES, (GLsizei) current_fc, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 }
@@ -165,7 +162,7 @@ GLViewer::GLViewer() :available(false) {
     tracking_state = sl::POSITIONAL_TRACKING_STATE::OFF;
     mapping_state = sl::SPATIAL_MAPPING_STATE::NOT_ENABLED;
     change_state = false;
-    new_data = false;
+    new_images = new_chunks = chunks_pushed = false;
 }
 
 GLViewer::~GLViewer() {
@@ -201,8 +198,22 @@ bool GLViewer::isAvailable() {
 
 void CloseFunc(void) { if(currentInstance_) currentInstance_->exit(); }
 
-bool GLViewer::init(int argc, char **argv, sl::CameraParameters camLeft) {
 
+template<>
+void GLViewer::initPtr(sl::Mesh* ptr) {
+    p_mesh = ptr;
+    draw_mesh = true;
+}
+
+template<>
+void GLViewer::initPtr(sl::FusedPointCloud* ptr) {
+    p_fpc = ptr;
+    draw_mesh = false;
+}
+
+template<typename T>
+bool GLViewer::init(int argc, char **argv, sl::CameraParameters camLeft, T *ptr) {
+    
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
 
@@ -224,8 +235,14 @@ bool GLViewer::init(int argc, char **argv, sl::CameraParameters camLeft) {
 
     cudaSafeCall(cudaGraphicsGLRegisterImage(&cuda_gl_ressource, imageTex, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard));
 
+    initPtr(ptr);
+
     // Create GLSL Shaders for Mesh and Image
-    shader_mesh = new Shader(MESH_VERTEX_SHADER, MESH_FRAGMENT_SHADER);
+    if(draw_mesh)
+        shader_mesh = new Shader(MESH_VERTEX_SHADER, FRAGMENT_SHADER);
+    else
+        shader_mesh = new Shader(FPC_VERTEX_SHADER, FRAGMENT_SHADER);
+
     shMVPMatrixLoc = glGetUniformLocation(shader_mesh->getProgramId(), "u_mvpMatrix");
     shColorLoc = glGetUniformLocation(shader_mesh->getProgramId(), "u_color");
     shader_image = new Shader(IMAGE_VERTEX_SHADER, IMAGE_FRAGMENT_SHADER);
@@ -306,6 +323,9 @@ bool GLViewer::init(int argc, char **argv, sl::CameraParameters camLeft) {
     
     glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
 
+    // ready to start
+    chunks_pushed = true;
+
     return false;
 }
 
@@ -339,7 +359,7 @@ bool GLViewer::updateImageAndState(sl::Mat &im, sl::Transform &pose_, sl::POSITI
             tracking_state = track_state;
             mapping_state = mapp_state;
         }
-        new_data = true;
+        new_images = true;
         mtx.unlock();
     }
 
@@ -348,34 +368,9 @@ bool GLViewer::updateImageAndState(sl::Mat &im, sl::Transform &pose_, sl::POSITI
     return cpy_state;
 }
 
-template<typename T>
-void GLViewer::updateMap(T &map) {
-    if(ask_clear) {
-        ask_clear = false;
-        sub_maps.clear();
-        sub_maps.resize(1000);
-    }
-    
-    if(mtx.try_lock()) {
-        bool force_update = false;
-        if(sub_maps.size() < map.chunks.size()) {
-            int new_size = sub_maps.size() + 1000;
-            sub_maps.clear();
-            sub_maps.resize(new_size);
-            force_update = true;
-        }
-
-        for (unsigned int c = 0; c < map.chunks.size(); c++) {
-            // If the chunck has been updated by the spatial mapping, update it for rendering
-            if(map.chunks[c].has_been_updated || force_update)
-                sub_maps[c].update(map.chunks[c]);
-        }
-        mtx.unlock();
-    }
-}
-
 void GLViewer::clearCurrentMesh() {
     ask_clear = true;
+    new_chunks = true;
 }
 
 void GLViewer::render() {
@@ -393,17 +388,52 @@ void GLViewer::render() {
 void GLViewer::update() {
 
     // Update GPU data
-    if(new_data) {
+    if(new_images) {
         cudaArray_t ArrIm;
         cudaSafeCall(cudaGraphicsMapResources(1, &cuda_gl_ressource, 0));
         cudaSafeCall(cudaGraphicsSubResourceGetMappedArray(&ArrIm, cuda_gl_ressource, 0, 0));
         cudaSafeCall(cudaMemcpy2DToArray(ArrIm, 0, 0, image.getPtr<sl::uchar1>(sl::MEM::GPU), image.getStepBytes(sl::MEM::GPU), image.getPixelBytes()*image.getWidth(), image.getHeight(), cudaMemcpyDeviceToDevice));
         cudaSafeCall(cudaGraphicsUnmapResources(1, &cuda_gl_ressource, 0));
 
-        for (unsigned int c = 0; c < sub_maps.size(); c++)
-            sub_maps[c].pushToGPU();
+        new_images = false;
+    }
 
-        new_data = false;
+    if (new_chunks) {
+
+        if (ask_clear) {
+            sub_maps.clear();
+            ask_clear = false;
+        }
+
+        int nb_c = 0;
+        if(draw_mesh)
+            nb_c = p_mesh->chunks.size();
+        else
+            nb_c = p_fpc->chunks.size();
+
+        if (nb_c > sub_maps.size()) {
+            const float step = 500.f;
+            size_t new_size = ((nb_c / step) + 1) * step;
+            sub_maps.resize(new_size);
+        }
+
+        if (draw_mesh) {
+            int c = 0;
+            for (auto& it : sub_maps) {
+                if ((c < nb_c) && p_mesh->chunks[c].has_been_updated)
+                    it.update(p_mesh->chunks[c]);
+                c++;
+            }
+        } else {
+            int c = 0;
+            for (auto& it : sub_maps) {
+                if ((c < nb_c) && p_fpc->chunks[c].has_been_updated)
+                    it.update(p_fpc->chunks[c]);
+                c++;
+            }
+        }
+        new_chunks = false;
+        chunks_pushed = true;
     }
 }
 
@@ -483,8 +513,8 @@ void GLViewer::draw() {
             // Draw the mesh in GL_TRIANGLES with a polygon mode in line (wire)
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-            for (unsigned int c = 0; c < sub_maps.size(); c++)
-                sub_maps[c].draw();
+            for (auto &it: sub_maps)
+                it.draw();
 
             glUseProgram(0);
         }
@@ -596,5 +626,5 @@ std::string getDir() {
     return myDir;
 }
 
-template void GLViewer::updateMap<sl::FusedPointCloud>(sl::FusedPointCloud &map);
-template void GLViewer::updateMap<sl::Mesh>(sl::Mesh &map);
+template bool GLViewer::init<sl::FusedPointCloud>(int argc, char** argv, sl::CameraParameters camLeft, sl::FusedPointCloud* ptr);
+template bool GLViewer::init<sl::Mesh>(int argc, char** argv, sl::CameraParameters camLeft, sl::Mesh* ptr);

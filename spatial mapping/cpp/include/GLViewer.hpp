@@ -1,6 +1,5 @@
 #pragma once
 
-
 #ifndef __SIMPLE3DOBJECT_INCLUDE_H_
 #define __SIMPLE3DOBJECT_INCLUDE_H_
 
@@ -11,13 +10,13 @@
 
 #include <mutex>
 
+#include <list>
+
 //// UTILS //////
 using namespace std;
 void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, std::string msg_suffix = "") ;
 
 /////////////////
-
-
 class Shader{
 public:
     Shader(GLchar* vs, GLchar* fs);
@@ -37,20 +36,14 @@ class SubMapObj {
     GLuint vaoID_;
     GLuint vboID_[2];
     int current_fc;
-    bool need_update;
-    bool isUpdating;
 
-    std::vector<sl::float3> vert;
-    std::vector<sl::uint3> tri;
     std::vector<sl::uint1> index;
 
 public:
-    bool display_mesh;
     SubMapObj();
     ~SubMapObj();
     template<typename T>
     void update(T &chunks);
-    void pushToGPU();
     void draw();
 };
 
@@ -59,11 +52,18 @@ public:
     GLViewer();
     ~GLViewer();
     bool isAvailable();
-    bool init(int argc, char **argv, sl::CameraParameters);
-    bool updateImageAndState(sl::Mat &image,  sl::Transform &pose, sl::POSITIONAL_TRACKING_STATE track_state, sl::SPATIAL_MAPPING_STATE mapp_state);
-
     template<typename T>
-    void updateMap(T &map);
+    bool init(int argc, char **argv, sl::CameraParameters, T*ptr);
+    bool updateImageAndState(sl::Mat &image,  sl::Transform &pose, sl::POSITIONAL_TRACKING_STATE track_state, sl::SPATIAL_MAPPING_STATE mapp_state);
+    
+    void updateChunks() {
+        new_chunks = true;
+        chunks_pushed = false;
+    }
+
+    bool chunksUpdated() {
+        return chunks_pushed;
+    }
 
     void clearCurrentMesh();
 
@@ -80,6 +80,9 @@ private:
 
     static void drawCallback();
     static void keyReleasedCallback(unsigned char c, int x, int y);
+    
+    template<typename T>
+    void initPtr(T* ptr);
 
     std::mutex mtx;
 
@@ -89,7 +92,7 @@ private:
     // For CUDA-OpenGL interoperability
     cudaGraphicsResource* cuda_gl_ressource;//cuda GL resource           
                                             // OpenGL mesh container
-    std::vector<SubMapObj> sub_maps;    // Opengl mesh container
+    std::list<SubMapObj> sub_maps;    // Opengl mesh container
     sl::float3 vertices_color;              // Defines the color of the mesh
     
     // OpenGL camera projection matrix
@@ -100,8 +103,14 @@ private:
     sl::POSITIONAL_TRACKING_STATE tracking_state;
     sl::SPATIAL_MAPPING_STATE mapping_state;
 
-    bool new_data;
+    bool new_images;
+    bool new_chunks;
+    bool chunks_pushed;
     bool ask_clear;
+    bool draw_mesh;
+
+    sl::Mesh* p_mesh;
+    sl::FusedPointCloud* p_fpc;
     
     // Opengl object
     Shader *shader_mesh; //GLSL Shader for mesh
