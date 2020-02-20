@@ -11,6 +11,7 @@ This sample shows how to detect and track objects in space.
 
 - Windows 10, Ubuntu LTS
 - [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
+- OpenCV python (`python -m pip install opencv-python`)
 
 ### Object Detection
 

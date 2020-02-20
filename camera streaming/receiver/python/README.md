@@ -1,6 +1,6 @@
-# Stereolabs ZED - Camera Control
+# Stereolabs ZED - Streaming Receiver
 
-This sample shows how to track camera motion in space.
+This sample shows how to open a stream from an other ZED and display the left image.
 
 ## Getting started
 
@@ -12,10 +12,12 @@ This sample shows how to track camera motion in space.
 - Windows 10, Ubuntu LTS
 - [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
 - [ZED Python API](https://www.stereolabs.com/docs/app-development/python/)
-- PyOpenGL (`python -m pip install PyOpenGL`)
+- OpenCV python (`python -m pip install opencv-python`)
 
 ## Run the example
- 
+    
+This sample need a sender to operate (See streaming sender sample)
+
 ```
-python "position_example.py"
+python streaming_receiver.py <sender_IP>
 ```
