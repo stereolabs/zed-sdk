@@ -1,6 +1,6 @@
 ########################################################################
 #
-# Copyright (c) 2018, STEREOLABS.
+# Copyright (c) 2020, STEREOLABS.
 #
 # All rights reserved.
 #
