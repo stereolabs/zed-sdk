@@ -10,6 +10,10 @@ SVO video files can be played with the ZED API and used with its different modul
 
 ## Run the sample
 
+The default recording compression is H264 which provides fast encoding and efficently compressed SVO file. It can be changed to H265 or LOSSLESS (image based PNG compression) depending on the hardware capabilities. [See API Documentation for more information](https://www.stereolabs.com/docs/api/python/classpyzed_1_1sl_1_1SVO__COMPRESSION__MODE.html)
+
 ```
-python examples/svo_recording/svo_recording.py svo_file.svo
+python svo_recording.py svo_file.svo
 ```
+
+Use Ctrl-C to stop the recording.
