@@ -84,7 +84,7 @@ def main():
 
     # Specify SVO path parameter
     init_params = sl.InitParameters()
-    init_params.input.set_from_svo_file(str(svo_input_path))
+    init_params.set_from_svo_file(str(svo_input_path))
     init_params.svo_real_time_mode = False  # Don't convert in realtime
     init_params.coordinate_units = sl.UNIT.MILLIMETER  # Use milliliter units (for depth measurements)
 
