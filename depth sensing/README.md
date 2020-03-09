@@ -1,6 +1,7 @@
 # Stereolabs ZED - Depth Sensing
 
 This sample captures a 3D point cloud and display it in an OpenGL window. It shows how to:
+- Adjust depth and texture confidence filters
 - Get a 3D point cloud with the API.
 - Display point cloud in OpenGL.
 - Use a thread to capture the point cloud and update the GL window simultaneously.
