@@ -13,4 +13,4 @@ This sample shows how to track camera motion in space and display it in an OpenG
 - First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
 - For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
 
-*NOTE:* ZED camera tracking is based on stereo vision only. Quick and sudden camera movements can be difficult to track if the image is too blurry or there is no visual information in the scene. To improve tracking performance, we recommend using the ZED in HD720 mode at 60fps.
+*NOTE*: To improve tracking performance, we recommend using the ZED in HD720 mode at 60fps.
