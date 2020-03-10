@@ -33,10 +33,8 @@
 using namespace std;
 using namespace sl;
 
+#define IMU_ONLY 0
 const int MAX_CHAR = 128;
-
-
-//#define ZED_IMU_ONLY
 
 inline void setTxt(sl::float3 value, char* ptr_txt) {
     snprintf(ptr_txt, MAX_CHAR, "%3.2f; %3.2f; %3.2f", value.x, value.y, value.z);
@@ -48,21 +46,18 @@ int main(int argc, char **argv) {
 
     Camera zed;
     // Set configuration parameters for the ZED
-    InitParameters initParameters;
-    initParameters.coordinate_units = UNIT::METER;
-    initParameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
-    initParameters.sdk_verbose = true;
-    initParameters.sensors_required = true;
-    parseArgs(argc, argv, initParameters);
+    InitParameters init_parameters;
+    init_parameters.coordinate_units = UNIT::METER;
+    init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
+    init_parameters.sdk_verbose = true;
+    parseArgs(argc, argv, init_parameters);
 
     // Open the camera
-    auto zed_error = zed.open(initParameters);
-    if (zed_error != ERROR_CODE::SUCCESS) {
-        print("Opening camera failed: ", zed_error);
-        zed.close();
-        return 1; // Quit if an error occurred
+    ERROR_CODE zed_open_state = zed.open(init_parameters);
+    if (zed_open_state != ERROR_CODE::SUCCESS) {
+        print("Camera Open", zed_open_state, "Exit program.");
+        return EXIT_FAILURE;
     }
-
 
     auto camera_model = zed.getCameraInformation().camera_model;
     GLViewer viewer;
@@ -77,59 +72,30 @@ int main(int argc, char **argv) {
     PositionalTrackingParameters positional_tracking_param;
     positional_tracking_param.enable_area_memory = true;
     // enable Positional Tracking
-    zed_error = zed.enablePositionalTracking(positional_tracking_param);
-    if (zed_error != ERROR_CODE::SUCCESS) {
-        print("Enabling positionnal tracking failed: ", zed_error);
+    auto returned_state = zed.enablePositionalTracking(positional_tracking_param);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        print("Enabling positionnal tracking failed: ", returned_state);
         zed.close();
-        return 1; // Quit if an error occurred
+        return EXIT_FAILURE;
     }
 
     Pose camera_path;
     POSITIONAL_TRACKING_STATE tracking_state;
-
-    /*sl::RecordingParameters rec_parm;
-    rec_parm.video_filename = "test.svo";
-    zed.enableRecording(rec_parm);*/
-    int grab_count = 0;
+#if IMU_ONLY
+    SensorsData sensors_data;
+#endif
+    
     while (viewer.isAvailable()) {
         if (zed.grab() == ERROR_CODE::SUCCESS) {
             // Get the position of the camera in a fixed reference frame (the World Frame)
             tracking_state = zed.getPosition(camera_path, REFERENCE_FRAME::WORLD);
-            grab_count++;
 
-            // Get sensors data if available
-            sl::SensorsData s_data;
-            sl::ERROR_CODE s_err = zed.getSensorsData(s_data, sl::TIME_REFERENCE::IMAGE);
-
-            if (s_err == sl::ERROR_CODE::SUCCESS) {
-                float imu_temperature = 0; //Temperature given by the IMU device
-                float onboard_left_temperature = 0; //Temperature given by the analog temperature sensor located alongside the left image sensor. Only for ZED2
-                float onboard_right_temperature = 0; //Temperature given by the analog temperature sensor located alongside the right image sensor. Only for ZED2
-
-                if (s_data.temperature.get(sl::SensorsData::TemperatureData::SENSOR_LOCATION::IMU, imu_temperature) == sl::ERROR_CODE::SUCCESS && grab_count % 20 == 0)
-                    print("IMU Temperature " + to_string(imu_temperature));
-
-                if (s_data.temperature.get(sl::SensorsData::TemperatureData::SENSOR_LOCATION::ONBOARD_LEFT, onboard_left_temperature) == sl::ERROR_CODE::SUCCESS && grab_count % 20 == 0)
-                    print("Onboard left Temperature " + to_string(onboard_left_temperature));
-
-                if (s_data.temperature.get(sl::SensorsData::TemperatureData::SENSOR_LOCATION::ONBOARD_RIGHT, onboard_right_temperature) == sl::ERROR_CODE::SUCCESS && grab_count % 20 == 0)
-                    print("Onboard right Temperature " + to_string(onboard_right_temperature));
-
-                // Barometer is only available for ZED2
-                if (s_data.barometer.is_available && grab_count % 20 == 0) {
-                    float rel_altitude = s_data.barometer.relative_altitude;
-                    print("Barometer relative altitude : " + to_string(rel_altitude));
-                }
-            }
-
-
-#ifdef ZED_IMU_ONLY
-            if (s_err == sl::ERROR_CODE::SUCCESS) {
-            setTxt(s_data.imu.pose.getEulerAngles(), text_rotation); //only rotation is computed for IMU
-            viewer.updateData(s_data.imu.pose, string(text_translation), string(text_rotation), sl::POSITIONAL_TRACKING_STATE::OK);
+#if IMU_ONLY
+            if (zed.getSensorsData(sensors_data, TIME_REFERENCE::IMAGE) == sl::ERROR_CODE::SUCCESS) {
+                setTxt(sensors_data.imu.pose.getEulerAngles(), text_rotation); //only rotation is computed for IMU
+                viewer.updateData(sensors_data.imu.pose, string(text_translation), string(text_rotation), sl::POSITIONAL_TRACKING_STATE::OK);
             }
 #else
-
             if (tracking_state == POSITIONAL_TRACKING_STATE::OK) {
                 // Get rotation and translation and displays it
                 setTxt(camera_path.getEulerAngles(), text_rotation);
@@ -148,7 +114,7 @@ int main(int argc, char **argv) {
 
     //zed.disableRecording();
     zed.close();
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 void parseArgs(int argc, char **argv, sl::InitParameters& param) {

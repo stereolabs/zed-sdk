@@ -21,16 +21,57 @@
 import pyzed.sl as sl
 import cv2
 import numpy as np
+import math
+
+## 
+# Basic class to handle the timestamp of the different sensors to know if it is a new sensors_data or an old one
+class TimestampHandler:
+    def __init__(self):
+        self.t_imu = sl.Timestamp()
+        self.t_baro = sl.Timestamp()
+        self.t_mag = sl.Timestamp()
+
+    ##
+    # check if the new timestamp is higher than the reference one, and if yes, save the current as reference
+    def is_new(self, sensor):
+        if (isinstance(sensor, sl.IMUData)):
+            new_ = (sensor.timestamp.get_microseconds() > self.t_imu.get_microseconds())
+            if new_:
+                self.t_imu = sensor.timestamp
+            return new_
+        elif (isinstance(sensor, sl.MagnetometerData)):
+            new_ = (sensor.timestamp.get_microseconds() > self.t_mag.get_microseconds())
+            if new_:
+                self.t_mag = sensor.timestamp
+            return new_
+        elif (isinstance(sensor, sl.BarometerData)):
+            new_ = (sensor.timestamp.get_microseconds() > self.t_baro.get_microseconds())
+            if new_:
+                self.t_baro = sensor.timestamp
+            return new_
+
+##
+#  Function to display sensor parameters
+def printSensorParameters(sensor_parameters):
+    if sensor_parameters.is_available:
+        print("*****************************")
+        print("Sensor type: " + str(sensor_parameters.sensor_type))
+        print("Max rate: "  + str(sensor_parameters.sampling_rate) + " "  + str(sl.SENSORS_UNIT.HERTZ))
+        print("Range: "  + str(sensor_parameters.sensor_range) + " "  + str(sensor_parameters.sensor_unit))
+        print("Resolution: " + str(sensor_parameters.resolution) + " "  + str(sensor_parameters.sensor_unit))
+        if not math.isnan(sensor_parameters.noise_density):
+            print("Noise Density: "  + str(sensor_parameters.noise_density) + " " + str(sensor_parameters.sensor_unit) + "/√Hz")
+        if not math.isnan(sensor_parameters.random_walk):
+            print("Random Walk: "  + str(sensor_parameters.random_walk) + " " + str(sensor_parameters.sensor_unit) + "/s/√Hz")
+    
+
 
 def main():
     # Create a Camera object
     zed = sl.Camera()
 
-    # Create a InitParameters object and set configuration parameters
     init_params = sl.InitParameters()
-    init_params.camera_resolution = sl.RESOLUTION.HD720  # Use HD720 video mode
-    init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
-    init_params.coordinate_units = sl.UNIT.METER
+    init_params.depth_mode = sl.DEPTH_MODE.NONE
 
     # Open the camera
     err = zed.open(init_params)
@@ -39,107 +80,68 @@ def main():
         zed.close()
         exit(1)
 
-    cam_model = zed.get_camera_information().camera_model
+    # Get camera information sensors_data
+    info = zed.get_camera_information()
+
+    cam_model = info.camera_model
     if cam_model == sl.MODEL.ZED :
-        print("This tutorial only supports ZED-M and ZED2 camera models")
+        print("This tutorial only supports ZED-M and ZED2 camera models, ZED does not have additional sensors")
         exit(1)
 
-    # Get Sensor Data for 2 seconds (800 samples)
+    # Display camera information (model,S/N, fw version)
+    print("Camera Model: " + str(cam_model))
+    print("Serial Number: " + str(info.serial_number))
+    print("Camera Firmware: " + str(info.camera_configuration.firmware_version))
+    print("Sensors Firmware: " + str(info.sensors_configuration.firmware_version))
+
+    # Display sensors parameters (imu,barometer,magnetometer)
+    printSensorParameters(info.sensors_configuration.accelerometer_parameters) # accelerometer configuration
+    printSensorParameters(info.sensors_configuration.gyroscope_parameters) # gyroscope configuration
+    printSensorParameters(info.sensors_configuration.magnetometer_parameters) # magnetometer configuration
+    printSensorParameters(info.sensors_configuration.barometer_parameters) # barometer configuration
+    
+    # Used to store the sensors timestamp to know if the sensors_data is a new one or not
+    ts_handler = TimestampHandler()
+
+    # Get Sensor Data for 5 seconds
     i = 0
-    data = sl.SensorsData()
-    first_ts = sl.Timestamp()
-    prev_imu_ts = sl.Timestamp()
-    prev_baro_ts = sl.Timestamp()
-    prev_mag_ts = sl.Timestamp()
-    while i < 800 :
-        # Get Sensor Data not synced with image frames
-        if zed.get_sensors_data(data, sl.TIME_REFERENCE.CURRENT) != sl.ERROR_CODE.SUCCESS :
-            print("Error retrieving Sensor Data")
-            break
+    sensors_data = sl.SensorsData()
 
-        imu_ts = data.get_imu_data().timestamp
+    while i < 100 :
+        # retrieve the current sensors sensors_data
+        # Depending on your Camera model or its firmware, differents sensors are presents.
+        # They do not run at the same rate: Therefore, to do not miss samples we iterate as fast as we can and compare timestamp to know when a sensors_data is a new one
+        # NOTE: There is no need to acquire images with grab() function. Sensors sensors_data are running in a separated internal capture thread.
+        if zed.get_sensors_data(sensors_data, sl.TIME_REFERENCE.CURRENT) == sl.ERROR_CODE.SUCCESS :
+            # Check if the data has been updated since the last time
+            # IMU is the sensor with the highest rate
+            if ts_handler.is_new(sensors_data.get_imu_data()):
+                print("Sample " + str(i))
 
-        if i == 0 :
-            first_ts = imu_ts
+                print(" - IMU:")
+                # Filtered orientation quaternion
+                quaternion = sensors_data.get_imu_data().get_pose().get_orientation().get()
+                print(" \t Orientation: [ Ox: {0}, Oy: {1}, Oz {2}, Ow: {3} ]".format(quaternion[0], quaternion[1], quaternion[2], quaternion[3]))
+                
+                # linear acceleration
+                linear_acceleration = sensors_data.get_imu_data().get_linear_acceleration()
+                print(" \t Acceleration: [ {0} {1} {2} ] [m/sec^2]".format(linear_acceleration[0], linear_acceleration[1], linear_acceleration[2]))
 
-        # Check if Sensors Data are updated
-        if prev_imu_ts.data_ns == imu_ts.data_ns :
-            continue
+                # angular velocities
+                angular_velocity = sensors_data.get_imu_data().get_angular_velocity()
+                print(" \t Angular Velocities: [ {0} {1} {2} ] [deg/sec]".format(angular_velocity[0], angular_velocity[1], angular_velocity[2]))
 
-        prev_imu_ts = imu_ts
+                # Check if Magnetometer data has been updated (not the same frequency than IMU)
+                if ts_handler.is_new(sensors_data.get_magnetometer_data()):
+                    magnetic_field_calibrated = sensors_data.get_magnetometer_data().get_magnetic_field_calibrated()
+                    print(" - Magnetometer\n \t Magnetic Field: [ {0} {1} {2} ] [uT]".format(magnetic_field_calibrated[0], magnetic_field_calibrated[1], magnetic_field_calibrated[2]))
+                
+                # Check if Barometer data has been updated 
+                if ts_handler.is_new(sensors_data.get_barometer_data()):
+                    magnetic_field_calibrated = sensors_data.get_barometer_data().pressure
+                    print(" - Barometer\n \t Atmospheric pressure: {0} [hPa]".format(sensors_data.get_barometer_data().pressure))
 
-        print("*** Sample #"+str(i))
-
-        seconds = data.get_imu_data().timestamp.get_seconds() - first_ts.get_seconds()
-        print(" * Relative timestamp: "+str(seconds)+" sec")
-
-        # Filtered orientation quaternion
-        zed_imu = data.get_imu_data()
-
-        #Display the IMU acceleratoin
-        acceleration = [0,0,0]
-        zed_imu.get_linear_acceleration(acceleration)
-        ax = round(acceleration[0], 3)
-        ay = round(acceleration[1], 3)
-        az = round(acceleration[2], 3)
-        print("IMU Acceleration: Ax: {0}, Ay: {1}, Az {2}\n".format(ax, ay, az))
-
-        #Display the IMU angular velocity
-        a_velocity = [0,0,0]
-        zed_imu.get_angular_velocity(a_velocity)
-        vx = round(a_velocity[0], 3)
-        vy = round(a_velocity[1], 3)
-        vz = round(a_velocity[2], 3)
-        print("IMU Angular Velocity: Vx: {0}, Vy: {1}, Vz {2}\n".format(vx, vy, vz))
-
-        # Display the IMU orientation quaternion
-        zed_imu_pose = sl.Transform()
-        ox = round(zed_imu.get_pose(zed_imu_pose).get_orientation().get()[0], 3)
-        oy = round(zed_imu.get_pose(zed_imu_pose).get_orientation().get()[1], 3)
-        oz = round(zed_imu.get_pose(zed_imu_pose).get_orientation().get()[2], 3)
-        ow = round(zed_imu.get_pose(zed_imu_pose).get_orientation().get()[3], 3)
-        print("IMU Orientation: Ox: {0}, Oy: {1}, Oz {2}, Ow: {3}\n".format(ox, oy, oz, ow))
-
-        if cam_model == sl.MODEL.ZED2 :
-
-            # IMU temperature
-            location = sl.SENSOR_LOCATION.IMU
-            temp = data.get_temperature_data().get(location)
-            if temp != -1:
-               print(" *  IMU temperature: "+str(temp)+"C")
-
-            # Check if Magnetometer Data are updated
-            mag_ts = data.get_magnetometer_data().timestamp
-            if (prev_mag_ts.data_ns != mag_ts.data_ns) :
-                prev_mag_ts = mag_ts
-                mx = round(data.get_magnetometer_data().get_magnetic_field_calibrated()[0])
-                my = round(data.get_magnetometer_data().get_magnetic_field_calibrated()[1])
-                mz = round(data.get_magnetometer_data().get_magnetic_field_calibrated()[2])
-                print(" * Magnetic Fields [uT]: x: {0}, y: {1}, z: {2}".format(mx, my, mz))
-
-            baro_ts = data.get_barometer_data().timestamp
-            if (prev_baro_ts.data_ns != baro_ts.data_ns) :
-                prev_baro_ts = baro_ts
-
-                # Atmospheric pressure
-                print(" * Atmospheric pressure [hPa]: "+str(data.get_barometer_data().pressure))
-
-                # Barometer temperature
-                location = sl.SENSOR_LOCATION.BAROMETER
-                baro_temp = data.get_temperature_data().get(location)
-                if baro_temp != -1:
-                    print(" * Barometer temperature: "+str(temp)+"C")
-
-                # Camera temperatures
-                location_left = sl.SENSOR_LOCATION.ONBOARD_LEFT
-                location_right = sl.SENSOR_LOCATION.ONBOARD_RIGHT
-
-                left_temp = data.get_temperature_data().get(location_left)
-                right_temp = data.get_temperature_data().get(location_right)
-                print(" * Camera left temperature: "+str(left_temp))
-                print(" * Camera right temperature: "+str(right_temp))
-
-        i = i+1
+                i = i+1
 
     zed.close()
     return 0

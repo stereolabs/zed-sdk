@@ -30,7 +30,8 @@ def main():
     # Create a InitParameters object and set configuration parameters
     init_params = sl.InitParameters()
     init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE  # Use PERFORMANCE depth mode
-    init_params.coordinate_units = sl.UNIT.MILLIMETER  # Use milliliter units (for depth measurements)
+    init_params.coordinate_units = sl.UNIT.METER  # Use meter units (for depth measurements)
+    init_params.camera_resolution = sl.RESOLUTION.HD720
 
     # Open the camera
     err = zed.open(init_params)
@@ -40,8 +41,11 @@ def main():
     # Create and set RuntimeParameters after opening the camera
     runtime_parameters = sl.RuntimeParameters()
     runtime_parameters.sensing_mode = sl.SENSING_MODE.STANDARD  # Use STANDARD sensing mode
+    # Setting the depth confidence parameters
+    runtime_parameters.confidence_threshold = 100
+    runtime_parameters.textureness_confidence_threshold = 100
 
-    # Capture 50 images and depth, then stop
+    # Capture 150 images and depth, then stop
     i = 0
     image = sl.Mat()
     depth = sl.Mat()
@@ -51,7 +55,7 @@ def main():
     mirror_ref.set_translation(sl.Translation(2.75,4.0,0))
     tr_np = mirror_ref.m
 
-    while i < 50:
+    while i < 150:
         # A new image is available if grab() returns SUCCESS
         if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
             # Retrieve left image
@@ -75,12 +79,12 @@ def main():
             point_cloud_np.dot(tr_np)
 
             if not np.isnan(distance) and not np.isinf(distance):
-                distance = round(distance)
-                print("Distance to Camera at ({0}, {1}): {2} mm\n".format(x, y, distance))
+                print("Distance to Camera at ({}, {}) (image center): {:1.3} m".format(x, y, distance), end="\r")
                 # Increment the loop
                 i = i + 1
             else:
-                print("Can't estimate distance at this position, move the camera\n")
+                print("Can't estimate distance at this position.")
+                print("Your camera is probably too close to the scene, please move it backwards.\n")
             sys.stdout.flush()
 
     # Close the camera

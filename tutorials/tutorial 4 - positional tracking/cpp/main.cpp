@@ -21,6 +21,7 @@
 
 #include <sl/Camera.hpp>
 
+using namespace std;
 using namespace sl;
 
 int main(int argc, char **argv) {
@@ -29,17 +30,17 @@ int main(int argc, char **argv) {
     Camera zed;
 
     // Set configuration parameters
-    InitParameters init_params;
-    init_params.camera_resolution = RESOLUTION::HD720; // Use HD720 video mode (default fps: 60)
-    init_params.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // Use a right-handed Y-up coordinate system
-    init_params.coordinate_units = UNIT::METER; // Set units in meters
-    init_params.sensors_required = true;
+    InitParameters init_parameters;
+    init_parameters.camera_resolution = RESOLUTION::HD720; // Use HD720 video mode (default fps: 60)
+    init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // Use a right-handed Y-up coordinate system
+    init_parameters.coordinate_units = UNIT::METER; // Set units in meters
+    init_parameters.sensors_required = true;
     
     // Open the camera
-    ERROR_CODE err = zed.open(init_params);
+    ERROR_CODE err = zed.open(init_parameters);
     if (err != ERROR_CODE::SUCCESS) {
-        std::cout << "Error " << err << ", exit program.\n";
-        return -1;
+        cout << "Error " << err << ", exit program.\n";
+        return EXIT_FAILURE;
     }
 
     // Enable positional tracking with default parameters
@@ -53,7 +54,7 @@ int main(int argc, char **argv) {
     Pose zed_pose;
 
     // Check if the camera is a ZED M and therefore if an IMU is available
-    bool zed_mini = (zed.getCameraInformation().camera_model == MODEL::ZED_M);
+    bool zed_has_imu = (zed.getCameraInformation().camera_model != MODEL::ZED);
     SensorsData sensor_data;
 
     while (i < 1000) {
@@ -64,34 +65,26 @@ int main(int argc, char **argv) {
 
             // get the translation information
             auto zed_translation = zed_pose.getTranslation();
-
-            // Display the translation and timestamp
-            printf("\nTranslation: Tx: %.3f, Ty: %.3f, Tz: %.3f, Timestamp: %llu\n", zed_translation.tx,
-                    zed_translation.ty, zed_translation.tz, (long long unsigned int) zed_pose.timestamp.getNanoseconds());
-            
             // get the orientation information
             auto zed_orientation = zed_pose.getOrientation();
+            // get the timestamp
+            auto ts = zed_pose.timestamp.getNanoseconds();
 
-            // Display the orientation quaternion
-            printf("Orientation: Ox: %.3f, Oy: %.3f, Oz: %.3f, Ow: %.3f\n", zed_orientation.ox,
-                   zed_orientation.oy, zed_orientation.oz, zed_orientation.ow);
-                        
-            if (zed_mini) { // Display IMU data
-
-                 // Get IMU data
+            // Display the translation and timestamp
+            cout << "Camera Translation: {" << zed_translation << "}, Orientation: {" << zed_orientation << "}, timestamp: " << zed_pose.timestamp.getNanoseconds() << "ns\n";
+            
+            // Display IMU data
+            if (zed_has_imu) {
+                 // Get IMU data at the time the image was captured
                 zed.getSensorsData(sensor_data, TIME_REFERENCE::IMAGE);
 
+                //get filtered orientation quaternion
                 auto imu_orientation = sensor_data.imu.pose.getOrientation();
+                // get raw acceleration
+                auto acceleration = sensor_data.imu.linear_acceleration;
 
-                // Filtered orientation quaternion
-                printf("IMU Orientation: Ox: %.3f, Oy: %.3f, Oz: %.3f, Ow: %.3f\n", imu_orientation.ox,
-                       imu_orientation.oy, imu_orientation.oz, imu_orientation.ow);
-
-                // Raw acceleration
-                printf("IMU Acceleration: x: %.3f, y: %.3f, z: %.3f\n", sensor_data.imu.linear_acceleration.x,
-                        sensor_data.imu.linear_acceleration.y, sensor_data.imu.linear_acceleration.z);
+                cout << "IMU Orientation: {" << zed_orientation << "}, Acceleration: {" << acceleration << "}\n";
             }
-
             i++;
         }
     }
@@ -99,5 +92,5 @@ int main(int argc, char **argv) {
     // Disable positional tracking and close the camera
     zed.disablePositionalTracking();
     zed.close();
-    return 0;
+    return EXIT_SUCCESS;
 }

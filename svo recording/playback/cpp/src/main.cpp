@@ -34,46 +34,38 @@
 using namespace sl;
 using namespace std;
 
-void print(std::string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, std::string msg_suffix = "");
-
-
+void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
 
 int main(int argc, char **argv) {
 
-
-    if (argc<=1)
-    {
+    if (argc<=1)  {
         cout << "Usage: \n";
         cout << "$ ZED_SVO_Playback <SVO_file> \n";
         cout << "  ** SVO file is mandatory in the application ** \n\n";
-        return 1;
+        return EXIT_FAILURE;
     }
 
     // Create ZED objects
     Camera zed;
-    InitParameters initParameters;
-    initParameters.input.setFromSVOFile(argv[1]);
-	initParameters.camera_disable_self_calib = true;
-    initParameters.depth_mode = sl::DEPTH_MODE::PERFORMANCE;
+    InitParameters init_parameters;
+    init_parameters.input.setFromSVOFile(argv[1]);
+	init_parameters.camera_disable_self_calib = true;
+    init_parameters.depth_mode = sl::DEPTH_MODE::PERFORMANCE;
 
-    // Open the ZED
-    ERROR_CODE err = zed.open(initParameters);
-    if (err != ERROR_CODE::SUCCESS) {
-        print("Opening ZED : ",err);
-        zed.close();
-        return 1; // Quit if an error occurred
+    // Open the camera
+    ERROR_CODE zed_open_state = zed.open(init_parameters);
+    if (zed_open_state != ERROR_CODE::SUCCESS) {
+        print("Camera Open", zed_open_state, "Exit program.");
+        return EXIT_FAILURE;
     }
 
-    int ww_ = zed.getCameraInformation().camera_resolution.width;
-    int hh_ = zed.getCameraInformation().camera_resolution.height;
-
-
-    cv::Size size(ww_, hh_);
+    auto resolution = zed.getCameraInformation().camera_configuration.resolution;
+    cv::Size size(resolution.width, resolution.height);
     cv::Size size_sbs(size.width * 2, size.height);
 
     // Define OpenCV window size (resize to max 720/404)
-    int width = std::min(720, size.width);
-    int height = std::min(404, size.height);
+    int width = min(720, size.width);
+    int height = min(404, size.height);
     Mat svo_image(width * 2, height, MAT_TYPE::U8_C4, MEM::CPU);
     cv::Mat svo_image_ocv = slMat2cvMat(svo_image);
 
@@ -86,7 +78,7 @@ int main(int argc, char **argv) {
 
     int svo_frame_rate = zed.getInitParameters().camera_fps;
     int nb_frames = zed.getSVONumberOfFrames();
-    print("[Info] SVO contains " +std::to_string(nb_frames)+" frames");
+    print("[Info] SVO contains " +to_string(nb_frames)+" frames");
 
     // Start SVO playback
 
@@ -102,9 +94,8 @@ int main(int argc, char **argv) {
 
             // Display the frame
             cv::imshow("View", svo_image_ocv);
-            key = cv::waitKey(2);
-
-
+            key = cv::waitKey(10);
+            
             switch (key) {
             case 's':
                 svo_image.write(("capture_" + to_string(svo_position) + ".png").c_str());
@@ -128,16 +119,12 @@ int main(int argc, char **argv) {
             print("Grab ZED : ",err);
             break;
         }
-
-
-    }
- 
+     } 
     zed.close();
-    return 0;
+    return EXIT_SUCCESS;
 }
 
-
-void print(std::string msg_prefix, ERROR_CODE err_code, std::string msg_suffix) {
+void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     cout <<"[Sample]";
     if (err_code != ERROR_CODE::SUCCESS)
         cout << "[Error] ";
@@ -152,4 +139,3 @@ void print(std::string msg_prefix, ERROR_CODE err_code, std::string msg_suffix) 
         cout << " " << msg_suffix;
     cout << endl;
 }
-

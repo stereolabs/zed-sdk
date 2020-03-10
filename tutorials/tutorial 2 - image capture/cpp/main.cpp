@@ -21,6 +21,7 @@
 
 #include <sl/Camera.hpp>
 
+using namespace std;
 using namespace sl;
 
 int main(int argc, char **argv) {
@@ -29,15 +30,15 @@ int main(int argc, char **argv) {
     Camera zed;
 
     // Set configuration parameters
-    InitParameters init_params;
-    init_params.camera_resolution = RESOLUTION::HD1080; // Use HD1080 video mode
-    init_params.camera_fps = 30; // Set fps at 30
+    InitParameters init_parameters;
+    init_parameters.camera_resolution = RESOLUTION::HD1080; // Use HD1080 video mode
+    init_parameters.camera_fps = 30; // Set fps at 30
 
     // Open the camera
-    ERROR_CODE err = zed.open(init_params);
-    if (err != ERROR_CODE::SUCCESS) {
-        std::cout << "Error " << err << ", exit program.\n";
-        return -1;
+    ERROR_CODE state = zed.open(init_parameters);
+    if (state != ERROR_CODE::SUCCESS) {
+        cout << "Error " << state << ", exit program." << endl;
+        return EXIT_FAILURE;
     }
 
     // Capture 50 frames and stop
@@ -45,16 +46,20 @@ int main(int argc, char **argv) {
     sl::Mat image;
     while (i < 50) {
         // Grab an image
-        if (zed.grab() == ERROR_CODE::SUCCESS) {
-            // A new image is available if grab() returns ERROR_CODE::SUCCESS
-            zed.retrieveImage(image, VIEW::LEFT); // Get the left image
-            auto timestamp = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE); // Get the timestamp at the time the image was captured
-            printf("Image resolution: %d x %d  || Image timestamp: %llu\n", (int) image.getWidth(), (int) image.getHeight(), (unsigned long long int) timestamp.getNanoseconds());
+        state = zed.grab();
+        // A new image is available if grab() returns ERROR_CODE::SUCCESS
+        if (state == ERROR_CODE::SUCCESS) {
+
+            // Get the left image
+            zed.retrieveImage(image, VIEW::LEFT);
+            
+            // Display the image resolution and its acquisition timestamp
+            cout<<"Image resolution: "<< image.getWidth()<<"x"<<image.getHeight() <<" || Image timestamp: "<<image.timestamp.data_ns<<endl;
             i++;
         }
     }
 
     // Close the camera
     zed.close();
-    return 0;
+    return EXIT_SUCCESS;
 }

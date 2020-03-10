@@ -23,105 +23,100 @@
  **      with the ZED SDK and display the result                                **
  *********************************************************************************/
 
-// Standard includes
+ // Standard includes
 #include <iostream>
 #include <fstream>
 
 // ZED includes
 #include <sl/Camera.hpp>
 
-
 // Using std and sl namespaces
 using namespace std;
 using namespace sl;
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     // Create ZED objects
     Camera zed;
-    InitParameters initParameters;
-    initParameters.camera_resolution = RESOLUTION::HD720;
-    initParameters.depth_mode = DEPTH_MODE::PERFORMANCE;
-    initParameters.coordinate_units = UNIT::METER;
-    initParameters.sdk_verbose = true;
+    InitParameters init_parameters;
+    init_parameters.camera_resolution = RESOLUTION::HD720;
+    init_parameters.depth_mode = DEPTH_MODE::PERFORMANCE;
+    init_parameters.coordinate_units = UNIT::METER;
+    init_parameters.sdk_verbose = true;
 
     // Open the camera
-    ERROR_CODE zed_error = zed.open(initParameters);
-    if (zed_error != ERROR_CODE::SUCCESS) {
-        zed.close();
-        return 1; // Quit if an error occurred
+    ERROR_CODE err = zed.open(init_parameters);
+    if (err != ERROR_CODE::SUCCESS) {
+        cout << "Error " << err << ", exit program.\n";
+        return EXIT_FAILURE;
     }
 
     // Define the Objects detection module parameters
     ObjectDetectionParameters detection_parameters;
+    // run detection for every Camera grab
     detection_parameters.image_sync = true;
+    // track detects object accross time and space
     detection_parameters.enable_tracking = true;
+    // compute a binary mask for each object aligned on the left image
     detection_parameters.enable_mask_output = true;
-    
+
     auto camera_infos = zed.getCameraInformation();
 
     // If you want to have object tracking you need to enable positional tracking first
-    if (detection_parameters.enable_tracking) {
-        PositionalTrackingParameters positional_tracking_parameters;
-        //positional_tracking_parameters.set_as_static = true;
-        positional_tracking_parameters.set_floor_as_origin = true;
-        zed.enablePositionalTracking(positional_tracking_parameters);
-    }
+    if (detection_parameters.enable_tracking)
+        zed.enablePositionalTracking();    
 
-    std::cout << "Object Detection: Loading Module..." << std::endl;
-    zed_error = zed.enableObjectDetection(detection_parameters);
-    if (zed_error != ERROR_CODE::SUCCESS) {
+    cout << "Object Detection: Loading Module..." << endl;
+    err = zed.enableObjectDetection(detection_parameters);
+    if (err != ERROR_CODE::SUCCESS) {
         zed.close();
-        return 1;
+        return EXIT_FAILURE;
     }
     // detection runtime parameters
     ObjectDetectionRuntimeParameters detection_parameters_rt;
     // detection output
     Objects objects;
-    std::cout << std::setprecision(2);
+    cout << setprecision(3);
 
     while (zed.grab() == ERROR_CODE::SUCCESS) {
-        zed_error = zed.retrieveObjects(objects, detection_parameters_rt);
-        printf("\033c");
+        err = zed.retrieveObjects(objects, detection_parameters_rt);
 
         if (objects.is_new) {
 
-            std::cout << objects.object_list.size() << " Object(s) detected\n\n";
+            cout << objects.object_list.size() << " Object(s) detected\n\n";
 
             if (!objects.object_list.empty()) {
 
                 auto first_object = objects.object_list.front();
 
-                std::cout << "First object attributes :\n";
-                std::cout << " Label '" << first_object.label << "' (conf. "
-                        << first_object.confidence << "/100)\n";
+                cout << "First object attributes :\n";
+                cout << " Label '" << first_object.label << "' (conf. "
+                    << first_object.confidence << "/100)\n";
 
                 if (detection_parameters.enable_tracking)
-                    std::cout << " Tracking ID: " << first_object.id << " tracking state: " <<
-                        first_object.tracking_state << " / " << first_object.action_state << std::endl;
+                    cout << " Tracking ID: " << first_object.id << " tracking state: " <<
+                    first_object.tracking_state << " / " << first_object.action_state << "\n";
 
-                std::cout << " 3D position: " << first_object.position <<
-                        " Velocity: " << first_object.velocity;
+                cout << " 3D position: " << first_object.position <<
+                    " Velocity: " << first_object.velocity << "\n";
 
-                std::cout << " 3D dimensions: " << first_object.dimensions;
+                cout << " 3D dimensions: " << first_object.dimensions << "\n";
 
                 if (first_object.mask.isInit())
-                    std::cout << " 2D mask available\n";
+                    cout << " 2D mask available\n";
 
-                std::cout << " Bounding Box 2D \n";
+                cout << " Bounding Box 2D \n";
                 for (auto it : first_object.bounding_box_2d)
-                    std::cout << "    " << it;
+                    cout << "    " << it<<"\n";
 
-                std::cout << " Bounding Box 3D \n";
+                cout << " Bounding Box 3D \n";
                 for (auto it : first_object.bounding_box)
-                    std::cout << "    " << it;
+                    cout << "    " << it << "\n";
 
-                std::cout << "\nPress 'Enter' to continue...\n";
+                cout << "\nPress 'Enter' to continue...\n";
                 cin.ignore();
             }
-
         }
-
     }
     zed.close();
-    return 0;
+    return EXIT_SUCCESS;
 }

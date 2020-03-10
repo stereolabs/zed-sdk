@@ -45,7 +45,7 @@
 using namespace std;
 using namespace sl;
 bool is_playback = false;
-void print(std::string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, std::string msg_suffix = "");
+void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
 void parseArgs(int argc, char **argv, InitParameters& param);
 bool checkIsJetson();
 
@@ -54,26 +54,25 @@ int detection_confidence = 35;
 int main(int argc, char **argv) {
     // Create ZED objects
     Camera zed;
-    InitParameters initParameters;
-    initParameters.camera_resolution = RESOLUTION::HD720;
+    InitParameters init_parameters;
+    init_parameters.camera_resolution = RESOLUTION::HD720;
     if (checkIsJetson())
         // On Jetson (Nano, TX1/2) the object detection combined with an heavy depth mode could reduce the frame rate too much
-        initParameters.depth_mode = DEPTH_MODE::PERFORMANCE;
+        init_parameters.depth_mode = DEPTH_MODE::PERFORMANCE;
     else
-        initParameters.depth_mode = DEPTH_MODE::ULTRA;
-    initParameters.depth_maximum_distance = 50.0f * 1000.0f;
-    initParameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
-    initParameters.sdk_verbose = true;
-    initParameters.sensors_required = true;
+        init_parameters.depth_mode = DEPTH_MODE::ULTRA;
+    init_parameters.depth_maximum_distance = 50.0f * 1000.0f;
+    init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
+    init_parameters.sdk_verbose = true;
+    init_parameters.sensors_required = true;
 
-    parseArgs(argc, argv, initParameters);
-
+    parseArgs(argc, argv, init_parameters);
+    
     // Open the camera
-    ERROR_CODE zed_error = zed.open(initParameters);
-    if (zed_error != ERROR_CODE::SUCCESS) {
-        print("Camera::open", zed_error);
-        zed.close();
-        return 1; // Quit if an error occurred
+    ERROR_CODE zed_open_state = zed.open(init_parameters);
+    if (zed_open_state != ERROR_CODE::SUCCESS) {
+        print("Camera Open", zed_open_state, "Exit program.");
+        return EXIT_FAILURE;
     }
 
     // Define the Objects detection module parameters
@@ -84,19 +83,15 @@ int main(int argc, char **argv) {
     auto camera_infos = zed.getCameraInformation();
 
     // If you want to have object tracking you need to enable positional tracking first
-    if (detection_parameters.enable_tracking) {
-        PositionalTrackingParameters positional_tracking_parameters;
-        //positional_tracking_parameters.set_as_static = true;
-        positional_tracking_parameters.set_floor_as_origin = true;
-        zed.enablePositionalTracking(positional_tracking_parameters);
-    }
+    if (detection_parameters.enable_tracking)
+        zed.enablePositionalTracking();
 
     print("Object Detection: Loading Module...");
-    zed_error = zed.enableObjectDetection(detection_parameters);
-    if (zed_error != ERROR_CODE::SUCCESS) {
-        print("enableObjectDetection", zed_error, "\nExit program.");
+    auto returned_stated = zed.enableObjectDetection(detection_parameters);
+    if (returned_stated != ERROR_CODE::SUCCESS) {
+        print("enableObjectDetection", returned_stated, "\nExit program.");
         zed.close();
-        return 1;
+        return EXIT_FAILURE;
     }
 
     // detection runtime parameters
@@ -107,27 +102,28 @@ int main(int argc, char **argv) {
     bool quit = false;
 
 #if ENABLE_GUI
-    Resolution display_resolution(1280, 720);
+    auto res = camera_infos.camera_configuration.resolution;
+    Resolution display_resolution(min((int)res.width, 1280) , min((int)res.height, 720));
     Mat image_left(display_resolution, MAT_TYPE::U8_C4);
-    sl::float2 img_scale(display_resolution.width / (float) camera_infos.camera_resolution.width, display_resolution.height / (float) camera_infos.camera_resolution.height);
+    sl::float2 img_scale(display_resolution.width / (float)res.width, display_resolution.height / (float)res.height);
 
     // 2D tracks
     TrackingViewer track_view_generator;
     // With OpenGL coordinate system, Y is the vertical axis, and negative z values correspond to objects in front of the camera
     track_view_generator.setZMin(-1.0f * zed.getInitParameters().depth_maximum_distance);
-    track_view_generator.setFPS(camera_infos.camera_fps);
+    track_view_generator.setFPS(camera_infos.camera_configuration.fps);
     track_view_generator.configureFromFPS();
-    track_view_generator.setCameraCalibration(camera_infos.calibration_parameters);
+    track_view_generator.setCameraCalibration(camera_infos.camera_configuration.calibration_parameters);
     cv::Mat track_view(track_view_generator.getWindowHeight(), track_view_generator.getWindowWidth(), CV_8UC3, cv::Scalar::all(0));
 
-    std::string window_left_name = "Left";
-    std::string window_birdview_name = "Bird view";
+    string window_left_name = "Left";
+    string window_birdview_name = "Bird view";
     if (detection_parameters.enable_tracking) window_birdview_name = "Tracks";
     cv::namedWindow(window_left_name, cv::WINDOW_AUTOSIZE); // Create Window
     cv::createTrackbar("Detection Confidence", window_left_name, &detection_confidence, 100);
 
     char key = ' ';
-    auto camera_parameters = zed.getCameraInformation(display_resolution).calibration_parameters.left_cam;
+    auto camera_parameters = zed.getCameraInformation(display_resolution).camera_configuration.calibration_parameters.left_cam;
     Mat point_cloud(display_resolution, MAT_TYPE::F32_C4, MEM::GPU);
     GLViewer viewer;
     viewer.init(argc, argv, camera_parameters);
@@ -135,7 +131,10 @@ int main(int argc, char **argv) {
 
     sl::RuntimeParameters runtime_parameters;
     runtime_parameters.measure3D_reference_frame = sl::REFERENCE_FRAME::CAMERA;
-
+    // Setting the depth confidence parameters
+    runtime_parameters.confidence_threshold = 100;
+    runtime_parameters.texture_confidence_threshold = 100;
+    
     Pose cam_pose;
     cam_pose.pose_data.setIdentity();
     bool gl_viewer_available=true;
@@ -145,9 +144,9 @@ int main(int argc, char **argv) {
 #endif
             !quit && zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS) {
         detection_parameters_rt.detection_confidence_threshold = detection_confidence;
-        zed_error = zed.retrieveObjects(objects, detection_parameters_rt);
+        returned_stated = zed.retrieveObjects(objects, detection_parameters_rt);
 
-        if ((zed_error == ERROR_CODE::SUCCESS) && objects.is_new) {
+        if ((returned_stated == ERROR_CODE::SUCCESS) && objects.is_new) {
 #if ENABLE_GUI
             zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, display_resolution);
             viewer.updateData(point_cloud, objects.object_list);
@@ -158,7 +157,7 @@ int main(int argc, char **argv) {
             render_2D(image_left, img_scale, objects.object_list, true);
             track_view_generator.generate_view(objects, cam_pose, track_view, objects.is_tracked);
 #else
-            std::cout << "Detected " << objects.object_list.size() << " Object(s)" << std::endl;
+            cout << "Detected " << objects.object_list.size() << " Object(s)" << endl;
 #endif
         }
 
@@ -180,14 +179,14 @@ int main(int argc, char **argv) {
         } else if (key == 'a') {
             detection_parameters_rt.object_class_filter.clear();
             detection_parameters_rt.object_class_filter.push_back(sl::OBJECT_CLASS::PERSON);
-            std::cout << "Person only" << std::endl;
+            cout << "Person only" << endl;
         } else if (key == 'z') {
             detection_parameters_rt.object_class_filter.clear();
             detection_parameters_rt.object_class_filter.push_back(sl::OBJECT_CLASS::VEHICLE);
-            std::cout << "Vehicle only" << std::endl;
+            cout << "Vehicle only" << endl;
         } else if (key == 'e') {
             detection_parameters_rt.object_class_filter.clear();
-            std::cout << "No filter" << std::endl;
+            cout << "No filter" << endl;
         }
         
 #endif
@@ -199,10 +198,10 @@ int main(int argc, char **argv) {
 #endif
     zed.disableObjectDetection();
     zed.close();
-    return 0;
+    return EXIT_SUCCESS;
 }
 
-void print(std::string msg_prefix, ERROR_CODE err_code, std::string msg_suffix) {
+void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     cout << "[Sample] ";
     if (err_code != ERROR_CODE::SUCCESS)
         cout << "[Error] ";

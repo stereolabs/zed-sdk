@@ -1,6 +1,5 @@
-SET(execName ZED_Spatial_Mapping)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
-PROJECT(${execName})
+PROJECT(ZED_Spatial_Mapping)
 
 option(LINK_SHARED_ZED "Link with the ZED SDK shared executable" ON)
 
@@ -12,6 +11,10 @@ if(COMMAND cmake_policy)
 	cmake_policy(SET CMP0003 OLD)
 	cmake_policy(SET CMP0015 OLD)
 endif(COMMAND cmake_policy)
+
+if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
+SET(CMAKE_BUILD_TYPE "RelWithDebInfo")
+endif()
 
 SET(EXECUTABLE_OUTPUT_PATH ".")
 
@@ -39,11 +42,11 @@ link_directories(${GLUT_LIBRARY_DIRS})
 link_directories(${GLEW_LIBRARY_DIRS})
 link_directories(${OpenGL_LIBRARY_DIRS})
 
-FILE(GLOB_RECURSE SRC_FILES src/*.cpp)
-FILE(GLOB_RECURSE HDR_FILES include/*.hpp)
+FILE(GLOB_RECURSE SRC_FILES src/*)
+FILE(GLOB_RECURSE HDR_FILES include/*)
 
-ADD_EXECUTABLE(${execName} ${HDR_FILES} ${SRC_FILES})
-add_definitions(-std=c++14 -g -O3)
+ADD_EXECUTABLE(${PROJECT_NAME} ${HDR_FILES} ${SRC_FILES})
+add_definitions(-std=c++14 -O3)
 
 if (LINK_SHARED_ZED)
     SET(ZED_LIBS ${ZED_LIBRARIES} ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY})
@@ -51,7 +54,7 @@ else()
     SET(ZED_LIBS ${ZED_STATIC_LIBRARIES} ${CUDA_CUDA_LIBRARY} ${CUDA_LIBRARY})
 endif()
 
-TARGET_LINK_LIBRARIES(${execName} 
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} 
                         ${SPECIAL_OS_LIBS} 
                         ${ZED_LIBS} 
                         ${OPENGL_LIBRARIES}

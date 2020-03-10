@@ -37,7 +37,7 @@
 using namespace sl;
 using namespace std;
 
-void print(std::string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, std::string msg_suffix = "");
+void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
 int parseArgs(int argc, char **argv, sl::InitParameters& param);
 
 int main(int argc, char **argv) {
@@ -45,18 +45,17 @@ int main(int argc, char **argv) {
     Camera zed;
 
     // Set configuration parameters for the ZED
-    InitParameters initParameters;
-    initParameters.camera_resolution = sl::RESOLUTION::HD720;
-    initParameters.depth_mode = DEPTH_MODE::NONE;
-    initParameters.sdk_verbose = true;
-    int res_arg = parseArgs(argc, argv, initParameters);
+    InitParameters init_parameters;
+    init_parameters.camera_resolution = sl::RESOLUTION::HD720;
+    init_parameters.depth_mode = DEPTH_MODE::NONE;
+    init_parameters.sdk_verbose = true;
+    int res_arg = parseArgs(argc, argv, init_parameters);
 
     // Open the camera
-    ERROR_CODE err = zed.open(initParameters);
-    if (err != ERROR_CODE::SUCCESS) {
-        print("Opening camera error: ", err);
-        zed.close();
-        return -1; // Quit if an error occurred
+    ERROR_CODE zed_open_state = zed.open(init_parameters);
+    if (zed_open_state != ERROR_CODE::SUCCESS) {
+        print("Camera Open", zed_open_state, "Exit program.");
+        return EXIT_FAILURE;
     }
 
     StreamingParameters stream_params;
@@ -65,13 +64,13 @@ int main(int argc, char **argv) {
     if (argc == 2 && res_arg == 1) stream_params.port = atoi(argv[1]);
     if (argc > 2) stream_params.port = atoi(argv[2]);
 
-    err = zed.enableStreaming(stream_params);
-    if (err != ERROR_CODE::SUCCESS) {
-        print("Streaming initialization error: ", err);
-        return -2; // Quit if an error occurred
+    auto returneed_state = zed.enableStreaming(stream_params);
+    if (returneed_state != ERROR_CODE::SUCCESS) {
+        print("Streaming initialization error: ", returneed_state);
+        return EXIT_FAILURE;
     }
 
-    print("Streaming on port " + std::to_string(stream_params.port));
+    print("Streaming on port " + to_string(stream_params.port));
 
     SetCtrlHandler();
 
@@ -85,23 +84,23 @@ int main(int argc, char **argv) {
 
     // close the Camera
     zed.close();
-    return 0;
+    return EXIT_SUCCESS;
 }
 
-void print(std::string msg_prefix, ERROR_CODE err_code, std::string msg_suffix) {
-    std::cout << "[Sample]";
+void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
+    cout << "[Sample]";
     if (err_code != ERROR_CODE::SUCCESS)
-        std::cout << "[Error] ";
+        cout << "[Error] ";
     else
-        std::cout << " ";
-    std::cout << msg_prefix << " ";
+        cout << " ";
+    cout << msg_prefix << " ";
     if (err_code != ERROR_CODE::SUCCESS) {
-        std::cout << " | " << toString(err_code) << " : ";
-        std::cout << toVerbose(err_code);
+        cout << " | " << toString(err_code) << " : ";
+        cout << toVerbose(err_code);
     }
     if (!msg_suffix.empty())
-        std::cout << " " << msg_suffix;
-    std::cout << std::endl;
+        cout << " " << msg_suffix;
+    cout << endl;
 }
 
 int parseArgs(int argc, char **argv, sl::InitParameters& param) {

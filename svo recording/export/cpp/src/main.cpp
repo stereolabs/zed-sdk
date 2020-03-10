@@ -42,8 +42,7 @@ enum APP_TYPE {
     LEFT_AND_DEPTH_16
 };
 
-void print(std::string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, std::string msg_suffix = "");
-
+void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
 
 int main(int argc, char **argv) {
 
@@ -86,33 +85,31 @@ int main(int argc, char **argv) {
 
     if (!output_as_video && !directoryExists(output_path)) {
         print("Input directory doesn't exist. Check permissions or create it." + output_path);
-        return 1;
+        return EXIT_FAILURE;
     }
 
     if (!output_as_video && output_path.back() != '/' && output_path.back() != '\\') {
         print("Error: output folder needs to end with '/' or '\\'."+output_path);
-        return 1;
+        return EXIT_FAILURE;
     }
 
     // Create ZED objects
     Camera zed;
 
     // Specify SVO path parameter
-    InitParameters initParameters;
-    initParameters.input.setFromSVOFile(svo_input_path.c_str());
-    initParameters.coordinate_units = UNIT::MILLIMETER;
+    InitParameters init_parameters;
+    init_parameters.input.setFromSVOFile(svo_input_path.c_str());
+    init_parameters.coordinate_units = UNIT::MILLIMETER;
 
-
-    // Open the SVO file specified as a parameter
-    ERROR_CODE err = zed.open(initParameters);
-    if (err != ERROR_CODE::SUCCESS) {
-        print("Opening ZED : ",err);
-        zed.close();
-        return 1; // Quit if an error occurred
+    // Open the camera
+    ERROR_CODE zed_open_state = zed.open(init_parameters);
+    if (zed_open_state != ERROR_CODE::SUCCESS) {
+        print("Camera Open", zed_open_state, "Exit program.");
+        return EXIT_FAILURE;
     }
 
     // Get image size
-    Resolution image_size = zed.getCameraInformation().camera_resolution;
+    Resolution image_size = zed.getCameraInformation().camera_configuration.resolution;
     int width = image_size.width;
     int height = image_size.height;
     int width_sbs = image_size.width * 2;
@@ -144,7 +141,7 @@ int main(int argc, char **argv) {
         if (!video_writer->isOpened()) {
             print("Error: OpenCV video writer cannot be opened. Please check the .avi file path and write permissions.");
             zed.close();
-            return 1;
+            return EXIT_FAILURE;
         }
     }
 
@@ -237,12 +234,10 @@ int main(int argc, char **argv) {
     }
 
     zed.close();
-    return 0;
+    return EXIT_SUCCESS;
 }
 
-
-
-void print(std::string msg_prefix, ERROR_CODE err_code, std::string msg_suffix) {
+void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     cout <<"[Sample]";
     if (err_code != ERROR_CODE::SUCCESS)
         cout << "[Error] ";
@@ -257,4 +252,3 @@ void print(std::string msg_prefix, ERROR_CODE err_code, std::string msg_suffix) 
         cout << " " << msg_suffix;
     cout << endl;
 }
-

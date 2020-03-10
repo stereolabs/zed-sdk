@@ -195,8 +195,9 @@ bool GLViewer::init(int argc, char **argv, sl::CameraInformation &cam_infos) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
 
+    auto res_ = cam_infos.camera_configuration.resolution;
     // Create GLUT window
-    glutInitWindowSize(cam_infos.camera_resolution.width, cam_infos.camera_resolution.height);
+    glutInitWindowSize(res_.width, res_.height);
     glutCreateWindow("ZED Spatial Mapping");
 
     // Init glew after window has been created
@@ -208,7 +209,7 @@ bool GLViewer::init(int argc, char **argv, sl::CameraInformation &cam_infos) {
     glBindTexture(GL_TEXTURE_2D, imageTex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, cam_infos.camera_resolution.width, cam_infos.camera_resolution.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, res_.width, res_.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
     glBindTexture(GL_TEXTURE_2D, 0);
 
     cudaSafeCall(cudaGraphicsGLRegisterImage(&cuda_gl_ressource, imageTex, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard));
@@ -230,7 +231,7 @@ bool GLViewer::init(int argc, char **argv, sl::CameraInformation &cam_infos) {
     glBindTexture(GL_TEXTURE_2D, renderedTexture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, cam_infos.camera_resolution.width, cam_infos.camera_resolution.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, res_.width, res_.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
 
     // Set "renderedTexture" as our color attachment #0
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture, 0);
@@ -277,23 +278,23 @@ bool GLViewer::init(int argc, char **argv, sl::CameraInformation &cam_infos) {
     cam_model = cam_infos.camera_model;
     available = true;
 
-    image.alloc(cam_infos.camera_resolution, sl::MAT_TYPE::U8_C4, sl::MEM::GPU);
+    image.alloc(res_, sl::MAT_TYPE::U8_C4, sl::MEM::GPU);
     cudaSafeCall(cudaGetLastError());
 
     // Create Projection Matrix for OpenGL. We will use this matrix in combination with the Pose (on REFERENCE_FRAME::WORLD) to project the mesh on the 2D Image.
-    camera_projection(0, 0) = 1.0f / tanf(cam_infos.calibration_parameters.left_cam.h_fov * 3.1416f / 180.f * 0.5f);
-    camera_projection(1, 1) = 1.0f / tanf(cam_infos.calibration_parameters.left_cam.v_fov * 3.1416f / 180.f * 0.5f);
+    camera_projection(0, 0) = 1.0f / tanf(cam_infos.camera_configuration.calibration_parameters.left_cam.h_fov * 3.1416f / 180.f * 0.5f);
+    camera_projection(1, 1) = 1.0f / tanf(cam_infos.camera_configuration.calibration_parameters.left_cam.v_fov * 3.1416f / 180.f * 0.5f);
     float znear = 0.001f;
     float zfar = 100.f;
     camera_projection(2, 2) = -(zfar + znear) / (zfar - znear);
     camera_projection(2, 3) = -(2.f * zfar * znear) / (zfar - znear);
     camera_projection(3, 2) = -1.f;
-    camera_projection(0, 2) = (cam_infos.camera_resolution.width - 2.f * cam_infos.calibration_parameters.left_cam.cx) / cam_infos.camera_resolution.width;
-    camera_projection(1, 2) = (-1.f * cam_infos.camera_resolution.height + 2.f * cam_infos.calibration_parameters.left_cam.cy) / cam_infos.camera_resolution.height;
+    camera_projection(0, 2) = (res_.width - 2.f * cam_infos.camera_configuration.calibration_parameters.left_cam.cx) / res_.width;
+    camera_projection(1, 2) = (-1.f * res_.height + 2.f * cam_infos.camera_configuration.calibration_parameters.left_cam.cy) / res_.height;
     camera_projection(3, 3) = 0.f;
 
-    user_action.hit_coord.x = cam_infos.camera_resolution.width / 2.;
-    user_action.hit_coord.y = cam_infos.camera_resolution.height / 2.;
+    user_action.hit_coord.x = res_.width / 2.;
+    user_action.hit_coord.y = res_.height / 2.;
 
     glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
 

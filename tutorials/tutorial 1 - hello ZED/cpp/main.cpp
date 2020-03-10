@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
     ERROR_CODE err = zed.open();
     if (err != ERROR_CODE::SUCCESS) {
         std::cout << "Error " << err << ", exit program.\n";
-        return -1;
+        return EXIT_FAILURE;
     }
 
     // Get camera information (ZED serial number)
@@ -41,6 +41,6 @@ int main(int argc, char **argv) {
 
     // Close the camera
     zed.close();
-    return 0;
+    return EXIT_SUCCESS;
 }
 

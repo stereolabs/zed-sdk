@@ -21,114 +21,127 @@
 
 #include <sl/Camera.hpp>
 
+using namespace std;
 using namespace sl;
+
+// Basic structure to compare timestamps of a sensor. Determines if a specific sensor data has been updated or not.
+struct TimestampHandler {
+
+    // Compare the new timestamp to the last valid one. If it is higher, save it as new reference.
+    inline bool isNew(Timestamp& ts_curr, Timestamp& ts_ref) {
+        bool new_ = ts_curr > ts_ref;
+        if (new_) ts_ref = ts_curr;
+        return new_;
+    }
+    // Specific function for IMUData.
+    inline bool isNew(SensorsData::IMUData& imu_data) {
+        return isNew(imu_data.timestamp, ts_imu);
+    }
+    // Specific function for MagnetometerData.
+    inline bool isNew(SensorsData::MagnetometerData& mag_data) {
+        return isNew(mag_data.timestamp, ts_mag);
+    }
+    // Specific function for BarometerData.
+    inline bool isNew(SensorsData::BarometerData& baro_data) {
+        return isNew(baro_data.timestamp, ts_baro);
+    }
+
+    Timestamp ts_imu = 0, ts_baro = 0, ts_mag = 0; // Initial values
+};
+
+
+// Function to display sensor parameters.
+void printSensorConfiguration(SensorParameters& sensor_parameters) {
+    if (sensor_parameters.isAvailable) {
+        cout << "*****************************" << endl;
+        cout << "Sensor Type: " << sensor_parameters.type << endl;
+        cout << "Max Rate: "    << sensor_parameters.sampling_rate << SENSORS_UNIT::HERTZ << endl;
+        cout << "Range: ["      << sensor_parameters.range << "] " << sensor_parameters.sensor_unit << endl;
+        cout << "Resolution: "  << sensor_parameters.resolution << " " << sensor_parameters.sensor_unit << endl;
+        if (isfinite(sensor_parameters.noise_density)) cout << "Noise Density: " << sensor_parameters.noise_density <<" "<< sensor_parameters.sensor_unit<<"/√Hz"<<endl;
+        if (isfinite(sensor_parameters.random_walk)) cout << "Random Walk: " << sensor_parameters.random_walk <<" "<< sensor_parameters.sensor_unit<<"/s/√Hz"<<endl;
+    }
+}
+
 
 int main(int argc, char **argv) {
 
-    // Create a ZED camera object
+    // Create a ZED camera object.
     Camera zed;
 
-    // Set configuration parameters
-    InitParameters init_params;
-    init_params.camera_resolution = RESOLUTION::HD720; // Use HD720 video mode (default fps: 60)
-    init_params.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // Use a right-handed Y-up coordinate system
-    init_params.coordinate_units = UNIT::METER; // Set units in meters
+    // Set configuration parameters.
+    InitParameters init_parameters;
+    init_parameters.depth_mode = DEPTH_MODE::NONE; // No depth computation required here.
 
-    // Open the camera
-    ERROR_CODE err = zed.open(init_params);
+    // Open the camera.
+    ERROR_CODE err = zed.open(init_parameters);
     if (err != ERROR_CODE::SUCCESS) {
-        printf("Error opening the camera: %s\n", toString(err).c_str());
-        return 1;
+        cout << "Error " << err << ", exit program.\n";
+        return EXIT_FAILURE;
     }
 
-    // Check camera model
-    MODEL cam_model = zed.getCameraInformation().camera_model;
+    // Check camera model.
+    auto info = zed.getCameraInformation();
+    MODEL cam_model =info.camera_model;
     if (cam_model == MODEL::ZED) {
-        printf("This tutorial only supports ZED-M and ZED2 camera models\n");
-        return 1;
+        cout << "This tutorial only works with ZED 2 and ZED-M cameras. ZED does not have additional sensors.\n"<<endl;
+        return EXIT_FAILURE;
     }
 
-    // Get Sensor Data for 2 seconds (800 samples)
-    int i = 0;
-    Timestamp first_ts = 0, prev_imu_ts = 0, prev_baro_ts = 0, prev_mag_ts = 0;
-    SensorsData data;
+    // Display camera information (model, serial number, firmware versions).
+    cout << "Camera Model: " << cam_model << endl;
+    cout << "Serial Number: " << info.serial_number << endl;
+    cout << "Camera Firmware: " << info.camera_configuration.firmware_version << endl;
+    cout << "Sensors Firmware: " << info.sensors_configuration.firmware_version << endl;
 
-    while (i < 800) {
-        // Get Sensor Data not synced with image frames
-        if (zed.getSensorsData(data, TIME_REFERENCE::CURRENT) != ERROR_CODE::SUCCESS) {
-            printf("Error retrieving Sensor Data\n");
-            return 1;
-        }
+    // Display sensors configuration (imu, barometer, magnetometer).
+    printSensorConfiguration(info.sensors_configuration.accelerometer_parameters);
+    printSensorConfiguration(info.sensors_configuration.gyroscope_parameters);
+    printSensorConfiguration(info.sensors_configuration.magnetometer_parameters);
+    printSensorConfiguration(info.sensors_configuration.barometer_parameters);
 
-        Timestamp imu_ts = data.imu.timestamp;
+    // Used to store sensors data.
+    SensorsData sensors_data;
 
-        if (i == 0) 
-            first_ts = imu_ts;
-        
-        // Check if Sensor Data are updated
-        if (prev_imu_ts == imu_ts) 
-            continue;
-        
-        prev_imu_ts = imu_ts;
+    // Used to store sensors timestamps and check if new data is available.
+    TimestampHandler ts;
 
-        printf("*** Sample #%d\n", i);
+    // Retrieve sensors data during 5 seconds.
+    auto start_time = std::chrono::high_resolution_clock::now();
+    int count = 0;
+    double elapse_time = 0;
 
-        printf(" * Relative timestamp: %g sec\n", static_cast<double> (data.imu.timestamp - first_ts) / 1e9);
+    while (elapse_time < 5000) {
 
-        // Filtered orientation quaternion
-        printf(" * IMU Orientation: Ox: %.3f, Oy: %.3f, Oz: %.3f, Ow: %.3f\n",
-                data.imu.pose.getOrientation().ox, data.imu.pose.getOrientation().oy,
-                data.imu.pose.getOrientation().oz, data.imu.pose.getOrientation().ow);
-        // Filtered acceleration
-        printf(" * IMU Acceleration [m/sec^2]: x: %.3f, y: %.3f, z: %.3f\n",
-                data.imu.linear_acceleration.x, data.imu.linear_acceleration.y, data.imu.linear_acceleration.z);
-        // Filtered angular velocities
-        printf(" * IMU angular velocities [deg/sec]: x: %.3f, y: %.3f, z: %.3f\n",
-                data.imu.angular_velocity.x, data.imu.angular_velocity.y, data.imu.angular_velocity.z);
+        // Depending on your camera model, different sensors are available.
+        // They do not run at the same rate: therefore, to not miss any new samples we iterate as fast as possible
+        // and compare timestamps to determine when a given sensor's data has been updated.
+        // NOTE: There is no need to acquire images with grab(). getSensorsData runs in a separate internal capture thread.
+        if (zed.getSensorsData(sensors_data, TIME_REFERENCE::CURRENT) == ERROR_CODE::SUCCESS) {
 
-        if (cam_model == MODEL::ZED2) {
+            // Check if a new IMU sample is available. IMU is the sensor with the highest update frequency.
+            if (ts.isNew(sensors_data.imu)) {
+                cout << "Sample " << count++ << "\n";
+                cout << " - IMU:\n";
+                cout << " \t Orientation: {" << sensors_data.imu.pose.getOrientation() << "}\n";
+                cout << " \t Acceleration: {" << sensors_data.imu.linear_acceleration << "} [m/sec^2]\n";
+                cout << " \t Angular Velocitiy: {" << sensors_data.imu.angular_velocity << "} [deg/sec]\n";
 
-            // IMU temperature
-            float imu_temp;
-            data.temperature.get(SensorsData::TemperatureData::SENSOR_LOCATION::IMU, imu_temp);
-            printf(" * IMU temperature: %g C\n", imu_temp);
+                // Check if Magnetometer data has been updated.
+                if (ts.isNew(sensors_data.magnetometer))
+                    cout << " - Magnetometer\n \t Magnetic Field: {" << sensors_data.magnetometer.magnetic_field_calibrated << "} [uT]\n";
 
-            // Check if Magnetometer Data are updated
-            Timestamp mag_ts = data.magnetometer.timestamp;
-            if (prev_mag_ts != mag_ts) {
-                prev_mag_ts = mag_ts;
-
-                // Filtered magnetic fields
-                printf(" * Magnetic Fields [uT]: x: %.3f, y: %.3f, z: %.3f\n",
-                        data.magnetometer.magnetic_field_calibrated.x, data.magnetometer.magnetic_field_calibrated.y, data.magnetometer.magnetic_field_calibrated.z);
-            }
-
-            // Check if Barometer Data are updated
-            Timestamp baro_ts = data.barometer.timestamp;
-            if (prev_baro_ts != baro_ts) {
-                prev_baro_ts = baro_ts;
-
-                // Atmospheric pressure
-                printf(" * Atmospheric pressure [hPa]: %g\n", data.barometer.pressure);
-
-                // Barometer temperature
-                float baro_temp;
-                data.temperature.get(SensorsData::TemperatureData::SENSOR_LOCATION::BAROMETER, baro_temp);
-                printf(" * Barometer temperature: %g\n", baro_temp);
-
-                // Camera temperatures
-                float left_temp, right_temp;
-                data.temperature.get(SensorsData::TemperatureData::SENSOR_LOCATION::ONBOARD_LEFT, left_temp);
-                data.temperature.get(SensorsData::TemperatureData::SENSOR_LOCATION::ONBOARD_RIGHT, right_temp);
-                printf(" * Camera left temperature: %g C\n", left_temp);
-                printf(" * Camera right temperature: %g C\n", right_temp);
+                // Check if Barometer data has been updated.
+                if (ts.isNew(sensors_data.barometer))
+                    cout << " - Barometer\n \t Atmospheric pressure:" << sensors_data.barometer.pressure << " [hPa]\n";
             }
         }
 
-        i++;
+        // Compute the elapsed time since the beginning of the main loop.
+        elapse_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
     }
 
     // Close camera
     zed.close();
-    return 0;
+    return EXIT_SUCCESS;
 }

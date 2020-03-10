@@ -21,6 +21,7 @@
 
 #include <sl/Camera.hpp>
 
+using namespace std;
 using namespace sl;
 
 int main(int argc, char **argv) {
@@ -29,15 +30,15 @@ int main(int argc, char **argv) {
     Camera zed;
 
     // Set configuration parameters
-    InitParameters init_params;
-    init_params.depth_mode = DEPTH_MODE::PERFORMANCE; // Use PERFORMANCE depth mode
-    init_params.coordinate_units = UNIT::MILLIMETER; // Use millimeter units (for depth measurements)
-    
+    InitParameters init_parameters;
+    init_parameters.depth_mode = DEPTH_MODE::PERFORMANCE; // Use PERFORMANCE depth mode
+    init_parameters.coordinate_units = UNIT::MILLIMETER; // Use millimeter units (for depth measurements)
+
     // Open the camera
-    ERROR_CODE err = zed.open(init_params);
-    if (err != ERROR_CODE::SUCCESS) {
-        std::cout << "Error " << err << ", exit program.\n";
-        return -1;
+    ERROR_CODE state = zed.open(init_parameters);
+    if (state != ERROR_CODE::SUCCESS) {
+        cout << "Error " << state << ", exit program." << endl;
+        return EXIT_FAILURE;
     }
 
     // Set runtime parameters after opening the camera
@@ -66,7 +67,7 @@ int main(int argc, char **argv) {
             point_cloud.getValue(x, y, &point_cloud_value);
 
             float distance = sqrt(point_cloud_value.x * point_cloud_value.x + point_cloud_value.y * point_cloud_value.y + point_cloud_value.z * point_cloud_value.z);
-            printf("Distance to Camera at (%d, %d): %f mm\n", x, y, distance);
+            cout<<"Distance to Camera at {"<<x<<";"<<y<<"}: "<<distance<<"mm"<<endl;
 
             // Increment the loop
             i++;
@@ -74,5 +75,5 @@ int main(int argc, char **argv) {
     }
     // Close the camera
     zed.close();
-    return 0;
+    return EXIT_SUCCESS;
 }

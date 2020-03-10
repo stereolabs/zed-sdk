@@ -21,6 +21,7 @@
 
 #include <sl/Camera.hpp>
 
+using namespace std;
 using namespace sl;
 
 int main(int argc, char **argv) {
@@ -29,16 +30,16 @@ int main(int argc, char **argv) {
     Camera zed;
 
     // Set configuration parameters
-    InitParameters init_params;
-    init_params.camera_resolution = RESOLUTION::HD720; // Use HD720 video mode (default fps: 60)
-    init_params.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // Use a right-handed Y-up coordinate system
-    init_params.coordinate_units = UNIT::METER; // Set units in meters
+    InitParameters init_parameters;
+    init_parameters.camera_resolution = RESOLUTION::HD720; // Use HD720 video mode (default fps: 60)
+    init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // Use a right-handed Y-up coordinate system
+    init_parameters.coordinate_units = UNIT::METER; // Set units in meters
 
     // Open the camera
-    ERROR_CODE err = zed.open(init_params);
+    ERROR_CODE err = zed.open(init_parameters);
     if (err != ERROR_CODE::SUCCESS) {
-        std::cout << "Error " << err << ", exit program.\n";
-        return -1;
+        cout << "Error " << err << ", exit program.\n";
+        return EXIT_FAILURE;
     }
 
     // Enable positional tracking with default parameters. Positional tracking needs to be enabled before using spatial mapping
@@ -63,24 +64,22 @@ int main(int argc, char **argv) {
             sl::SPATIAL_MAPPING_STATE mapping_state = zed.getSpatialMappingState();
 
             // Print spatial mapping state
-            std::cout << "\rImages captured: " << i << " / 500  ||  Spatial mapping state: " << mapping_state << "                     " << std::flush;
+            cout << "\rImages captured: " << i << " / 500  ||  Spatial mapping state: " << mapping_state << "\t" << flush;
             i++;
         }
     }
-    printf("\n");
-
+    cout << endl;
     // Extract, filter and save the mesh in a obj file
-    printf("Extracting Mesh...\n");
+    cout << "Extracting Mesh...\n";
     zed.extractWholeSpatialMap(mesh); // Extract the whole mesh
-    printf("Filtering Mesh...\n");
+    cout << "Filtering Mesh...\n";
     mesh.filter(sl::MeshFilterParameters::MESH_FILTER::LOW); // Filter the mesh (remove unnecessary vertices and faces)
-    printf("Saving Mesh...\n");
+    cout << "Saving Mesh...\n";
     mesh.save("mesh.obj"); // Save the mesh in an obj file
-
-
+    
     // Disable tracking and mapping and close the camera
     zed.disableSpatialMapping();
     zed.disablePositionalTracking();
     zed.close();
-    return 0;
+    return EXIT_SUCCESS;
 }

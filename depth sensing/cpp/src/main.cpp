@@ -34,24 +34,21 @@ using namespace std;
 using namespace sl;
 
 
-void parseArgs(int argc, char **argv,sl::InitParameters& param);
-
+void parseArgs(int argc, char **argv, sl::InitParameters& param);
 
 int main(int argc, char **argv) {
     Camera zed;
     // Set configuration parameters for the ZED
-    InitParameters initParameters;
-    initParameters.depth_mode = DEPTH_MODE::ULTRA;
-    initParameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
-    parseArgs(argc,argv,initParameters);
+    InitParameters init_parameters;
+    init_parameters.depth_mode = DEPTH_MODE::ULTRA;
+    init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
+    parseArgs(argc, argv, init_parameters);
 
     // Open the camera
-    ERROR_CODE zed_error = zed.open(initParameters);
-
-    if (zed_error != ERROR_CODE::SUCCESS) {// Quit if an error occurred
-        print("Opening camera failed: ",zed_error);
-        zed.close();
-        return 1;
+    ERROR_CODE err = zed.open(init_parameters);
+    if (err != ERROR_CODE::SUCCESS) {
+        print("Camera Open", err, "Exit program.");
+        return EXIT_FAILURE;
     }
 
     auto camera_infos = zed.getCameraInformation();
@@ -59,17 +56,23 @@ int main(int argc, char **argv) {
     // Point cloud viewer
     GLViewer viewer;
     // Initialize point cloud viewer 
-    GLenum errgl = viewer.init(argc, argv, camera_infos.calibration_parameters.left_cam);
-    if (errgl!=GLEW_OK)
-        print("Error OpenGL: "+std::string((char*)glewGetErrorString(errgl)));
+    GLenum errgl = viewer.init(argc, argv, camera_infos.camera_configuration.calibration_parameters.left_cam);
+    if (errgl != GLEW_OK) {
+        print("Error OpenGL: " + std::string((char*)glewGetErrorString(errgl)));
+        return EXIT_FAILURE;
+    }
 
+    RuntimeParameters runParameters;
+    // Setting the depth confidence parameters
+    runParameters.confidence_threshold = 50;
+    runParameters.texture_confidence_threshold = 100;
 
     // Allocation of 4 channels of float on GPU
-    Mat point_cloud(camera_infos.camera_resolution, MAT_TYPE::F32_C4, MEM::GPU);
+    Mat point_cloud(camera_infos.camera_configuration.resolution, MAT_TYPE::F32_C4, MEM::GPU);
 
     // Main Loop
     while (viewer.isAvailable()) {
-        if (zed.grab() == ERROR_CODE::SUCCESS) {
+        if (zed.grab(runParameters) == ERROR_CODE::SUCCESS) {
             zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU);
             viewer.updatePointCloud(point_cloud);
         } else sleep_ms(1);
@@ -80,41 +83,38 @@ int main(int argc, char **argv) {
     // close the ZED
     zed.close();
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
-void parseArgs(int argc, char **argv,sl::InitParameters& param)
-{
-    if (argc > 1 && string(argv[1]).find(".svo")!=string::npos) {
+void parseArgs(int argc, char **argv, sl::InitParameters& param) {
+    if (argc > 1 && string(argv[1]).find(".svo") != string::npos) {
         // SVO input mode
         param.input.setFromSVOFile(argv[1]);
-        cout<<"[Sample] Using SVO File input: "<<argv[1]<<endl;
-    } else if (argc > 1 && string(argv[1]).find(".svo")==string::npos) {
+        cout << "[Sample] Using SVO File input: " << argv[1] << endl;
+    } else if (argc > 1 && string(argv[1]).find(".svo") == string::npos) {
         string arg = string(argv[1]);
-        unsigned int a,b,c,d,port;
-        if (sscanf(arg.c_str(),"%u.%u.%u.%u:%d", &a, &b, &c, &d,&port) == 5) {
+        unsigned int a, b, c, d, port;
+        if (sscanf(arg.c_str(), "%u.%u.%u.%u:%d", &a, &b, &c, &d, &port) == 5) {
             // Stream input mode - IP + port
-            string ip_adress = to_string(a)+"."+to_string(b)+"."+to_string(c)+"."+to_string(d);
-            param.input.setFromStream(sl::String(ip_adress.c_str()),port);
-            cout<<"[Sample] Using Stream input, IP : "<<ip_adress<<", port : "<<port<<endl;
-        }
-        else  if (sscanf(arg.c_str(),"%u.%u.%u.%u", &a, &b, &c, &d) == 4) {
+            string ip_adress = to_string(a) + "." + to_string(b) + "." + to_string(c) + "." + to_string(d);
+            param.input.setFromStream(sl::String(ip_adress.c_str()), port);
+            cout << "[Sample] Using Stream input, IP : " << ip_adress << ", port : " << port << endl;
+        } else if (sscanf(arg.c_str(), "%u.%u.%u.%u", &a, &b, &c, &d) == 4) {
             // Stream input mode - IP only
             param.input.setFromStream(sl::String(argv[1]));
-            cout<<"[Sample] Using Stream input, IP : "<<argv[1]<<endl;
-        }
-        else if (arg.find("HD2K")!=string::npos) {
+            cout << "[Sample] Using Stream input, IP : " << argv[1] << endl;
+        } else if (arg.find("HD2K") != string::npos) {
             param.camera_resolution = sl::RESOLUTION::HD2K;
-            cout<<"[Sample] Using Camera in resolution HD2K"<<endl;
-        } else if (arg.find("HD1080")!=string::npos) {
+            cout << "[Sample] Using Camera in resolution HD2K" << endl;
+        } else if (arg.find("HD1080") != string::npos) {
             param.camera_resolution = sl::RESOLUTION::HD1080;
-            cout<<"[Sample] Using Camera in resolution HD1080"<<endl;
-        } else if (arg.find("HD720")!=string::npos) {
+            cout << "[Sample] Using Camera in resolution HD1080" << endl;
+        } else if (arg.find("HD720") != string::npos) {
             param.camera_resolution = sl::RESOLUTION::HD720;
-            cout<<"[Sample] Using Camera in resolution HD720"<<endl;
-        } else if (arg.find("VGA")!=string::npos) {
+            cout << "[Sample] Using Camera in resolution HD720" << endl;
+        } else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = sl::RESOLUTION::VGA;
-            cout<<"[Sample] Using Camera in resolution VGA"<<endl;
+            cout << "[Sample] Using Camera in resolution VGA" << endl;
         }
     } else {
         // Default

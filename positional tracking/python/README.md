@@ -7,15 +7,14 @@ This sample shows how to track camera motion in space.
 - First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
 - For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
 
-### Prerequisites
+## Run the examples
 
-- Windows 10, Ubuntu LTS
-- [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
-- [ZED Python API](https://www.stereolabs.com/docs/app-development/python/)
-- PyOpenGL (`python -m pip install PyOpenGL`)
+Some Python samples require OpenCV and OpenGL, you can install them via pip with **opencv-python** and **PyOpenGL** packages.
 
-## Run the example
+### Position
  
+Position sample shows that the position of the camera can be get and used with OpenGL.
+
 ```
 python "position_example.py"
 ```

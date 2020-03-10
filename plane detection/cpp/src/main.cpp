@@ -40,18 +40,17 @@ void parseArgs(int argc, char **argv,sl::InitParameters& param);
 int main(int argc, char** argv) {
     Camera zed;
     // Setup configuration parameters for the ZED    
-    InitParameters parameters;
-    parameters.coordinate_units = UNIT::METER;
-    parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL coordinates system
-    parameters.sensors_required = true;
-    parseArgs(argc,argv,parameters);
+    InitParameters init_parameters;
+    init_parameters.coordinate_units = UNIT::METER;
+    init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL coordinates system
+    init_parameters.sensors_required = true;
+    parseArgs(argc,argv, init_parameters);
 
-    // Open the ZED
-    ERROR_CODE zed_error = zed.open(parameters);
-    if(zed_error != ERROR_CODE::SUCCESS) {
-        print("Opening camera failed: ",zed_error);
-        zed.close();
-        return -1;
+    // Open the camera
+    ERROR_CODE zed_open_state = zed.open(init_parameters);
+    if (zed_open_state != ERROR_CODE::SUCCESS) {
+        print("Camera Open", zed_open_state, "Exit program.");
+        return EXIT_FAILURE;
     }
 
     auto camera_infos = zed.getCameraInformation();
@@ -60,7 +59,7 @@ int main(int argc, char** argv) {
     if(error_viewer) {
         viewer.exit();
         zed.close();
-        return -1;
+        return EXIT_FAILURE;
     }
 
     Mat image; // current left image
@@ -120,7 +119,7 @@ int main(int argc, char** argv) {
 
     zed.disablePositionalTracking();
     zed.close();
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 void parseArgs(int argc, char **argv,sl::InitParameters& param)

@@ -43,17 +43,16 @@ void parseArgs(int argc, char **argv,sl::InitParameters& param);
 int main(int argc, char** argv) {
     Camera zed;
     // Setup configuration parameters for the ZED    
-    InitParameters parameters;
-    parameters.coordinate_units = UNIT::METER;
-    parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL coordinates system
-    parseArgs(argc,argv,parameters);
+    InitParameters init_parameters;
+    init_parameters.coordinate_units = UNIT::METER;
+    init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL coordinates system
+    parseArgs(argc,argv, init_parameters);
 
-    // Open the ZED
-    ERROR_CODE zed_open_state = zed.open(parameters);
-    if(zed_open_state != ERROR_CODE::SUCCESS) {
-        print("Opening camera failed: ", zed_open_state);
-        zed.close();
-        return -1;
+    // Open the camera
+    ERROR_CODE zed_open_state = zed.open(init_parameters);
+    if (zed_open_state != ERROR_CODE::SUCCESS) {
+        print("Camera Open", zed_open_state, "Exit program.");
+        return EXIT_FAILURE;
     }
 
 #if CREATE_MESH
@@ -62,7 +61,7 @@ int main(int argc, char** argv) {
     FusedPointCloud map; // current incemental fused point cloud
 #endif
 
-    CameraParameters camera_parameters = zed.getCameraInformation().calibration_parameters.left_cam;
+    CameraParameters camera_parameters = zed.getCameraInformation().camera_configuration.calibration_parameters.left_cam;
 
     GLViewer viewer;
     bool error_viewer = viewer.init(argc, argv, camera_parameters, &map);
@@ -70,7 +69,7 @@ int main(int argc, char** argv) {
     if(error_viewer) {
         viewer.exit();
         zed.close();
-        return -1;
+        return EXIT_FAILURE;
     }
 
     Mat image; // current left image
@@ -83,11 +82,11 @@ int main(int argc, char** argv) {
     chrono::high_resolution_clock::time_point ts_last; // time stamp of the last mesh request
     
     // Enable positional tracking before starting spatial mapping
-    zed_open_state = zed.enablePositionalTracking();
-    if(zed_open_state != ERROR_CODE::SUCCESS) {
-        print("Enabling positionnal tracking failed: ", zed_open_state);
+    auto returned_state = zed.enablePositionalTracking();
+    if(returned_state != ERROR_CODE::SUCCESS) {
+        print("Enabling positionnal tracking failed: ", returned_state);
         zed.close();
-        return 1; // Quit if an error occurred
+        return EXIT_FAILURE;
     }
 
     while(viewer.isAvailable()) {
@@ -132,8 +131,8 @@ int main(int argc, char** argv) {
                     // Enable spatial mapping
                     try {
                         zed.enableSpatialMapping(spatial_mapping_parameters);
-                        print("Spatial Mapping will output a " + std::string(toString(spatial_mapping_parameters.map_type).c_str()));
-                    } catch(std::string e) {
+                        print("Spatial Mapping will output a " + string(toString(spatial_mapping_parameters.map_type).c_str()));
+                    } catch(string e) {
                         print("Error enable Spatial Mapping "+ e);
                     }
 
@@ -180,7 +179,7 @@ int main(int argc, char** argv) {
     zed.disableSpatialMapping();
     zed.disablePositionalTracking();
     zed.close();
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 void parseArgs(int argc, char **argv,sl::InitParameters& param)

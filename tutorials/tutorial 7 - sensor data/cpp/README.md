@@ -1,6 +1,7 @@
-# Tutorial 6: Getting sensor data from ZED Mini and ZED2
+# Tutorial 7: Getting sensors data from ZED Mini and ZED2
 
-This tutorial shows how to use retrieve sensor data from ZED Mini and ZED2. It will loop until 800 data samples are grabbed, printing the updated values on console.<br/>
+This tutorial shows how to retrieve sensors data from ZED Mini and ZED2.
+Contrary to other samples, this one does not focus on images or depth information but on embedded sensors. It will loop for 5 seconds, printing the retrieved sensors values on console.<br/>
 We assume that you have followed previous tutorials.
 
 ### Prerequisites
@@ -32,129 +33,92 @@ Open a terminal in the sample directory and execute the following command:
 # Code overview
 ## Create a camera
 
-As in previous tutorials, we create, configure and open the ZED. In this example, we choose to have a right-handed coordinate system  with Y axis up, since it is the most common system chosen in 3D viewing software.
+As in previous tutorials, we create, configure and open the ZED camera, as we do not need depth information we can disable its computation to save process power.
 
 ```
-// Create a ZED camera object
-Camera zed;
+    // Create a ZED camera object
+    Camera zed;
 
-// Set configuration parameters
-InitParameters init_params;
-init_params.camera_resolution = RESOLUTION::HD720; // Use HD720 video mode (default fps: 60)
-init_params.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // Use a right-handed Y-up coordinate system
-init_params.coordinate_units = UNIT::METER; // Set units in meters
+    // Set configuration parameters
+    InitParameters init_parameters;
+    // no depth computation required here
+    init_parameters.depth_mode = DEPTH_MODE::NONE;
 
-// Open the camera
-ERROR_CODE err = zed.open(init_params);
-if (err != ERROR_CODE::SUCCESS) {
-    printf( "Error opening the camera: %s\n", toString(err).c_str() );
-    exit(-1);
-}
+    // Open the camera
+    ERROR_CODE err = zed.open(init_parameters);
+    if (err != ERROR_CODE::SUCCESS) {
+        cout << "Error " << err << ", exit program.\n";
+        return -1;
+    }
 ```
 
-## Capture data
-
-The sensor data can be retrieved in two ways: synchronized or not synchronized to the image frames<br/>
-In this tutorial, we grab 800 not synchronized data, equal to 2 seconds.
+## Sensors data capture
+Depending on your camera model, different sensors may send informations.
+To simplify the retrieve process we have a global class, `SensorsData`, that encapsulates all sensors data.
 
 ```
-    int i=0;
-    Timestamp first_ts=0,prev_imu_ts=0, prev_baro_ts=0, prev_mag_ts=0;
-    SensorsData data;
+    SensorsData sensors_data;
+    double elapse_time = 0;
+    while (elapse_time < 5000)
+    {
 
-    while ( i<800 ) {
-        // Get Sensor Data not synced with image frames
-        if( zed.getSensorsData( data, TIME_REFERENCE::CURRENT ) != ERROR_CODE::SUCCESS ) {
-            printf( "Error retrieving Sensor Data\n");
-            exit(-1);
-        }
+        if (zed.getSensorsData(sensors_data, TIME_REFERENCE::CURRENT) == ERROR_CODE::SUCCESS) 
+        {
 
         [...]
-        
+
+        }
+    }        
 ```
 
 ## Process data
+As previously said, sensors have different frequencies and they are stored in a global class which means between two `getSensorsData` call, some sensors may not have newer data to provide.
+To handle this, each sensor sends the timestamp of its data, by checking if the given timestamp is newer than the previous we know if the data is a new one or not.
 
-To be sure that data are updated, since they are not synchronized to camera frames, we must check that the
-timestamp as changed from the previous retrieved values. We use the timestamp of the IMU sensor as main value
-since it's the sensor that runs at higher frequency. <br/>
-
-```
-// Check if Sensor Data are updated
-        if( prev_imu_ts==imu_ts ) {
-            continue;
-        }
-        prev_imu_ts = imu_ts;
-```
-
-If the data are updated we can extract and use them:
+In this sample we use a basic class `TimestampHandler` to store timestamp and check for data update.
 
 ```
-        printf("*** Sample #%d\n", i);
-
-        printf(" * Relative timestamp: %g sec\n", static_cast<double>(data.imu.timestamp-first_ts)/1e9 );
-
-        // Filtered orientation quaternion
-        printf(" * IMU Orientation: Ox: %.3f, Oy: %.3f, Oz: %.3f, Ow: %.3f\n",
-               data.imu.pose.getOrientation().ox, data.imu.pose.getOrientation().oy,
-               data.imu.pose.getOrientation().oz, data.imu.pose.getOrientation().ow);
-        // Filtered acceleration
-        printf(" * IMU Acceleration [m/sec^2]: x: %.3f, y: %.3f, z: %.3f\n",
-               data.imu.linear_acceleration.x, data.imu.linear_acceleration.y, data.imu.linear_acceleration.z);
-        // Filtered angular velocities
-        printf(" * IMU angular velocities [deg/sec]: x: %.3f, y: %.3f, z: %.3f\n",
-               data.imu.angular_velocity.x, data.imu.angular_velocity.y, data.imu.angular_velocity.z);
+ TimestampHandler ts;
+  if (ts.isNew(sensors_data.imu)) {
+      // sensors_data.imu contains new data
+  }
 ```
-
-If we are using a ZED2 we have more sensor data to be acquired and elaborated:
-
+If the data are udpated we display them:
 ```
-if(cam_model == MODEL::ZED2) {
-```
+    cout << " - IMU:\n";
+    // Filtered orientation quaternion
+    cout << " \t Orientation: {" << sensors_data.imu.pose.getOrientation() << "}\n";
 
-IMU Temperature:
-```
-    // IMU temperature
-    float imu_temp;
-    data.temperature.get( SensorsData::TemperatureData::SENSOR_LOCATION::IMU, imu_temp );
-    printf(" * IMU temperature: %g C\n", imu_temp );
-```
+    // Filtered acceleration
+    cout << " \t Acceleration: {" << sensors_data.imu.linear_acceleration << "} [m/sec^2]\n";
 
-Magnetic fields:
-```
-    // Check if Magnetometer Data are updated
-    Timestamp mag_ts = data.magnetometer.timestamp;
-    if( prev_mag_ts!=mag_ts ) {
-        prev_mag_ts = mag_ts;
+    // Filtered angular velocities
+    cout << " \t Angular Velocities: {" << sensors_data.imu.angular_velocity << "} [deg/sec]\n";
 
+    // Check if Magnetometer data has been updated 
+    if (ts.isNew(sensors_data.magnetometer))
         // Filtered magnetic fields
-        printf(" * Magnetic Fields [uT]: x: %.3f, y: %.3f, z: %.3f\n",
-               data.magnetometer.magnetic_field_calibrated.x, data.magnetometer.magnetic_field_calibrated.y, data.magnetometer.magnetic_field_calibrated.z);
-    }
-```
+        cout << " - Magnetometer\n \t Magnetic Field: {" << sensors_data.magnetometer.magnetic_field_calibrated << "} [uT]\n";
 
-Barometer data:
-```
-    // Check if Barometer Data are updated
-    Timestamp baro_ts = data.barometer.timestamp;
-    if( prev_baro_ts!=baro_ts ) {
-        prev_baro_ts = baro_ts;
-
+    // Check if Barometer data has been updated 
+    if (ts.isNew(sensors_data.barometer))
         // Atmospheric pressure
-        printf(" * Atmospheric pressure [hPa]: %g\n", data.barometer.pressure);
+        cout << " - Barometer\n \t Atmospheric pressure:" << sensors_data.barometer.pressure << " [hPa]\n";
+```
 
-        // Barometer temperature
-        float baro_temp;
-        data.temperature.get( SensorsData::TemperatureData::SENSOR_LOCATION::BAROMETER, baro_temp );
-        printf(" * Barometer temperature: %g\n", baro_temp);
+You do not have to care about your camera model to acces sensors fields, if the sensors is not available its data will contains `NAN` values and its timestamp will be `0`.
 
-        // Camera temperatures
-        float left_temp,right_temp;
-        data.temperature.get( SensorsData::TemperatureData::SENSOR_LOCATION::ONBOARD_LEFT, left_temp );
-        data.temperature.get( SensorsData::TemperatureData::SENSOR_LOCATION::ONBOARD_RIGHT, right_temp );
-        printf(" * Camera left temperature: %g C\n", left_temp);
-        printf(" * Camera right temperature: %g C\n", right_temp);
-    }
+Depending on your camera model and firmware, different sensors can send their temperature.
+To access it you can iterate over sensors and check if the data is available:
+
+```
+    cout << " - Temperature\n";
+    float temperature;
+    for (int s = 0; s < SensorsData::TemperatureData::SENSOR_LOCATION::LAST; s++) {
+        auto sensor_loc = static_cast<SensorsData::TemperatureData::SENSOR_LOCATION>(s);
+        if (sensors_data.temperature.get(sensor_loc, temperature) == ERROR_CODE::SUCCESS)
+            cout << " \t " << sensor_loc << ": " << temperature << "C\n";
+}
 ```
 
 ## Close camera and exit
@@ -170,5 +134,3 @@ Once the data are extracted, don't forget to close the camera before exiting the
 And this is it!<br/>
 
 You can now get all the sensor data from ZED-M and ZED2 cameras.
-
-
