@@ -19,8 +19,7 @@
 ########################################################################
 
 """
-    Read SVO sample to read the video and the information of the camera. It can pick a frame of the svo and save it as
-    a JPEG or PNG file. Depth map and Point Cloud can also be saved into files.
+    Read a stream and display the left images using OpenCV
 """
 import sys
 import pyzed.sl as sl
