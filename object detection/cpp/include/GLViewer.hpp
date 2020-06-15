@@ -137,17 +137,19 @@ public:
     Simple3DObject(sl::Translation position, bool isStatic);
     ~Simple3DObject();
 
-    void addBBox(std::vector<sl::float3> &pts, sl::float3 clr);
-    void addPoint(sl::float3 pt, sl::float3 clr);
+    void addPt(sl::float3 pt);
+    void addClr(sl::float4 clr);
+
+    void addBBox(std::vector<sl::float3> &pts, sl::float4 clr);
+    void addPoint(sl::float3 pt, sl::float4 clr);
     void addTriangle(sl::float3 p1, sl::float3 p2, sl::float3 p3, sl::float4 clr);
-    void addFaces(std::vector<sl::float3> &pts, sl::float3 clr);
-    void addLine(sl::float3 p1, sl::float3 p2, sl::float3 clr);
+    void addLine(sl::float3 p1, sl::float3 p2, sl::float4 clr);
 
     // New 3D rendering
-    void addFullEdges(std::vector<sl::float3> &pts, sl::float3 clr);
-    void addVerticalEdges(std::vector<sl::float3> &pts, sl::float3 clr);
-    void addTopFace(std::vector<sl::float3> &pts, sl::float3 clr);
-    void addVerticalFaces(std::vector<sl::float3> &pts, sl::float3 clr);
+    void addFullEdges(std::vector<sl::float3> &pts, sl::float4 clr);
+    void addVerticalEdges(std::vector<sl::float3> &pts, sl::float4 clr);
+    void addTopFace(std::vector<sl::float3> &pts, sl::float4 clr);
+    void addVerticalFaces(std::vector<sl::float3> &pts, sl::float4 clr);
 
     void pushToGPU();
     void clear();
@@ -223,7 +225,7 @@ private:
 struct ObjectClassName {
     sl::float3 position;
     std::string name;
-    sl::float3 color;
+    sl::float4 color;
 };
 
 // This class manages input events, window and Opengl rendering pipeline
@@ -235,7 +237,7 @@ public:
     bool isAvailable();
 
     void init(int argc, char **argv, sl::CameraParameters& param);
-    void updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs);
+    void updateData(sl::Mat& matXYZRGBA, std::vector<sl::ObjectData>& objs, sl::Transform &cam_pose);
 
     void exit();
 private:
@@ -249,8 +251,8 @@ private:
     void clearInputs();
 
     void printText();
-    void createBboxRendering(std::vector<sl::float3> &bbox, sl::float3 bbox_clr);
-    void createIDRendering(std::vector<sl::float3> &bbox, sl::float3 clr, unsigned int id);
+    void createBboxRendering(std::vector<sl::float3> &bbox, sl::float4 bbox_clr);
+    void createIDRendering(sl::float3 &center, sl::float4 clr, unsigned int id);
 
     // Glut functions callbacks
     static void drawCallback();
@@ -291,11 +293,13 @@ private:
     CameraGL camera_;
     ShaderData shaderLine;
     ShaderData shader;
-    sl::float3 bckgrnd_clr;
+    sl::float4 bckgrnd_clr;
+    sl::Transform cam_pose;
 
     std::vector<ObjectClassName> objectsName;
     Simple3DObject BBox_edges;
     Simple3DObject BBox_faces;
+    Simple3DObject skeletons;
     Simple3DObject floor_grid;
 
 };

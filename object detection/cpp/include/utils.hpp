@@ -7,16 +7,26 @@
 #include <sl/Camera.hpp>
 
 float const id_colors[5][3] = {
-    { 59.0f, 232.0f, 176.0f},
-    { 25.0f, 175.0f, 208.0f},
-    { 105.0f, 102.0f, 205.0f},
-    { 255.0f, 185.0f, 0.0f},
-    { 252.0f, 99.0f, 107.0f}
+    { 232.0f, 176.0f ,59.0f },
+    { 175.0f, 208.0f ,25.0f },
+    { 102.0f, 205.0f ,105.0f},
+    { 185.0f, 0.0f   ,255.0f},
+    { 99.0f, 107.0f  ,252.0f}
 };
 
-inline sl::float3 generateColorID_GR(int idx) {
+inline cv::Scalar generateColorID_u(int idx) {
+    if (idx < 0) return cv::Scalar(236, 184, 36, 255);
     int color_idx = idx % 5;
-    return sl::float3(id_colors[color_idx][0], id_colors[color_idx][1], id_colors[color_idx][2]);
+    return cv::Scalar(id_colors[color_idx][0], id_colors[color_idx][1], id_colors[color_idx][2], 255);
+}
+
+inline sl::float4 generateColorID_f(int idx) {
+    auto clr_u = generateColorID_u(idx);
+    return sl::float4(clr_u.val[0] / 255.f, clr_u.val[1] / 255.f, clr_u.val[2] / 255.f, 1.f);
+}
+
+inline bool renderObject(const sl::ObjectData& i) {
+    return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK || i.tracking_state == sl::OBJECT_TRACKING_STATE::OFF);
 }
 
 float const class_colors[6][3] = {
@@ -28,9 +38,9 @@ float const class_colors[6][3] = {
     { 255.0f, 255.0f, 255.0f}
 };
 
-inline sl::float3 getColorClass(int idx) {
+inline sl::float4 getColorClass(int idx) {
     idx = std::min(5, idx);
-    sl::float3 clr(class_colors[idx][0], class_colors[idx][1], class_colors[idx][2]);
+    sl::float4 clr(class_colors[idx][0], class_colors[idx][1], class_colors[idx][2], 1.f);
     return clr / 255.f;
 }
 

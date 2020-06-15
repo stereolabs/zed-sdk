@@ -3,28 +3,52 @@
 // -------------------------------------------------
 //            2D LEFT VIEW
 // -------------------------------------------------
+template<typename T>
+inline cv::Point2f cvt(T pt, sl::float2 scale) {
+    return cv::Point2f(pt.x * scale.x, pt.y * scale.y);
+}
 
 void render_2D(sl::Mat &left, sl::float2 img_scale, std::vector<sl::ObjectData> &objects, bool render_mask) {
     cv::Mat left_display = slMat2cvMat(left);
     cv::Mat overlay = left_display.clone();
 
+    cv::Rect roi_render(0, 0, left_display.size().width, left_display.size().height);
+
+    // render skeleton joints and bones
+    for (const auto& obj : objects) {
+        if (obj.keypoint_2d.size()) {
+            cv::Scalar color = generateColorID_u(obj.id);
+            if (renderObject(obj)) {
+                // skeleton joints
+                for (auto& kp : obj.keypoint_2d) {
+                    cv::Point2f cv_kp = cvt(kp, img_scale);
+                    if (roi_render.contains(cv_kp))
+                        cv::circle(left_display, cv_kp, 4, color, -1);
+                }
+                // skeleton bones
+                for (const auto& parts : sl::BODY_BONES) {
+                    auto kp_a = cvt(obj.keypoint_2d[getIdx(parts.first)], img_scale);
+                    auto kp_b = cvt(obj.keypoint_2d[getIdx(parts.second)], img_scale);
+                    if (roi_render.contains(kp_a) && roi_render.contains(kp_b))
+                        cv::line(left_display, kp_a, kp_b, color, 2);
+                }
+            }
+        }
+    }
+
     cv::Mat cv_mask;
     for (auto &i : objects) {
         if (i.tracking_state == sl::OBJECT_TRACKING_STATE::OFF || i.tracking_state == sl::OBJECT_TRACKING_STATE::OK) {
-            sl::float3 sl_base_color = generateColorID_GR((int) i.id);
-            cv::Scalar base_color(sl_base_color.z, sl_base_color.y, sl_base_color.x);
-
-            sl::float3 sl_bbox_color = sl_base_color;
-            if (i.tracking_state == sl::OBJECT_TRACKING_STATE::OFF || !render_mask)
-                sl_bbox_color = getColorClass((int) i.label) * 255.0f;
-            cv::Scalar bbox_color(sl_bbox_color.z, sl_bbox_color.y, sl_bbox_color.x, 255.0f);
-            cv::Scalar faded_bbox_color(sl_bbox_color.z, sl_bbox_color.y, sl_bbox_color.x, 0.0f);
+            cv::Scalar base_color = generateColorID_u(i.id);
+            sl::float4 sl_bbox_color = ((i.tracking_state == sl::OBJECT_TRACKING_STATE::OFF || !render_mask) ? getColorClass((int)i.label) : generateColorID_f(i.id)) * 255.0f;
+            cv::Scalar bbox_color(sl_bbox_color.x, sl_bbox_color.y, sl_bbox_color.z, 255.0f);
+            cv::Scalar faded_bbox_color(sl_bbox_color.x, sl_bbox_color.y, sl_bbox_color.z, 0.0f);
 
             // New 2D bounding box
-            cv::Point2i top_left_corner(i.bounding_box_2d[0].x * img_scale.x, i.bounding_box_2d[0].y * img_scale.y);
-            cv::Point2i top_right_corner(i.bounding_box_2d[1].x * img_scale.x, i.bounding_box_2d[1].y * img_scale.y);
-            cv::Point2i bottom_right_corner(i.bounding_box_2d[2].x * img_scale.x, i.bounding_box_2d[2].y * img_scale.y);
-            cv::Point2i bottom_left_corner(i.bounding_box_2d[3].x * img_scale.x, i.bounding_box_2d[3].y * img_scale.y);
+            cv::Point top_left_corner = cvt(i.bounding_box_2d[0], img_scale);
+            cv::Point top_right_corner = cvt(i.bounding_box_2d[1], img_scale);
+            cv::Point bottom_right_corner = cvt(i.bounding_box_2d[2], img_scale);
+            cv::Point bottom_left_corner = cvt(i.bounding_box_2d[3], img_scale);
 
             // scaled ROI
             cv::Rect roi(top_left_corner, bottom_right_corner);
@@ -56,8 +80,7 @@ void render_2D(sl::Mat &left, sl::float2 img_scale, std::vector<sl::ObjectData> 
             } else {
                 cv::Mat mask(left_display.rows, left_display.cols, CV_8UC1, cv::Scalar::all(0));
                 mask(roi) = 1;
-                base_color = cv::Scalar(sl_bbox_color.z, sl_bbox_color.y, sl_bbox_color.x);
-                overlay.setTo(base_color, mask);
+                overlay.setTo(cv::Scalar(sl_bbox_color.x, sl_bbox_color.y, sl_bbox_color.z), mask);
             }
 
             if (!std::isnan(i.position.z)) {
@@ -65,24 +88,8 @@ void render_2D(sl::Mat &left, sl::float2 img_scale, std::vector<sl::ObjectData> 
                 std::string label_str = toString(i.label).get();
                 char text[64];
                 sprintf(text, "%.2fm", abs(i.position.z / 1000.0f));
-                /*putText(
-                        left_display,
-                        label_str,
-                        cv::Point2i(position_image.x - 20, position_image.y - 12),
-                        cv::FONT_HERSHEY_COMPLEX_SMALL,
-                        0.5,
-                        text_color,
-                        1
-                        );*/
-                putText(
-                        left_display,
-                        text,
-                        cv::Point2i(position_image.x - 20, position_image.y - 12),
-                        cv::FONT_HERSHEY_COMPLEX_SMALL,
-                        0.5,
-                        text_color,
-                        1
-                        );
+                putText( left_display, text, cv::Point2i(position_image.x - 20, position_image.y - 12),
+                        cv::FONT_HERSHEY_COMPLEX_SMALL, 0.5, text_color, 1 );
             }
         }
     }
@@ -196,7 +203,6 @@ void TrackingViewer::generate_view(sl::Objects &objects, sl::Pose current_camera
     drawScale(tracking_view);
 
     if (tracking_enabled) {
-
         // First add new points, and remove the ones that are too old
         uint64_t current_timestamp = objects.timestamp.getNanoseconds();
         addToTracklets(objects);
@@ -320,8 +326,7 @@ void TrackingViewer::drawTracklets(cv::Mat &tracking_view, sl::Pose current_came
             continue;
         }
 
-        sl::float3 generated_color_sl = generateColorID_GR(track.id);
-        cv::Scalar generated_color(generated_color_sl.z, generated_color_sl.y, generated_color_sl.x); // OpenCV drawing => exchange R and B channels
+        auto clr = generateColorID_u((int)track.id);
 
         size_t track_size = track.positions_to_draw.size();
         TrackPoint start_point = track.positions_to_draw[0];
@@ -332,21 +337,10 @@ void TrackingViewer::drawTracklets(cv::Mat &tracking_view, sl::Pose current_came
             cv::Point2i cv_end_point = toCVPoint(track.positions_to_draw[point_index], current_camera_pose);
 
             // Check point status
-            if (start_point.tracking_state == TrackPointState::OFF || end_point.tracking_state == TrackPointState::OFF) {
+            if (start_point.tracking_state == TrackPointState::OFF || end_point.tracking_state == TrackPointState::OFF)
                 continue;
-            }
-
-            // float color_ratio = point_index / float(track_size);
-            // cv::Scalar clr = color_ratio * generated_color + (1.0f - color_ratio) * background_color;
-            cv::Scalar clr = generated_color;
-
-            cv::line(
-                    tracking_view,
-                    cv_start_point,
-                    cv_end_point,
-                    clr,
-                    4
-                    );
+            
+            cv::line( tracking_view, cv_start_point, cv_end_point, clr, 4 );
             start_point = end_point;
             cv_start_point = cv_end_point;
         }
@@ -356,7 +350,7 @@ void TrackingViewer::drawTracklets(cv::Mat &tracking_view, sl::Pose current_came
         if (track.is_alive) {
             switch (track.object_type) {
                 case sl::OBJECT_CLASS::PERSON:
-                    cv::circle(tracking_view, toCVPoint(track.positions_to_draw.back(), current_camera_pose), 5, generated_color, 5);
+                    cv::circle(tracking_view, toCVPoint(track.positions_to_draw.back(), current_camera_pose), 5, clr, 5);
                     break;
                 case sl::OBJECT_CLASS::VEHICLE:
                 {
@@ -365,9 +359,9 @@ void TrackingViewer::drawTracklets(cv::Mat &tracking_view, sl::Pose current_came
                     cv::Point2i top_left_corner = rect_center - cv::Point2i(square_size, square_size * 2);
                     cv::Point2i right_bottom_corner = rect_center + cv::Point2i(square_size, square_size * 2);
 #if (defined(CV_VERSION_EPOCH) && CV_VERSION_EPOCH == 2)
-                    cv::rectangle(tracking_view, top_left_corner, right_bottom_corner, generated_color, -1); //OpenCV 2.X --> cv::FILLED not defined but negative values
+                    cv::rectangle(tracking_view, top_left_corner, right_bottom_corner, clr, -1); //OpenCV 2.X --> cv::FILLED not defined but negative values
 #else
-                    cv::rectangle(tracking_view, top_left_corner, right_bottom_corner, generated_color, cv::FILLED);
+                    cv::rectangle(tracking_view, top_left_corner, right_bottom_corner, clr, cv::FILLED);
 #endif
                     break;
                 }
@@ -382,8 +376,8 @@ void TrackingViewer::drawTracklets(cv::Mat &tracking_view, sl::Pose current_came
 
 void TrackingViewer::drawPosition(sl::Objects &objects, cv::Mat &tracking_view, sl::Pose current_camera_pose) {
     for (auto obj : objects.object_list) {
-        sl::float3 generated_color_sl = getColorClass((int) obj.label)* 255.0f;
-        cv::Scalar generated_color(generated_color_sl.z, generated_color_sl.y, generated_color_sl.x); // OpenCV drawing => exchange R and B channels
+        sl::float4 generated_color_sl = getColorClass((int) obj.label)* 255.0f;
+        cv::Scalar generated_color(generated_color_sl.x, generated_color_sl.y, generated_color_sl.z);
 
         // Point = person || Rect = Vehicle 
         switch (obj.label) {
@@ -519,24 +513,10 @@ void TrackingViewer::drawCamera() {
 
 void TrackingViewer::drawHotkeys() {
     cv::Scalar hotkeys_clr(0, 0, 0);
-    cv::putText(
-            background,
-            "Press 'i' to zoom in",
-            cv::Point2i(25, window_height - 25),
-            1,
-            1.0,
-            hotkeys_clr,
-            1
-            );
-    cv::putText(
-            background,
-            "Press 'o' to zoom out",
-            cv::Point2i(25, window_height - 15),
-            1,
-            1.0,
-            hotkeys_clr,
-            1
-            );
+    cv::putText( background, "Press 'i' to zoom in", cv::Point2i(25, window_height - 25), 1,
+            1.0, hotkeys_clr, 1 );
+    cv::putText( background, "Press 'o' to zoom out", cv::Point2i(25, window_height - 15), 1,
+            1.0, hotkeys_clr, 1 );
 }
 
 // ------------------------------------------------------

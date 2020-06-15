@@ -28,7 +28,7 @@ GLchar* FRAGMENT_SHADER =
         "   out_Color = b_color;\n"
         "}";
 
-void addVert(Simple3DObject &obj, float i_f, float limit, float height, sl::float3 &clr) {
+void addVert(Simple3DObject &obj, float i_f, float limit, float height, sl::float4 &clr) {
     auto p1 = sl::float3(i_f, height, -limit);
     auto p2 = sl::float3(i_f, height, limit);
     auto p3 = sl::float3(-limit, height, i_f);
@@ -89,8 +89,7 @@ Simple3DObject createFrustum(sl::CameraParameters param) {
     cam_4.x = (0 - param.cx) * Z_ *fx_;
     cam_4.y = (param.image_size.height - param.cy) * Z_ *fy_;
 
-    sl::float4 clr(0.2f, 0.5f, 0.8f, 1.0f);
-
+    sl::float4 clr(0.8f, 0.5f, 0.2f, 1.0f);
     it.addTriangle(cam_0, cam_1, cam_2, clr);
     it.addTriangle(cam_0, cam_2, cam_3, clr);
     it.addTriangle(cam_0, cam_3, cam_4, clr);
@@ -101,7 +100,7 @@ Simple3DObject createFrustum(sl::CameraParameters param) {
 }
 
 void CloseFunc(void) {
-    if (currentInstance_) 
+    if (currentInstance_)
         currentInstance_->exit();
 }
 
@@ -154,13 +153,16 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters &param) {
     BBox_faces = Simple3DObject(sl::Translation(0, 0, 0), false);
     BBox_faces.setDrawingType(GL_QUADS);
 
-    bckgrnd_clr = sl::float3(50, 50, 50) / 255.f;
+    skeletons = Simple3DObject(sl::Translation(0, 0, 0), false);
+    skeletons.setDrawingType(GL_LINES);
+
+    bckgrnd_clr = sl::float4(50, 50, 50, 255) / 255.f;
 
     floor_grid = Simple3DObject(sl::Translation(0, 0, 0), true);
     floor_grid.setDrawingType(GL_LINES);
 
     float limit = 20.f;
-    sl::float3 clr_grid(108, 122, 137);
+    sl::float4 clr_grid(137, 122, 108, 255);
     clr_grid /= 255.f;
     float height = -3; //-1.5;
     for (int i = (int) (-limit); i <= (int) (limit); i++) {
@@ -183,7 +185,7 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters &param) {
 void GLViewer::render() {
     if (available) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glClearColor(bckgrnd_clr.r, bckgrnd_clr.g, bckgrnd_clr.b, 1.f);
+        glClearColor(bckgrnd_clr.b, bckgrnd_clr.g, bckgrnd_clr.r, bckgrnd_clr.a);
         update();
         draw();
         printText();
@@ -192,75 +194,79 @@ void GLViewer::render() {
     }
 }
 
-std::random_device rd;
-std::mt19937 e2(rd());
-std::uniform_real_distribution<> dist(0.1, 1);
-std::vector<sl::float4> color_vect;
-
-inline sl::float4 generateColorID(unsigned int idx) {
-    if (idx < 0)
-        return sl::float4(dist(e2), dist(e2), dist(e2), 0.5);
-    else {
-        while (color_vect.size() <= idx) color_vect.emplace_back(dist(e2), dist(e2), dist(e2), 0.5);
-        return color_vect.at(idx);
-    }
-}
-
-void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs) {
+void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs, sl::Transform& pose) {
     mtx.lock();
-    //if (mtx.try_lock()) {
-        pointCloud_.pushNewPC(matXYZRGBA);
-        BBox_edges.clear();
-        BBox_faces.clear();
-        objectsName.clear();
+    pointCloud_.pushNewPC(matXYZRGBA);
+    BBox_edges.clear();
+    BBox_faces.clear();
+    objectsName.clear();
+    skeletons.clear();
+    cam_pose = pose;
+    sl::float3 tr_0(0, 0, 0);
+    cam_pose.setTranslation(tr_0);
 
-        for (unsigned int i = 0; i < objs.size(); i++) {
-            if (objs[i].tracking_state == sl::OBJECT_TRACKING_STATE::OK || objs[i].tracking_state == sl::OBJECT_TRACKING_STATE::OFF) {
-                auto bb_ = objs[i].bounding_box;
-                if (!bb_.empty()) {
-                    auto clr_class = getColorClass((unsigned int) objs[i].label);
-                    auto clr_id = generateColorID_GR(objs[i].id) / 255.0f;
+    for (unsigned int i = 0; i < objs.size(); i++) {
+        if (objs[i].tracking_state == sl::OBJECT_TRACKING_STATE::OK || objs[i].tracking_state == sl::OBJECT_TRACKING_STATE::OFF) {
+            auto bb_ = objs[i].bounding_box;
+            if (!bb_.empty()) {
+                auto clr_class = getColorClass((int) objs[i].label);
+                auto clr_id = generateColorID_f(objs[i].id);
 
-                    if (objs[i].tracking_state != sl::OBJECT_TRACKING_STATE::OK)
-                        clr_id = clr_class;
-                    else
-                        createIDRendering(bb_, clr_id, objs[i].id);
+                if (objs[i].tracking_state != sl::OBJECT_TRACKING_STATE::OK)
+                    clr_id = clr_class;
+                else
+                    createIDRendering(objs[i].position, clr_id, objs[i].id);
 
-#ifdef FADED_RENDERING
-                    createBboxRendering(bb_, clr_id);
-#else
-                    BBox_edges.addBBox(bb_, clr_id);
-                    BBox_faces.addFaces(bb_, clr_id);
-#endif
+                if (0) { // display centroid as a cross
+                    sl::float3 centroid = objs[i].position;
+                    const float size_cendtroid = 50; // mm
+                    sl::float3 centroid1 = centroid;
+                    centroid1.y += size_cendtroid;
+                    sl::float3 centroid2 = objs[i].position;
+                    centroid2.y -= size_cendtroid;
+                    sl::float3 centroid3 = objs[i].position;
+                    centroid3.x += size_cendtroid;
+                    sl::float3 centroid4 = objs[i].position;
+                    centroid4.x -= size_cendtroid;
+
+                    BBox_edges.addLine(centroid1, centroid2, sl::float4(1.f, 0.5f, 0.5f, 1.f));
+                    BBox_edges.addLine(centroid3, centroid4, sl::float4(1.f, 0.5f, 0.5f, 1.f));
                 }
+                
+                //Display sekeleton if available
+                auto clr_bones = generateColorID_f(objs[i].id);
+                auto keypoints = objs[i].keypoint;
+                if (keypoints.size()>0){
+                    for (auto &limb : sl::BODY_BONES) {
+                        sl::float3 kp_1 = keypoints[(int)limb.first];
+                        sl::float3 kp_2 = keypoints[(int)limb.second];
+                        if (std::isfinite(kp_1.x) && std::isfinite(kp_2.x))
+                            skeletons.addLine(kp_1, kp_2, clr_bones);
+                    }
+                }
+                createBboxRendering(bb_, clr_id);
             }
         }
+    }
     mtx.unlock();
-    //}
 }
 
-void GLViewer::createBboxRendering(std::vector<sl::float3> &bbox, sl::float3 bbox_clr) {
+void GLViewer::createBboxRendering(std::vector<sl::float3> &bbox, sl::float4 bbox_clr) {
     // First create top and bottom full edges
     BBox_edges.addFullEdges(bbox, bbox_clr);
-
     // Add faded vertical edges
     BBox_edges.addVerticalEdges(bbox, bbox_clr);
-
-    // Add top face
-    BBox_faces.addTopFace(bbox, bbox_clr);
-
     // Add faces
     BBox_faces.addVerticalFaces(bbox, bbox_clr);
+    // Add top face
+    BBox_faces.addTopFace(bbox, bbox_clr);
 }
 
-void GLViewer::createIDRendering(std::vector<sl::float3> &bbox, sl::float3 clr, unsigned int id) {
+void GLViewer::createIDRendering(sl::float3 & center, sl::float4 clr, unsigned int id) {
     ObjectClassName tmp;
-    std::string name_ = std::to_string(id);
-    tmp.name = "ID: " + name_;
-    tmp.color = sl::float3(clr.x, clr.y, clr.z);
-    tmp.position = (bbox[0] + bbox[3]) / 2.0f; // Reference point
-    //tmp.position.x += 100.f;
-    tmp.position.y += 100.f;
+    tmp.name = "ID: " + std::to_string(id);
+    tmp.color = clr;
+    tmp.position = center; // Reference point
     objectsName.push_back(tmp);
 }
 
@@ -310,13 +316,14 @@ void GLViewer::update() {
     // Update point cloud buffers
     BBox_edges.pushToGPU();
     BBox_faces.pushToGPU();
+    skeletons.pushToGPU();
     pointCloud_.update();
     mtx.unlock();
     clearInputs();
 }
 
 void GLViewer::draw() {
-    const sl::Transform vpMatrix = camera_.getViewProjectionMatrix();
+    sl::Transform vpMatrix = camera_.getViewProjectionMatrix();
 
     glUseProgram(shaderLine.it.getProgramId());
     glUniformMatrix4fv(shaderLine.MVP_Mat, 1, GL_TRUE, vpMatrix.m);
@@ -325,6 +332,9 @@ void GLViewer::draw() {
     glUseProgram(0);
 
     glPointSize(1.f);
+
+    // Apply IMU Rotation compensation
+    vpMatrix = vpMatrix * cam_pose;
     pointCloud_.draw(vpMatrix);
 
     glUseProgram(shader.it.getProgramId());
@@ -334,6 +344,8 @@ void GLViewer::draw() {
     frustum.draw();
     glLineWidth(1.5f);
     BBox_edges.draw();
+    glLineWidth(4.f);
+    skeletons.draw();
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     BBox_faces.draw();
     glUseProgram(0);
@@ -342,6 +354,7 @@ void GLViewer::draw() {
 sl::float2 compute3Dprojection(sl::float3 &pt, const sl::Transform &cam, sl::Resolution wnd_size) {
     sl::float4 pt4d(pt.x, pt.y, pt.z, 1.);
     auto proj3D_cam = pt4d * cam;
+    proj3D_cam.y += 1000.f;
     sl::float2 proj2D;
     proj2D.x = ((proj3D_cam.x / pt4d.w) * wnd_size.width) / (2.f * proj3D_cam.w) + wnd_size.width / 2.f;
     proj2D.y = ((proj3D_cam.y / pt4d.w) * wnd_size.height) / (2.f * proj3D_cam.w) + wnd_size.height / 2.f;
@@ -349,11 +362,11 @@ sl::float2 compute3Dprojection(sl::float3 &pt, const sl::Transform &cam, sl::Res
 }
 
 void GLViewer::printText() {
-    const sl::Transform vpMatrix = camera_.getViewProjectionMatrix();
+    const sl::Transform vpMatrix = camera_.getViewProjectionMatrix() * cam_pose;
     sl::Resolution wnd_size(glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT));
     for (auto it : objectsName) {
         auto pt2d = compute3Dprojection(it.position, vpMatrix, wnd_size);
-        glColor4f(it.color.r, it.color.g, it.color.b, 1.f);
+        glColor4f(it.color.b, it.color.g, it.color.r, it.color.a);
         const auto *string = it.name.c_str();
         glWindowPos2f(pt2d.x, pt2d.y);
         int len = (int) strlen(string);
@@ -397,9 +410,7 @@ void GLViewer::mouseMotionCallback(int x, int y) {
 
 void GLViewer::reshapeCallback(int width, int height) {
     glViewport(0, 0, width, height);
-    float hfov = currentInstance_->camera_.getHorizontalFOV();
-    float vfov = currentInstance_->camera_.getVerticalFOV();
-    currentInstance_->camera_.setProjection(hfov, vfov, currentInstance_->camera_.getZNear(), currentInstance_->camera_.getZFar());
+    currentInstance_->camera_.setProjection(currentInstance_->camera_.getHorizontalFOV(), currentInstance_->camera_.getVerticalFOV(), currentInstance_->camera_.getZNear(), currentInstance_->camera_.getZFar());
 }
 
 void GLViewer::keyPressedCallback(unsigned char c, int x, int y) {
@@ -427,19 +438,14 @@ Simple3DObject::~Simple3DObject() {
     }
 }
 
-void Simple3DObject::addBBox(std::vector<sl::float3> &pts, sl::float3 clr) {
+void Simple3DObject::addBBox(std::vector<sl::float3> &pts, sl::float4 clr) {
     int start_id = vertices_.size() / 3;
 
     float transparency_top = 0.05f, transparency_bottom = 0.75f;
     for (unsigned int i = 0; i < pts.size(); i++) {
-        vertices_.push_back(pts[i].x);
-        vertices_.push_back(pts[i].y);
-        vertices_.push_back(pts[i].z);
-
-        colors_.push_back(clr.r);
-        colors_.push_back(clr.g);
-        colors_.push_back(clr.b);
-        colors_.push_back(i < 4 ? transparency_top : transparency_bottom);
+        addPt(pts[i]);
+        clr.a = (i < 4 ? transparency_top : transparency_bottom);
+        addClr(clr);
     }
 
     const std::vector<int> boxLinks = {4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 2, 6, 3, 7};
@@ -450,147 +456,42 @@ void Simple3DObject::addBBox(std::vector<sl::float3> &pts, sl::float3 clr) {
     }
 }
 
-void Simple3DObject::addFaces(std::vector<sl::float3> &pts, sl::float3 clr) {
-    std::vector<std::vector<int>> faces
-    {
-        {
-            0, 3, 7, 4
-        }, // front face
-        {
-            3, 2, 6, 7
-        }, // right face
-        {
-            2, 1, 5, 6
-        }, // back face
-        {
-            1, 0, 4, 5
-        } // left face
-    };
-    for (const auto order : faces) {
-        // Top points
-        vertices_.push_back(pts[order[0]].x);
-        vertices_.push_back(pts[order[0]].y);
-        vertices_.push_back(pts[order[0]].z);
-
-        colors_.push_back(clr.r);
-        colors_.push_back(clr.g);
-        colors_.push_back(clr.b);
-        colors_.push_back(0.025f);
-
-        vertices_.push_back(pts[order[1]].x);
-        vertices_.push_back(pts[order[1]].y);
-        vertices_.push_back(pts[order[1]].z);
-
-        colors_.push_back(clr.r);
-        colors_.push_back(clr.g);
-        colors_.push_back(clr.b);
-        colors_.push_back(0.025f);
-
-        // Bottom points
-        vertices_.push_back(pts[order[2]].x);
-        vertices_.push_back(pts[order[2]].y);
-        vertices_.push_back(pts[order[2]].z);
-
-        colors_.push_back(clr.r);
-        colors_.push_back(clr.g);
-        colors_.push_back(clr.b);
-        colors_.push_back(0.2f);
-
-        vertices_.push_back(pts[order[3]].x);
-        vertices_.push_back(pts[order[3]].y);
-        vertices_.push_back(pts[order[3]].z);
-
-        colors_.push_back(clr.r);
-        colors_.push_back(clr.g);
-        colors_.push_back(clr.b);
-        colors_.push_back(0.2f);
-
-        indices_.push_back((int) indices_.size());
-        indices_.push_back((int) indices_.size());
-        indices_.push_back((int) indices_.size());
-        indices_.push_back((int) indices_.size());
-    }
-}
-
-void Simple3DObject::addPoint(sl::float3 pt, sl::float3 clr) {
+void Simple3DObject::addPt(sl::float3 pt) {
     vertices_.push_back(pt.x);
     vertices_.push_back(pt.y);
     vertices_.push_back(pt.z);
-    colors_.push_back(clr.r);
-    colors_.push_back(clr.g);
+}
+
+void Simple3DObject::addClr(sl::float4 clr) {
     colors_.push_back(clr.b);
-    colors_.push_back(1.f);
+    colors_.push_back(clr.g);
+    colors_.push_back(clr.r);
+    colors_.push_back(clr.a);
+}
+
+void Simple3DObject::addPoint(sl::float3 pt, sl::float4 clr) {
+    addPt(pt);
+    addClr(clr);
     indices_.push_back((int) indices_.size());
 }
 
-void Simple3DObject::addLine(sl::float3 p1, sl::float3 p2, sl::float3 clr) {
-    vertices_.push_back(p1.x);
-    vertices_.push_back(p1.y);
-    vertices_.push_back(p1.z);
-
-    vertices_.push_back(p2.x);
-    vertices_.push_back(p2.y);
-    vertices_.push_back(p2.z);
-
-    colors_.push_back(clr.r);
-    colors_.push_back(clr.g);
-    colors_.push_back(clr.b);
-    colors_.push_back(1.f);
-
-    colors_.push_back(clr.r);
-    colors_.push_back(clr.g);
-    colors_.push_back(clr.b);
-    colors_.push_back(1.f);
-
-    indices_.push_back((int) indices_.size());
-    indices_.push_back((int) indices_.size());
+void Simple3DObject::addLine(sl::float3 p1, sl::float3 p2, sl::float4 clr) {
+    addPoint(p1, clr);
+    addPoint(p2, clr);
 }
 
-void Simple3DObject::addTriangle(sl::float3 p1, sl::float3 p2, sl::float3 p3, sl::float4 clr) {
-    vertices_.push_back(p1.x);
-    vertices_.push_back(p1.y);
-    vertices_.push_back(p1.z);
-
-    colors_.push_back(clr.r);
-    colors_.push_back(clr.g);
-    colors_.push_back(clr.b);
-    colors_.push_back(clr.a);
-
-    vertices_.push_back(p2.x);
-    vertices_.push_back(p2.y);
-    vertices_.push_back(p2.z);
-
-    colors_.push_back(clr.r);
-    colors_.push_back(clr.g);
-    colors_.push_back(clr.b);
-    colors_.push_back(clr.a);
-
-    vertices_.push_back(p3.x);
-    vertices_.push_back(p3.y);
-    vertices_.push_back(p3.z);
-
-    colors_.push_back(clr.r);
-    colors_.push_back(clr.g);
-    colors_.push_back(clr.b);
-    colors_.push_back(clr.a);
-
-    indices_.push_back((int) indices_.size());
-    indices_.push_back((int) indices_.size());
-    indices_.push_back((int) indices_.size());
+void Simple3DObject::addTriangle(sl::float3 p1, sl::float3 p2, sl::float3 p3, sl::float4 clr) {   
+    addPoint(p1, clr);
+    addPoint(p2, clr);
+    addPoint(p3, clr);
 }
 
-void Simple3DObject::addFullEdges(std::vector<sl::float3> &pts, sl::float3 clr) {
+void Simple3DObject::addFullEdges(std::vector<sl::float3> &pts, sl::float4 clr) {
     int start_id = vertices_.size() / 3;
 
     for (unsigned int i = 0; i < pts.size(); i++) {
-        vertices_.push_back(pts[i].x);
-        vertices_.push_back(pts[i].y);
-        vertices_.push_back(pts[i].z);
-
-        colors_.push_back(clr.r);
-        colors_.push_back(clr.g);
-        colors_.push_back(clr.b);
-        colors_.push_back(0.75f);
+        addPt(pts[i]);
+        addClr(clr);
     }
 
     const std::vector<int> boxLinksTop = {0, 1, 1, 2, 2, 3, 3, 0};
@@ -606,26 +507,21 @@ void Simple3DObject::addFullEdges(std::vector<sl::float3> &pts, sl::float3 clr) 
     }
 }
 
-void Simple3DObject::addVerticalEdges(std::vector<sl::float3> &pts, sl::float3 clr) {
+void Simple3DObject::addVerticalEdges(std::vector<sl::float3> &pts, sl::float4 clr) {
     auto addSingleVerticalLine = [&](sl::float3 top_pt, sl::float3 bot_pt) {
         std::vector<sl::float3> current_pts{
             top_pt,
-            ((grid_size - 1.0f) * top_pt + bot_pt) / grid_size,
-            ((grid_size - 2.0f) * top_pt + bot_pt * 2.0f) / grid_size,
-            (2.0f * top_pt + bot_pt * (grid_size - 2.0f)) / grid_size,
-            (top_pt + bot_pt * (grid_size - 1.0f)) / grid_size,
-            bot_pt};
+                    ((grid_size - 1.0f) * top_pt + bot_pt) / grid_size,
+                    ((grid_size - 2.0f) * top_pt + bot_pt * 2.0f) / grid_size,
+                    (2.0f * top_pt + bot_pt * (grid_size - 2.0f)) / grid_size,
+                    (top_pt + bot_pt * (grid_size - 1.0f)) / grid_size,
+                    bot_pt};
 
         int start_id = vertices_.size() / 3;
         for (unsigned int i = 0; i < current_pts.size(); i++) {
-            vertices_.push_back(current_pts[i].x);
-            vertices_.push_back(current_pts[i].y);
-            vertices_.push_back(current_pts[i].z);
-
-            colors_.push_back(clr.r);
-            colors_.push_back(clr.g);
-            colors_.push_back(clr.b);
-            colors_.push_back((i == 2 || i == 3) ? 0.0f : 0.75f);
+            addPt(current_pts[i]);
+            clr.a = (i == 2 || i == 3) ? 0.0f : 0.75f;
+            addClr(clr);
         }
 
         const std::vector<int> boxLinks = {0, 1, 1, 2, 2, 3, 3, 4, 4, 5};
@@ -641,62 +537,18 @@ void Simple3DObject::addVerticalEdges(std::vector<sl::float3> &pts, sl::float3 c
     addSingleVerticalLine(pts[3], pts[7]);
 }
 
-void Simple3DObject::addTopFace(std::vector<sl::float3> &pts, sl::float3 clr) {
-    float alpha = 0.3f;
-
-    vertices_.push_back(pts[0].x);
-    vertices_.push_back(pts[0].y);
-    vertices_.push_back(pts[0].z);
-
-    colors_.push_back(clr.r);
-    colors_.push_back(clr.g);
-    colors_.push_back(clr.b);
-    colors_.push_back(alpha);
-
-    vertices_.push_back(pts[1].x);
-    vertices_.push_back(pts[1].y);
-    vertices_.push_back(pts[1].z);
-
-    colors_.push_back(clr.r);
-    colors_.push_back(clr.g);
-    colors_.push_back(clr.b);
-    colors_.push_back(alpha);
-
-    vertices_.push_back(pts[2].x);
-    vertices_.push_back(pts[2].y);
-    vertices_.push_back(pts[2].z);
-
-    colors_.push_back(clr.r);
-    colors_.push_back(clr.g);
-    colors_.push_back(clr.b);
-    colors_.push_back(alpha);
-
-    vertices_.push_back(pts[3].x);
-    vertices_.push_back(pts[3].y);
-    vertices_.push_back(pts[3].z);
-
-    colors_.push_back(clr.r);
-    colors_.push_back(clr.g);
-    colors_.push_back(clr.b);
-    colors_.push_back(alpha);
-
-    indices_.push_back((int) indices_.size());
-    indices_.push_back((int) indices_.size());
-    indices_.push_back((int) indices_.size());
-    indices_.push_back((int) indices_.size());
+void Simple3DObject::addTopFace(std::vector<sl::float3> &pts, sl::float4 clr) {
+    clr.a = 0.3f;
+    for (auto it : pts)
+        addPoint(it, clr);
 }
 
-void Simple3DObject::addVerticalFaces(std::vector<sl::float3> &pts, sl::float3 clr) {
+void Simple3DObject::addVerticalFaces(std::vector<sl::float3> &pts, sl::float4 clr) {
     auto addQuad = [&](std::vector<sl::float3> quad_pts, float alpha1, float alpha2) { // To use only with 4 points
         for (unsigned int i = 0; i < quad_pts.size(); ++i) {
-            vertices_.push_back(quad_pts[i].x);
-            vertices_.push_back(quad_pts[i].y);
-            vertices_.push_back(quad_pts[i].z);
-
-            colors_.push_back(clr.r);
-            colors_.push_back(clr.g);
-            colors_.push_back(clr.b);
-            colors_.push_back(i < 2 ? alpha1 : alpha2);
+            addPt(quad_pts[i]);
+            clr.a = (i < 2 ? alpha1 : alpha2);
+            addClr(clr);
         }
 
         indices_.push_back((int) indices_.size());
@@ -727,33 +579,33 @@ void Simple3DObject::addVerticalFaces(std::vector<sl::float3> &pts, sl::float3 c
         // Top full quad
         std::vector<sl::float3> quad_pts_1{
             pts[quad[0]],
-            pts[quad[1]],
-            ((grid_size - 1.0f) * pts[quad[1]] + pts[quad[2]]) / grid_size,
-            ((grid_size - 1.0f) * pts[quad[0]] + pts[quad[3]]) / grid_size};
+                    pts[quad[1]],
+                    ((grid_size - 1.0f) * pts[quad[1]] + pts[quad[2]]) / grid_size,
+                    ((grid_size - 1.0f) * pts[quad[0]] + pts[quad[3]]) / grid_size};
         addQuad(quad_pts_1, alpha, alpha);
 
         // Top faded quad
         std::vector<sl::float3> quad_pts_2{
             ((grid_size - 1.0f) * pts[quad[0]] + pts[quad[3]]) / grid_size,
-            ((grid_size - 1.0f) * pts[quad[1]] + pts[quad[2]]) / grid_size,
-            ((grid_size - 2.0f) * pts[quad[1]] + 2.0f * pts[quad[2]]) / grid_size,
-            ((grid_size - 2.0f) * pts[quad[0]] + 2.0f * pts[quad[3]]) / grid_size};
+                    ((grid_size - 1.0f) * pts[quad[1]] + pts[quad[2]]) / grid_size,
+                    ((grid_size - 2.0f) * pts[quad[1]] + 2.0f * pts[quad[2]]) / grid_size,
+                    ((grid_size - 2.0f) * pts[quad[0]] + 2.0f * pts[quad[3]]) / grid_size};
         addQuad(quad_pts_2, alpha, 0.0f);
 
         // Bottom faded quad
         std::vector<sl::float3> quad_pts_3{
             (2.0f * pts[quad[0]] + (grid_size - 2.0f) * pts[quad[3]]) / grid_size,
-            (2.0f * pts[quad[1]] + (grid_size - 2.0f) * pts[quad[2]]) / grid_size,
-            (pts[quad[1]] + (grid_size - 1.0f) * pts[quad[2]]) / grid_size,
-            (pts[quad[0]] + (grid_size - 1.0f) * pts[quad[3]]) / grid_size};
+                    (2.0f * pts[quad[1]] + (grid_size - 2.0f) * pts[quad[2]]) / grid_size,
+                    (pts[quad[1]] + (grid_size - 1.0f) * pts[quad[2]]) / grid_size,
+                    (pts[quad[0]] + (grid_size - 1.0f) * pts[quad[3]]) / grid_size};
         addQuad(quad_pts_3, 0.0f, alpha);
 
         // Bottom full quad
         std::vector<sl::float3> quad_pts_4{
             (pts[quad[0]] + (grid_size - 1.0f) * pts[quad[3]]) / grid_size,
-            (pts[quad[1]] + (grid_size - 1.0f) * pts[quad[2]]) / grid_size,
-            pts[quad[2]],
-            pts[quad[3]]};
+                    (pts[quad[1]] + (grid_size - 1.0f) * pts[quad[2]]) / grid_size,
+                    pts[quad[2]],
+                    pts[quad[3]]};
         addQuad(quad_pts_4, alpha, alpha);
     }
 }

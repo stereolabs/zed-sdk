@@ -49,7 +49,6 @@ void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string 
 void parseArgs(int argc, char **argv, InitParameters& param);
 bool checkIsJetson();
 
-int detection_confidence = 35;
 
 int main(int argc, char **argv) {
     // Create ZED objects
@@ -65,7 +64,6 @@ int main(int argc, char **argv) {
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
     init_parameters.sdk_verbose = true;
     init_parameters.sensors_required = true;
-
     parseArgs(argc, argv, init_parameters);
     
     // Open the camera
@@ -79,6 +77,10 @@ int main(int argc, char **argv) {
     ObjectDetectionParameters detection_parameters;
     detection_parameters.enable_tracking = true;
     detection_parameters.enable_mask_output = true;
+#if (ZED_SDK_MAJOR_VERSION*10+ZED_SDK_MINOR_VERSION > 31)
+    sl::DETECTION_MODEL detection_model = DETECTION_MODEL::MULTI_CLASS_BOX; //change here for Body Pose since 3.2
+    detection_parameters.detection_model = static_cast<sl::DETECTION_MODEL>(detection_model);
+#endif
 
     auto camera_infos = zed.getCameraInformation();
 
@@ -95,6 +97,7 @@ int main(int argc, char **argv) {
     }
 
     // detection runtime parameters
+    int detection_confidence = 35;
     ObjectDetectionRuntimeParameters detection_parameters_rt(detection_confidence);
 
     // detection output
@@ -130,10 +133,7 @@ int main(int argc, char **argv) {
 #endif
 
     sl::RuntimeParameters runtime_parameters;
-    runtime_parameters.measure3D_reference_frame = sl::REFERENCE_FRAME::CAMERA;
-    // Setting the depth confidence parameters
-    runtime_parameters.confidence_threshold = 100;
-    runtime_parameters.texture_confidence_threshold = 100;
+    runtime_parameters.confidence_threshold = 50;
     
     Pose cam_pose;
     cam_pose.pose_data.setIdentity();
@@ -149,10 +149,10 @@ int main(int argc, char **argv) {
         if ((returned_stated == ERROR_CODE::SUCCESS) && objects.is_new) {
 #if ENABLE_GUI
             zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, display_resolution);
-            viewer.updateData(point_cloud, objects.object_list);
+            zed.getPosition(cam_pose, REFERENCE_FRAME::WORLD);
+            viewer.updateData(point_cloud, objects.object_list, cam_pose.pose_data);
             gl_viewer_available = viewer.isAvailable();
 
-            zed.getPosition(cam_pose, REFERENCE_FRAME::WORLD);
             zed.retrieveImage(image_left, VIEW::LEFT, MEM::CPU, display_resolution);
             render_2D(image_left, img_scale, objects.object_list, true);
             track_view_generator.generate_view(objects, cam_pose, track_view, objects.is_tracked);
