@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
     }
 
     // detection runtime parameters
-    int detection_confidence = 35;
+    int detection_confidence = 50;
     ObjectDetectionRuntimeParameters detection_parameters_rt(detection_confidence);
 
     // detection output
