@@ -103,7 +103,7 @@ If we want to use the depth map instead of the point cloud, you can get a depth 
 int x = image.getWidth() / 2;
 int y = image.getHeight() / 2;
 float depth_value;
-depth.getValue(x,y, depth_value);
+depth.getValue(x,y, &depth_value);
 printf("Depth to Camera at (%d, %d): %f mm\n", x, y, depth_value);
 ```
 
