@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
     int width_sbs = image_size.width * 2;
 
     // Prepare side by side image containers
-    cv::Size image_size_sbs(width, height); // Size of the side by side image
+    cv::Size image_size_sbs(width_sbs, height); // Size of the side by side image
     cv::Mat svo_image_sbs_rgba(image_size_sbs, CV_8UC4); // Container for ZED RGBA side by side image
     cv::Mat ocv_image_sbs_rgb(image_size_sbs, CV_8UC3); // Container for OpenCV RGB side by side image
 
@@ -183,12 +183,17 @@ int main(int argc, char **argv) {
             }
 
             if (output_as_video) {
-cv::Mat bar = slMat2cvMat(left_image);
+                // Copy the left image to the left side of SBS image
+                left_image_ocv.copyTo(svo_image_sbs_rgba(cv::Rect(0, 0, width, height)));
+
+                // Copy the right image to the right side of SBS image
+                right_image_ocv.copyTo(svo_image_sbs_rgba(cv::Rect(width, 0, width, height)));
+
                 // Convert SVO image from RGBA to RGB
-                cv::cvtColor(bar, left_image_ocv, cv::COLOR_RGBA2RGB);
+                cv::cvtColor(svo_image_sbs_rgba, ocv_image_sbs_rgb, cv::COLOR_RGBA2RGB);
 
                 // Write the RGB image in the video
-                video_writer->write(left_image_ocv);
+                video_writer->write(ocv_image_sbs_rgb);
             } else {
                 // Generate filenames
                 ostringstream filename1;
