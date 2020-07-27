@@ -22,7 +22,7 @@
  ** This sample shows how to capture a real-time 3D reconstruction      **
  ** of the scene using the Spatial Mapping API. The resulting mesh      **
  ** is displayed as a wireframe on top of the left image using OpenGL.  **
- ** Spatial Mapping can be started and stopped with the Space Bar key   **
+ ** Spatial Mapping can be started and stopped with the space bar key   **
  *************************************************************************/
 
  // ZED includes
@@ -56,9 +56,9 @@ int main(int argc, char** argv) {
     }
 
 #if CREATE_MESH
-    Mesh map; // current incemental mesh
+    Mesh map; // Current incremental mesh
 #else
-    FusedPointCloud map; // current incemental fused point cloud
+    FusedPointCloud map; // Current incremental fused point cloud
 #endif
 
     CameraParameters camera_parameters = zed.getCameraInformation().camera_configuration.calibration_parameters.left_cam;
@@ -72,19 +72,19 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    Mat image; // current left image
-    Pose pose; // positional tracking data
+    Mat image; // Current left image
+    Pose pose; // Camera pose tracking data
 
     SpatialMappingParameters spatial_mapping_parameters;
     POSITIONAL_TRACKING_STATE tracking_state = POSITIONAL_TRACKING_STATE::OFF;
     SPATIAL_MAPPING_STATE mapping_state = SPATIAL_MAPPING_STATE::NOT_ENABLED;
-    bool mapping_activated = false; // indicates if the spatial mapping is running or not
-    chrono::high_resolution_clock::time_point ts_last; // time stamp of the last mesh request
+    bool mapping_activated = false; // Indicates if spatial mapping is running or not
+    chrono::high_resolution_clock::time_point ts_last; // Timestamp of the last mesh request
     
     // Enable positional tracking before starting spatial mapping
     auto returned_state = zed.enablePositionalTracking();
     if(returned_state != ERROR_CODE::SUCCESS) {
-        print("Enabling positionnal tracking failed: ", returned_state);
+        print("Enabling positional tracking failed: ", returned_state);
         zed.close();
         return EXIT_FAILURE;
     }
@@ -98,9 +98,9 @@ int main(int argc, char** argv) {
 
             if(mapping_activated) {
                 mapping_state = zed.getSpatialMappingState();
-                // Compute elapse time since the last call of Camera::requestMeshAsync()
+                // Compute elapsed time since the last call of Camera::requestSpatialMapAsync()
                 auto duration = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - ts_last).count();
-                // Ask for a mesh update if 500ms have spend since last request
+                // Ask for a mesh update if 500ms elapsed since last request
                 if((duration > 500) && viewer.chunksUpdated()) {
                     zed.requestSpatialMapAsync();
                     ts_last = chrono::high_resolution_clock::now();
@@ -136,7 +136,7 @@ int main(int argc, char** argv) {
                         print("Error enable Spatial Mapping "+ e);
                     }
 
-                    // clear previous Mesh data
+                    // Clear previous Mesh data
                     map.clear();
                     viewer.clearCurrentMesh();
 
@@ -158,7 +158,7 @@ int main(int argc, char** argv) {
                     if(spatial_mapping_parameters.save_texture)
                         map.applyTexture(MESH_TEXTURE_FORMAT::RGB);
 #endif
-                    //Save as an OBJ file
+                    // Save mesh as an OBJ file
                     string saveName = getDir() + "mesh_gen.obj";
                     bool error_save = map.save(saveName.c_str());
                     if(error_save)

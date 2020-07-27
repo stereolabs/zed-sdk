@@ -12,12 +12,6 @@ if(COMMAND cmake_policy)
 	cmake_policy(SET CMP0015 OLD)
 endif(COMMAND cmake_policy)
 
-
-if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
-SET(CMAKE_BUILD_TYPE "RelWithDebInfo")
-endif()
-
-
 SET(EXECUTABLE_OUTPUT_PATH ".")
 
 find_package(ZED 3 REQUIRED)

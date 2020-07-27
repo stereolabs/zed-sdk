@@ -4,6 +4,7 @@
 #include <vector>
 #include <mutex>
 
+#include "ZEDModel.hpp"    
 #include <sl/Camera.hpp>
 
 #include <GL/glew.h>
@@ -11,35 +12,24 @@
 #include <GL/gl.h>
 #include <GL/glut.h>   /* OpenGL Utility Toolkit header */
 
-#include <cuda.h>
-#include <cuda_gl_interop.h>
-
-#include <opencv2/opencv.hpp>
-
-#include "utils.hpp"
-
+#include <list>
 
 #ifndef M_PI
 #define M_PI 3.141592653f
 #endif
 
-#define MOUSE_R_SENSITIVITY 0.04f
-#define MOUSE_UZ_SENSITIVITY 0.75f
-#define MOUSE_DZ_SENSITIVITY 1.25f
-#define MOUSE_T_SENSITIVITY 100.f
-#define KEY_T_SENSITIVITY 0.1f
+const float MOUSE_R_SENSITIVITY = 0.025f;
+const float MOUSE_UZ_SENSITIVITY = 0.75f;
+const float MOUSE_DZ_SENSITIVITY = 1.25f;
+const float MOUSE_T_SENSITIVITY = 80.f;
+const float KEY_T_SENSITIVITY = 0.1f;
 
-// Utils
-std::vector<sl::float3> getBBoxOnFloorPlane(std::vector<sl::float3> &bbox, sl::Pose cam_pose);
-
-// 3D
+/////////////////
 
 class CameraGL {
 public:
 
-    CameraGL() {
-    }
-
+    CameraGL() {}
     enum DIRECTION {
         UP, DOWN, LEFT, RIGHT, FORWARD, BACK
     };
@@ -80,7 +70,6 @@ public:
     static const sl::Translation ORIGINAL_RIGHT;
 
     sl::Transform projection_;
-    bool usePerspective_;
 private:
     void updateVectors();
     void updateView();
@@ -105,9 +94,7 @@ private:
 
 class Shader {
 public:
-
-    Shader() {
-    }
+    Shader() {}
     Shader(GLchar* vs, GLchar* fs);
     ~Shader();
     GLuint getProgramId();
@@ -129,25 +116,13 @@ struct ShaderData {
 class Simple3DObject {
 public:
 
-    Simple3DObject() {
-    }
+    Simple3DObject();
     Simple3DObject(sl::Translation position, bool isStatic);
     ~Simple3DObject();
 
-    void addPt(sl::float3 pt);
-    void addClr(sl::float4 clr);
-
-    void addBBox(std::vector<sl::float3> &pts, sl::float4 clr);
-    void addPoint(sl::float3 pt, sl::float4 clr);
-    void addTriangle(sl::float3 p1, sl::float3 p2, sl::float3 p3, sl::float4 clr);
-    void addLine(sl::float3 p1, sl::float3 p2, sl::float4 clr);
-
-    // New 3D rendering
-    void addFullEdges(std::vector<sl::float3> &pts, sl::float4 clr);
-    void addVerticalEdges(std::vector<sl::float3> &pts, sl::float4 clr);
-    void addTopFace(std::vector<sl::float3> &pts, sl::float4 clr);
-    void addVerticalFaces(std::vector<sl::float3> &pts, sl::float4 clr);
-
+    void addPoint(float x, float y, float z, float r, float g, float b);
+    void addLine(sl::float3 p1, sl::float3 p2, sl::float3 clr);
+    void addPoint(sl::float3 position, sl::float3 color);
     void pushToGPU();
     void clear();
 
@@ -181,60 +156,46 @@ private:
     /*
     Vertex buffer IDs:
     - [0]: Vertices coordinates;
-    - [1]: Indices;
-     */
-    GLuint vboID_[2];
+    - [1]: RGB color values;
+    - [2]: Indices;
+    */
+    GLuint vboID_[3];
 
     sl::Translation position_;
     sl::Orientation rotation_;
 };
 
-class PointCloud {
+class SubMapObj {
+    GLuint vaoID_;
+    GLuint vboID_[2];
+    int current_fc;
+
+    std::vector<sl::uint1> index;
 public:
-    PointCloud();
-    ~PointCloud();
-
-    // Initialize Opengl and Cuda buffers
-    // Warning: must be called in the Opengl thread
-    void initialize(sl::Resolution res);
-    // Push a new point cloud
-    // Warning: can be called from any thread but the mutex "mutexData" must be locked
-    void pushNewPC(sl::Mat &matXYZRGBA);
-    // Update the Opengl buffer
-    // Warning: must be called in the Opengl thread
-    void update();
-    // Draw the point cloud
-    // Warning: must be called in the Opengl thread
-    void draw(const sl::Transform& vp);
-    // Close (disable update)
-    void close();
-
-private:
-    sl::Mat matGPU_;
-    bool hasNewPCL_ = false;
-    ShaderData shader;
-    size_t numBytes_;
-    float* xyzrgbaMappedBuf_;
-    GLuint bufferGLID_;
-    cudaGraphicsResource* bufferCudaID_;
-};
-
-struct ObjectClassName {
-    sl::float3 position;
-    std::string name;
-    sl::float4 color;
+    SubMapObj();
+    ~SubMapObj();
+    void update(sl::PointCloudChunk &chunks);
+    void draw();
 };
 
 // This class manages input events, window and Opengl rendering pipeline
-
 class GLViewer {
 public:
     GLViewer();
     ~GLViewer();
     bool isAvailable();
 
-    void init(int argc, char **argv, sl::CameraParameters& param);
-    void updateData(sl::Mat& matXYZRGBA, std::vector<sl::ObjectData>& objs, sl::Transform &cam_pose);
+    GLenum init(int argc, char **argv, sl::CameraParameters param, sl::FusedPointCloud* ptr, sl::MODEL zed_model);   
+    void updatePose(sl::Pose pose_, sl::POSITIONAL_TRACKING_STATE tracking_state);
+    
+    void updateChunks() {
+        new_chunks = true;
+        chunks_pushed = false;
+    }
+
+    bool chunksUpdated() {
+        return chunks_pushed;
+    }
 
     void exit();
 private:
@@ -246,10 +207,8 @@ private:
     void draw();
     // Clear and refresh inputs' data
     void clearInputs();
-
+    
     void printText();
-    void createBboxRendering(std::vector<sl::float3> &bbox, sl::float4 bbox_clr);
-    void createIDRendering(sl::float3 &center, sl::float4 clr, unsigned int id);
 
     // Glut functions callbacks
     static void drawCallback();
@@ -276,28 +235,34 @@ private:
         FREE = 'f'
     };
 
+    Simple3DObject zedModel;
+    Simple3DObject zedPath; 
+    std::vector<sl::float3> vecPath;
+
+    std::mutex mtx;
+    bool updateZEDposition = false;;
+
     bool mouseButton_[3];
     int mouseWheelPosition_;
     int mouseCurrentPosition_[2];
     int mouseMotion_[2];
     int previousMouseMotion_[2];
     KEY_STATE keyStates_[256];
+    sl::float3 bckgrnd_clr;
+    sl::Pose pose;
 
-    std::mutex mtx;
+    sl::POSITIONAL_TRACKING_STATE tracking_state;
 
-    Simple3DObject frustum;
-    PointCloud pointCloud_;
+    bool followCamera = true;    
+    bool new_chunks = false;
+    bool chunks_pushed = false;
+
     CameraGL camera_;
-    ShaderData shaderLine;
-    ShaderData shader;
-    sl::float4 bckgrnd_clr;
-    sl::Transform cam_pose;
+    ShaderData mainShader;
+    ShaderData pcf_shader;
 
-    std::vector<ObjectClassName> objectsName;
-    Simple3DObject BBox_edges;
-    Simple3DObject BBox_faces;
-    Simple3DObject skeletons;
-    Simple3DObject floor_grid;
+    sl::FusedPointCloud* p_fpc;
+    std::list<SubMapObj> sub_maps;  // Opengl mesh container
 };
 
 #endif /* __VIEWER_INCLUDE__ */

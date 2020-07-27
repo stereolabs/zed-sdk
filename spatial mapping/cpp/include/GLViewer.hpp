@@ -12,6 +12,10 @@
 
 #include <list>
 
+#ifndef M_PI
+#define M_PI 3.141592653f
+#endif
+
 //// UTILS //////
 using namespace std;
 void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, std::string msg_suffix = "") ;
@@ -19,17 +23,25 @@ void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUC
 /////////////////
 class Shader{
 public:
+Shader() {}
     Shader(GLchar* vs, GLchar* fs);
     ~Shader();
 
     GLuint getProgramId();
 
     static const GLint ATTRIB_VERTICES_POS = 0;
+    static const GLint ATTRIB_COLOR_POS = 1;
 private:
     bool compile(GLuint &shaderId, GLenum type, GLchar* src);
     GLuint verterxId_;
     GLuint fragmentId_;
     GLuint programId_;
+};
+
+struct ShaderData {
+    Shader it;
+    GLuint MVP_Mat;
+    GLuint shColorLoc;
 };
 
 class SubMapObj {
@@ -38,13 +50,34 @@ class SubMapObj {
     int current_fc;
 
     std::vector<sl::uint1> index;
-
 public:
     SubMapObj();
     ~SubMapObj();
     template<typename T>
     void update(T &chunks);
     void draw();
+};
+
+class ImageHandler {
+    public:
+    ImageHandler();
+    ~ImageHandler();
+
+    // Initialize Opengl and Cuda buffers
+    bool initialize(sl::Resolution res);
+    // Push a new Image + Z buffer and transform into a point cloud
+    void pushNewImage(sl::Mat& image);
+    // Draw the Image
+    void draw();
+    // Close (disable update)
+    void close();
+
+    private:
+    GLuint texID;
+    GLuint imageTex;
+    cudaGraphicsResource* cuda_gl_ressource;//cuda GL resource
+    ShaderData shader;
+    GLuint quad_vb;
 };
 
 class GLViewer {
@@ -76,10 +109,14 @@ private:
     // Once everything is updated, every renderable objects must be drawn in this method
     void draw();
 
+    void setRenderCameraProjection(sl::CameraParameters params, float znear, float zfar);
+
     void printText();
 
     static void drawCallback();
+    static void reshapeCallback(int width, int height);
     static void keyReleasedCallback(unsigned char c, int x, int y);
+    static void idle();
     
     template<typename T>
     void initPtr(T* ptr);
@@ -89,21 +126,16 @@ private:
     bool available;
     bool change_state;
 
-    // For CUDA-OpenGL interoperability
-    cudaGraphicsResource* cuda_gl_ressource;//cuda GL resource           
-                                            // OpenGL mesh container
-    std::list<SubMapObj> sub_maps;    // Opengl mesh container
-    sl::float3 vertices_color;              // Defines the color of the mesh
+    std::list<SubMapObj> sub_maps;  // Opengl mesh container
+    sl::float3 vertices_color;      // Defines the color of the mesh
     
     // OpenGL camera projection matrix
     sl::Transform camera_projection;
 
-    sl::Mat image;
     sl::Transform pose;
     sl::POSITIONAL_TRACKING_STATE tracking_state;
     sl::SPATIAL_MAPPING_STATE mapping_state;
 
-    bool new_images;
     bool new_chunks;
     bool chunks_pushed;
     bool ask_clear;
@@ -111,17 +143,8 @@ private:
 
     sl::Mesh* p_mesh;
     sl::FusedPointCloud* p_fpc;
-    
-    // Opengl object
-    Shader *shader_mesh; //GLSL Shader for mesh
-    Shader *shader_image;//GLSL Shader for image
-    GLuint imageTex;            //OpenGL texture mapped with a cuda array (opengl gpu interop)
-    GLuint shMVPMatrixLoc;      //Shader variable loc
-    GLuint shColorLoc;          //Shader variable loc
-    GLuint texID;               //Shader variable loc (sampler/texture)
-    GLuint fbo = 0;             //FBO
-    GLuint renderedTexture = 0; //Render Texture for FBO
-    GLuint quad_vb;             //buffer for vertices/coords for image
+    ImageHandler image_handler;
+    ShaderData shader_obj;
 };
 
 /* Find MyDocuments directory for windows platforms.*/

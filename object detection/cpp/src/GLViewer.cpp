@@ -140,10 +140,6 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters &param) {
     camera_ = CameraGL(sl::Translation(0, 0, 1000), sl::Translation(0, 0, -100));
     camera_.setOffsetFromPosition(sl::Translation(0, 0, 1500));
 
-    // FOV
-    camera_.setHorizontalFOV((180.0f / M_PI) * (2.0f * atan(param.image_size.width / (2.0f * param.fx))));
-    camera_.setVerticalFOV((180.0f / M_PI) * (2.0f * atan(param.image_size.height / (2.0f * param.fy))));
-
     frustum = createFrustum(param);
     frustum.pushToGPU();
 
@@ -156,7 +152,7 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters &param) {
     skeletons = Simple3DObject(sl::Translation(0, 0, 0), false);
     skeletons.setDrawingType(GL_LINES);
 
-    bckgrnd_clr = sl::float4(50, 50, 50, 255) / 255.f;
+    bckgrnd_clr = sl::float4(1.f, 1.f, 1.f, 1.f);
 
     floor_grid = Simple3DObject(sl::Translation(0, 0, 0), true);
     floor_grid.setDrawingType(GL_LINES);
@@ -164,10 +160,10 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters &param) {
     float limit = 20.f;
     sl::float4 clr_grid(137, 122, 108, 255);
     clr_grid /= 255.f;
-    float height = -3; //-1.5;
-    for (int i = (int) (-limit); i <= (int) (limit); i++) {
+    float height = -3;
+    for (int i = (int) (-limit); i <= (int) (limit); i++)
         addVert(floor_grid, i * 1000, limit * 1000, height * 1000, clr_grid);
-    }
+    
     floor_grid.pushToGPU();
     
     // Map glut function on this class methods
@@ -206,7 +202,7 @@ void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs
     cam_pose.setTranslation(tr_0);
 
     for (unsigned int i = 0; i < objs.size(); i++) {
-        if (objs[i].tracking_state == sl::OBJECT_TRACKING_STATE::OK || objs[i].tracking_state == sl::OBJECT_TRACKING_STATE::OFF) {
+        if (renderObject(objs[i])) {
             auto bb_ = objs[i].bounding_box;
             if (!bb_.empty()) {
                 auto clr_class = getColorClass((int) objs[i].label);
@@ -410,7 +406,9 @@ void GLViewer::mouseMotionCallback(int x, int y) {
 
 void GLViewer::reshapeCallback(int width, int height) {
     glViewport(0, 0, width, height);
-    currentInstance_->camera_.setProjection(currentInstance_->camera_.getHorizontalFOV(), currentInstance_->camera_.getVerticalFOV(), currentInstance_->camera_.getZNear(), currentInstance_->camera_.getZFar());
+    float hfov = (180.0f / M_PI) * (2.0f * atan(width / (2.0f * 500)));
+    float vfov = (180.0f / M_PI) * (2.0f * atan(height / (2.0f * 500)));
+    currentInstance_->camera_.setProjection(hfov, vfov, currentInstance_->camera_.getZNear(), currentInstance_->camera_.getZFar());
 }
 
 void GLViewer::keyPressedCallback(unsigned char c, int x, int y) {
@@ -422,6 +420,7 @@ void GLViewer::keyReleasedCallback(unsigned char c, int x, int y) {
 }
 
 void GLViewer::idle() {
+    glutPostRedisplay();
 }
 
 Simple3DObject::Simple3DObject(sl::Translation position, bool isStatic) : isStatic_(isStatic) {
@@ -870,38 +869,22 @@ const sl::Translation CameraGL::ORIGINAL_RIGHT = sl::Translation(1, 0, 0);
 
 CameraGL::CameraGL(sl::Translation position, sl::Translation direction, sl::Translation vertical) {
     this->position_ = position;
-    usePerspective_ = false;
     setDirection(direction, vertical);
 
     offset_ = sl::Translation(0, 0, 0);
     view_.setIdentity();
     updateView();
-    setProjection(60, 60, 100.f, 200000.f);
+    setProjection(70, 70, 200.f, 50000.f);
     updateVPMatrix();
 }
 
-CameraGL::~CameraGL() {
-}
+CameraGL::~CameraGL() {}
 
 void CameraGL::update() {
     if (sl::Translation::dot(vertical_, up_) < 0)
         vertical_ = vertical_ * -1.f;
     updateView();
     updateVPMatrix();
-}
-
-void CameraGL::setPerspective(bool enable) {
-    if (enable != this->usePerspective_) {
-        if (!enable) {
-            this->setPosition(sl::float3(0, 0, 0));
-            this->setRotation(sl::Rotation());
-            this->setOffsetFromPosition(sl::Translation(0, 0, 0));
-        } else {
-            setProjection(horizontalFieldOfView_, verticalFieldOfView_, 100.f, 200000.f);
-            this->setOffsetFromPosition(sl::Translation(0, 0, 1000));
-        }
-        this->usePerspective_ = enable;
-    }
 }
 
 void CameraGL::setProjection(float horizontalFOV, float verticalFOV, float znear, float zfar) {
@@ -914,24 +897,12 @@ void CameraGL::setProjection(float horizontalFOV, float verticalFOV, float znear
     float fov_x = horizontalFOV * M_PI / 180.f;
 
     projection_.setIdentity();
-    if (usePerspective_) {
-        projection_(0, 0) = 1.0f / tanf(fov_x * 0.5f);
-        projection_(1, 1) = 1.0f / tanf(fov_y * 0.5f);
-        projection_(2, 2) = -(zfar + znear) / (zfar - znear);
-        projection_(3, 2) = -1;
-        projection_(2, 3) = -(2.f * zfar * znear) / (zfar - znear);
-        projection_(3, 3) = 0;
-    } else {
-        float x_max = 1.777777;
-        float y_max = -1;
-
-        projection_(0, 0) = 2 / x_max;
-        projection_(1, 1) = -2 / y_max;
-        projection_(2, 2) = 2 / (zfar - znear);
-        projection_(3, 2) = -1;
-        projection_(2, 3) = (zfar + znear) / (znear - zfar);
-        projection_(3, 3) = 0;
-    }
+    projection_(0, 0) = 1.0f / tanf(fov_x * 0.5f);
+    projection_(1, 1) = 1.0f / tanf(fov_y * 0.5f);
+    projection_(2, 2) = -(zfar + znear) / (zfar - znear);
+    projection_(3, 2) = -1;
+    projection_(2, 3) = -(2.f * zfar * znear) / (zfar - znear);
+    projection_(3, 3) = 0;
 }
 
 const sl::Transform& CameraGL::getViewProjectionMatrix() const {
@@ -942,16 +913,8 @@ float CameraGL::getHorizontalFOV() const {
     return horizontalFieldOfView_;
 }
 
-void CameraGL::setHorizontalFOV(float hfov) {
-    horizontalFieldOfView_ = hfov;
-}
-
 float CameraGL::getVerticalFOV() const {
     return verticalFieldOfView_;
-}
-
-void CameraGL::setVerticalFOV(float vfov) {
-    verticalFieldOfView_ = vfov;
 }
 
 void CameraGL::setOffsetFromPosition(const sl::Translation& o) {

@@ -130,11 +130,6 @@ struct ObjectClassName {
     sl::float4 color;
 };
 
-struct ObjectExtPosition {
-    sl::float3 position;
-    sl::Timestamp timestamp;
-};
-
 // This class manages input events, window and Opengl rendering pipeline
 class GLViewer {
 public:
@@ -195,9 +190,6 @@ private:
     Simple3DObject BBox_obj;
     Simple3DObject skeletons_obj;
 
-    sl::Resolution windowSize;
-    sl::Resolution imageSize;
-    sl::CameraParameters camera_parameters;
     bool g_showBox=true;
     bool g_showLabel=true;
     int f_count = 0;

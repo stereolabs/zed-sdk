@@ -261,8 +261,9 @@ void GLViewer::mouseMotionCallback(int x, int y) {
 
 void GLViewer::reshapeCallback(int width, int height) {
     glViewport(0, 0, width, height);
-    float hfov = currentInstance_->camera_.getHorizontalFOV();
-    currentInstance_->camera_.setProjection(hfov, hfov * (float) height / (float) width, currentInstance_->camera_.getZNear(), currentInstance_->camera_.getZFar());
+    float hfov = (180.0f / M_PI) * (2.0f * atan(width / (2.0f * 500)));
+    float vfov = (180.0f / M_PI) * (2.0f * atan(height / (2.0f * 500)));
+    currentInstance_->camera_.setProjection(hfov, vfov, currentInstance_->camera_.getZNear(), currentInstance_->camera_.getZFar());
 }
 
 void GLViewer::keyPressedCallback(unsigned char c, int x, int y) {
@@ -587,7 +588,7 @@ CameraGL::CameraGL(sl::Translation position, sl::Translation direction, sl::Tran
     offset_ = sl::Translation(0, 0, 0);
     view_.setIdentity();
     updateView();
-    setProjection(80, 80, 100.f, 900000.f);
+    setProjection(70, 70, 200.f, 50000.f);
     updateVPMatrix();
 }
 

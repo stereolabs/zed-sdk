@@ -74,10 +74,7 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters param) {
         height = param.image_size.height;
     }
 
-    camera_parameters = param;
-    windowSize.width = width;
-    windowSize.height = height;
-    glutInitWindowSize(windowSize.width, windowSize.height);
+    glutInitWindowSize(width, height);
     glutInitWindowPosition(wnd_w*0.05, wnd_h*0.05);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_SRGB);
     glutCreateWindow("ZED Object Detection Viewer");
@@ -95,10 +92,9 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters param) {
     glEnable(GL_LINE_SMOOTH);
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 
-    imageSize = param.image_size;
-    bool err_pc = image_handler.initialize(imageSize);
-    if (!err_pc)
-        std::cout << "ERROR: Failed to initialized point cloud"<<std::endl;
+    bool status_ = image_handler.initialize(param.image_size);
+    if (!status_)
+        std::cout << "ERROR: Failed to initialized Image Renderer"<<std::endl;
 
     glEnable(GL_FRAMEBUFFER_SRGB);
 
@@ -193,7 +189,11 @@ const std::vector< sl::float3> bones_colors = {
     sl::float3(1, 0, 1), sl::float3(1, 0, 0.666), sl::float3(1, 0, 0.333)
 };
 
-void GLViewer::updateView(sl::Mat image, sl::Objects &obj)
+inline bool renderObject(const sl::ObjectData& i) {
+    return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK || i.tracking_state == sl::OBJECT_TRACKING_STATE::OFF);
+}
+
+void GLViewer::updateView(sl::Mat image, sl::Objects &objects)
 {
     // Update Image
     image_handler.pushNewImage(image);
@@ -201,20 +201,18 @@ void GLViewer::updateView(sl::Mat image, sl::Objects &obj)
     // Clear frames object
     BBox_obj.clear();
     skeletons_obj.clear();
-    std::vector<sl::ObjectData> objs = obj.object_list;
     objectsName.clear();
 
-    // For each object
-    for (int i = 0; i < objs.size(); i++) {
-        // Only show tracked objects
-        if (objs[i].tracking_state == sl::OBJECT_TRACKING_STATE::OK && objs[i].id>=0) {
+    // sort objects by depth
+    std::sort(objects.object_list.begin(), objects.object_list.end(), [ ](const sl::ObjectData& obj1, const sl::ObjectData& obj2) { return obj1.position.z < obj2.position.z;});
 
-            auto bb_ = objs[i].bounding_box;
-            auto pos_ = objs[i].position;
-            ObjectExtPosition ext_pos_;
-            ext_pos_.position = pos_;
-            ext_pos_.timestamp = obj.timestamp;
-            auto clr_id = generateColorClass(objs[i].id);
+    // For each object
+    for (auto &obj: objects.object_list) {
+        // Only show tracked objects
+        if (renderObject(obj)) {
+
+            auto bb_ = obj.bounding_box;
+            auto clr_id = generateColorClass(obj.id);
             // Draw boxes
             if (g_showBox && bb_.size()>0) {
                 if (floor_plane_set) {
@@ -223,7 +221,7 @@ void GLViewer::updateView(sl::Mat image, sl::Objects &obj)
                 }
                 BBox_obj.addBoundingBox(bb_, clr_id);
 
-                auto keypoints = objs[i].keypoint;
+                auto keypoints = obj.keypoint;
                 if (keypoints.size()) {
                     for (auto& limb : sl::BODY_BONES) {
                         sl::float3 kp_1 = keypoints[getIdx(limb.first)];
@@ -240,12 +238,12 @@ void GLViewer::updateView(sl::Mat image, sl::Objects &obj)
             if (g_showLabel) {
                 if ( bb_.size()>0) {
                     objectsName.emplace_back();
-                    objectsName.back().name_lineA = "ID : "+ std::to_string(objs[i].id);
+                    objectsName.back().name_lineA = "ID : "+ std::to_string(obj.id);
                     std::stringstream ss_vel;
-                    ss_vel << std::fixed << std::setprecision(1) << objs[i].velocity.norm();
+                    ss_vel << std::fixed << std::setprecision(1) << obj.velocity.norm();
                     objectsName.back().name_lineB = ss_vel.str()+" m/s";
                     objectsName.back().color = clr_id;
-                    objectsName.back().position = pos_;
+                    objectsName.back().position = obj.position;
                     objectsName.back().position.y =(bb_[0].y + bb_[1].y + bb_[2].y + bb_[3].y)/4.f +0.2f;
                 }
             }

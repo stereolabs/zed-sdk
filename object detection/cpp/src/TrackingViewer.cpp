@@ -16,9 +16,9 @@ void render_2D(sl::Mat &left, sl::float2 img_scale, std::vector<sl::ObjectData> 
 
     // render skeleton joints and bones
     for (const auto& obj : objects) {
-        if (obj.keypoint_2d.size()) {
-            cv::Scalar color = generateColorID_u(obj.id);
-            if (renderObject(obj)) {
+        if(renderObject(obj)) {
+            if (obj.keypoint_2d.size()) {
+                cv::Scalar color = generateColorID_u(obj.id);
                 // skeleton joints
                 for (auto& kp : obj.keypoint_2d) {
                     cv::Point2f cv_kp = cvt(kp, img_scale);
@@ -31,48 +31,50 @@ void render_2D(sl::Mat &left, sl::float2 img_scale, std::vector<sl::ObjectData> 
                     auto kp_b = cvt(obj.keypoint_2d[getIdx(parts.second)], img_scale);
                     if (roi_render.contains(kp_a) && roi_render.contains(kp_b))
                         cv::line(left_display, kp_a, kp_b, color, 2);
-                }
+                }          
             }
         }
     }
 
     cv::Mat cv_mask;
-    for (auto &i : objects) {
-        if (i.tracking_state == sl::OBJECT_TRACKING_STATE::OFF || i.tracking_state == sl::OBJECT_TRACKING_STATE::OK) {
-            cv::Scalar base_color = generateColorID_u(i.id);
-            sl::float4 sl_bbox_color = ((i.tracking_state == sl::OBJECT_TRACKING_STATE::OFF || !render_mask) ? getColorClass((int)i.label) : generateColorID_f(i.id)) * 255.0f;
-            cv::Scalar bbox_color(sl_bbox_color.x, sl_bbox_color.y, sl_bbox_color.z, 255.0f);
-            cv::Scalar faded_bbox_color(sl_bbox_color.x, sl_bbox_color.y, sl_bbox_color.z, 0.0f);
+    // sort objects by depth
+    std::sort(objects.begin(), objects.end(), [ ](const sl::ObjectData& obj1, const sl::ObjectData& obj2) { return obj1.position.z < obj2.position.z;});
+
+    for (auto &obj : objects) {
+        if(renderObject(obj)) {
+            cv::Scalar base_color = generateColorID_u(obj.id);
+            cv::Scalar faded_bbox_color = base_color;
+            faded_bbox_color.val[3] = 0.;
 
             // New 2D bounding box
-            cv::Point top_left_corner = cvt(i.bounding_box_2d[0], img_scale);
-            cv::Point top_right_corner = cvt(i.bounding_box_2d[1], img_scale);
-            cv::Point bottom_right_corner = cvt(i.bounding_box_2d[2], img_scale);
-            cv::Point bottom_left_corner = cvt(i.bounding_box_2d[3], img_scale);
+            cv::Point top_left_corner = cvt(obj.bounding_box_2d[0], img_scale);
+            cv::Point top_right_corner = cvt(obj.bounding_box_2d[1], img_scale);
+            cv::Point bottom_right_corner = cvt(obj.bounding_box_2d[2], img_scale);
+            cv::Point bottom_left_corner = cvt(obj.bounding_box_2d[3], img_scale);
 
             // scaled ROI
             cv::Rect roi(top_left_corner, bottom_right_corner);
 
             // Creation of the 2 horizontal lines
             int bbox_thickness = 1;
-            cv::line(left_display, top_left_corner, top_right_corner, bbox_color, bbox_thickness);
-            cv::line(left_display, bottom_left_corner, bottom_right_corner, bbox_color, bbox_thickness);
+            cv::line(left_display, top_left_corner, top_right_corner, base_color, bbox_thickness);
+            cv::line(left_display, bottom_left_corner, bottom_right_corner, base_color, bbox_thickness);
 
             // Creation of two vertical lines
             // Left
-            drawVerticalLine(left_display, bottom_left_corner, top_left_corner, bbox_color, faded_bbox_color, bbox_thickness);
+            drawVerticalLine(left_display, bottom_left_corner, top_left_corner, base_color, faded_bbox_color, bbox_thickness);
             // Right
-            drawVerticalLine(left_display, bottom_right_corner, top_right_corner, bbox_color, faded_bbox_color, bbox_thickness);
+            drawVerticalLine(left_display, bottom_right_corner, top_right_corner, base_color, faded_bbox_color, bbox_thickness);
 
-            auto position_image = getImagePosition(i.bounding_box_2d, img_scale);
+            auto position_image = getImagePosition(obj.bounding_box_2d, img_scale);
 
-            if (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK && render_mask && i.mask.isInit()) {
+            if (obj.tracking_state == sl::OBJECT_TRACKING_STATE::OK && render_mask && obj.mask.isInit()) {
                 // Faded object mask
                 // Mask will only contain one object segmentation mask, that can be superposed with left display
                 cv::Mat mask(left_display.rows, left_display.cols, CV_8UC1, cv::Scalar::all(0));
-                // Here, i.mask is the object segmentation mask inside the object bbox, computed on the native resolution
+                // Here, obj.mask is the object segmentation mask inside the object bbox, computed on the native resolution
                 // The resize is needed to get the mask on the display resolution
-                cv::resize(slMat2cvMat(i.mask), cv_mask, roi.size());
+                cv::resize(slMat2cvMat(obj.mask), cv_mask, roi.size());
                 // Here, we copy the mask into the mask variable
                 cv_mask.copyTo(mask(roi));
                 // Finally, we use mask to create an opaque mask on the overlay image, with the ID specific color
@@ -80,15 +82,15 @@ void render_2D(sl::Mat &left, sl::float2 img_scale, std::vector<sl::ObjectData> 
             } else {
                 cv::Mat mask(left_display.rows, left_display.cols, CV_8UC1, cv::Scalar::all(0));
                 mask(roi) = 1;
-                overlay.setTo(cv::Scalar(sl_bbox_color.x, sl_bbox_color.y, sl_bbox_color.z), mask);
+                overlay.setTo(base_color, mask);
             }
 
-            if (!std::isnan(i.position.z)) {
+            if (!std::isnan(obj.position.z)) {
                 cv::Scalar text_color(255, 255, 255);
-                std::string label_str = toString(i.label).get();
+                std::string label_str = toString(obj.label).get();
                 char text[64];
-                sprintf(text, "%.2fm", abs(i.position.z / 1000.0f));
-                putText( left_display, text, cv::Point2i(position_image.x - 20, position_image.y - 12),
+                sprintf(text, "%.2fm", abs(obj.position.z / 1000.0f));
+                putText( left_display, text, cv::Point2d(position_image.x - 20, position_image.y - 12),
                         cv::FONT_HERSHEY_COMPLEX_SMALL, 0.5, text_color, 1 );
             }
         }
@@ -182,7 +184,7 @@ void TrackingViewer::configureFromFPS() {
     max_missing_points = std::max(fps / 6, 4);
 
     // Smoothing window: 80ms
-    smoothing_window_size = ceil(0.08f * fps);
+    smoothing_window_size = static_cast<int>(ceil(0.08f * fps) +.5f);
 }
 
 void TrackingViewer::generate_view(sl::Objects &objects, sl::Pose current_camera_pose, cv::Mat &tracking_view, bool tracking_enabled) {
@@ -292,9 +294,10 @@ void TrackingViewer::pruneOldPoints() {
         }
     }
 
-    for (int i = track_to_delete.size() - 1; i >= 0; --i) {
+    int size_ = static_cast<int>(track_to_delete.size() - 1);
+    for (int i = size_; i >= 0; --i) 
         tracklets.erase(tracklets.begin() + track_to_delete[i]);
-    }
+    
 }
 
 void TrackingViewer::computeFOV() {
@@ -404,12 +407,11 @@ void TrackingViewer::drawPosition(sl::Objects &objects, cv::Mat &tracking_view, 
             default:
                 break;
         }
-
     }
 }
 
 void TrackingViewer::drawScale(cv::Mat &tracking_view) {
-    float one_meter_horizontal = 1000.0f / x_step;
+    int one_meter_horizontal = static_cast<int>(1000.f / x_step + .5f);
     cv::Point2i st_pt(25, window_height - 50);
     cv::Point2i end_pt(25 + one_meter_horizontal, window_height - 50);
     int thickness = 1;
@@ -459,24 +461,21 @@ void TrackingViewer::drawCamera() {
     float z_at_x_max = x_max / tan(fov / 2.0f);
     cv::Point2i left_intersection_pt = toCVPoint(x_min, -z_at_x_max), right_intersection_pt = toCVPoint(x_max, -z_at_x_max);
 
+    uchar clr[3] = {static_cast<uchar>(camera_color(0)), static_cast<uchar>(camera_color(2)), static_cast<uchar>(camera_color(3))};
     // Draw FOV
     // Second try: dotted line
     cv::LineIterator left_line_it(background, camera_left_pt, left_intersection_pt, 8);
     for (int i = 0; i < left_line_it.count; ++i, ++left_line_it) {
         cv::Point2i current_pos = left_line_it.pos();
         if (i % 5 == 0 || i % 5 == 1) {
-            (*left_line_it)[0] = camera_color(0);
-            (*left_line_it)[1] = camera_color(1);
-            (*left_line_it)[2] = camera_color(2);
+            (*left_line_it)[0] = clr[0];
+            (*left_line_it)[1] = clr[1];
+            (*left_line_it)[2] = clr[2];
         }
 
         for (int r = 0; r < current_pos.y; ++r) {
             float ratio = float(r) / camera_height;
-            cv::Vec3b current_clr;
-            current_clr[0] = ratio * fov_color.val[0] + (1.0f - ratio) * background_color.val[0];
-            current_clr[1] = ratio * fov_color.val[1] + (1.0f - ratio) * background_color.val[1];
-            current_clr[2] = ratio * fov_color.val[2] + (1.0f - ratio) * background_color.val[2];
-            background.at<cv::Vec3b>(r, current_pos.x) = current_clr;
+            background.at<cv::Vec3b>(r, current_pos.x) = applyFading(background_color, ratio,  fov_color);
         }
     }
 
@@ -484,29 +483,21 @@ void TrackingViewer::drawCamera() {
     for (int i = 0; i < right_line_it.count; ++i, ++right_line_it) {
         cv::Point2i current_pos = right_line_it.pos();
         if (i % 5 == 0 || i % 5 == 1) {
-            (*right_line_it)[0] = camera_color(0);
-            (*right_line_it)[1] = camera_color(1);
-            (*right_line_it)[2] = camera_color(2);
+            (*right_line_it)[0] = clr[0];
+            (*right_line_it)[1] = clr[1];
+            (*right_line_it)[2] = clr[2];
         }
 
         for (int r = 0; r < current_pos.y; ++r) {
             float ratio = float(r) / camera_height;
-            cv::Vec3b current_clr;
-            current_clr[0] = ratio * fov_color.val[0] + (1.0f - ratio) * background_color.val[0];
-            current_clr[1] = ratio * fov_color.val[1] + (1.0f - ratio) * background_color.val[1];
-            current_clr[2] = ratio * fov_color.val[2] + (1.0f - ratio) * background_color.val[2];
-            background.at<cv::Vec3b>(r, current_pos.x) = current_clr;
+            background.at<cv::Vec3b>(r, current_pos.x) = applyFading(background_color, ratio,  fov_color);
         }
     }
 
     for (int c = window_width / 2 - camera_size / 2; c <= window_width / 2 + camera_size / 2; ++c) {
         for (int r = 0; r < camera_height; ++r) {
             float ratio = float(r) / camera_height;
-            cv::Vec3b current_clr;
-            current_clr[0] = ratio * fov_color.val[0] + (1.0f - ratio) * background_color.val[0];
-            current_clr[1] = ratio * fov_color.val[1] + (1.0f - ratio) * background_color.val[1];
-            current_clr[2] = ratio * fov_color.val[2] + (1.0f - ratio) * background_color.val[2];
-            background.at<cv::Vec3b>(r, c) = current_clr;
+            background.at<cv::Vec3b>(r, c) = applyFading(background_color, ratio,  fov_color);
         }
     }
 }
@@ -532,15 +523,10 @@ cv::Point2i TrackingViewer::toCVPoint(double x, double z) {
 
 cv::Point2i TrackingViewer::toCVPoint(sl::float3 position, sl::Pose pose) {
     // Go to camera current pose
-    sl::Rotation rotation = pose.getRotation();
+    sl::Rotation rotation = pose.getRotationMatrix();
     rotation.inverse();
-    sl::Orientation orientation = rotation.getOrientation();
-    sl::Translation translation = pose.getTranslation();
-
-    sl::Translation sl_position(position);
-    sl::Translation new_position = sl::Translation(sl_position - translation) * orientation;
-
-    return cv::Point2i((new_position.tx - x_min) / x_step, (new_position.tz - z_min) / z_step);
+    sl::Translation new_position = sl::Translation(position - pose.getTranslation()) * rotation.getOrientation();
+    return cv::Point2i(static_cast<int>((new_position.tx - x_min) / x_step +.5f), static_cast<int>((new_position.tz - z_min) / z_step + .5f));
 }
 
 cv::Point2i TrackingViewer::toCVPoint(TrackPoint position, sl::Pose pose) {

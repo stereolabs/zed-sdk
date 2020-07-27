@@ -22,7 +22,7 @@ inline cv::Scalar generateColorID_u(int idx) {
 
 inline sl::float4 generateColorID_f(int idx) {
     auto clr_u = generateColorID_u(idx);
-    return sl::float4(clr_u.val[0] / 255.f, clr_u.val[1] / 255.f, clr_u.val[2] / 255.f, 1.f);
+    return sl::float4(static_cast<float>(clr_u.val[0]) / 255.f, static_cast<float>(clr_u.val[1]) / 255.f, static_cast<float>(clr_u.val[2]) / 255.f, 1.f);
 }
 
 inline bool renderObject(const sl::ObjectData& i) {
@@ -44,6 +44,28 @@ inline sl::float4 getColorClass(int idx) {
     return clr / 255.f;
 }
 
+template<typename T>
+inline uchar _applyFading(T val, float current_alpha, double current_clr){
+     return  static_cast<uchar>(current_alpha * current_clr + (1.0 - current_alpha) * val);
+}
+
+inline cv::Vec3b applyFading(cv::Scalar val, float current_alpha, cv::Scalar current_clr){
+    cv::Vec3b out;
+     out[0] = _applyFading(val.val[0], current_alpha, current_clr.val[0]);
+     out[1] = _applyFading(val.val[1], current_alpha, current_clr.val[1]);
+     out[2] = _applyFading(val.val[2], current_alpha, current_clr.val[2]);
+     return out;
+}
+
+template<int C>
+inline cv::Vec<uchar, C> applyFading(cv::Vec<uchar, C> val, float current_alpha, cv::Scalar current_clr){
+    cv::Vec<uchar, C>  out;
+    out[0] = _applyFading(val[0], current_alpha, current_clr.val[0]);
+    out[1] = _applyFading(val[1], current_alpha, current_clr.val[1]);
+    out[2] = _applyFading(val[2], current_alpha, current_clr.val[2]);
+    return out;
+}
+
 inline void drawFadedLine(
         cv::Mat &left_display,
         cv::Point2i start_pt,
@@ -61,32 +83,23 @@ inline void drawFadedLine(
         for (int c = 0; c < 4; c++)
             current_clr.val[c] = ratio * end_clr.val[c] + (1.0f - ratio) * start_clr.val[c];
 #else
-        current_clr = ratio * end_clr + (1.0f - ratio) * start_clr;
+        current_clr = ratio * end_clr + (1.f - ratio) * start_clr;
 #endif
-        double current_alpha = current_clr.val[3] / 255.0;
+        float current_alpha = static_cast<float>(current_clr.val[3]) / 255.f;
         cv::Point2i current_position = left_line_it.pos();
 
         cv::Vec4b mid_px = left_display.at<cv::Vec4b>(current_position.y, current_position.x);
-        mid_px[0] = current_alpha * current_clr.val[0] + (1.0 - current_alpha) * mid_px[0];
-        mid_px[1] = current_alpha * current_clr.val[1] + (1.0 - current_alpha) * mid_px[1];
-        mid_px[2] = current_alpha * current_clr.val[2] + (1.0 - current_alpha) * mid_px[2];
-        left_display.at<cv::Vec4b>(current_position.y, current_position.x) = mid_px;
+        left_display.at<cv::Vec4b>(current_position.y, current_position.x) = applyFading(mid_px, current_alpha,  current_clr);
         if (current_position.x - offset >= 0) {
             for (int off = 1; off <= offset; ++off) {
-                cv::Vec4b px = left_display.at<cv::Vec4b>(current_position.y, current_position.x - off);
-                px[0] = current_alpha * current_clr.val[0] + (1.0 - current_alpha) * px[0];
-                px[1] = current_alpha * current_clr.val[1] + (1.0 - current_alpha) * px[1];
-                px[2] = current_alpha * current_clr.val[2] + (1.0 - current_alpha) * px[2];
-                left_display.at<cv::Vec4b>(current_position.y, current_position.x - off) = px;
+                cv::Vec4b px = left_display.at<cv::Vec4b>(current_position.y, current_position.x - off);               
+                left_display.at<cv::Vec4b>(current_position.y, current_position.x - off) =  applyFading(px,current_alpha,  current_clr);
             }
         }
         if (current_position.x + offset < left_display.cols) {
             for (int off = 1; off <= offset; ++off) {
                 cv::Vec4b px = left_display.at<cv::Vec4b>(current_position.y, current_position.x + off);
-                px[0] = current_alpha * current_clr.val[0] + (1.0 - current_alpha) * px[0];
-                px[1] = current_alpha * current_clr.val[1] + (1.0 - current_alpha) * px[1];
-                px[2] = current_alpha * current_clr.val[2] + (1.0 - current_alpha) * px[2];
-                left_display.at<cv::Vec4b>(current_position.y, current_position.x + off) = px;
+                left_display.at<cv::Vec4b>(current_position.y, current_position.x + off) = applyFading(px,current_alpha,  current_clr);
             }
         }
     }

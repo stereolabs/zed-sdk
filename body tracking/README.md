@@ -11,3 +11,4 @@ This sample shows how to detect and track bodies in space and display it. It dem
 - For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
 
 *NOTE:* A ZED 2 is required to run use this module.
+*NOTE2:* This sample is only available in C++

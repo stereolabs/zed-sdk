@@ -62,8 +62,6 @@ int main(int argc, char **argv) {
         init_parameters.depth_mode = DEPTH_MODE::ULTRA;
     init_parameters.depth_maximum_distance = 50.0f * 1000.0f;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
-    init_parameters.sdk_verbose = true;
-    init_parameters.sensors_required = true;
     parseArgs(argc, argv, init_parameters);
     
     // Open the camera
@@ -77,16 +75,16 @@ int main(int argc, char **argv) {
     ObjectDetectionParameters detection_parameters;
     detection_parameters.enable_tracking = true;
     detection_parameters.enable_mask_output = true;
-#if (ZED_SDK_MAJOR_VERSION*10+ZED_SDK_MINOR_VERSION > 31)
-    sl::DETECTION_MODEL detection_model = DETECTION_MODEL::MULTI_CLASS_BOX; //change here for Body Pose since 3.2
-    detection_parameters.detection_model = static_cast<sl::DETECTION_MODEL>(detection_model);
-#endif
+    detection_parameters.detection_model = DETECTION_MODEL::MULTI_CLASS_BOX;
 
     auto camera_infos = zed.getCameraInformation();
 
     // If you want to have object tracking you need to enable positional tracking first
+    PositionalTrackingParameters positional_tracking_parameters;
+    // If the camera is static in space, enabling this settings below provides better depth quality and faster computation
+    // positional_tracking_parameters.set_as_static = true;
     if (detection_parameters.enable_tracking)
-        zed.enablePositionalTracking();
+        zed.enablePositionalTracking(positional_tracking_parameters);
 
     print("Object Detection: Loading Module...");
     auto returned_stated = zed.enableObjectDetection(detection_parameters);
@@ -96,11 +94,11 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    // detection runtime parameters
-    int detection_confidence = 50;
+    // Detection runtime parameters
+    int detection_confidence = 35;
     ObjectDetectionRuntimeParameters detection_parameters_rt(detection_confidence);
 
-    // detection output
+    // Detection output
     Objects objects;
     bool quit = false;
 
@@ -123,18 +121,19 @@ int main(int argc, char **argv) {
     string window_birdview_name = "Bird view";
     if (detection_parameters.enable_tracking) window_birdview_name = "Tracks";
     cv::namedWindow(window_left_name, cv::WINDOW_AUTOSIZE); // Create Window
-    cv::createTrackbar("Detection Confidence", window_left_name, &detection_confidence, 100);
+    cv::createTrackbar("Confidence", window_left_name, &detection_confidence, 100);
 
     char key = ' ';
-    auto camera_parameters = zed.getCameraInformation(display_resolution).camera_configuration.calibration_parameters.left_cam;
-    Mat point_cloud(display_resolution, MAT_TYPE::F32_C4, MEM::GPU);
+    Resolution pc_resolution(min((int)res.width, 720) , min((int)res.height, 404));
+    auto camera_parameters = zed.getCameraInformation(pc_resolution).camera_configuration.calibration_parameters.left_cam;
+    Mat point_cloud(pc_resolution, MAT_TYPE::F32_C4, MEM::GPU);
     GLViewer viewer;
     viewer.init(argc, argv, camera_parameters);
 #endif
 
     sl::RuntimeParameters runtime_parameters;
     runtime_parameters.confidence_threshold = 50;
-    
+        
     Pose cam_pose;
     cam_pose.pose_data.setIdentity();
     bool gl_viewer_available=true;
@@ -148,13 +147,14 @@ int main(int argc, char **argv) {
 
         if ((returned_stated == ERROR_CODE::SUCCESS) && objects.is_new) {
 #if ENABLE_GUI
-            zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, display_resolution);
+            zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, pc_resolution);
             zed.getPosition(cam_pose, REFERENCE_FRAME::WORLD);
             viewer.updateData(point_cloud, objects.object_list, cam_pose.pose_data);
             gl_viewer_available = viewer.isAvailable();
 
             zed.retrieveImage(image_left, VIEW::LEFT, MEM::CPU, display_resolution);
             render_2D(image_left, img_scale, objects.object_list, true);
+            zed.getPosition(cam_pose, REFERENCE_FRAME::CAMERA);
             track_view_generator.generate_view(objects, cam_pose, track_view, objects.is_tracked);
 #else
             cout << "Detected " << objects.object_list.size() << " Object(s)" << endl;
@@ -169,7 +169,7 @@ int main(int argc, char **argv) {
         cv::Mat left_display = slMat2cvMat(image_left);
         cv::imshow(window_left_name, left_display);
         cv::imshow(window_birdview_name, track_view);
-        key = cv::waitKey(quit ? 0 : 10);
+        key = cv::waitKey(33);
         if (key == 'i') {
             track_view_generator.zoomIn();
         } else if (key == 'o') {
