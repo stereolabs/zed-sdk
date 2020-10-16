@@ -87,12 +87,8 @@ __global__ void _k_convolutionRows(sl::uchar4 *d_Dst, sl::uchar4 *d_Src, float* 
 #pragma unroll
     for (int i = ROWS_HALO_STEPS; i < ROWS_HALO_STEPS + ROWS_RESULT_STEPS; i++) {
         sl::float3 sum(0, 0, 0);
-
-#pragma unroll
         int kernel_radius = (int) floor((KERNEL_RADIUS) *fabs(depth[i * ROWS_BLOCKDIM_X] - focus_depth));
-        int kernel_start = kernel_radius * kernel_radius - 1;
-        int kernel_mid = kernel_start + kernel_radius;
-
+        int kernel_mid = kernel_radius * kernel_radius - 1 + kernel_radius;
         if (kernel_radius > 0) {
             for (int j = -kernel_radius; j <= kernel_radius; ++j) {
                 sum.x += c_kernel[kernel_mid + j] * (float) s_Data[threadIdx.y][threadIdx.x + i * ROWS_BLOCKDIM_X + j].x;
@@ -160,8 +156,7 @@ __global__ void _k_convolutionColumns(sl::uchar4 *d_Dst, sl::uchar4 *d_Src, floa
     for (int i = COLUMNS_HALO_STEPS; i < COLUMNS_HALO_STEPS + COLUMNS_RESULT_STEPS; i++) {
         sl::float3 sum(0, 0, 0);
         int kernel_radius = (int) floor((KERNEL_RADIUS) *fabs(depth[i * COLUMNS_BLOCKDIM_Y * pitch] - focus_depth));
-        int kernel_start = kernel_radius * kernel_radius - 1;
-        int kernel_mid = kernel_start + kernel_radius;
+        int kernel_mid = kernel_radius * kernel_radius - 1 + kernel_radius;
 
         if (kernel_radius > 0) {
             for (int j = -kernel_radius; j <= kernel_radius; ++j) {
