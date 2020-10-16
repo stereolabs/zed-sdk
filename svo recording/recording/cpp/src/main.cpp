@@ -53,16 +53,15 @@ int main(int argc, char **argv) {
     parseArgs(argc,argv,init_parameters);
 
     // Open the camera
-    ERROR_CODE zed_open_state = zed.open(init_parameters);
-    if (zed_open_state != ERROR_CODE::SUCCESS) {
-        print("Camera Open", zed_open_state, "Exit program.");
+    auto returned_state  = zed.open(init_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
 
     // Enable recording with the filename specified in argument
     String path_output(argv[1]);
-    auto returned_state = zed.enableRecording(RecordingParameters(path_output, SVO_COMPRESSION_MODE::H264));
-
+    returned_state = zed.enableRecording(RecordingParameters(path_output, SVO_COMPRESSION_MODE::H264));
     if (returned_state != ERROR_CODE::SUCCESS) {
         print("Recording ZED : ", returned_state);
         zed.close();
@@ -73,12 +72,12 @@ int main(int argc, char **argv) {
     print("SVO is Recording, use Ctrl-C to stop." );
     SetCtrlHandler();
     int frames_recorded = 0;
-
+    sl::RecordingStatus rec_status;
     while (!exit_app) {
         if (zed.grab() == ERROR_CODE::SUCCESS) {
             // Each new frame is added to the SVO file
-            sl::RecordingStatus state = zed.getRecordingStatus();
-            if (state.status)
+            rec_status = zed.getRecordingStatus();
+            if (rec_status.status)
                 frames_recorded++;
             print("Frame count: " +to_string(frames_recorded));
         }

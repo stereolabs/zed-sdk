@@ -8,12 +8,11 @@
 
 #include <mutex>
 
-//// UTILS //////
-using namespace std;
+#ifndef M_PI
+#define M_PI 3.141592653f
+#endif
 
-
 //// UTILS //////
-using namespace std;
 void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, std::string msg_suffix = "") ;
 
 /////////////////
@@ -21,7 +20,7 @@ void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUC
 struct UserAction {
     bool press_space;
     bool hit;
-    sl::uint2 hit_coord;
+    sl::float2 hit_coord;
 
     void clear() {
         press_space = false;
@@ -31,6 +30,7 @@ struct UserAction {
 
 class Shader {
 public:
+    Shader() {}
     Shader(GLchar* vs, GLchar* fs);
     ~Shader();
 
@@ -44,6 +44,12 @@ private:
     GLuint verterxId_;
     GLuint fragmentId_;
     GLuint programId_;
+};
+
+struct ShaderData {
+    Shader it;
+    GLuint MVP_Mat;
+    GLuint shColorLoc;
 };
 
 class MeshObject {
@@ -62,7 +68,31 @@ public:
     void updateMesh(std::vector<sl::float3> &vertices, std::vector<sl::uint3> &triangles, std::vector<int> &border);
     void pushToGPU();
     void draw();
+    void alloc();
     sl::PLANE_TYPE type;
+    ShaderData shader;
+};
+
+class ImageHandler {
+    public:
+    ImageHandler();
+    ~ImageHandler();
+
+    // Initialize Opengl and Cuda buffers
+    bool initialize(sl::Resolution res);
+    // Push a new Image + Z buffer and transform into a point cloud
+    void pushNewImage(sl::Mat& image);
+    // Draw the Image
+    void draw();
+    // Close (disable update)
+    void close();
+
+    private:
+    GLuint texID;
+    GLuint imageTex;
+    cudaGraphicsResource* cuda_gl_ressource;//cuda GL resource
+    ShaderData shader;
+    GLuint quad_vb;
 };
 
 class GLViewer {
@@ -70,7 +100,7 @@ public:
     GLViewer();
     ~GLViewer();
     bool isAvailable();
-    bool init(int argc, char **argv, sl::CameraInformation &cam_infos);
+    bool init(int argc, char **argv, sl::CameraParameters &camLeft, bool has_imu);
     UserAction updateImageAndState(sl::Mat &image, sl::Transform &pose, sl::POSITIONAL_TRACKING_STATE track_state);
     void updateMesh(sl::Mesh &mesh, sl::PLANE_TYPE type);
     
@@ -85,38 +115,30 @@ private:
 
     void printText();
 
+    void setRenderCameraProjection(sl::CameraParameters params, float znear, float zfar);
+
     static void drawCallback();
+    static void reshapeCallback(int width, int height);
     static void keyReleasedCallback(unsigned char c, int x, int y);
     static void mouseButtonCallback(int button, int state, int x, int y);
+    static void idle();
 
     std::mutex mtx;
 
-    bool available;
-    bool change_state;
-
-    // For CUDA-OpenGL interoperability
-    cudaGraphicsResource* cuda_gl_ressource;//cuda GL resource
-    MeshObject mesh_object;    // Opengl mesh container
-    sl::Transform camera_projection; // OpenGL camera projection matrix
-    
-    sl::Mat image;
+    bool available;    
     sl::Transform pose;
     sl::POSITIONAL_TRACKING_STATE tracking_state;
-    sl::MODEL cam_model;
     UserAction user_action;
 
     bool new_data;
+    bool use_imu;
+    int wnd_w, wnd_h;
 
     // Opengl object
-    Shader *shader_mesh; //GLSL Shader for mesh
-    Shader *shader_image;//GLSL Shader for image
-    GLuint imageTex;            //OpenGL texture mapped with a cuda array (opengl gpu interop)
-    GLuint shMVPMatrixLoc;      //Shader variable loc
-    GLuint shColorLoc;          //Shader variable loc
-    GLuint texID;               //Shader variable loc (sampler/texture)
-    GLuint fbo = 0;             //FBO
-    GLuint renderedTexture = 0; //Render Texture for FBO
-    GLuint quad_vb;             //buffer for vertices/coords for image
+    // OpenGL camera projection matrix
+    sl::Transform camera_projection;
+    ImageHandler image_handler;
+    MeshObject mesh_object; // Opengl mesh container
 };
 
 #endif

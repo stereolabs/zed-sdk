@@ -49,24 +49,19 @@ int main(int argc, char **argv) {
     Camera zed;
     InitParameters init_parameters;
     init_parameters.input.setFromSVOFile(argv[1]);
-	init_parameters.camera_disable_self_calib = true;
     init_parameters.depth_mode = sl::DEPTH_MODE::PERFORMANCE;
 
     // Open the camera
-    ERROR_CODE zed_open_state = zed.open(init_parameters);
-    if (zed_open_state != ERROR_CODE::SUCCESS) {
-        print("Camera Open", zed_open_state, "Exit program.");
+    auto returned_state = zed.open(init_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
 
     auto resolution = zed.getCameraInformation().camera_configuration.resolution;
-    cv::Size size(resolution.width, resolution.height);
-    cv::Size size_sbs(size.width * 2, size.height);
-
     // Define OpenCV window size (resize to max 720/404)
-    int width = min(720, size.width);
-    int height = min(404, size.height);
-    Mat svo_image(width * 2, height, MAT_TYPE::U8_C4, MEM::CPU);
+    sl::Resolution low_resolution(min(720, (int)resolution.width) * 2, min(404, (int)resolution.height));
+    Mat svo_image(low_resolution, MAT_TYPE::U8_C4, MEM::CPU);
     cv::Mat svo_image_ocv = slMat2cvMat(svo_image);
 
     // Setup key, images, times
@@ -82,14 +77,12 @@ int main(int argc, char **argv) {
 
     // Start SVO playback
 
-	zed.setSVOPosition(0);
-
      while (key != 'q') {
-        sl::ERROR_CODE err = zed.grab();
-        if (err == ERROR_CODE::SUCCESS) {
+        returned_state = zed.grab();
+        if (returned_state == ERROR_CODE::SUCCESS) {
 
             // Get the side by side image
-            zed.retrieveImage(svo_image, VIEW::SIDE_BY_SIDE, MEM::CPU, sl::Resolution(2*width, height));
+            zed.retrieveImage(svo_image, VIEW::SIDE_BY_SIDE, MEM::CPU, low_resolution);
             int svo_position = zed.getSVOPosition();
 
             // Display the frame
@@ -110,13 +103,13 @@ int main(int argc, char **argv) {
 
             ProgressBar((float)(svo_position / (float)nb_frames), 30);
         }
-        else if (err == sl::ERROR_CODE::END_OF_SVOFILE_REACHED)
+        else if (returned_state == sl::ERROR_CODE::END_OF_SVOFILE_REACHED)
         {
             print("SVO end has been reached. Looping back to 0\n");
             zed.setSVOPosition(0);
         }
         else {
-            print("Grab ZED : ",err);
+            print("Grab ZED : ", returned_state);
             break;
         }
      } 

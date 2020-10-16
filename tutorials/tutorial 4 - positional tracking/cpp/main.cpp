@@ -37,24 +37,27 @@ int main(int argc, char **argv) {
     init_parameters.sensors_required = true;
     
     // Open the camera
-    ERROR_CODE err = zed.open(init_parameters);
-    if (err != ERROR_CODE::SUCCESS) {
-        cout << "Error " << err << ", exit program.\n";
+    auto returned_state = zed.open(init_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        cout << "Error " << returned_state << ", exit program.\n";
         return EXIT_FAILURE;
     }
 
     // Enable positional tracking with default parameters
     PositionalTrackingParameters tracking_parameters;
-    err = zed.enablePositionalTracking(tracking_parameters);
-    if (err != ERROR_CODE::SUCCESS)
-        return -1;
+    returned_state = zed.enablePositionalTracking(tracking_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        cout << "Error " << returned_state << ", exit program.\n";
+        return EXIT_FAILURE;
+    }
+
 
     // Track the camera position during 1000 frames
     int i = 0;
     Pose zed_pose;
 
     // Check if the camera is a ZED M and therefore if an IMU is available
-    bool zed_has_imu = (zed.getCameraInformation().camera_model != MODEL::ZED);
+    bool zed_has_imu = zed.getCameraInformation().sensors_configuration.isSensorAvailable(sl::SENSOR_TYPE::GYROSCOPE);
     SensorsData sensor_data;
 
     while (i < 1000) {

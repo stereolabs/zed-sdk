@@ -152,9 +152,9 @@ int main(int argc, char **argv) {
     cv::setMouseCallback(win_name, onMouse);
 
     // Open the camera
-    ERROR_CODE zed_open_state = zed.open(init_parameters);
-    if (zed_open_state != ERROR_CODE::SUCCESS) {
-        print("Camera Open", zed_open_state, "Exit program.");
+    auto returned_state = zed.open(init_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
 
@@ -171,7 +171,7 @@ int main(int argc, char **argv) {
     printHelp();
 
     // Create a Mat to store images
-    Mat zed_image;
+    Mat image;
 
     // Initialise camera setting
     switchCameraSettings();
@@ -179,19 +179,15 @@ int main(int argc, char **argv) {
     // Capture new images until 'q' is pressed
     char key = ' ';
     while (key != 'q') {
-        // Check that grab() is successful
-        auto returned_state = zed.grab();
+        // Check that a new image is successfully acquired
+        returned_state = zed.grab();
         if (returned_state == ERROR_CODE::SUCCESS) {
             // Retrieve left image
-            zed.retrieveImage(zed_image, view_mode);
+            zed.retrieveImage(image, view_mode);
 
             // Convert sl::Mat to cv::Mat (share buffer)
-            cv::Mat cvImage;
-            if (zed_image.getChannels() == 1)
-                cvImage = cv::Mat((int) zed_image.getHeight(), (int) zed_image.getWidth(), CV_8UC1, zed_image.getPtr<sl::uchar1>(sl::MEM::CPU));
-            else
-                cvImage = cv::Mat((int) zed_image.getHeight(), (int) zed_image.getWidth(), CV_8UC4, zed_image.getPtr<sl::uchar1>(sl::MEM::CPU));
-
+            cv::Mat cvImage(image.getHeight(), image.getWidth(), (image.getChannels() == 1) ? CV_8UC1 : CV_8UC4, image.getPtr<sl::uchar1>(sl::MEM::CPU));
+            
             //Check that selection rectangle is valid and draw it on the image
             if (!selection_rect.isEmpty() && selection_rect.isContained(sl::Resolution(cvImage.cols, cvImage.rows)))
                 cv::rectangle(cvImage, cv::Rect(selection_rect.x,selection_rect.y,selection_rect.width,selection_rect.height),cv::Scalar(0, 255, 0), 2);

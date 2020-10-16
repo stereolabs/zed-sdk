@@ -49,9 +49,9 @@ int main(int argc, char** argv) {
     parseArgs(argc,argv, init_parameters);
 
     // Open the camera
-    ERROR_CODE zed_open_state = zed.open(init_parameters);
-    if (zed_open_state != ERROR_CODE::SUCCESS) {
-        print("Camera Open", zed_open_state, "Exit program.");
+    auto returned_state = zed.open(init_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
 
@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
     chrono::high_resolution_clock::time_point ts_last; // Timestamp of the last mesh request
     
     // Enable positional tracking before starting spatial mapping
-    auto returned_state = zed.enablePositionalTracking();
+    returned_state = zed.enablePositionalTracking();
     if(returned_state != ERROR_CODE::SUCCESS) {
         print("Enabling positional tracking failed: ", returned_state);
         zed.close();

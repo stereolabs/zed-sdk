@@ -157,10 +157,6 @@ int main(int argc, char **argv) {
 
     // Get Image Size
     sl::Resolution camera_resolution_ = zed.getCameraInformation().camera_configuration.resolution;
-    int image_width_ = camera_resolution_.width;
-    int image_height_ = camera_resolution_.height;
-
-    cudaError_t err1;
 
     // Create and Register OpenGL Texture for Image (RGBA -- 4channels)
     glEnable(GL_TEXTURE_2D);
@@ -168,10 +164,10 @@ int main(int argc, char **argv) {
     glBindTexture(GL_TEXTURE_2D, imageTex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image_width_, image_height_, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, camera_resolution_.width, camera_resolution_.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
     glBindTexture(GL_TEXTURE_2D, 0);
-    err1 = cudaGraphicsGLRegisterImage(&pcuImageRes, imageTex, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
-    if (err1 != 0)
+    cudaError_t state = cudaGraphicsGLRegisterImage(&pcuImageRes, imageTex, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
+    if (state != cudaSuccess)
         return EXIT_FAILURE;
 
     glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);

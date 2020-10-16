@@ -12,10 +12,6 @@ if(COMMAND cmake_policy)
 	cmake_policy(SET CMP0015 OLD)
 endif(COMMAND cmake_policy)
 
-if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
-SET(CMAKE_BUILD_TYPE "RelWithDebInfo")
-endif()
-
 SET(EXECUTABLE_OUTPUT_PATH ".")
 
 find_package(ZED 3 REQUIRED)
@@ -60,3 +56,6 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
                         ${OPENGL_LIBRARIES}
                         ${GLUT_LIBRARY}
                         ${GLEW_LIBRARIES})
+
+LIST(APPEND SAMPLE_LIST ${PROJECT_NAME})
+SET(SAMPLE_LIST "${SAMPLE_LIST}" PARENT_SCOPE)

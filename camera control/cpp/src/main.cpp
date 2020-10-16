@@ -18,7 +18,6 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-
 /********************************************************************************
  ** This sample demonstrates how to grab images and change the camera settings **
  ** with the ZED SDK                                                           **
@@ -103,9 +102,9 @@ int main(int argc, char **argv) {
 
 
     // Open the camera
-    ERROR_CODE zed_open_state = zed.open(init_parameters);
-    if (zed_open_state != ERROR_CODE::SUCCESS) {
-        print("Camera Open", zed_open_state, "Exit program.");
+    auto returned_state = zed.open(init_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
     
@@ -134,8 +133,8 @@ int main(int argc, char **argv) {
     // Capture new images until 'q' is pressed
     char key = ' ';
     while (key != 'q') {
-        // Check that grab() is successful
-        auto returned_state = zed.grab();
+        // Check that a new image is successfully acquired
+        returned_state = zed.grab();
         if (returned_state == ERROR_CODE::SUCCESS) {
             // Retrieve left image
             zed.retrieveImage(zed_image, VIEW::LEFT);
@@ -145,7 +144,7 @@ int main(int argc, char **argv) {
 
             //Check that selection rectangle is valid and draw it on the image
             if (!selection_rect.isEmpty() && selection_rect.isContained(sl::Resolution(cvImage.cols, cvImage.rows)))
-                cv::rectangle(cvImage, cv::Rect(selection_rect.x,selection_rect.y,selection_rect.width,selection_rect.height),cv::Scalar(0, 255, 0), 2);
+                cv::rectangle(cvImage, cv::Rect(selection_rect.x,selection_rect.y,selection_rect.width,selection_rect.height),cv::Scalar(220, 180, 20), 2);
 
             //Display the image
             cv::imshow(win_name, cvImage);
@@ -256,7 +255,7 @@ void printHelp() {
     cout << "* Toggle camera LED:               'l' (lower L)\n";
     cout << "* Reset all parameters:            'r'\n";
     cout << "* Reset exposure ROI to full image 'f'\n";
-    cout << "* Use mouse to select an image area to apply exposure (press 'w')\n";
+    cout << "* Use mouse to select an image area to apply exposure (press 'a')\n";
     cout << "* Exit :                           'q'\n\n";
 }
 

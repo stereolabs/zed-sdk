@@ -74,9 +74,9 @@ int main(int argc, char **argv) {
     init_parameters.depth_mode = DEPTH_MODE::NONE; // No depth computation required here.
 
     // Open the camera.
-    ERROR_CODE err = zed.open(init_parameters);
-    if (err != ERROR_CODE::SUCCESS) {
-        cout << "Error " << err << ", exit program.\n";
+    auto returned_state = zed.open(init_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        cout << "Error " << returned_state << ", exit program.\n";
         return EXIT_FAILURE;
     }
 

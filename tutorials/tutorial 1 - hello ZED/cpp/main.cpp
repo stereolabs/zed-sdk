@@ -29,9 +29,9 @@ int main(int argc, char **argv) {
     Camera zed;
 
     // Open the camera
-    ERROR_CODE err = zed.open();
-    if (err != ERROR_CODE::SUCCESS) {
-        std::cout << "Error " << err << ", exit program.\n";
+    ERROR_CODE returned_state = zed.open();
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        std::cout << "Error " << returned_state << ", exit program.\n";
         return EXIT_FAILURE;
     }
 

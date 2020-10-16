@@ -35,9 +35,9 @@ int main(int argc, char **argv) {
     init_parameters.camera_fps = 30; // Set fps at 30
 
     // Open the camera
-    ERROR_CODE state = zed.open(init_parameters);
-    if (state != ERROR_CODE::SUCCESS) {
-        cout << "Error " << state << ", exit program." << endl;
+    auto returned_state = zed.open(init_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        cout << "Error " << returned_state << ", exit program." << endl;
         return EXIT_FAILURE;
     }
 
@@ -46,9 +46,9 @@ int main(int argc, char **argv) {
     sl::Mat image;
     while (i < 50) {
         // Grab an image
-        state = zed.grab();
+        returned_state = zed.grab();
         // A new image is available if grab() returns ERROR_CODE::SUCCESS
-        if (state == ERROR_CODE::SUCCESS) {
+        if (returned_state == ERROR_CODE::SUCCESS) {
 
             // Get the left image
             zed.retrieveImage(image, VIEW::LEFT);
