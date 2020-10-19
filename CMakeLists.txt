@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.1)
 PROJECT(SamplesAndTutos)
 
+OPTION(INSTALL_SAMPLES "Once build, deploy samples into bin" ON)
+
 SET(SAMPLE_LIST "")
 add_subdirectory("camera control/cpp")
 add_subdirectory("camera streaming/receiver/cpp")
@@ -21,4 +23,6 @@ add_subdirectory("other/opengl gpu interop")
 add_subdirectory("other/multi camera/cpp")
 add_subdirectory("tutorials")
 
-INSTALL(TARGETS ${SAMPLE_LIST} RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/bin)
+if(${INSTALL_SAMPLES})
+    INSTALL(TARGETS ${SAMPLE_LIST} RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/bin)
+endif()
