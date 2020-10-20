@@ -59,7 +59,7 @@ GLchar* SK_FRAGMENT_SHADER =
 		"   out_Color = vec4(b_color.rgb * (diffuse + ambient), 1);\n"
 		"}";
 
-const float grid_size = 8.0f;
+const float grid_size = 10.0f;
 
 GLViewer* currentInstance_ = nullptr;
 
@@ -220,7 +220,6 @@ void GLViewer::render() {
         mtx.lock();
         update();
         draw();
-        printText();
         mtx.unlock();
         glutSwapBuffers();
         glutPostRedisplay();
@@ -625,6 +624,7 @@ void Simple3DObject::addSphere(sl::float3 position, sl::float4 clr) {
 }
 
 void Simple3DObject::addFullEdges(std::vector<sl::float3> &pts, sl::float4 clr) {
+	clr.w = 0.4f;
 	int start_id = vertices_.size() / 3;
 
 	for (unsigned int i = 0; i < pts.size(); i++) {
@@ -658,7 +658,7 @@ void Simple3DObject::addVerticalEdges(std::vector<sl::float3> &pts, sl::float4 c
 		int start_id = vertices_.size() / 3;
 		for (unsigned int i = 0; i < current_pts.size(); i++) {
 			addPt(current_pts[i]);
-			clr.a = (i == 2 || i == 3) ? 0.0f : 0.75f;
+			clr.a = (i == 2 || i == 3) ? 0.0f : 0.4f;
 			addClr(clr);
 		}
 
@@ -714,37 +714,50 @@ void Simple3DObject::addVerticalFaces(std::vector<sl::float3> &pts, sl::float4 c
 	float alpha = 0.3f;
 
 	for (const auto quad : quads) {
-		// Top full quad
+
+		// Top quads
 		std::vector<sl::float3> quad_pts_1{
 			pts[quad[0]],
-					pts[quad[1]],
-					((grid_size - 1.0f) * pts[quad[1]] + pts[quad[2]]) / grid_size,
-					((grid_size - 1.0f) * pts[quad[0]] + pts[quad[3]]) / grid_size };
-		addQuad(quad_pts_1, alpha, alpha);
+			pts[quad[1]],
+			((grid_size - 0.5f) * pts[quad[1]] + 0.5f * pts[quad[2]]) / grid_size,
+			((grid_size - 0.5f) * pts[quad[0]] + 0.5f * pts[quad[3]]) / grid_size };
+		addQuad(quad_pts_1, alpha, 2 * alpha / 3);
 
-		// Top faded quad
+		std::vector<sl::float3> quad_pts_15{
+			((grid_size - 0.5f) * pts[quad[0]] + 0.5f * pts[quad[3]]) / grid_size,
+			((grid_size - 0.5f) * pts[quad[1]] + 0.5f * pts[quad[2]]) / grid_size,
+			((grid_size - 1.0f) * pts[quad[1]] + pts[quad[2]]) / grid_size,
+			((grid_size - 1.0f) * pts[quad[0]] + pts[quad[3]]) / grid_size };
+		addQuad(quad_pts_15, 2 * alpha / 3, alpha / 3);
+
 		std::vector<sl::float3> quad_pts_2{
 			((grid_size - 1.0f) * pts[quad[0]] + pts[quad[3]]) / grid_size,
-					((grid_size - 1.0f) * pts[quad[1]] + pts[quad[2]]) / grid_size,
-					((grid_size - 2.0f) * pts[quad[1]] + 2.0f * pts[quad[2]]) / grid_size,
-					((grid_size - 2.0f) * pts[quad[0]] + 2.0f * pts[quad[3]]) / grid_size };
-		addQuad(quad_pts_2, alpha, 0.0f);
+			((grid_size - 1.0f) * pts[quad[1]] + pts[quad[2]]) / grid_size,
+			((grid_size - 2.0f) * pts[quad[1]] + 2.0f * pts[quad[2]]) / grid_size,
+			((grid_size - 2.0f) * pts[quad[0]] + 2.0f * pts[quad[3]]) / grid_size };
+		addQuad(quad_pts_2, alpha / 3, 0.0f);
 
-		// Bottom faded quad
+		// Bottom quads
 		std::vector<sl::float3> quad_pts_3{
-			(2.0f * pts[quad[0]] + (grid_size - 2.0f) * pts[quad[3]]) / grid_size,
-					(2.0f * pts[quad[1]] + (grid_size - 2.0f) * pts[quad[2]]) / grid_size,
-					(pts[quad[1]] + (grid_size - 1.0f) * pts[quad[2]]) / grid_size,
-					(pts[quad[0]] + (grid_size - 1.0f) * pts[quad[3]]) / grid_size };
-		addQuad(quad_pts_3, 0.0f, alpha);
-
-		// Bottom full quad
-		std::vector<sl::float3> quad_pts_4{
+			(pts[quad[1]] * 2.0f + (grid_size - 2.0f) * pts[quad[2]]) / grid_size,
+			(pts[quad[0]] * 2.0f + (grid_size - 2.0f) * pts[quad[3]]) / grid_size,
 			(pts[quad[0]] + (grid_size - 1.0f) * pts[quad[3]]) / grid_size,
-					(pts[quad[1]] + (grid_size - 1.0f) * pts[quad[2]]) / grid_size,
-					pts[quad[2]],
-					pts[quad[3]] };
-		addQuad(quad_pts_4, alpha, alpha);
+			(pts[quad[1]] + (grid_size - 1.0f) * pts[quad[2]]) / grid_size };
+		addQuad(quad_pts_3, 0.0f, alpha / 3);
+
+		std::vector<sl::float3> quad_pts_35{
+			(pts[quad[1]] + (grid_size - 1.0f) * pts[quad[2]]) / grid_size,
+			(pts[quad[0]] + (grid_size - 1.0f) * pts[quad[3]]) / grid_size,
+			(pts[quad[0]] * 0.5f + (grid_size - 0.5f) * pts[quad[3]]) / grid_size,
+			(pts[quad[1]] * 0.5f + (grid_size - 0.5f) * pts[quad[2]]) / grid_size };
+		addQuad(quad_pts_35, alpha / 3, 2 * alpha / 3);
+
+		std::vector<sl::float3> quad_pts_4{
+			(pts[quad[0]] * 0.5f + (grid_size - 0.5f) * pts[quad[3]]) / grid_size,
+			(pts[quad[1]] * 0.5f + (grid_size - 0.5f) * pts[quad[2]]) / grid_size,
+			pts[quad[2]],
+			pts[quad[3]] };
+		addQuad(quad_pts_4, 2 * alpha / 3, alpha);
 	}
 }
 

@@ -7,7 +7,7 @@
 #endif
 
 #define FADED_RENDERING
-const float grid_size = 8.0f;
+const float grid_size = 10.0f;
 
 GLchar* VERTEX_SHADER =
         "#version 330 core\n"
@@ -152,13 +152,13 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters &param) {
     skeletons = Simple3DObject(sl::Translation(0, 0, 0), false);
     skeletons.setDrawingType(GL_LINES);
 
-    bckgrnd_clr = sl::float4(1.f, 1.f, 1.f, 1.f);
+    bckgrnd_clr = sl::float4(0.2f, 0.19f, 0.2f, 1.0f);
 
     floor_grid = Simple3DObject(sl::Translation(0, 0, 0), true);
     floor_grid.setDrawingType(GL_LINES);
 
     float limit = 20.f;
-    sl::float4 clr_grid(137, 122, 108, 255);
+    sl::float4 clr_grid(80, 80, 80, 255);
     clr_grid /= 255.f;
     float height = -3;
     for (int i = (int) (-limit); i <= (int) (limit); i++)
@@ -184,7 +184,6 @@ void GLViewer::render() {
         glClearColor(bckgrnd_clr.b, bckgrnd_clr.g, bckgrnd_clr.r, bckgrnd_clr.a);
         update();
         draw();
-        printText();
         glutSwapBuffers();
         glutPostRedisplay();
     }
@@ -486,6 +485,8 @@ void Simple3DObject::addTriangle(sl::float3 p1, sl::float3 p2, sl::float3 p3, sl
 }
 
 void Simple3DObject::addFullEdges(std::vector<sl::float3> &pts, sl::float4 clr) {
+	clr.w = 0.4f;
+
     int start_id = vertices_.size() / 3;
 
     for (unsigned int i = 0; i < pts.size(); i++) {
@@ -519,7 +520,7 @@ void Simple3DObject::addVerticalEdges(std::vector<sl::float3> &pts, sl::float4 c
         int start_id = vertices_.size() / 3;
         for (unsigned int i = 0; i < current_pts.size(); i++) {
             addPt(current_pts[i]);
-            clr.a = (i == 2 || i == 3) ? 0.0f : 0.75f;
+            clr.a = (i == 2 || i == 3) ? 0.0f : 0.4f;
             addClr(clr);
         }
 
@@ -575,37 +576,49 @@ void Simple3DObject::addVerticalFaces(std::vector<sl::float3> &pts, sl::float4 c
     float alpha = 0.3f;
 
     for (const auto quad : quads) {
-        // Top full quad
-        std::vector<sl::float3> quad_pts_1{
-            pts[quad[0]],
-                    pts[quad[1]],
-                    ((grid_size - 1.0f) * pts[quad[1]] + pts[quad[2]]) / grid_size,
-                    ((grid_size - 1.0f) * pts[quad[0]] + pts[quad[3]]) / grid_size};
-        addQuad(quad_pts_1, alpha, alpha);
+		// Top quads
+		std::vector<sl::float3> quad_pts_1{
+			pts[quad[0]],
+			pts[quad[1]],
+			((grid_size - 0.5f) * pts[quad[1]] + 0.5f * pts[quad[2]]) / grid_size,
+			((grid_size - 0.5f) * pts[quad[0]] + 0.5f * pts[quad[3]]) / grid_size };
+		addQuad(quad_pts_1, alpha, 2 * alpha / 3);
 
-        // Top faded quad
-        std::vector<sl::float3> quad_pts_2{
-            ((grid_size - 1.0f) * pts[quad[0]] + pts[quad[3]]) / grid_size,
-                    ((grid_size - 1.0f) * pts[quad[1]] + pts[quad[2]]) / grid_size,
-                    ((grid_size - 2.0f) * pts[quad[1]] + 2.0f * pts[quad[2]]) / grid_size,
-                    ((grid_size - 2.0f) * pts[quad[0]] + 2.0f * pts[quad[3]]) / grid_size};
-        addQuad(quad_pts_2, alpha, 0.0f);
+		std::vector<sl::float3> quad_pts_15{
+			((grid_size - 0.5f) * pts[quad[0]] + 0.5f * pts[quad[3]]) / grid_size,
+			((grid_size - 0.5f) * pts[quad[1]] + 0.5f * pts[quad[2]]) / grid_size,
+			((grid_size - 1.0f) * pts[quad[1]] + pts[quad[2]]) / grid_size,
+			((grid_size - 1.0f) * pts[quad[0]] + pts[quad[3]]) / grid_size };
+		addQuad(quad_pts_15, 2 * alpha / 3, alpha / 3);
 
-        // Bottom faded quad
-        std::vector<sl::float3> quad_pts_3{
-            (2.0f * pts[quad[0]] + (grid_size - 2.0f) * pts[quad[3]]) / grid_size,
-                    (2.0f * pts[quad[1]] + (grid_size - 2.0f) * pts[quad[2]]) / grid_size,
-                    (pts[quad[1]] + (grid_size - 1.0f) * pts[quad[2]]) / grid_size,
-                    (pts[quad[0]] + (grid_size - 1.0f) * pts[quad[3]]) / grid_size};
-        addQuad(quad_pts_3, 0.0f, alpha);
+		std::vector<sl::float3> quad_pts_2{
+			((grid_size - 1.0f) * pts[quad[0]] + pts[quad[3]]) / grid_size,
+			((grid_size - 1.0f) * pts[quad[1]] + pts[quad[2]]) / grid_size,
+			((grid_size - 2.0f) * pts[quad[1]] + 2.0f * pts[quad[2]]) / grid_size,
+			((grid_size - 2.0f) * pts[quad[0]] + 2.0f * pts[quad[3]]) / grid_size };
+		addQuad(quad_pts_2, alpha / 3, 0.0f);
 
-        // Bottom full quad
-        std::vector<sl::float3> quad_pts_4{
-            (pts[quad[0]] + (grid_size - 1.0f) * pts[quad[3]]) / grid_size,
-                    (pts[quad[1]] + (grid_size - 1.0f) * pts[quad[2]]) / grid_size,
-                    pts[quad[2]],
-                    pts[quad[3]]};
-        addQuad(quad_pts_4, alpha, alpha);
+		// Bottom quads
+		std::vector<sl::float3> quad_pts_3{
+			(pts[quad[1]] * 2.0f + (grid_size - 2.0f) * pts[quad[2]]) / grid_size,
+			(pts[quad[0]] * 2.0f + (grid_size - 2.0f) * pts[quad[3]]) / grid_size,
+			(pts[quad[0]] + (grid_size - 1.0f) * pts[quad[3]]) / grid_size,
+			(pts[quad[1]] + (grid_size - 1.0f) * pts[quad[2]]) / grid_size };
+		addQuad(quad_pts_3, 0.0f, alpha / 3);
+
+		std::vector<sl::float3> quad_pts_35{
+			(pts[quad[1]] + (grid_size - 1.0f) * pts[quad[2]]) / grid_size,
+			(pts[quad[0]] + (grid_size - 1.0f) * pts[quad[3]]) / grid_size,
+			(pts[quad[0]] * 0.5f + (grid_size - 0.5f) * pts[quad[3]]) / grid_size,
+			(pts[quad[1]] * 0.5f + (grid_size - 0.5f) * pts[quad[2]]) / grid_size };
+		addQuad(quad_pts_35, alpha / 3, 2 * alpha / 3);
+
+		std::vector<sl::float3> quad_pts_4{
+			(pts[quad[0]] * 0.5f + (grid_size - 0.5f) * pts[quad[3]]) / grid_size,
+			(pts[quad[1]] * 0.5f + (grid_size - 0.5f) * pts[quad[2]]) / grid_size,
+			pts[quad[2]],
+			pts[quad[3]] };
+		addQuad(quad_pts_4, 2 * alpha / 3, alpha);
     }
 }
 
