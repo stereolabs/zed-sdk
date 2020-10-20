@@ -21,7 +21,7 @@ inline sl::float2 getImagePosition(std::vector<sl::uint2> &bounding_box_image, s
     return position;
 }
 
-void render_2D(sl::Mat &left, sl::float2 img_scale, std::vector<sl::ObjectData> &objects, bool render_mask = false);
+void render_2D(cv::Mat &left, sl::float2 img_scale, std::vector<sl::ObjectData> &objects, bool render_mask = false);
 
 
 // -------------------------------------------------
@@ -108,61 +108,21 @@ private:
 
 class TrackingViewer {
 public:
-    TrackingViewer();
+    TrackingViewer(sl::Resolution res, const int fps_, const float D_max);
 
     ~TrackingViewer() {
     };
 
-    void generate_view(sl::Objects &objects, sl::Pose current_camera_pose, cv::Mat &tracking_view, bool tracking_enabled = true);
-
-    // Window dimension getter
-
-    int getWindowWidth() {
-        return window_width;
-    };
-
-    int getWindowHeight() {
-        return window_height;
-    };
-
-    // Tracking viewer configuration
-    void setFPS(const int fps_, bool configure_all = true);
-
-    void setHistorySize(const size_t history_size_) {
-        history_size = history_size_;
-    };
-
-    void setMaxMissingPoints(const int m) {
-        max_missing_points = m;
-    };
+    void generate_view(sl::Objects &objects, sl::Pose current_camera_pose, cv::Mat &tracking_view, bool tracking_enabled);
 
     void setCameraCalibration(const sl::CalibrationParameters calib) {
         camera_calibration = calib;
-    };
-
-    void setMinLengthToDraw(const int l) {
-        min_length_to_draw = l;
-    };
-
-    void setZMin(const float z_) {
-        z_min = z_;
-        x_min = z_ / 2.0f;
-        x_max = -x_min;
-
-        x_step = (x_max - x_min) / window_width;
-        z_step = abs(z_min) / (window_height - camera_offset);
+        has_background_ready = false;
     };
 
     // Zoom functions
     void zoomIn();
     void zoomOut();
-
-    void configureFromFPS();
-
-    void toggleSmoothTracks() {
-        do_smooth = !do_smooth;
-    }
-
 private:
     float x_min, x_max; // show objects between [x_min; x_max] (in millimeters)
     float z_min; // show objects between [z_min; 0] (z_min < 0) (in millimeters)
@@ -183,12 +143,11 @@ private:
     // Visualization configuration
     cv::Mat background;
     bool has_background_ready;
-    cv::Scalar end_of_track_color, background_color, fov_color;
+    cv::Scalar background_color, fov_color;
     int camera_offset;
 
     // To keep track of frames
     int max_missing_points;
-    int fps;
     uint64_t frame_time_step;
 
     // Camera settings

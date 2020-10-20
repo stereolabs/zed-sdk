@@ -8,8 +8,7 @@ inline cv::Point2f cvt(T pt, sl::float2 scale) {
     return cv::Point2f(pt.x * scale.x, pt.y * scale.y);
 }
 
-void render_2D(sl::Mat &left, sl::float2 img_scale, std::vector<sl::ObjectData> &objects, bool render_mask) {
-    cv::Mat left_display = slMat2cvMat(left);
+void render_2D(cv::Mat &left_display, sl::float2 img_scale, std::vector<sl::ObjectData> &objects, bool render_mask) {
     cv::Mat overlay = left_display.clone();
     cv::Rect roi_render(0, 0, left_display.size().width, left_display.size().height);
 
@@ -70,13 +69,13 @@ void render_2D(sl::Mat &left, sl::float2 img_scale, std::vector<sl::ObjectData> 
 
             auto position_image = getImagePosition(obj.bounding_box_2d, img_scale);
             putText(left_display,  toString(obj.label).get(), cv::Point2d(position_image.x - 20, position_image.y - 12),
-                        cv::FONT_HERSHEY_COMPLEX_SMALL, 0.5, cv::Scalar(255, 255, 255), 1 );
+                        cv::FONT_HERSHEY_COMPLEX_SMALL, 0.5, cv::Scalar(255, 255, 255, 255), 1 );
 
             if (std::isfinite(obj.position.z)) {
                 char text[64];
                 sprintf(text, "%2.1fM", abs(obj.position.z / 1000.0f));
                 putText(left_display, text, cv::Point2d(position_image.x - 20, position_image.y),
-                        cv::FONT_HERSHEY_COMPLEX_SMALL, 0.5, cv::Scalar(255, 255, 255), 1 );
+                        cv::FONT_HERSHEY_COMPLEX_SMALL, 0.5, cv::Scalar(255, 255, 255, 255), 1 );
             }
         }
     }
@@ -109,68 +108,58 @@ void Tracklet::addDetectedPoint(const sl::ObjectData obj, uint64_t timestamp, in
 //              TrackingViewer code
 // -------------------------------------------------------
 
-TrackingViewer::TrackingViewer() {
+TrackingViewer::TrackingViewer(sl::Resolution res, const int fps_, const float D_max)  {
     // ----------- Default configuration -----------------
-    // Object range
-    x_min = -6250.0f;
-    x_max = -x_min;
-    z_min = -12500.0f;
-
+   
     // window size
-    window_width = 800;
-    window_height = 800;
+    window_width = res.width;
+    window_height = res.height;
 
     // Visualization configuration
-    end_of_track_color = cv::Scalar(255, 40, 40);
     camera_offset = 50;
-    x_step = (x_max - x_min) / window_width;
-    z_step = abs(z_min) / window_height;
 
     // history management
     min_length_to_draw = 3;
-
-    // Configuration through FPS information
-    fps = 30;
-    configureFromFPS();
 
     // camera settings
     fov = -1.0f;
 
     // Visualization settings
-    background_color = cv::Scalar(248, 248, 248);
+    background_color = cv::Scalar(248, 248, 248, 255);
+    has_background_ready = false;
+    background = cv::Mat(window_height, window_width, CV_8UC4, background_color);
+
+    cv::Scalar ref(255, 117, 44, 255);
 #if (defined(CV_VERSION_EPOCH) && CV_VERSION_EPOCH == 2)
-    cv::Scalar ref = cv::Scalar(255, 117, 44);
     for (int p = 0; p < 3; p++)
         fov_color.val[p] = (ref.val[p] + 2 * background_color.val[p]) / 3;
 #else
-    fov_color = (cv::Scalar(255, 117, 44) + 2 * background_color) / 3;
+    fov_color = (ref + 2 * background_color) / 3;
 #endif
-    has_background_ready = false;
 
     // SMOOTH
     do_smooth = false;
-}
 
-void TrackingViewer::setFPS(const int fps_, bool configure_all) {
-    fps = fps_;
+    // FPS 
     frame_time_step = uint64_t(ceil(1000000000.0f / fps_));
-    if (configure_all) {
-        configureFromFPS();
-    }
-}
-
-void TrackingViewer::configureFromFPS() {
-    frame_time_step = uint64_t(ceil(1000000000.0f / fps));
-
     // Show last 1.5 seconds
-    history_size = int(1.5f * fps);
+    history_size = int(1.5f * fps_);
 
     // Threshold to delete track
-    max_missing_points = std::max(fps / 6, 4);
+    max_missing_points = std::max(fps_ / 6, 4);
 
     // Smoothing window: 80ms
-    smoothing_window_size = static_cast<int>(ceil(0.08f * fps) +.5f);
+    smoothing_window_size = static_cast<int>(ceil(0.08f * fps_) + .5f);
+
+    // invert Z due to Y axis of ocv windows
+    z_min = -D_max;
+    x_min = z_min / 2.0f;
+    x_max = -x_min;
+
+    x_step = (x_max - x_min) / window_width;
+    z_step = abs(z_min) / (window_height - camera_offset); 
 }
+
 
 void TrackingViewer::generate_view(sl::Objects &objects, sl::Pose current_camera_pose, cv::Mat &tracking_view, bool tracking_enabled) {
     // To get position in WORLD reference
@@ -181,11 +170,10 @@ void TrackingViewer::generate_view(sl::Objects &objects, sl::Pose current_camera
     }
 
     // Initialize visualization
-    if (!has_background_ready) {
+    if (!has_background_ready)
         generateBackground();
-    }
-
-    tracking_view = background.clone();
+   
+    background.copyTo(tracking_view);
     // Scale
     drawScale(tracking_view);
 
@@ -204,13 +192,11 @@ void TrackingViewer::generate_view(sl::Objects &objects, sl::Pose current_camera
 }
 
 void TrackingViewer::zoomIn() {
-    const float zoom_factor = 0.9f;
-    zoom(zoom_factor);
+    zoom(0.9f);
 }
 
 void TrackingViewer::zoomOut() {
-    const float zoom_factor = 1.0f / 0.9f;
-    zoom(zoom_factor);
+    zoom(1.0f / 0.9f);
 }
 
 // ----------- Private methods ----------------------
@@ -365,7 +351,7 @@ void TrackingViewer::drawTracklets(cv::Mat &tracking_view, sl::Pose current_came
 void TrackingViewer::drawPosition(sl::Objects &objects, cv::Mat &tracking_view, sl::Pose current_camera_pose) {
     for (auto obj : objects.object_list) {
         sl::float4 generated_color_sl = getColorClass((int) obj.label)* 255.0f;
-        cv::Scalar generated_color(generated_color_sl.x, generated_color_sl.y, generated_color_sl.z);
+        cv::Scalar generated_color(generated_color_sl.x, generated_color_sl.y, generated_color_sl.z, 255);
 
         // Point = person || Rect = Vehicle 
         switch (obj.label) {
@@ -402,27 +388,26 @@ void TrackingViewer::drawScale(cv::Mat &tracking_view) {
     int thickness = 1;
 
     // Scale line
-    cv::line(tracking_view, st_pt, end_pt, cv::Scalar(0, 0, 0), thickness);
+    cv::line(tracking_view, st_pt, end_pt, cv::Scalar(0, 0, 0, 255), thickness);
 
     // Add ticks
-    cv::line(tracking_view, st_pt + cv::Point2i(0, -3), st_pt + cv::Point2i(0, 3), cv::Scalar(0, 0, 0), thickness);
-    cv::line(tracking_view, end_pt + cv::Point2i(0, -3), end_pt + cv::Point2i(0, 3), cv::Scalar(0, 0, 0), thickness);
+    cv::line(tracking_view, st_pt + cv::Point2i(0, -3), st_pt + cv::Point2i(0, 3), cv::Scalar(0, 0, 0, 255), thickness);
+    cv::line(tracking_view, end_pt + cv::Point2i(0, -3), end_pt + cv::Point2i(0, 3), cv::Scalar(0, 0, 0, 255), thickness);
 
     // Scale text
-    cv::putText(tracking_view, "1m", end_pt + cv::Point2i(5, 5), 1, 1.0, cv::Scalar(0, 0, 0), 1);
+    cv::putText(tracking_view, "1m", end_pt + cv::Point2i(5, 5), 1, 1.0, cv::Scalar(0, 0, 0, 255), 1);
 }
 
 void TrackingViewer::generateBackground() {
-    background = cv::Mat(window_height, window_width, CV_8UC3, background_color);
-
     // Draw camera + hotkeys information
     drawCamera();
     drawHotkeys();
+    has_background_ready = true;
 }
 
 void TrackingViewer::drawCamera() {
     // Configuration
-    cv::Scalar camera_color(255, 117, 44);
+    cv::Scalar camera_color(255, 117, 44, 255);
 
     int camera_size = 10;
     int camera_height = window_height - camera_offset;
@@ -438,15 +423,14 @@ void TrackingViewer::drawCamera() {
     cv::fillConvexPoly(background, camera_pts, camera_color);
 
     // Compute the FOV
-    if (fov < 0.0f) {
-        computeFOV();
-    }
+    if (fov < 0.0f) 
+        computeFOV();    
 
     // Get FOV intersection with window borders
     float z_at_x_max = x_max / tan(fov / 2.0f);
     cv::Point2i left_intersection_pt = toCVPoint(x_min, -z_at_x_max), right_intersection_pt = toCVPoint(x_max, -z_at_x_max);
 
-    uchar clr[3] = {static_cast<uchar>(camera_color(0)), static_cast<uchar>(camera_color(2)), static_cast<uchar>(camera_color(3))};
+    uchar clr[4] = {static_cast<uchar>(camera_color(0)), static_cast<uchar>(camera_color(1)), static_cast<uchar>(camera_color(2)),  static_cast<uchar>(camera_color(3))};
     // Draw FOV
     // Second try: dotted line
     cv::LineIterator left_line_it(background, camera_left_pt, left_intersection_pt, 8);
@@ -456,11 +440,12 @@ void TrackingViewer::drawCamera() {
             (*left_line_it)[0] = clr[0];
             (*left_line_it)[1] = clr[1];
             (*left_line_it)[2] = clr[2];
+            (*left_line_it)[3] = clr[3];
         }
 
         for (int r = 0; r < current_pos.y; ++r) {
             float ratio = float(r) / camera_height;
-            background.at<cv::Vec3b>(r, current_pos.x) = applyFading(background_color, ratio,  fov_color);
+            background.at<cv::Vec4b>(r, current_pos.x) = applyFading(background_color, ratio,  fov_color);
         }
     }
 
@@ -475,20 +460,20 @@ void TrackingViewer::drawCamera() {
 
         for (int r = 0; r < current_pos.y; ++r) {
             float ratio = float(r) / camera_height;
-            background.at<cv::Vec3b>(r, current_pos.x) = applyFading(background_color, ratio,  fov_color);
+            background.at<cv::Vec4b>(r, current_pos.x) = applyFading(background_color, ratio,  fov_color);
         }
     }
 
     for (int c = window_width / 2 - camera_size / 2; c <= window_width / 2 + camera_size / 2; ++c) {
         for (int r = 0; r < camera_height; ++r) {
             float ratio = float(r) / camera_height;
-            background.at<cv::Vec3b>(r, c) = applyFading(background_color, ratio,  fov_color);
+            background.at<cv::Vec4b>(r, c) = applyFading(background_color, ratio,  fov_color);
         }
     }
 }
 
 void TrackingViewer::drawHotkeys() {
-    cv::Scalar hotkeys_clr(0, 0, 0);
+    cv::Scalar hotkeys_clr(0, 0, 0, 255);
     cv::putText( background, "Press 'i' to zoom in", cv::Point2i(25, window_height - 25), 1,
             1.0, hotkeys_clr, 1 );
     cv::putText( background, "Press 'o' to zoom out", cv::Point2i(25, window_height - 15), 1,

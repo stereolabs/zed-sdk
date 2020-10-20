@@ -49,21 +49,13 @@ inline uchar _applyFading(T val, float current_alpha, double current_clr){
      return  static_cast<uchar>(current_alpha * current_clr + (1.0 - current_alpha) * val);
 }
 
-inline cv::Vec3b applyFading(cv::Scalar val, float current_alpha, cv::Scalar current_clr){
-    cv::Vec3b out;
+inline cv::Vec4b applyFading(cv::Scalar val, float current_alpha, cv::Scalar current_clr){
+    cv::Vec4b out;
      out[0] = _applyFading(val.val[0], current_alpha, current_clr.val[0]);
      out[1] = _applyFading(val.val[1], current_alpha, current_clr.val[1]);
      out[2] = _applyFading(val.val[2], current_alpha, current_clr.val[2]);
+     out[3] = 255;
      return out;
-}
-
-template<int C>
-inline cv::Vec<uchar, C> applyFading(cv::Vec<uchar, C> val, float current_alpha, cv::Scalar current_clr){
-    cv::Vec<uchar, C>  out;
-    out[0] = _applyFading(val[0], current_alpha, current_clr.val[0]);
-    out[1] = _applyFading(val[1], current_alpha, current_clr.val[1]);
-    out[2] = _applyFading(val[2], current_alpha, current_clr.val[2]);
-    return out;
 }
 
 inline void drawVerticalLine(

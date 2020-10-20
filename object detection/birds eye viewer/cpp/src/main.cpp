@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
 	init_parameters.sdk_verbose = true;
     // On Jetson (Nano, TX1/2) the object detection combined with an heavy depth mode could reduce the frame rate too much
     init_parameters.depth_mode = isJetson ? DEPTH_MODE::PERFORMANCE : DEPTH_MODE::ULTRA;
-    init_parameters.depth_maximum_distance = 50.0f * 1000.0f;
+    init_parameters.depth_maximum_distance = 5.0f * 1000.0f;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
     parseArgs(argc, argv, init_parameters);
     
@@ -102,32 +102,34 @@ int main(int argc, char **argv) {
     // To select a set of specific object classes:
     detection_parameters_rt.object_class_filter = {OBJECT_CLASS::VEHICLE, OBJECT_CLASS::PERSON};
     // To set a specific threshold
-    detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::PERSON] = 35;
-    detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::VEHICLE] = 35;
+    detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::PERSON] = detection_confidence;
+    detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::VEHICLE] = detection_confidence;
 
     // Detection output
     Objects objects;
     bool quit = false;
 
 #if ENABLE_GUI
-    Resolution display_resolution(min((int)camera_config.resolution.width, 1280) , min((int)camera_config.resolution.height, 720));
-    Mat image_left(display_resolution, MAT_TYPE::U8_C4);
+
+    Resolution display_resolution(min((int)camera_config.resolution.width, 1280) , min((int)camera_config.resolution.height, 720));   
+    Resolution tracks_resolution(400, display_resolution.height);
+    // create a global image to store both image and tracks view
+    cv::Mat global_image(display_resolution.height, display_resolution.width + tracks_resolution.width, CV_8UC4);
+    // retrieve ref on image part
+    auto image_left_ocv = global_image(cv::Rect(0, 0, display_resolution.width, display_resolution.height));
+    // retrieve ref on tracks view part
+    auto image_track_ocv = global_image(cv::Rect(display_resolution.width, 0, tracks_resolution.width, tracks_resolution.height));
+    // init an sl::Mat from the ocv image ref (which is in fact the memory of global_image)
+    Mat image_left(display_resolution, MAT_TYPE::U8_C4, image_left_ocv.data, image_left_ocv.step);
     sl::float2 img_scale(display_resolution.width / (float)camera_config.resolution.width, display_resolution.height / (float)camera_config.resolution.height);
 
     // 2D tracks
-    TrackingViewer track_view_generator;
-    // With OpenGL coordinate system, Y is the vertical axis, and negative z values correspond to objects in front of the camera
-    track_view_generator.setZMin(-1.0f * zed.getInitParameters().depth_maximum_distance);
-    track_view_generator.setFPS(camera_config.fps);
-    track_view_generator.configureFromFPS();
-    track_view_generator.setCameraCalibration(camera_config.calibration_parameters);
-    cv::Mat track_view(track_view_generator.getWindowHeight(), track_view_generator.getWindowWidth(), CV_8UC3, cv::Scalar::all(0));
+    TrackingViewer track_view_generator(tracks_resolution, camera_config.fps, init_parameters.depth_maximum_distance);
+    track_view_generator.setCameraCalibration(camera_config.calibration_parameters);    
 
-    string window_left_name = "Left";
-    string window_birdview_name = "Bird view";
-    if (detection_parameters.enable_tracking) window_birdview_name = "Tracks";
-    cv::namedWindow(window_left_name, cv::WINDOW_AUTOSIZE); // Create Window
-    cv::createTrackbar("Confidence", window_left_name, &detection_confidence, 100);
+    string window_name = "ZED| 2D View and Birds view";
+    cv::namedWindow(window_name, cv::WINDOW_NORMAL); // Create Window
+    cv::createTrackbar("Confidence", window_name, &detection_confidence, 100);
 
     char key = ' ';
     Resolution pc_resolution(min((int)camera_config.resolution.width, 720) , min((int)camera_config.resolution.height, 404));
@@ -148,20 +150,29 @@ int main(int argc, char **argv) {
             gl_viewer_available &&
 #endif
             !quit && zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS) {
-        detection_parameters_rt.detection_confidence_threshold = detection_confidence;
+
+        // update confidence threshold based on TrackBar
+        if(detection_parameters_rt.object_class_filter.empty())
+            detection_parameters_rt.detection_confidence_threshold = detection_confidence;
+        else // if using class filter, set confidence for each class
+            for (auto& it : detection_parameters_rt.object_class_filter)
+                detection_parameters_rt.object_class_detection_confidence_threshold[it] = detection_confidence;
+
         returned_state = zed.retrieveObjects(objects, detection_parameters_rt);
 
         if ((returned_state == ERROR_CODE::SUCCESS) && objects.is_new) {
 #if ENABLE_GUI
+
             zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, pc_resolution);
             zed.getPosition(cam_pose, REFERENCE_FRAME::WORLD);
             viewer.updateData(point_cloud, objects.object_list, cam_pose.pose_data);
-            gl_viewer_available = viewer.isAvailable();
 
             zed.retrieveImage(image_left, VIEW::LEFT, MEM::CPU, display_resolution);
-            render_2D(image_left, img_scale, objects.object_list, true);
+            // as image_left_ocv is a ref of image_left, it contains directly the new grabbed image
+            render_2D(image_left_ocv, img_scale, objects.object_list, true);
             zed.getPosition(cam_pose, REFERENCE_FRAME::CAMERA);
-            track_view_generator.generate_view(objects, cam_pose, track_view, objects.is_tracked);
+            // update birds view of tracks based on camera position and detected objects
+            track_view_generator.generate_view(objects, cam_pose, image_track_ocv, objects.is_tracked);
 #else
             cout << "Detected " << objects.object_list.size() << " Object(s)" << endl;
 #endif
@@ -172,27 +183,30 @@ int main(int argc, char **argv) {
         }
 
 #if ENABLE_GUI
-        cv::Mat left_display = slMat2cvMat(image_left);
-        cv::imshow(window_left_name, left_display);
-        cv::imshow(window_birdview_name, track_view);
-        key = cv::waitKey(33);
+        gl_viewer_available = viewer.isAvailable();
+        // as image_left_ocv and image_track_ocv are both ref of global_image, no need to update it
+        cv::imshow(window_name, global_image);
+        key = cv::waitKey(10);
         if (key == 'i') {
             track_view_generator.zoomIn();
         } else if (key == 'o') {
             track_view_generator.zoomOut();
         } else if (key == 'q') {
             quit = true;
-        } else if (key == 'a') {
+        } else if (key == 'p') {
             detection_parameters_rt.object_class_filter.clear();
             detection_parameters_rt.object_class_filter.push_back(OBJECT_CLASS::PERSON);
+            detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::PERSON] = detection_confidence;
             cout << "Person only" << endl;
-        } else if (key == 'z') {
+        } else if (key == 'v') {
             detection_parameters_rt.object_class_filter.clear();
             detection_parameters_rt.object_class_filter.push_back(OBJECT_CLASS::VEHICLE);
+            detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::VEHICLE] = detection_confidence;
             cout << "Vehicle only" << endl;
-        } else if (key == 'e') {
+        } else if (key == 'c') {
             detection_parameters_rt.object_class_filter.clear();
-            cout << "No filter" << endl;
+            detection_parameters_rt.object_class_detection_confidence_threshold.clear();
+            cout << "Clear Filters" << endl;
         }
         
 #endif
