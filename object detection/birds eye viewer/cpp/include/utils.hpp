@@ -66,8 +66,11 @@ inline void drawVerticalLine(
         int thickness) {
     int n_steps = 7;
     cv::Point2i pt1, pt4;
-    pt1 = ((n_steps - 1) * start_pt + end_pt) / n_steps;
-    pt4 = (start_pt + (n_steps - 1) * end_pt) / n_steps;
+    pt1.x = ((n_steps - 1) * start_pt.x + end_pt.x) / n_steps;
+    pt1.y = ((n_steps - 1) * start_pt.y + end_pt.y) / n_steps;
+
+    pt4.x = (start_pt.x + (n_steps - 1) * end_pt.x) / n_steps;
+    pt4.y = (start_pt.y + (n_steps - 1) * end_pt.y) / n_steps;
 
     cv::line(left_display, start_pt, pt1, clr, thickness);
     cv::line(left_display, pt4, end_pt, clr, thickness);
