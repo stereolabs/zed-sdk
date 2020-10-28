@@ -10,9 +10,9 @@ We assume that you have read the tutorial 1 and successfully opened your ZED.
 
 ### Prerequisites
 
-- Windows 7 64bits or later, Ubuntu 16.04/18.04
+- Windows 10, Ubuntu LTS, L4T
 - [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
-- [ZED SDK Python API](https://github.com/stereolabs/zed-python-api)
+- [ZED SDK Python API](https://www.stereolabs.com/docs/app-development/python/install/)
 
 # Code overview
 ## Create a camera

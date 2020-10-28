@@ -9,9 +9,9 @@ This tutorial simply shows how to configure and open the ZED, then print its ser
 
 ### Prerequisites
 
-- Windows 7 64bits or later, Ubuntu 16.04/18.04
+- Windows 10, Ubuntu LTS, L4T
 - [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
-- [ZED SDK Python API](https://github.com/stereolabs/zed-python-api)
+- [ZED SDK Python API](https://www.stereolabs.com/docs/app-development/python/install/)
 
 # Code overview
 The ZED API provides low-level access to camera control and configuration. To use the ZED in your application, you will need to create and open a Camera object. The API can be used with two different video inputs: the ZED live video (Live mode) or video files recorded in SVO format with the ZED API (Playback mode).

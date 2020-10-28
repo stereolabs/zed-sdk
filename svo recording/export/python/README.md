@@ -11,7 +11,7 @@ It can also convert a SVO in the following png image sequences: LEFT+RIGHT, LEFT
   
 ### Prerequisites
 
-- Windows 10, Ubuntu LTS
+- Windows 10, Ubuntu LTS, L4T
 - [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
 - [ZED Python API](https://www.stereolabs.com/docs/app-development/python/)
 - OpenCV python (`python -m pip install opencv-python`)

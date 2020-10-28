@@ -9,7 +9,7 @@ This sample demonstrates how to capture video and depth image with the ZED SDK i
 
 ### Prerequisites
 
-- Windows 10, Ubuntu LTS
+- Windows 10, Ubuntu LTS, L4T
 - [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
 
 ## Build the program
