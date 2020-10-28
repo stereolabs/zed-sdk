@@ -43,7 +43,6 @@ int main(int argc, char** argv) {
     InitParameters init_parameters;
     init_parameters.coordinate_units = UNIT::METER;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL coordinates system
-    init_parameters.sensors_required = true;
     parseArgs(argc,argv, init_parameters);
 
     // Open the camera
@@ -54,8 +53,10 @@ int main(int argc, char** argv) {
     }
 
     auto camera_infos = zed.getCameraInformation();
+    auto has_imu = camera_infos.sensors_configuration.isSensorAvailable(SENSOR_TYPE::GYROSCOPE);
+
     GLViewer viewer;
-    bool error_viewer = viewer.init(argc, argv, camera_infos);
+    bool error_viewer = viewer.init(argc, argv, camera_infos.camera_configuration.calibration_parameters.left_cam, has_imu);
     if(error_viewer) {
         viewer.exit();
         zed.close();
@@ -93,8 +94,10 @@ int main(int argc, char** argv) {
                 // Compute elapse time since the last call of plane detection
                 auto duration = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - ts_last).count();
                 // Ask for a mesh update 
-                if(user_action.hit)
-                    find_plane_status = zed.findPlaneAtHit(user_action.hit_coord, plane);
+                if(user_action.hit) {
+                    auto image_click = sl::uint2(user_action.hit_coord.x * camera_infos.camera_configuration.resolution.width,user_action.hit_coord.y * camera_infos.camera_configuration.resolution.height);
+                    find_plane_status = zed.findPlaneAtHit(image_click, plane);
+                }
 
                 //if 500ms have spend since last request
                 if((duration > 500) && user_action.press_space) {

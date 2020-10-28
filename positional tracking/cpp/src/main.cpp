@@ -53,9 +53,9 @@ int main(int argc, char **argv) {
     parseArgs(argc, argv, init_parameters);
 
     // Open the camera
-    ERROR_CODE zed_open_state = zed.open(init_parameters);
-    if (zed_open_state != ERROR_CODE::SUCCESS) {
-        print("Camera Open", zed_open_state, "Exit program.");
+    auto returned_state = zed.open(init_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
 
@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
     PositionalTrackingParameters positional_tracking_param;
     positional_tracking_param.enable_area_memory = true;
     // enable Positional Tracking
-    auto returned_state = zed.enablePositionalTracking(positional_tracking_param);
+    returned_state = zed.enablePositionalTracking(positional_tracking_param);
     if (returned_state != ERROR_CODE::SUCCESS) {
         print("Enabling positionnal tracking failed: ", returned_state);
         zed.close();

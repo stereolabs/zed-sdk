@@ -18,10 +18,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-/*************************************************************************
- ** This sample demonstrates how to capture images and 3D point cloud   **
- ** with the ZED SDK and display the result in an OpenGL window. 	    **
- *************************************************************************/
+/*********************************************************************
+ ** This sample demonstrates how to capture a live 3D point cloud   **
+ ** with the ZED SDK and display the result in an OpenGL window.    **
+ *********************************************************************/
 
 // ZED includes
 #include <sl/Camera.hpp>
@@ -45,18 +45,18 @@ int main(int argc, char **argv) {
     parseArgs(argc, argv, init_parameters);
 
     // Open the camera
-    ERROR_CODE err = zed.open(init_parameters);
-    if (err != ERROR_CODE::SUCCESS) {
-        print("Camera Open", err, "Exit program.");
+    auto returned_state = zed.open(init_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
 
-    auto camera_infos = zed.getCameraInformation();
+    auto camera_config = zed.getCameraInformation().camera_configuration;
 
     // Point cloud viewer
     GLViewer viewer;
     // Initialize point cloud viewer 
-    GLenum errgl = viewer.init(argc, argv, camera_infos.camera_configuration.calibration_parameters.left_cam);
+    GLenum errgl = viewer.init(argc, argv, camera_config.calibration_parameters.left_cam);
     if (errgl != GLEW_OK) {
         print("Error OpenGL: " + std::string((char*)glewGetErrorString(errgl)));
         return EXIT_FAILURE;
@@ -68,14 +68,16 @@ int main(int argc, char **argv) {
     runParameters.texture_confidence_threshold = 100;
 
     // Allocation of 4 channels of float on GPU
-    Mat point_cloud(camera_infos.camera_configuration.resolution, MAT_TYPE::F32_C4, MEM::GPU);
+    Mat point_cloud(camera_config.resolution, MAT_TYPE::F32_C4, MEM::GPU);
 
     // Main Loop
-    while (viewer.isAvailable()) {
+    while (viewer.isAvailable()) {        
+        // Check that a new image is successfully acquired
         if (zed.grab(runParameters) == ERROR_CODE::SUCCESS) {
+            // retrieve the current 3D coloread point cloud in GPU
             zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU);
             viewer.updatePointCloud(point_cloud);
-        } else sleep_ms(1);
+        }
     }
     // free allocated memory before closing the ZED
     point_cloud.free();

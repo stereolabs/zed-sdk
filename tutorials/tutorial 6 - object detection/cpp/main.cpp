@@ -44,9 +44,9 @@ int main(int argc, char** argv) {
     init_parameters.sdk_verbose = true;
 
     // Open the camera
-    ERROR_CODE err = zed.open(init_parameters);
-    if (err != ERROR_CODE::SUCCESS) {
-        cout << "Error " << err << ", exit program.\n";
+    auto returned_state = zed.open(init_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        cout << "Error " << returned_state << ", exit program.\n";
         return EXIT_FAILURE;
     }
 
@@ -66,8 +66,9 @@ int main(int argc, char** argv) {
         zed.enablePositionalTracking();    
 
     cout << "Object Detection: Loading Module..." << endl;
-    err = zed.enableObjectDetection(detection_parameters);
-    if (err != ERROR_CODE::SUCCESS) {
+    returned_state = zed.enableObjectDetection(detection_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        cout << "Error " << returned_state << ", exit program.\n";
         zed.close();
         return EXIT_FAILURE;
     }
@@ -77,43 +78,46 @@ int main(int argc, char** argv) {
     Objects objects;
     cout << setprecision(3);
 
-    while (zed.grab() == ERROR_CODE::SUCCESS) {
-        err = zed.retrieveObjects(objects, detection_parameters_rt);
+    int nb_detection = 0;
+    while (nb_detection < 100) {
 
-        if (objects.is_new) {
+        if(zed.grab() == ERROR_CODE::SUCCESS){
+           zed.retrieveObjects(objects, detection_parameters_rt);
 
-            cout << objects.object_list.size() << " Object(s) detected\n\n";
+            if (objects.is_new) {
+                cout << objects.object_list.size() << " Object(s) detected\n\n";
+                if (!objects.object_list.empty()) {
 
-            if (!objects.object_list.empty()) {
+                    auto first_object = objects.object_list.front();
 
-                auto first_object = objects.object_list.front();
+                    cout << "First object attributes :\n";
+                    cout << " Label '" << first_object.label << "' (conf. "
+                        << first_object.confidence << "/100)\n";
 
-                cout << "First object attributes :\n";
-                cout << " Label '" << first_object.label << "' (conf. "
-                    << first_object.confidence << "/100)\n";
+                    if (detection_parameters.enable_tracking)
+                        cout << " Tracking ID: " << first_object.id << " tracking state: " <<
+                        first_object.tracking_state << " / " << first_object.action_state << "\n";
 
-                if (detection_parameters.enable_tracking)
-                    cout << " Tracking ID: " << first_object.id << " tracking state: " <<
-                    first_object.tracking_state << " / " << first_object.action_state << "\n";
+                    cout << " 3D position: " << first_object.position <<
+                        " Velocity: " << first_object.velocity << "\n";
 
-                cout << " 3D position: " << first_object.position <<
-                    " Velocity: " << first_object.velocity << "\n";
+                    cout << " 3D dimensions: " << first_object.dimensions << "\n";
 
-                cout << " 3D dimensions: " << first_object.dimensions << "\n";
+                    if (first_object.mask.isInit())
+                        cout << " 2D mask available\n";
 
-                if (first_object.mask.isInit())
-                    cout << " 2D mask available\n";
+                    cout << " Bounding Box 2D \n";
+                    for (auto it : first_object.bounding_box_2d)
+                        cout << "    " << it<<"\n";
 
-                cout << " Bounding Box 2D \n";
-                for (auto it : first_object.bounding_box_2d)
-                    cout << "    " << it<<"\n";
+                    cout << " Bounding Box 3D \n";
+                    for (auto it : first_object.bounding_box)
+                        cout << "    " << it << "\n";
 
-                cout << " Bounding Box 3D \n";
-                for (auto it : first_object.bounding_box)
-                    cout << "    " << it << "\n";
-
-                cout << "\nPress 'Enter' to continue...\n";
-                cin.ignore();
+                    cout << "\nPress 'Enter' to continue...\n";
+                    cin.ignore();
+                }
+                nb_detection++;
             }
         }
     }

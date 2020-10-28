@@ -47,91 +47,99 @@ using namespace sl;
 bool is_playback = false;
 void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
 void parseArgs(int argc, char **argv, InitParameters& param);
-bool checkIsJetson();
-
 
 int main(int argc, char **argv) {
+    
+#ifdef _SL_JETSON_
+    const bool isJetson = true;
+#else
+    const bool isJetson = false;
+#endif
+
     // Create ZED objects
     Camera zed;
     InitParameters init_parameters;
-    init_parameters.camera_resolution = RESOLUTION::HD720;
-    if (checkIsJetson())
-        // On Jetson (Nano, TX1/2) the object detection combined with an heavy depth mode could reduce the frame rate too much
-        init_parameters.depth_mode = DEPTH_MODE::PERFORMANCE;
-    else
-        init_parameters.depth_mode = DEPTH_MODE::ULTRA;
-    init_parameters.depth_maximum_distance = 50.0f * 1000.0f;
+    init_parameters.camera_resolution = RESOLUTION::HD2K;
+	init_parameters.sdk_verbose = true;
+    // On Jetson (Nano, TX1/2) the object detection combined with an heavy depth mode could reduce the frame rate too much
+    init_parameters.depth_mode = isJetson ? DEPTH_MODE::PERFORMANCE : DEPTH_MODE::ULTRA;
+    init_parameters.depth_maximum_distance = 5.0f * 1000.0f;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
     parseArgs(argc, argv, init_parameters);
     
     // Open the camera
-    ERROR_CODE zed_open_state = zed.open(init_parameters);
-    if (zed_open_state != ERROR_CODE::SUCCESS) {
-        print("Camera Open", zed_open_state, "Exit program.");
+    auto returned_state  = zed.open(init_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
 
     // Define the Objects detection module parameters
     ObjectDetectionParameters detection_parameters;
     detection_parameters.enable_tracking = true;
-    detection_parameters.enable_mask_output = true;
-    detection_parameters.detection_model = DETECTION_MODEL::MULTI_CLASS_BOX;
+    detection_parameters.enable_mask_output = false; // designed to give person pixel mask
+    detection_parameters.detection_model = isJetson ? DETECTION_MODEL::MULTI_CLASS_BOX : DETECTION_MODEL::MULTI_CLASS_BOX_ACCURATE;
 
-    auto camera_infos = zed.getCameraInformation();
+    auto camera_config = zed.getCameraInformation().camera_configuration;
 
-    // If you want to have object tracking you need to enable positional tracking first
     PositionalTrackingParameters positional_tracking_parameters;
     // If the camera is static in space, enabling this settings below provides better depth quality and faster computation
     // positional_tracking_parameters.set_as_static = true;
-    if (detection_parameters.enable_tracking)
-        zed.enablePositionalTracking(positional_tracking_parameters);
+    zed.enablePositionalTracking(positional_tracking_parameters);
 
     print("Object Detection: Loading Module...");
-    auto returned_stated = zed.enableObjectDetection(detection_parameters);
-    if (returned_stated != ERROR_CODE::SUCCESS) {
-        print("enableObjectDetection", returned_stated, "\nExit program.");
+    returned_state = zed.enableObjectDetection(detection_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        print("enableObjectDetection", returned_state, "\nExit program.");
         zed.close();
         return EXIT_FAILURE;
     }
 
     // Detection runtime parameters
+    // default detection threshold, apply to all object class
     int detection_confidence = 35;
     ObjectDetectionRuntimeParameters detection_parameters_rt(detection_confidence);
+    // To select a set of specific object classes:
+    detection_parameters_rt.object_class_filter = {OBJECT_CLASS::VEHICLE, OBJECT_CLASS::PERSON};
+    // To set a specific threshold
+    detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::PERSON] = detection_confidence;
+    detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::VEHICLE] = detection_confidence;
 
     // Detection output
     Objects objects;
     bool quit = false;
 
 #if ENABLE_GUI
-    auto res = camera_infos.camera_configuration.resolution;
-    Resolution display_resolution(min((int)res.width, 1280) , min((int)res.height, 720));
-    Mat image_left(display_resolution, MAT_TYPE::U8_C4);
-    sl::float2 img_scale(display_resolution.width / (float)res.width, display_resolution.height / (float)res.height);
+
+    Resolution display_resolution(min((int)camera_config.resolution.width, 1280) , min((int)camera_config.resolution.height, 720));   
+    Resolution tracks_resolution(400, display_resolution.height);
+    // create a global image to store both image and tracks view
+    cv::Mat global_image(display_resolution.height, display_resolution.width + tracks_resolution.width, CV_8UC4);
+    // retrieve ref on image part
+    auto image_left_ocv = global_image(cv::Rect(0, 0, display_resolution.width, display_resolution.height));
+    // retrieve ref on tracks view part
+    auto image_track_ocv = global_image(cv::Rect(display_resolution.width, 0, tracks_resolution.width, tracks_resolution.height));
+    // init an sl::Mat from the ocv image ref (which is in fact the memory of global_image)
+    Mat image_left(display_resolution, MAT_TYPE::U8_C4, image_left_ocv.data, image_left_ocv.step);
+    sl::float2 img_scale(display_resolution.width / (float)camera_config.resolution.width, display_resolution.height / (float)camera_config.resolution.height);
 
     // 2D tracks
-    TrackingViewer track_view_generator;
-    // With OpenGL coordinate system, Y is the vertical axis, and negative z values correspond to objects in front of the camera
-    track_view_generator.setZMin(-1.0f * zed.getInitParameters().depth_maximum_distance);
-    track_view_generator.setFPS(camera_infos.camera_configuration.fps);
-    track_view_generator.configureFromFPS();
-    track_view_generator.setCameraCalibration(camera_infos.camera_configuration.calibration_parameters);
-    cv::Mat track_view(track_view_generator.getWindowHeight(), track_view_generator.getWindowWidth(), CV_8UC3, cv::Scalar::all(0));
+    TrackingViewer track_view_generator(tracks_resolution, camera_config.fps, init_parameters.depth_maximum_distance);
+    track_view_generator.setCameraCalibration(camera_config.calibration_parameters);    
 
-    string window_left_name = "Left";
-    string window_birdview_name = "Bird view";
-    if (detection_parameters.enable_tracking) window_birdview_name = "Tracks";
-    cv::namedWindow(window_left_name, cv::WINDOW_AUTOSIZE); // Create Window
-    cv::createTrackbar("Confidence", window_left_name, &detection_confidence, 100);
+    string window_name = "ZED| 2D View and Birds view";
+    cv::namedWindow(window_name, cv::WINDOW_NORMAL); // Create Window
+    cv::createTrackbar("Confidence", window_name, &detection_confidence, 100);
 
     char key = ' ';
-    Resolution pc_resolution(min((int)res.width, 720) , min((int)res.height, 404));
+    Resolution pc_resolution(min((int)camera_config.resolution.width, 720) , min((int)camera_config.resolution.height, 404));
     auto camera_parameters = zed.getCameraInformation(pc_resolution).camera_configuration.calibration_parameters.left_cam;
     Mat point_cloud(pc_resolution, MAT_TYPE::F32_C4, MEM::GPU);
     GLViewer viewer;
     viewer.init(argc, argv, camera_parameters);
 #endif
 
-    sl::RuntimeParameters runtime_parameters;
+    RuntimeParameters runtime_parameters;
     runtime_parameters.confidence_threshold = 50;
         
     Pose cam_pose;
@@ -142,20 +150,29 @@ int main(int argc, char **argv) {
             gl_viewer_available &&
 #endif
             !quit && zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS) {
-        detection_parameters_rt.detection_confidence_threshold = detection_confidence;
-        returned_stated = zed.retrieveObjects(objects, detection_parameters_rt);
 
-        if ((returned_stated == ERROR_CODE::SUCCESS) && objects.is_new) {
+        // update confidence threshold based on TrackBar
+        if(detection_parameters_rt.object_class_filter.empty())
+            detection_parameters_rt.detection_confidence_threshold = detection_confidence;
+        else // if using class filter, set confidence for each class
+            for (auto& it : detection_parameters_rt.object_class_filter)
+                detection_parameters_rt.object_class_detection_confidence_threshold[it] = detection_confidence;
+
+        returned_state = zed.retrieveObjects(objects, detection_parameters_rt);
+
+        if ((returned_state == ERROR_CODE::SUCCESS) && objects.is_new) {
 #if ENABLE_GUI
+
             zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, pc_resolution);
             zed.getPosition(cam_pose, REFERENCE_FRAME::WORLD);
             viewer.updateData(point_cloud, objects.object_list, cam_pose.pose_data);
-            gl_viewer_available = viewer.isAvailable();
 
             zed.retrieveImage(image_left, VIEW::LEFT, MEM::CPU, display_resolution);
-            render_2D(image_left, img_scale, objects.object_list, true);
+            // as image_left_ocv is a ref of image_left, it contains directly the new grabbed image
+            render_2D(image_left_ocv, img_scale, objects.object_list, true);
             zed.getPosition(cam_pose, REFERENCE_FRAME::CAMERA);
-            track_view_generator.generate_view(objects, cam_pose, track_view, objects.is_tracked);
+            // update birds view of tracks based on camera position and detected objects
+            track_view_generator.generate_view(objects, cam_pose, image_track_ocv, objects.is_tracked);
 #else
             cout << "Detected " << objects.object_list.size() << " Object(s)" << endl;
 #endif
@@ -166,27 +183,30 @@ int main(int argc, char **argv) {
         }
 
 #if ENABLE_GUI
-        cv::Mat left_display = slMat2cvMat(image_left);
-        cv::imshow(window_left_name, left_display);
-        cv::imshow(window_birdview_name, track_view);
-        key = cv::waitKey(33);
+        gl_viewer_available = viewer.isAvailable();
+        // as image_left_ocv and image_track_ocv are both ref of global_image, no need to update it
+        cv::imshow(window_name, global_image);
+        key = cv::waitKey(10);
         if (key == 'i') {
             track_view_generator.zoomIn();
         } else if (key == 'o') {
             track_view_generator.zoomOut();
         } else if (key == 'q') {
             quit = true;
-        } else if (key == 'a') {
+        } else if (key == 'p') {
             detection_parameters_rt.object_class_filter.clear();
-            detection_parameters_rt.object_class_filter.push_back(sl::OBJECT_CLASS::PERSON);
+            detection_parameters_rt.object_class_filter.push_back(OBJECT_CLASS::PERSON);
+            detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::PERSON] = detection_confidence;
             cout << "Person only" << endl;
-        } else if (key == 'z') {
+        } else if (key == 'v') {
             detection_parameters_rt.object_class_filter.clear();
-            detection_parameters_rt.object_class_filter.push_back(sl::OBJECT_CLASS::VEHICLE);
+            detection_parameters_rt.object_class_filter.push_back(OBJECT_CLASS::VEHICLE);
+            detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::VEHICLE] = detection_confidence;
             cout << "Vehicle only" << endl;
-        } else if (key == 'e') {
+        } else if (key == 'c') {
             detection_parameters_rt.object_class_filter.clear();
-            cout << "No filter" << endl;
+            detection_parameters_rt.object_class_detection_confidence_threshold.clear();
+            cout << "Clear Filters" << endl;
         }
         
 #endif
@@ -246,16 +266,5 @@ void parseArgs(int argc, char **argv, InitParameters& param) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;
         }
-    } else {
-        // Default
     }
-}
-
-bool checkIsJetson() {
-    bool isJetson = false;
-    struct cudaDeviceProp prop;
-    cudaGetDeviceProperties(&prop, 0);
-    int CC = (prop.major * 10 + prop.minor);
-    isJetson = ((CC == 62)/* TX2 */ || (CC == 35)/*  TX1 */ || (CC == 53) /* Nano */);
-    return isJetson;
 }

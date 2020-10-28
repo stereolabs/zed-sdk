@@ -59,7 +59,7 @@ def main():
 
     objects = sl.Objects()
     obj_runtime_param = sl.ObjectDetectionRuntimeParameters()
-    obj_runtime_param.detection_confidence_threshold = 40
+    obj_runtime_param.detection_confidence_threshold = 35
 
     while key != 113: # for 'q' key
         # Grab an image, a RuntimeParameters object must be given to grab()

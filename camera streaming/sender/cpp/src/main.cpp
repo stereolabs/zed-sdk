@@ -52,21 +52,22 @@ int main(int argc, char **argv) {
     int res_arg = parseArgs(argc, argv, init_parameters);
 
     // Open the camera
-    ERROR_CODE zed_open_state = zed.open(init_parameters);
-    if (zed_open_state != ERROR_CODE::SUCCESS) {
-        print("Camera Open", zed_open_state, "Exit program.");
+    auto returned_state = zed.open(init_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
 
     StreamingParameters stream_params;
     stream_params.codec = STREAMING_CODEC::H264;
-    stream_params.bitrate = 10000;
+    stream_params.bitrate = 8000;
+    stream_params.chunk_size = 4096;
     if (argc == 2 && res_arg == 1) stream_params.port = atoi(argv[1]);
     if (argc > 2) stream_params.port = atoi(argv[2]);
 
-    auto returneed_state = zed.enableStreaming(stream_params);
-    if (returneed_state != ERROR_CODE::SUCCESS) {
-        print("Streaming initialization error: ", returneed_state);
+    returned_state = zed.enableStreaming(stream_params);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        print("Streaming initialization error: ", returned_state);
         return EXIT_FAILURE;
     }
 

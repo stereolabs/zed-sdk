@@ -35,9 +35,9 @@ int main(int argc, char **argv) {
     init_parameters.coordinate_units = UNIT::MILLIMETER; // Use millimeter units (for depth measurements)
 
     // Open the camera
-    ERROR_CODE state = zed.open(init_parameters);
-    if (state != ERROR_CODE::SUCCESS) {
-        cout << "Error " << state << ", exit program." << endl;
+    auto returned_state = zed.open(init_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        cout << "Error " << returned_state << ", exit program." << endl;
         return EXIT_FAILURE;
     }
 
@@ -66,8 +66,11 @@ int main(int argc, char **argv) {
             sl::float4 point_cloud_value;
             point_cloud.getValue(x, y, &point_cloud_value);
 
-            float distance = sqrt(point_cloud_value.x * point_cloud_value.x + point_cloud_value.y * point_cloud_value.y + point_cloud_value.z * point_cloud_value.z);
-            cout<<"Distance to Camera at {"<<x<<";"<<y<<"}: "<<distance<<"mm"<<endl;
+            if(std::isfinite(point_cloud_value.z)){
+                float distance = sqrt(point_cloud_value.x * point_cloud_value.x + point_cloud_value.y * point_cloud_value.y + point_cloud_value.z * point_cloud_value.z);
+                cout<<"Distance to Camera at {"<<x<<";"<<y<<"}: "<<distance<<"mm"<<endl;
+            }else
+                cout<<"The Distance can not be computed at {"<<x<<";"<<y<<"}"<<endl;           
 
             // Increment the loop
             i++;

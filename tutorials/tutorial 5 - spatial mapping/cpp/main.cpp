@@ -36,24 +36,28 @@ int main(int argc, char **argv) {
     init_parameters.coordinate_units = UNIT::METER; // Set units in meters
 
     // Open the camera
-    ERROR_CODE err = zed.open(init_parameters);
-    if (err != ERROR_CODE::SUCCESS) {
-        cout << "Error " << err << ", exit program.\n";
+    auto returned_state = zed.open(init_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        cout << "Error " << returned_state << ", exit program.\n";
         return EXIT_FAILURE;
     }
 
     // Enable positional tracking with default parameters. Positional tracking needs to be enabled before using spatial mapping
     sl::PositionalTrackingParameters tracking_parameters;
-    err = zed.enablePositionalTracking(tracking_parameters);
-    if (err != ERROR_CODE::SUCCESS)
-        return -1;
+    returned_state = zed.enablePositionalTracking(tracking_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        cout << "Error " << returned_state << ", exit program.\n";
+        return EXIT_FAILURE;
+    }
 
     // Enable spatial mapping
     sl::SpatialMappingParameters mapping_parameters;
-    err = zed.enableSpatialMapping(mapping_parameters);
-    if (err != ERROR_CODE::SUCCESS)
-        return -1;
-
+    returned_state = zed.enableSpatialMapping(mapping_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        cout << "Error " << returned_state << ", exit program.\n";
+        return EXIT_FAILURE;
+    }
+    
     // Grab data during 500 frames
     int i = 0;
     sl::Mesh mesh; // Create a mesh object

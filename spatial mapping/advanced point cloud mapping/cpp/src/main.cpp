@@ -42,18 +42,18 @@ void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUC
 int main(int argc, char **argv) {
     Camera zed;
     // Set configuration parameters for the ZED
-    InitParameters initParameters;
-    initParameters.depth_mode = DEPTH_MODE::ULTRA;    
-    initParameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed    
-    parse_args(argc,argv,initParameters);
+    InitParameters init_parameters;
+    init_parameters.depth_mode = DEPTH_MODE::ULTRA;    
+    init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed    
+    parse_args(argc, argv, init_parameters);
 
     // Open the camera
-    ERROR_CODE zed_error = zed.open(initParameters);
+    auto returned_state = zed.open(init_parameters);
 
-    if (zed_error != ERROR_CODE::SUCCESS) {// Quit if an error occurred
-        print("Opening camera failed: ",zed_error);
+    if (returned_state != ERROR_CODE::SUCCESS) {// Quit if an error occurred
+        print("Open Camera", returned_state, "\nExit program.");
         zed.close();
-        return 1;
+        return EXIT_FAILURE;
     }
 
     auto camera_infos = zed.getCameraInformation();
@@ -70,13 +70,13 @@ int main(int argc, char **argv) {
     // Setup and start positional tracking
     Pose pose;
     POSITIONAL_TRACKING_STATE tracking_state = POSITIONAL_TRACKING_STATE::OFF;
-    PositionalTrackingParameters pt_param;
-    pt_param.enable_area_memory = false;
-    zed_error = zed.enablePositionalTracking(pt_param);
-    if (zed_error != ERROR_CODE::SUCCESS) {
-        print("Enabling positional tracking failed: ", zed_error);
+    PositionalTrackingParameters positional_tracking_parameters;
+    positional_tracking_parameters.enable_area_memory = false;
+    returned_state = zed.enablePositionalTracking(positional_tracking_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        print("Enabling positional tracking failed: ", returned_state);
         zed.close();
-        return 1; // Quit if an error occurred
+        return EXIT_FAILURE;
     }
 
     // Set spatial mapping parameters
@@ -94,16 +94,14 @@ int main(int argc, char **argv) {
     chrono::high_resolution_clock::time_point ts_last; 
 
     // Setup runtime parameters
-    RuntimeParameters rt;
+    RuntimeParameters runtime_parameters;
     // Use low depth confidence avoid introducing noise in the constructed model
-    rt.confidence_threshold = 50;
+    runtime_parameters.confidence_threshold = 50;
 
     auto resolution = camera_infos.camera_configuration.resolution;
 
     // Define display resolution and check that it fit at least the image resolution
-    Resolution display_resolution(720, 404);    
-    display_resolution.width = min(resolution.width,display_resolution.width);
-    display_resolution.height = min(resolution.height,display_resolution.height);        
+    Resolution display_resolution(min((int)resolution.width, 720), min((int)resolution.height, 404));
 
     // Create a Mat to contain the left image and its opencv ref
     Mat image_zed(display_resolution, MAT_TYPE::U8_C4);
@@ -112,7 +110,7 @@ int main(int argc, char **argv) {
     // Start the main loop
     while (viewer.isAvailable()) {
         // Grab a new image
-        if (zed.grab(rt) == ERROR_CODE::SUCCESS) {
+        if (zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS) {
             // Retrieve the left image
             zed.retrieveImage(image_zed, VIEW::LEFT, MEM::CPU, display_resolution);
             // Retrieve the camera pose data

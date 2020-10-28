@@ -2,6 +2,7 @@
 
 #include <cuda_gl_interop.h>
 
+using namespace std;
 
 void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suffix) {
     cout <<"[Sample]";
@@ -18,7 +19,6 @@ void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suff
         cout << " " << msg_suffix;
     cout << endl;
 }
-
 
 GLchar* MESH_VERTEX_SHADER =
 "#version 330 core\n"
@@ -83,6 +83,14 @@ MeshObject::~MeshObject() {
     }
 }
 
+void MeshObject::alloc(){
+    glGenVertexArrays(1, &vaoID_);
+    glGenBuffers(3, vboID_);
+    shader.it = Shader(MESH_VERTEX_SHADER, MESH_FRAGMENT_SHADER);
+    shader.MVP_Mat = glGetUniformLocation(shader.it.getProgramId(), "u_mvpMatrix");
+    shader.shColorLoc = glGetUniformLocation(shader.it.getProgramId(), "u_color");
+}
+
 void MeshObject::updateMesh(std::vector<sl::float3> &vertices, std::vector<sl::uint3> &triangles, std::vector<int> &border) {
     if(!need_update) {
         vert = vertices;
@@ -107,12 +115,6 @@ void MeshObject::updateMesh(std::vector<sl::float3> &vertices, std::vector<sl::u
 
 void MeshObject::pushToGPU() {
     if(need_update) {
-
-        if(vaoID_ == 0) {
-            glGenVertexArrays(1, &vaoID_);
-            glGenBuffers(3, vboID_);
-        }
-
         glBindVertexArray(vaoID_);
 
         glBindBuffer(GL_ARRAY_BUFFER, vboID_[0]);
@@ -151,17 +153,11 @@ GLViewer::GLViewer() :available(false) {
     currentInstance_ = this;
     pose.setIdentity();
     tracking_state = sl::POSITIONAL_TRACKING_STATE::OFF;
-    change_state = false;
     new_data = false;
-
     user_action.clear();
 }
 
 GLViewer::~GLViewer() {
-    glDeleteFramebuffers(1, &fbo);
-    glDeleteTextures(1, &imageTex);
-    glDeleteTextures(1, &renderedTexture);
-    glDeleteBuffers(1, &quad_vb);
 }
 
 
@@ -175,9 +171,7 @@ bool cudaSafeCall(cudaError_t err) {
 
 void GLViewer::exit() {
     if(available) {
-        image.free();
-        delete shader_mesh;
-        delete shader_image;
+        image_handler.close();
     }
     available = false;
 }
@@ -190,119 +184,104 @@ bool GLViewer::isAvailable() {
 
 void CloseFunc(void) { if(currentInstance_) currentInstance_->exit(); }
 
-bool GLViewer::init(int argc, char **argv, sl::CameraInformation &cam_infos) {
+bool GLViewer::init(int argc, char **argv, sl::CameraParameters &camLeft, bool has_imu) {
 
     glutInit(&argc, argv);
+    int wnd_w = glutGet(GLUT_SCREEN_WIDTH);
+    int wnd_h = glutGet(GLUT_SCREEN_HEIGHT);
+    int width = wnd_w * 0.9;
+    int height = wnd_h * 0.9;
+    if (width > camLeft.image_size.width && height > camLeft.image_size.height) {
+        width = camLeft.image_size.width;
+        height = camLeft.image_size.height;
+    }
+    
+    glutInitWindowSize(width, height);
+    glutInitWindowPosition(wnd_w * 0.05, wnd_h * 0.05);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
+    glutCreateWindow("ZED Plane Detection");
+    
+    reshapeCallback(width, height);
 
-    auto res_ = cam_infos.camera_configuration.resolution;
-    // Create GLUT window
-    glutInitWindowSize(res_.width, res_.height);
-    glutCreateWindow("ZED Spatial Mapping");
-
-    // Init glew after window has been created
-    glewInit();
-
-    // Create and Register OpenGL Texture for Image (RGBA -- 4channels)
-    glEnable(GL_TEXTURE_2D);
-    glGenTextures(1, &imageTex);
-    glBindTexture(GL_TEXTURE_2D, imageTex);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, res_.width, res_.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    cudaSafeCall(cudaGraphicsGLRegisterImage(&cuda_gl_ressource, imageTex, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard));
-
-    // Create GLSL Shaders for Mesh and Image
-    shader_mesh = new Shader(MESH_VERTEX_SHADER, MESH_FRAGMENT_SHADER);
-    shMVPMatrixLoc = glGetUniformLocation(shader_mesh->getProgramId(), "u_mvpMatrix");
-    shColorLoc = glGetUniformLocation(shader_mesh->getProgramId(), "u_color");
-    shader_image = new Shader(IMAGE_VERTEX_SHADER, IMAGE_FRAGMENT_SHADER);
-    texID = glGetUniformLocation(shader_image->getProgramId(), "texImage");
-
-    // Create Frame Buffer for offline rendering
-    // Here we render the composition of the image and the projection of the mesh on top of it in a texture (using FBO - Frame Buffer Object)
-    glGenFramebuffers(1, &fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-
-    // Generate a render texture (which will contain the image and mesh in wireframe overlay)
-    glGenTextures(1, &renderedTexture);
-    glBindTexture(GL_TEXTURE_2D, renderedTexture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, res_.width, res_.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-
-    // Set "renderedTexture" as our color attachment #0
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture, 0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    // Set the list of draw buffers.
-    GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    glDrawBuffers(1, DrawBuffers);
-
-    // Always check that our framebuffer is ok
-    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        print("Error : invalid FrameBuffer");
+    GLenum err = glewInit();
+    if (GLEW_OK != err){
+        std::cout << "ERROR: glewInit failed: " << glewGetErrorString(err) << "\n";
         return true;
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    // Generate a buffer to handle vertices for the GLSL shader
-    // Generate the Quad for showing the image in a full viewport
-    static const GLfloat g_quad_vertex_buffer_data[] = {
-        -1.0f, -1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f,
-        -1.0f, 1.0f, 0.0f,
-        -1.0f, 1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f};
-
-    glGenBuffers(1, &quad_vb);
-    glBindBuffer(GL_ARRAY_BUFFER, quad_vb);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_vertex_buffer_data), g_quad_vertex_buffer_data, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    glDisable(GL_TEXTURE_2D);
+    glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
+    glEnable(GL_LINE_SMOOTH);
+    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+
+    bool status_ = image_handler.initialize(camLeft.image_size);
+    if (!status_) {
+        std::cout << "ERROR: Failed to initialized Image Renderer" << std::endl;
+        return true;
+    }
+    
+    // Create the rendering camera
+    setRenderCameraProjection(camLeft, 0.1f, 50);
+
+    mesh_object.alloc();
 
     // Set glut callback before start
     glutDisplayFunc(GLViewer::drawCallback);
     glutKeyboardUpFunc(GLViewer::keyReleasedCallback);
     glutMouseFunc(GLViewer::mouseButtonCallback);
+    glutReshapeFunc(GLViewer::reshapeCallback);
     glutCloseFunc(CloseFunc);
 
-    cam_model = cam_infos.camera_model;
+    use_imu = has_imu;
+    user_action.hit_coord = sl::float2(.5f, .5f);
+
     available = true;
-
-    image.alloc(res_, sl::MAT_TYPE::U8_C4, sl::MEM::GPU);
-    cudaSafeCall(cudaGetLastError());
-
-    // Create Projection Matrix for OpenGL. We will use this matrix in combination with the Pose (on REFERENCE_FRAME::WORLD) to project the mesh on the 2D Image.
-    camera_projection(0, 0) = 1.0f / tanf(cam_infos.camera_configuration.calibration_parameters.left_cam.h_fov * 3.1416f / 180.f * 0.5f);
-    camera_projection(1, 1) = 1.0f / tanf(cam_infos.camera_configuration.calibration_parameters.left_cam.v_fov * 3.1416f / 180.f * 0.5f);
-    float znear = 0.001f;
-    float zfar = 100.f;
-    camera_projection(2, 2) = -(zfar + znear) / (zfar - znear);
-    camera_projection(2, 3) = -(2.f * zfar * znear) / (zfar - znear);
-    camera_projection(3, 2) = -1.f;
-    camera_projection(0, 2) = (res_.width - 2.f * cam_infos.camera_configuration.calibration_parameters.left_cam.cx) / res_.width;
-    camera_projection(1, 2) = (-1.f * res_.height + 2.f * cam_infos.camera_configuration.calibration_parameters.left_cam.cy) / res_.height;
-    camera_projection(3, 3) = 0.f;
-
-    user_action.hit_coord.x = res_.width / 2.;
-    user_action.hit_coord.y = res_.height / 2.;
-
-    glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
 
     return false;
 }
 
+void GLViewer::setRenderCameraProjection(sl::CameraParameters params, float znear, float zfar) {
+    // Just slightly up the ZED camera FOV to make a small black border
+    float fov_y = (params.v_fov + 0.5f) * M_PI / 180.f;
+    float fov_x = (params.h_fov + 0.5f) * M_PI / 180.f;
+
+    camera_projection(0, 0) = 1.0f / tanf(fov_x * 0.5f);
+    camera_projection(1, 1) = 1.0f / tanf(fov_y * 0.5f);
+    camera_projection(2, 2) = -(zfar + znear) / (zfar - znear);
+    camera_projection(3, 2) = -1;
+    camera_projection(2, 3) = -(2.f * zfar * znear) / (zfar - znear);
+    camera_projection(3, 3) = 0;
+
+    camera_projection(0, 0) = 1.0f / tanf(fov_x * 0.5f); //Horizontal FoV.
+    camera_projection(0, 1) = 0;
+    camera_projection(0, 2) = 2.0f * ((params.image_size.width - 1.0f * params.cx) / params.image_size.width) - 1.0f; //Horizontal offset.
+    camera_projection(0, 3) = 0;
+
+    camera_projection(1, 0) = 0;
+    camera_projection(1, 1) = 1.0f / tanf(fov_y * 0.5f); //Vertical FoV.
+    camera_projection(1, 2) = -(2.0f * ((params.image_size.height - 1.0f * params.cy) / params.image_size.height) - 1.0f); //Vertical offset.
+    camera_projection(1, 3) = 0;
+
+    camera_projection(2, 0) = 0;
+    camera_projection(2, 1) = 0;
+    camera_projection(2, 2) = -(zfar + znear) / (zfar - znear); //Near and far planes.
+    camera_projection(2, 3) = -(2.0f * zfar * znear) / (zfar - znear); //Near and far planes.
+
+    camera_projection(3, 0) = 0;
+    camera_projection(3, 1) = 0;
+    camera_projection(3, 2) = -1;
+    camera_projection(3, 3) = 0.0f;
+}
+
 void GLViewer::drawCallback() {
     currentInstance_->render();
+}
+
+void GLViewer::idle() {
+    glutPostRedisplay();
 }
 
 void GLViewer::keyReleasedCallback(unsigned char c, int x, int y) {
@@ -318,12 +297,18 @@ void GLViewer::keyReleasedCallback(unsigned char c, int x, int y) {
         currentInstance_->exit();
 }
 
+void GLViewer::reshapeCallback(int width, int height) {
+    glViewport(0, 0, width, height);
+    currentInstance_->wnd_w = width;
+    currentInstance_->wnd_h = height;
+}
+
 void GLViewer::mouseButtonCallback(int button, int state, int x, int y) {
     if(button < 3) {
         if(state == GLUT_DOWN) {
             currentInstance_->user_action.hit = true;
-            currentInstance_->user_action.hit_coord.x = x;
-            currentInstance_->user_action.hit_coord.y = y;
+            currentInstance_->user_action.hit_coord.x = (x / (1.f*currentInstance_->wnd_w));
+            currentInstance_->user_action.hit_coord.y = (y / (1.f*currentInstance_->wnd_h));
         }
     }
 }
@@ -331,8 +316,7 @@ void GLViewer::mouseButtonCallback(int button, int state, int x, int y) {
 UserAction GLViewer::updateImageAndState(sl::Mat &im, sl::Transform &pose_, sl::POSITIONAL_TRACKING_STATE track_state) {
     if(mtx.try_lock()) {
         if(available) {
-            image.setFrom(im, sl::COPY_TYPE::GPU_GPU);
-            cudaSafeCall(cudaGetLastError());
+            image_handler.pushNewImage(im);
             pose = pose_;
             tracking_state = track_state;
         }
@@ -347,16 +331,18 @@ UserAction GLViewer::updateImageAndState(sl::Mat &im, sl::Transform &pose_, sl::
 
 void GLViewer::updateMesh(sl::Mesh &mesh, sl::PLANE_TYPE type) {
     if(mtx.try_lock()) {
-        mtx.unlock();
         auto edges = mesh.getBoundaries();
         mesh_object.updateMesh(mesh.vertices, mesh.triangles, edges);
         mesh_object.type = type;
+        mtx.unlock();
     }
 }
 
 void GLViewer::render() {
     if(available) {
         mtx.lock();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClearColor(0, 0, 0, 1.f);
         update();
         draw();
         printText();
@@ -369,12 +355,6 @@ void GLViewer::render() {
 void GLViewer::update() {
     // Update GPU data
     if(new_data) {
-        cudaArray_t ArrIm;
-        cudaSafeCall(cudaGraphicsMapResources(1, &cuda_gl_ressource, 0));
-        cudaSafeCall(cudaGraphicsSubResourceGetMappedArray(&ArrIm, cuda_gl_ressource, 0, 0));
-        cudaSafeCall(cudaMemcpy2DToArray(ArrIm, 0, 0, image.getPtr<sl::uchar1>(sl::MEM::GPU), image.getStepBytes(sl::MEM::GPU), image.getPixelBytes()*image.getWidth(), image.getHeight(), cudaMemcpyDeviceToDevice));
-        cudaSafeCall(cudaGraphicsUnmapResources(1, &cuda_gl_ressource, 0));
-
         mesh_object.pushToGPU();
         new_data = false;
     }
@@ -396,82 +376,43 @@ sl::float3 getPlaneColor(sl::PLANE_TYPE type) {
 
 void GLViewer::draw() {
     if(available) {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_TEXTURE_2D);
-        glActiveTexture(GL_TEXTURE0);
-
-        // Render image and wireframe mesh into a texture using frame buffer
-        // Bind the frame buffer and specify the viewport (full screen)
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-
-        // Render the ZED view (Left) in the framebuffer
-        glUseProgram(shader_image->getProgramId());
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, imageTex);
-        glUniform1i(texID, 0);
-        //invert y axis and color for this image (since its reverted from cuda array)
-        glUniform1i(glGetUniformLocation(shader_image->getProgramId(), "revert"), 1);
-        glUniform1i(glGetUniformLocation(shader_image->getProgramId(), "rgbflip"), 1);
-
-        glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, quad_vb);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        glDisableVertexAttribArray(0);
-        glUseProgram(0);
+        image_handler.draw();
 
         // If the Positional tracking is good, we can draw the mesh over the current image
         if ((tracking_state == sl::POSITIONAL_TRACKING_STATE::OK)) {
             glDisable(GL_TEXTURE_2D);
             // Send the projection and the Pose to the GLSL shader to make the projection of the 2D image.
             sl::Transform vpMatrix = camera_projection * sl::Transform::inverse(pose);
-            glUseProgram(shader_mesh->getProgramId());
-            glUniformMatrix4fv(shMVPMatrixLoc, 1, GL_TRUE, vpMatrix.m);
+            glUseProgram(mesh_object.shader.it.getProgramId());
+            glUniformMatrix4fv(mesh_object.shader.MVP_Mat, 1, GL_TRUE, vpMatrix.m);
 
             sl::float3 clr_plane = getPlaneColor(mesh_object.type);
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            glUniform3fv(shColorLoc, 1, clr_plane.v);
+            glUniform3fv(mesh_object.shader.shColorLoc, 1, clr_plane.v);
             mesh_object.draw();
 
             glLineWidth(0.5);
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            glUniform3fv(shColorLoc, 1, clr_plane.v);
+            glUniform3fv(mesh_object.shader.shColorLoc, 1, clr_plane.v);
             mesh_object.draw();
             glUseProgram(0);
         }
-        // Unbind the framebuffer since the texture is now updated
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-        // Render the texture to the screen
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glUseProgram(shader_image->getProgramId());
-        glBindTexture(GL_TEXTURE_2D, renderedTexture);
-        glUniform1i(texID, 0);
-        glUniform1i(glGetUniformLocation(shader_image->getProgramId(), "revert"), 0);
-        glUniform1i(glGetUniformLocation(shader_image->getProgramId(), "rgbflip"), 0);
-        glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, quad_vb);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
-        glDisableVertexAttribArray(0);
-        glUseProgram(0);
-        glDisable(GL_TEXTURE_2D);
-        
         /// Draw Hit 
-        float cx = (user_action.hit_coord.x / (float) image.getWidth()) * 2 - 1;
-        float cy = ((user_action.hit_coord.y / (float) image.getHeight()) * 2 - 1)*-1.f;
+        float cx = user_action.hit_coord.x * 2.f - 1.f;
+        float cy = (user_action.hit_coord.y * 2.f - 1.f)*-1.f;
 
         float lx = 0.02f;
-        float ly = lx * 16. / 9.;
+        float ly = lx * (wnd_w/(1.f*wnd_h));
 
-        glLineWidth(1.5);
-        glColor3f(0.25f, 0.55f, 0.85f);
+        glLineWidth(2);
+        glColor3f(0.2f, 0.45f, 0.9f);
         glBegin(GL_LINES);
         glVertex3f(cx - lx, cy, 0.0);
         glVertex3f(cx + lx, cy, 0.0);
         glVertex3f(cx, cy - ly, 0.0);
         glVertex3f(cx, cy + ly, 0.0);
-        glEnd();
+        glEnd();        
     }
 }
 
@@ -497,7 +438,7 @@ void GLViewer::printText() {
             printGL(-0.99f, 0.85f, "Press 'p' key to get plane at hit.");
         }
 
-        if(cam_model == sl::MODEL::ZED_M) {
+        if(use_imu) {
             float y_start = -0.99f;
             for(int t = 0; t < static_cast<int>(sl::PLANE_TYPE::LAST); t++) {
                 sl::PLANE_TYPE type = static_cast<sl::PLANE_TYPE> (t);
@@ -511,7 +452,6 @@ void GLViewer::printText() {
         }
     }
 }
-
 
 Shader::Shader(GLchar* vs, GLchar* fs) {
     if(!compile(verterxId_, GL_VERTEX_SHADER, vs)) {
@@ -586,4 +526,70 @@ bool Shader::compile(GLuint &shaderId, GLenum type, GLchar* src) {
         return false;
     }
     return true;
+}
+
+ImageHandler::ImageHandler() {}
+
+ImageHandler::~ImageHandler() {
+    close();
+}
+
+void ImageHandler::close() {
+    glDeleteTextures(1, &imageTex);
+}
+
+bool ImageHandler::initialize(sl::Resolution res) {
+    shader.it = Shader(IMAGE_VERTEX_SHADER, IMAGE_FRAGMENT_SHADER);
+    texID = glGetUniformLocation(shader.it.getProgramId(), "texImage");
+    static const GLfloat g_quad_vertex_buffer_data[] = {
+        -1.0f, -1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f,
+        -1.0f, 1.0f, 0.0f,
+        -1.0f, 1.0f, 0.0f,
+        1.0f, -1.0f, 0.0f,
+        1.0f, 1.0f, 0.0f };
+
+    glGenBuffers(1, &quad_vb);
+    glBindBuffer(GL_ARRAY_BUFFER, quad_vb);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(g_quad_vertex_buffer_data), g_quad_vertex_buffer_data, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glEnable(GL_TEXTURE_2D);
+    glGenTextures(1, &imageTex);
+    glBindTexture(GL_TEXTURE_2D, imageTex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, res.width, res.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    cudaError_t err = cudaGraphicsGLRegisterImage(&cuda_gl_ressource, imageTex, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
+    return (err == cudaSuccess);
+}
+
+void ImageHandler::pushNewImage(sl::Mat& image) {
+    cudaArray_t ArrIm;
+    cudaGraphicsMapResources(1, &cuda_gl_ressource, 0);
+    cudaGraphicsSubResourceGetMappedArray(&ArrIm, cuda_gl_ressource, 0, 0);
+    cudaMemcpy2DToArray(ArrIm, 0, 0, image.getPtr<sl::uchar1>(sl::MEM::GPU), image.getStepBytes(sl::MEM::GPU), image.getPixelBytes() * image.getWidth(), image.getHeight(), cudaMemcpyDeviceToDevice);
+    cudaGraphicsUnmapResources(1, &cuda_gl_ressource, 0);
+}
+
+void ImageHandler::draw() {
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    glEnable(GL_TEXTURE_2D);
+    glUseProgram(shader.it.getProgramId());
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, imageTex);
+    glUniform1i(texID, 0);
+    //invert y axis and color for this image (since its reverted from cuda array)
+    glUniform1i(glGetUniformLocation(shader.it.getProgramId(), "revert"), 1);
+    glUniform1i(glGetUniformLocation(shader.it.getProgramId(), "rgbflip"), 1);
+
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, quad_vb);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDisableVertexAttribArray(0);
+    glUseProgram(0);
+    glDisable(GL_TEXTURE_2D);
 }

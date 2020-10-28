@@ -110,26 +110,22 @@ int main(int argc, char **argv) {
 
     // Get image size
     Resolution image_size = zed.getCameraInformation().camera_configuration.resolution;
-    int width = image_size.width;
-    int height = image_size.height;
-    int width_sbs = image_size.width * 2;
 
-    // Prepare side by side image containers
-    cv::Size image_size_sbs(width, height); // Size of the side by side image
-    cv::Mat svo_image_sbs_rgba(image_size_sbs, CV_8UC4); // Container for ZED RGBA side by side image
-    cv::Mat ocv_image_sbs_rgb(image_size_sbs, CV_8UC3); // Container for OpenCV RGB side by side image
-
-    Mat left_image(width, height, MAT_TYPE::U8_C4);
+    Mat left_image(image_size, MAT_TYPE::U8_C4);
     cv::Mat left_image_ocv = slMat2cvMat(left_image);
 
-    Mat right_image(width, height, MAT_TYPE::U8_C4);
+    Mat right_image(image_size, MAT_TYPE::U8_C4);
     cv::Mat right_image_ocv = slMat2cvMat(right_image);
 
-    Mat depth_image(width, height, MAT_TYPE::F32_C1);
+    Mat depth_image(image_size, MAT_TYPE::F32_C1);
     cv::Mat depth_image_ocv = slMat2cvMat(depth_image);
 
+    cv::Mat image_sideByside;
+    if(output_as_video)
+        image_sideByside = cv::Mat(image_size.height, image_size.width *2, CV_8UC3);
+
     // Create video writer
-    cv::VideoWriter* video_writer = 0;
+    cv::VideoWriter video_writer;
     if (output_as_video) {
 #if (defined(CV_VERSION_EPOCH) && CV_VERSION_EPOCH == 2)
         int fourcc = CV_FOURCC('M','J','P','G');
@@ -137,8 +133,8 @@ int main(int argc, char **argv) {
         int fourcc = cv::VideoWriter::fourcc('M', '4', 'S', '2'); // MPEG-4 part 2 codec
 #endif
         int frame_rate = fmax(zed.getInitParameters().camera_fps, 25); // Minimum write rate in OpenCV is 25
-        video_writer = new cv::VideoWriter(output_path, fourcc, frame_rate, image_size_sbs);
-        if (!video_writer->isOpened()) {
+        video_writer.open(output_path, fourcc, frame_rate, cv::Size(image_size.width*2, image_size.height));
+        if (!video_writer.isOpened()) {
             print("Error: OpenCV video writer cannot be opened. Please check the .avi file path and write permissions.");
             zed.close();
             return EXIT_FAILURE;
@@ -151,14 +147,11 @@ int main(int argc, char **argv) {
     // Start SVO conversion to AVI/SEQUENCE
     print("Converting SVO... Use Ctrl-C to interrupt conversion.");
 
-
     int nb_frames = zed.getSVONumberOfFrames();
     int svo_position = 0;
+    zed.setSVOPosition(svo_position);
 
     SetCtrlHandler();
-
-    print("Set SVO Position to 0");
-    zed.setSVOPosition(0);
 
     while (!exit_app) {
         sl::ERROR_CODE err = zed.grab(rt_param);
@@ -183,12 +176,11 @@ int main(int argc, char **argv) {
             }
 
             if (output_as_video) {
-cv::Mat bar = slMat2cvMat(left_image);
                 // Convert SVO image from RGBA to RGB
-                cv::cvtColor(bar, left_image_ocv, cv::COLOR_RGBA2RGB);
-
+                cv::cvtColor(left_image_ocv, image_sideByside(cv::Rect(0,0,image_size.width,image_size.height)), cv::COLOR_BGRA2BGR);
+                cv::cvtColor(right_image_ocv, image_sideByside(cv::Rect(image_size.width,0,image_size.width,image_size.height)), cv::COLOR_BGRA2BGR);
                 // Write the RGB image in the video
-                video_writer->write(left_image_ocv);
+                video_writer.write(image_sideByside);
             } else {
                 // Generate filenames
                 ostringstream filename1;
@@ -198,7 +190,6 @@ cv::Mat bar = slMat2cvMat(left_image);
 
                 // Save Left images
                 cv::imwrite(filename1.str(), left_image_ocv);
-
 
                 // Save depth
                 if (app_type != LEFT_AND_DEPTH_16)
@@ -222,10 +213,9 @@ cv::Mat bar = slMat2cvMat(left_image);
             exit_app = true;
         }
     }
-    if (output_as_video && video_writer) {
+    if (output_as_video) {
         // Close the video writer
-        video_writer->release();
-        delete video_writer;
+        video_writer.release();
     }
 
     zed.close();
