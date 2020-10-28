@@ -21,74 +21,53 @@
 """
     Position sample shows the position of the ZED camera in a OpenGL window.
 """
-from OpenGL.GLUT import *
-import positional_tracking.tracking_viewer as tv
+
+import sys
+import positional_tracking.tracking_viewer as gl
 import pyzed.sl as sl
-import threading
 
 
-def main():
+if __name__ == "__main__":
 
     init = sl.InitParameters(camera_resolution=sl.RESOLUTION.HD720,
                                  depth_mode=sl.DEPTH_MODE.PERFORMANCE,
                                  coordinate_units=sl.UNIT.METER,
                                  coordinate_system=sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP,
                                  sdk_verbose=True)
-    cam = sl.Camera()
-    status = cam.open(init)
+    zed = sl.Camera()
+    status = zed.open(init)
     if status != sl.ERROR_CODE.SUCCESS:
         print(repr(status))
         exit()
 
-    transform = sl.Transform()
-    tracking_params = sl.PositionalTrackingParameters(transform)
-    cam.enable_positional_tracking(tracking_params)
+    tracking_params = sl.PositionalTrackingParameters()
+    zed.enable_positional_tracking(tracking_params)
 
     runtime = sl.RuntimeParameters()
     camera_pose = sl.Pose()
 
-    viewer = tv.PyTrackingViewer()
-    viewer.init()
+    camera_info = zed.get_camera_information()
+    # Create OpenGL viewer
+    viewer = gl.GLViewer()
+    viewer.init(len(sys.argv),sys.argv,camera_info.calibration_parameters.left_cam)
 
     py_translation = sl.Translation()
+    pose_data = sl.Transform()
 
-    start_zed(cam, runtime, camera_pose, viewer, py_translation)
+    text_translation = ""
+    text_rotation = ""
 
-    viewer.exit()
-    glutMainLoop()
-
-
-def start_zed(cam, runtime, camera_pose, viewer, py_translation):
-    zed_callback = threading.Thread(target=run, args=(cam, runtime, camera_pose, viewer, py_translation))
-    zed_callback.start()
-
-
-def run(cam, runtime, camera_pose, viewer, py_translation):
-    while True:
-        if cam.grab(runtime) == sl.ERROR_CODE.SUCCESS:
-            tracking_state = cam.get_position(camera_pose)
-            text_translation = ""
-            text_rotation = ""
+    while viewer.is_available():
+        if zed.grab(runtime) == sl.ERROR_CODE.SUCCESS:
+            tracking_state = zed.get_position(camera_pose)
             if tracking_state == sl.POSITIONAL_TRACKING_STATE.OK:
                 rotation = camera_pose.get_rotation_vector()
-                rx = round(rotation[0], 2)
-                ry = round(rotation[1], 2)
-                rz = round(rotation[2], 2)
-
                 translation = camera_pose.get_translation(py_translation)
-                tx = round(translation.get()[0], 2)
-                ty = round(translation.get()[1], 2)
-                tz = round(translation.get()[2], 2)
-
-                text_translation = str((tx, ty, tz))
-                text_rotation = str((rx, ry, rz))
+                text_translation = str((round(rotation[0], 2), round(rotation[1], 2), round(rotation[2], 2)))
+                text_rotation = str((round(translation.get()[0], 2), round(translation.get()[1], 2), round(translation.get()[2], 2)))
                 pose_data = camera_pose.pose_data(sl.Transform())
-                viewer.update_zed_position(pose_data)
+            viewer.updateData(pose_data, text_translation, text_rotation, tracking_state)
 
-            viewer.update_text(text_translation, text_rotation, tracking_state)
-        else:
-            sl.c_sleep_ms(1)
+    viewer.exit()
+    zed.close()
 
-
-if __name__ == "__main__":
-    main()

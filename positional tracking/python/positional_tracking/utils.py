@@ -3,59 +3,59 @@ import math
 M_PI = 3.1416
 
 
-class Double3colorStruct:
-    def __init__(self):
-        self.x = 0
-        self.y = 0
-        self.z = 0
-        self.r = 0
-        self.g = 0
-        self.b = 0
+# class Double3colorStruct:
+#     def __init__(self):
+#         self.x = 0
+#         self.y = 0
+#         self.z = 0
+#         self.r = 0
+#         self.g = 0
+#         self.b = 0
 
-    def init_xyz(self, x, y, z):
-        self.x = x
-        self.y = y
-        self.z = z
-        self.r = 0
-        self.g = 255
-        self.b = 255
+#     def init_xyz(self, x, y, z):
+#         self.x = x
+#         self.y = y
+#         self.z = z
+#         self.r = 0
+#         self.g = 255
+#         self.b = 255
 
-    def init_xyzrgb(self, x, y, z, r, g, b):
-        self.x = x
-        self.y = y
-        self.z = z
-        self.r = r
-        self.g = g
-        self.b = b
+#     def init_xyzrgb(self, x, y, z, r, g, b):
+#         self.x = x
+#         self.y = y
+#         self.z = z
+#         self.r = r
+#         self.g = g
+#         self.b = b
 
-    def __mul__(self, other):
-        self.x = self. x * other
-        self.y = self.y * other
-        self.z = self.z * other
-        return self
+#     def __mul__(self, other):
+#         self.x = self. x * other
+#         self.y = self.y * other
+#         self.z = self.z * other
+#         return self
 
-    def __div__(self, other):
-        self.x = self.x / other
-        self.y = self.y / other
-        self.z = self.z / other
-        return self
+#     def __div__(self, other):
+#         self.x = self.x / other
+#         self.y = self.y / other
+#         self.z = self.z / other
+#         return self
 
-    def set_color(self, r, g, b):
-        self.r = r
-        self.g = g
-        self.b = b
+#     def set_color(self, r, g, b):
+#         self.r = r
+#         self.g = g
+#         self.b = b
 
-    def set_coord(self, x, y, z):
-        self.x = x
-        self.y = y
-        self.z = z
+#     def set_coord(self, x, y, z):
+#         self.x = x
+#         self.y = y
+#         self.z = z
 
-    def transform(self, path):
-        x_tmp = self.x * path[0, 0] + self.y * path[0, 1] + self.z * path[0, 2] + path[0, 3]
-        y_tmp = self.x * path[1, 0] + self.y * path[1, 1] + self.z * path[1, 2] + path[1, 3]
-        self.z = self.x * path[2, 0] + self.y * path[2, 1] + self.z * path[2, 2] + path[2, 3]
-        self.x = x_tmp
-        self.y = y_tmp
+#     def transform(self, path):
+#         x_tmp = self.x * path[0, 0] + self.y * path[0, 1] + self.z * path[0, 2] + path[0, 3]
+#         y_tmp = self.x * path[1, 0] + self.y * path[1, 1] + self.z * path[1, 2] + path[1, 3]
+#         self.z = self.x * path[2, 0] + self.y * path[2, 1] + self.z * path[2, 2] + path[2, 3]
+#         self.x = x_tmp
+#         self.y = y_tmp
 
 
 def d2r(degree):
