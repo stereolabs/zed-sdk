@@ -18,18 +18,14 @@
 #
 ########################################################################
 
-"""
-    Position sample shows the position of the ZED camera in a OpenGL window.
-"""
-
 import sys
-import positional_tracking.tracking_viewer as gl
+import ogl_viewer.ogl_viewer as gl
 import pyzed.sl as sl
-
 
 if __name__ == "__main__":
 
     init = sl.InitParameters(camera_resolution=sl.RESOLUTION.HD720,
+                                 depth_mode=sl.DEPTH_MODE.ULTRA,
                                  coordinate_units=sl.UNIT.METER,
                                  coordinate_system=sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP)
     zed = sl.Camera()
@@ -38,34 +34,21 @@ if __name__ == "__main__":
         print(repr(status))
         exit()
 
-    tracking_params = sl.PositionalTrackingParameters()
-    zed.enable_positional_tracking(tracking_params)
+    res = sl.Resolution()
+    res.width = 720
+    res.height = 404
 
-    runtime = sl.RuntimeParameters()
-    camera_pose = sl.Pose()
-
-    camera_info = zed.get_camera_information()
+    camera_model = zed.get_camera_information().camera_model
     # Create OpenGL viewer
     viewer = gl.GLViewer()
-    viewer.init(len(sys.argv),sys.argv,camera_info.camera_model)
+    viewer.init(len(sys.argv), sys.argv, camera_model, res)
 
-    py_translation = sl.Translation()
-    pose_data = sl.Transform()
-
-    text_translation = ""
-    text_rotation = ""
+    point_cloud = sl.Mat(res.width, res.height, sl.MAT_TYPE.F32_C4, sl.MEM.CPU)
 
     while viewer.is_available():
-        if zed.grab(runtime) == sl.ERROR_CODE.SUCCESS:
-            tracking_state = zed.get_position(camera_pose)
-            if tracking_state == sl.POSITIONAL_TRACKING_STATE.OK:
-                rotation = camera_pose.get_rotation_vector()
-                translation = camera_pose.get_translation(py_translation)
-                text_translation = str((round(rotation[0], 2), round(rotation[1], 2), round(rotation[2], 2)))
-                text_rotation = str((round(translation.get()[0], 2), round(translation.get()[1], 2), round(translation.get()[2], 2)))
-                pose_data = camera_pose.pose_data(sl.Transform())
-            viewer.updateData(pose_data, text_translation, text_rotation, tracking_state)
+        if zed.grab() == sl.ERROR_CODE.SUCCESS:
+            zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA,sl.MEM.CPU, res)
+            viewer.updateData(point_cloud)
 
     viewer.exit()
     zed.close()
-
