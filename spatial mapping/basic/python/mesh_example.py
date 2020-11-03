@@ -23,120 +23,141 @@
     parameters can be saved.
 """
 import sys
+import time
 import pyzed.sl as sl
+import ogl_viewer.gl_viewer as gl
 
 
 def main():
+    print("Running Spatial Mapping sample ... Press 'q' to quit")
 
-    if len(sys.argv) != 2:
-        print("Please specify path to .svo file.")
-        exit()
+    # Create a Camera object
+    zed = sl.Camera()
 
-    filepath = sys.argv[1]
-    print("Reading SVO file: {0}".format(filepath))
+    # Create a InitParameters object and set configuration parameters
+    init_params = sl.InitParameters()
+    init_params.camera_resolution = sl.RESOLUTION.HD720  # Use HD720 video mode
+    init_params.coordinate_units = sl.UNIT.METER         # Set coordinate units
+    init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP  # OpenGL coordinates
+    init_params.camera_fps = 15                          # Set fps at 15
 
-    cam = sl.Camera()
-    input_type = sl.InputType()
-    input_type.set_from_svo_file(filepath)
-    init = sl.InitParameters()
-    init.input = input_type
-    status = cam.open(init)
+    # If applicable, use the SVO given as parameter
+    # Otherwise use ZED live stream
+    if len(sys.argv) == 2:
+        filepath = sys.argv[1]
+        print("Using SVO file: {0}".format(filepath))
+        init_params.set_from_svo_file(filepath)
+
+    # Open the camera
+    status = zed.open(init_params)
     if status != sl.ERROR_CODE.SUCCESS:
         print(repr(status))
         exit()
 
+    # Get camera parameters
+    camera_parameters = zed.get_camera_information().camera_configuration.calibration_parameters.left_cam
+
+    pymesh = sl.Mesh()        # Current incremental mesh
+    image = sl.Mat()          # Left image from camera
+    pose = sl.Pose()          # Camera pose tracking data
+
+    viewer = gl.GLViewer()
+    viewer.init(camera_parameters, pymesh)
+
+    spatial_mapping_parameters = sl.SpatialMappingParameters()
+    tracking_state = sl.POSITIONAL_TRACKING_STATE.OFF
+    mapping_state = sl.SPATIAL_MAPPING_STATE.NOT_ENABLED
+    mapping_activated = False
+    last_call = time.time()             # Timestamp of last mesh request
+
+    # Enable positional tracking
+    err = zed.enable_positional_tracking()
+    if err != sl.ERROR_CODE.SUCCESS:
+        print(repr(err))
+        exit()
+
+    # Set runtime parameters
     runtime = sl.RuntimeParameters()
-    spatial = sl.SpatialMappingParameters()
-    transform = sl.Transform()
-    tracking = sl.PositionalTrackingParameters(transform)
 
-    cam.enable_positional_tracking(tracking)
-    cam.enable_spatial_mapping(spatial)
+    while viewer.is_available():
+        # Grab an image, a RuntimeParameters object must be given to grab()
+        if zed.grab(runtime) == sl.ERROR_CODE.SUCCESS:
+            # Retrieve left image
+            zed.retrieve_image(image, sl.VIEW.LEFT)
+            # Update pose data (used for projection of the mesh over the current image)
+            tracking_state = zed.get_position(pose)
 
-    pymesh = sl.Mesh()
-    print("Processing...")
-    for i in range(200):
-        cam.grab(runtime)
-        cam.request_spatial_map_async()
+            if mapping_activated:
+                mapping_state = zed.get_spatial_mapping_state()
+                # Compute elapsed time since the last call of Camera.request_spatial_map_async()
+                duration = time.time() - last_call  
+                # Ask for a mesh update if 500ms elapsed since last request
+                if(duration > 0.500 and viewer.chunks_updated()):
+                    zed.request_spatial_map_async()
+                    last_call = time.time()
+                
+                if zed.get_spatial_map_request_status_async() == sl.ERROR_CODE.SUCCESS:
+                    zed.retrieve_spatial_map_async(pymesh)
+                    viewer.update_chunks()
+                
+            change_state = viewer.update_view(image, pose.pose_data(), tracking_state, mapping_state)
 
-    cam.extract_whole_spatial_map(pymesh)
-    cam.disable_positional_tracking()
-    cam.disable_spatial_mapping()
+            if change_state:
+                if not mapping_activated:
+                    init_pose = sl.Transform()
+                    zed.reset_positional_tracking(init_pose)
 
-    filter_params = sl.MeshFilterParameters()
-    filter_params.set(sl.MESH_FILTER.HIGH)
-    print("Filtering params : {0}.".format(pymesh.filter(filter_params)))
+                    # Configure spatial mapping parameters
+                    spatial_mapping_parameters.resolution_meter = sl.SpatialMappingParameters().get_resolution_preset(sl.MAPPING_RESOLUTION.MEDIUM)
+                    spatial_mapping_parameters.use_chunk_only = True
+                    spatial_mapping_parameters.save_texture = False         # Set to True to apply texture over the created mesh
+                    # TODO FPC
+                    spatial_mapping_parameters.map_type = sl.SPATIAL_MAP_TYPE.MESH
 
-    apply_texture = pymesh.apply_texture(sl.MESH_TEXTURE_FORMAT.RGBA)
-    print("Applying texture : {0}.".format(apply_texture))
-    print_mesh_information(pymesh, apply_texture)
+                    # Enable spatial mapping
+                    zed.enable_spatial_mapping()
 
-    save_filter(filter_params)
-    save_mesh(pymesh)
-    cam.close()
-    print("\nFINISH")
+                    # Clear previous mesh data
+                    pymesh.clear()
+                    viewer.clear_current_mesh()
 
+                    # Start timer
+                    last_call = time.time()
 
-def print_mesh_information(pymesh, apply_texture):
-    while True:
-        res = input("Do you want to display mesh information? [y/n]: ")
-        if res == "y":
-            if apply_texture:
-                print("Vertices : \n{0} \n".format(pymesh.vertices))
-                print("Uv : \n{0} \n".format(pymesh.uv))
-                print("Normals : \n{0} \n".format(pymesh.normals))
-                print("Triangles : \n{0} \n".format(pymesh.triangles))
-                break
-            else:
-                print("Cannot display information of the sl.")
-                break
-        if res == "n":
-            print("Mesh information will not be displayed.")
-            break
-        else:
-            print("Error, please enter [y/n].")
-
-
-def save_filter(filter_params):
-    while True:
-        res = input("Do you want to save the mesh filter parameters? [y/n]: ")
-        if res == "y":
-            params = sl.ERROR_CODE.FAILURE
-            while params != sl.ERROR_CODE.SUCCESS:
-                filepath = input("Enter filepath name : ")
-                params = filter_params.save(filepath)
-                print("Saving mesh filter parameters: {0}".format(repr(params)))
-                if params:
-                    break
+                    mapping_activated = True
                 else:
-                    print("Help : you must enter the filepath + filename without extension.")
-            break
-        elif res == "n":
-            print("Mesh filter parameters will not be saved.")
-            break
-        else:
-            print("Error, please enter [y/n].")
+                    # Extract whole mesh
+                    zed.extract_whole_spatial_map(pymesh)
 
+                    # if mesh
+                    filter_params = sl.MeshFilterParameters()
+                    filter_params.set(sl.MESH_FILTER.MEDIUM)  #sl.MESH_FILTER.HIGH
+                    # Filter the extracted mesh
+                    pymesh.filter(filter_params, True)
+                    viewer.clear_current_mesh()
 
-def save_mesh(pymesh):
-    while True:
-        res = input("Do you want to save the mesh? [y/n]: ")
-        if res == "y":
-            msh = sl.ERROR_CODE.FAILURE
-            while msh != sl.ERROR_CODE.SUCCESS:
-                filepath = input("Enter filepath name: ")
-                msh = pymesh.save(filepath)
-                print("Saving mesh: {0}".format(repr(msh)))
-                if msh:
-                    break
-                else:
-                    print("Help : you must enter the filepath + filename without extension.")
-            break
-        elif res == "n":
-            print("Mesh will not be saved.")
-            break
-        else:
-            print("Error, please enter [y/n].")
+                    # If textures have been saved during spatial mapping, apply them to the mesh
+                    if(spatial_mapping_parameters.save_texture):
+                        print("Save texture set to : {}".format(spatial_mapping_parameters.save_texture))
+                        pymesh.apply_texture(sl.MESH_TEXTURE_FORMAT.RGBA)
 
+                    # Save mesh as an obj file
+                    filepath = "mesh_gen.obj"
+                    status = pymesh.save(filepath)
+                    if status:
+                        print("Mesh saved under " + filepath)
+                    else:
+                        print("Failed to save the mesh under " + filepath)
+                    
+                    mapping_state = sl.SPATIAL_MAPPING_STATE.NOT_ENABLED
+                    mapping_activated = False
+    
+    image.free(memory_type=sl.MEM.CPU)
+    pymesh.clear()
+    # Disable modules and close camera
+    zed.disable_spatial_mapping()
+    zed.disable_positional_tracking()
+    zed.close()
+    
 if __name__ == "__main__":
     main()
