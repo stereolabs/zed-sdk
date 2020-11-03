@@ -12,27 +12,6 @@ import pyzed.sl as sl
 
 M_PI = 3.1415926
 
-VERTEX_SHADER = """
-# version 330 core
-layout(location = 0) in vec3 in_Vertex;
-layout(location = 1) in vec4 in_Color;
-uniform mat4 u_mvpMatrix;
-out vec4 b_color;
-void main() {
-    b_color = in_Color;
-    gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);
-}
-"""
-
-FRAGMENT_SHADER = """
-# version 330 core
-in vec4 b_color;
-layout(location = 0) out vec4 out_Color;
-void main() {
-   out_Color = b_color;
-}
-"""
-
 SK_VERTEX_SHADER = """
 # version 330 core
 layout(location = 0) in vec3 in_Vertex;
@@ -58,25 +37,15 @@ in vec3 b_position;
 in vec3 b_normal;
 out vec4 out_Color;
 void main() {
-	vec3 lightPosition = vec3(0, 10, 0);
-	vec3 lightColor = vec3(1,1,1);
+	vec3 lightPosition = vec3(0, 2, 1);
 	float ambientStrength = 0.3;
+	vec3 lightColor = vec3(0.75, 0.75, 0.9);
 	vec3 ambient = ambientStrength * lightColor;
-	vec3 norm = normalize(b_normal);
 	vec3 lightDir = normalize(lightPosition - b_position);
 	float diffuse = (1 - ambientStrength) * max(dot(b_normal, lightDir), 0.0);
     out_Color = vec4(b_color.rgb * (diffuse + ambient), 1);
 }
 """
-
-CLASS_COLORS = np.array([
-	[44, 117, 255]          # People
-	, [255, 0, 255]         # Vehicle
-	, [0, 0, 255]	
-    , [0, 255, 255]	
-    , [0, 255, 0]	
-    , [255, 255, 255]]
-    , np.float32)
 
 ID_COLORS = np.array([
 	[0.231, 0.909, 0.69]	
@@ -86,21 +55,13 @@ ID_COLORS = np.array([
     , [0.989, 0.388, 0.419]]
     , np.float32)
 
-
-def get_color_class(_idx):
-    _idx = min(5, _idx)
-    clr = [CLASS_COLORS[_idx][0], CLASS_COLORS[_idx][1], CLASS_COLORS[_idx][2], 1.0]
-    return np.divide(clr, 255.0)
-
 def generate_color_id(_idx):
     clr = []
     if _idx < 0:
-        clr = [236, 184, 36, 255]
-        clr = np.divide(clr, 255.0)
+        clr = [0.84, 0.52, 0.1, 1.]
     else:
         offset = _idx % 5
         clr = [ID_COLORS[offset][0], ID_COLORS[offset][1], ID_COLORS[offset][2], 1]
-        # clr = np.array([ID_COLORS[offset][0], ID_COLORS[offset][1], ID_COLORS[offset][2], 1], np.float32)
     return clr
 
 
@@ -157,7 +118,7 @@ class Simple3DObject:
         self.drawing_type = GL_TRIANGLES
         self.is_static = _is_static
         self.elementbufferSize = 0
-        self.can_draw = False
+        self.is_init = False
 
         self.vertices = array.array('f')
         self.colors = array.array('f')
@@ -165,7 +126,7 @@ class Simple3DObject:
         self.indices = array.array('I')
 
     def __del__(self):
-        self.can_draw = False
+        self.is_init = False
         if self.vaoID:
             self.vaoID = 0
 
@@ -211,6 +172,12 @@ class Simple3DObject:
         self.add_clr(_clr)
         self.indices.append(len(self.indices))
 
+    def add_point_clr_norm(self, _pt, _clr, _norm):
+        self.add_pt(_pt)
+        self.add_clr(_clr)
+        self.add_normal(_norm)
+        self.indices.append(len(self.indices))
+
     """
     Define a line from two points
     """
@@ -228,89 +195,69 @@ class Simple3DObject:
         dir = np.array([_end_position[0] - _start_position[0], _end_position[1] -
                        _start_position[1], _end_position[2] - _start_position[2]])
 
-        height = np.linalg.norm(dir)
+        m_height = np.linalg.norm(dir)
 
-        dir = np.divide(dir, height)
+        dir = np.divide(dir, m_height)
 
         yAxis = np.array([0, 1, 0])
         v = np.cross(dir, yAxis)
 
-        rotation = sl.Transform()   # identity matrix
+        rotation = sl.Matrix3f()   # identity matrix
+        rotation.set_identity()
 
-        sinTheta = np.linalg.norm(v)
-        if(sinTheta < 0.00001):
-            rotation = sl.Transform()   # identity matrix
-        else:
+        data = sl.Matrix3f()
+
+        if(np.linalg.norm(v) > 0.00001):
             cosTheta = np.dot(dir, yAxis)
             scale = (1-cosTheta)/(1-(cosTheta*cosTheta))
 
-            data = sl.Matrix4f()
             data.set_zeros()
-
-            # Set data to :
-            # [ 0    , v[2] , -v[1], 0,
-            #  -v[2] ,  0   ,  v[0], 0,
-            #   v[1] ,-v[0] ,   0  , 0,
-            #   0    ,  0   ,   0  , 1 ]
             data[0, 1] = v[2]
             data[0, 2] = -v[1]
             data[1, 0] = -v[2]
             data[1, 2] = v[0]
             data[2, 0] = v[1]
             data[2, 1] = -v[0]
-            data[3, 3] = 1
 
-            vx = sl.Transform()
-            vx.init_matrix(data)
-            vx2 = vx * vx
-            vx2Scaled = vx2 * scale
+            vx2 = np.matmul(data.r, data.r) * scale 
 
-            # rotation_vx = rotation + vx
-            rotation_vx = sl.Transform()
-            for i in range(4):
-                for j in range(4):
-                    rotation_vx[i,j] = rotation[i,j] + vx[i,j]
+            for i in range(3):
+                for j in range(3):
+                    rotation[i,j] = rotation[i,j] + data[i,j]
 
-            # rotation = rotation + vx2Scaled
-            rotation_vx2Scaled = sl.Transform()
-            for i in range(4):
-                for j in range(4):
-                    rotation_vx2Scaled[i,j] = rotation_vx[i,j] + vx2Scaled[i,j]
+            for i in range(3):
+                for j in range(3):
+                    rotation[i,j] = rotation[i,j] + vx2[i,j]
+                    
+        ######################################
+        rot = rotation.r
 
-            ######################################
+        NB = 8
+        for j in range(NB):
+            i = 2. * M_PI * (j/NB)
+            i1 = 2. * M_PI * ((j+1)/NB)
+            v1_vec = [m_radius * math.cos(i), 0, m_radius * math.sin(i)]
+            v1 = np.matmul(rot, v1_vec) + _start_position
+            v2_vec = [v1_vec[0], m_height, v1_vec[2]]
+            v2 = np.matmul(rot, v2_vec) + _start_position
+            v3_vec = [m_radius * math.cos(i1), 0, m_radius * math.sin(i1)]
+            v3 = np.matmul(rot, v3_vec) + _start_position
+            v4_vec =  [v3_vec[0], m_height, v3_vec[2]]
+            v4 = np.matmul(rot, v4_vec) + _start_position
+            
+            normal = np.cross((v2 - v1), (v3 - v1))
+            normal = np.divide(normal, np.linalg.norm(normal))
 
-            resolution = 0.1
-            i = 0
-            while i <= (2 * M_PI) - 1:
-                v1_vec = [m_radius * math.cos(i), 0, m_radius * math.sin(i)]
-                v1 = np.matmul(v1_vec, rotation_vx2Scaled.get_rotation_matrix().r) + _start_position
-                v2_vec = [m_radius * math.cos(i), height, m_radius * math.sin(i)]
-                v2 = np.matmul(v2_vec, rotation_vx2Scaled.get_rotation_matrix().r) + _start_position
-                v3_vec = [m_radius * math.cos(i+1), 0, m_radius * math.sin(i+1)]
-                v3 = np.matmul(v3_vec, rotation_vx2Scaled.get_rotation_matrix().r) + _start_position
-                v4_vec = [m_radius * math.cos(i+1), height, m_radius * math.sin(i+1)]
-                v4 = np.matmul(v4_vec,rotation_vx2Scaled.get_rotation_matrix().r) + _start_position
-                
-                normal = np.cross((v2 - v1), (v3 - v1))
-                normal = np.divide(normal, np.linalg.norm(normal))
-
-                self.add_point_clr(v1, _clr)
-                self.add_point_clr(v2, _clr)
-                self.add_point_clr(v3, _clr)
-                self.add_point_clr(v4, _clr)
-
-                self.add_normal(normal)
-                self.add_normal(normal)
-                self.add_normal(normal)
-                self.add_normal(normal)
-
-                i = i + resolution
+            self.add_point_clr_norm(v1, _clr, normal)
+            self.add_point_clr_norm(v2, _clr, normal)
+            self.add_point_clr_norm(v4, _clr, normal)
+            self.add_point_clr_norm(v3, _clr, normal)
 
     def add_sphere(self, _position, _clr): 
-        m_radius = 0.02 
+        m_radius = 0.02
 
-        m_stack_count = 20
-        m_sector_count = 20
+        m_stack_count = 6
+        m_sector_count = 6
 
         for i in range(m_stack_count+1):
             lat0 = M_PI * (-0.5 + (i - 1) / m_stack_count)
@@ -325,182 +272,33 @@ class Simple3DObject:
                 x = math.cos(lng)
                 y = math.sin(lng)
 
-                v1 = [m_radius * x * zr0, m_radius *
-                    y * zr0, m_radius * z0] + _position
+                v = [m_radius * x * zr0, m_radius * y * zr0, m_radius * z0] + _position
                 normal = [x * zr0, y * zr0, z0]
-                self.add_point_clr(v1, _clr)
-                self.add_normal(normal)
+                self.add_point_clr_norm(v, _clr, normal)
 
-                v2 = [m_radius * x * zr1, m_radius *
-                    y * zr1, m_radius * z1] + _position
+                v = [m_radius * x * zr1, m_radius * y * zr1, m_radius * z1] + _position
                 normal = [x * zr1, y * zr1, z1]
-                self.add_point_clr(v2, _clr)
-                self.add_normal(normal)
+                self.add_point_clr_norm(v, _clr, normal)
 
                 lng = 2 * M_PI * j / m_sector_count
                 x = math.cos(lng)
                 y = math.sin(lng)
 
-                v4 = [m_radius * x * zr1, m_radius *
+                v= [m_radius * x * zr1, m_radius *
                     y * zr1, m_radius * z1] + _position
                 normal = [x * zr1, y * zr1, z1]
-                self.add_point_clr(v4, _clr)
-                self.add_normal(normal)
+                self.add_point_clr_norm(v, _clr, normal)
 
-                v3 = [m_radius * x * zr0, m_radius *
+                v = [m_radius * x * zr0, m_radius *
                     y * zr0, m_radius * z0] + _position
                 normal = [x * zr0, y * zr0, z0]
-                self.add_point_clr(v3, _clr)
-                self.add_normal(normal)
-
-    def add_full_edges(self, _pts, _clr):
-        start_id = int(len(self.vertices) / 3)
-
-        for i in range(len(_pts)):
-            self.add_pt(_pts[i])
-            self.add_clr(_clr)
-
-        box_links_top = np.array([0, 1, 1, 2, 2, 3, 3, 0])
-        i = 0
-        while i < box_links_top.size:
-            self.indices.append(start_id + box_links_top[i])
-            self.indices.append(start_id + box_links_top[i+1])
-            i = i + 2
-
-        box_links_bottom = np.array([4, 5, 5, 6, 6, 7, 7, 4])
-        i = 0
-        while i < box_links_bottom.size:
-            self.indices.append(start_id + box_links_bottom[i])
-            self.indices.append(start_id + box_links_bottom[i+1])
-            i = i + 2
-
-    def __add_single_vertical_line(self, _top_pt, _bottom_pt, _clr):
-        current_pts = np.array(
-            [_top_pt, 
-            ((GRID_SIZE - 1) * np.array(_top_pt) + np.array(_bottom_pt)) / GRID_SIZE,
-            ((GRID_SIZE - 2) * np.array(_top_pt) + np.array(_bottom_pt) * 2) / GRID_SIZE,
-            (2 * np.array(_top_pt) + np.array(_bottom_pt) * (GRID_SIZE - 2)) / GRID_SIZE,
-            (np.array(_top_pt) + np.array(_bottom_pt) * (GRID_SIZE - 1)) / GRID_SIZE,
-            _bottom_pt
-            ], np.float32)
-        start_id = int(len(self.vertices) / 3)
-        for i in range(len(current_pts)):
-            self.add_pt(current_pts[i])
-            if (i == 2 or i == 3):
-                _clr[2] = 0
-            else:
-                _clr[2] = 0.75
-            self.add_clr(_clr)
-
-        box_links = np.array([0, 1, 1, 2, 2, 3, 3, 4, 4, 5])
-        i = 0
-        while i < box_links.size:
-            self.indices.append(start_id + box_links[i])
-            self.indices.append(start_id + box_links[i+1])
-            i = i + 2
-
-    def add_vertical_edges(self, _pts, _clr):
-        self.__add_single_vertical_line(_pts[0], _pts[4], _clr)
-        self.__add_single_vertical_line(_pts[1], _pts[5], _clr)
-        self.__add_single_vertical_line(_pts[2], _pts[6], _clr)
-        self.__add_single_vertical_line(_pts[3], _pts[7], _clr)
-
-    def add_top_face(self, _pts, _clr):
-        _clr[3] = 0.5
-        for pt in _pts:
-            self.add_point_clr(pt, _clr)
-
-    def __add_quad(self, _quad_pts, _alpha1, _alpha2, _clr):
-        for i in range(len(_quad_pts)):
-            self.add_pt(_quad_pts[i])
-            if i < 2:
-                _clr[3] = _alpha1
-            else:
-                _clr[3] = _alpha2
-            self.add_clr(_clr)
-
-        self.indices.append(len(self.indices))
-        self.indices.append(len(self.indices))
-        self.indices.append(len(self.indices))
-        self.indices.append(len(self.indices))
-
-    # def add_vertical_faces(self, _pts, _clr):
-    # 	# For each face, we need to add 4 quads (the first 2 indexes are always the top points of the quad)
-    #     quads = [[0, 3, 7, 4]       # Front face
-    #             , [3, 2, 6, 7]      # Right face
-    #             , [2, 1, 5, 6]      # Back face
-    #             , [1, 0, 4, 5]]     # Left face
-
-    #     alpha = 0.5
-
-    #     # Create gradually fading quads
-    #     for quad in quads:
-    #         quad_pts_1 = [
-    #             _pts[quad[0]],
-    #             _pts[quad[1]],
-    #             ((GRID_SIZE - 0.5) * np.array(_pts[quad[1]]) + 0.5 * np.array(_pts[quad[2]])) / GRID_SIZE,
-    #             ((GRID_SIZE - 0.5) * np.array(_pts[quad[0]]) + 0.5 * np.array(_pts[quad[3]])) / GRID_SIZE
-    #         ]
-    #         self.__add_quad(quad_pts_1, alpha, alpha, _clr)
-
-    #         quad_pts_2 = [
-    #             ((GRID_SIZE - 0.5) * np.array(_pts[quad[0]]) + 0.5 * np.array(_pts[quad[3]])) / GRID_SIZE,
-    #             ((GRID_SIZE - 0.5) * np.array(_pts[quad[1]]) + 0.5 * np.array(_pts[quad[2]])) / GRID_SIZE,
-    #             ((GRID_SIZE - 1.0) * np.array(_pts[quad[1]]) + np.array(_pts[quad[2]])) / GRID_SIZE,
-    #             ((GRID_SIZE - 1.0) * np.array(_pts[quad[0]]) + np.array(_pts[quad[3]])) / GRID_SIZE
-    #         ]
-    #         self.__add_quad(quad_pts_2, alpha, 2 * alpha / 3, _clr)
-
-    #         quad_pts_3 = [
-    #             ((GRID_SIZE - 1.0) * np.array(_pts[quad[0]]) + np.array(_pts[quad[3]])) / GRID_SIZE,
-    #             ((GRID_SIZE - 1.0) * np.array(_pts[quad[1]]) + np.array(_pts[quad[2]])) / GRID_SIZE,
-    #             ((GRID_SIZE - 1.5) * np.array(_pts[quad[1]]) + 1.5 * np.array(_pts[quad[2]])) / GRID_SIZE,
-    #             ((GRID_SIZE - 1.5) * np.array(_pts[quad[0]]) + 1.5 * np.array(_pts[quad[3]])) / GRID_SIZE
-    #         ]
-    #         self.__add_quad(quad_pts_3, 2 * alpha / 3, alpha / 3, _clr)
-
-    #         quad_pts_4 = [
-    #             ((GRID_SIZE - 1.5) * np.array(_pts[quad[0]]) + 1.5 * np.array(_pts[quad[3]])) / GRID_SIZE,
-    #                 ((GRID_SIZE - 1.5) * np.array(_pts[quad[1]]) + 1.5 * np.array(_pts[quad[2]])) / GRID_SIZE,
-    #                 ((GRID_SIZE - 2.0) * np.array(_pts[quad[1]]) + 2.0 * np.array(_pts[quad[2]])) / GRID_SIZE,
-    #                 ((GRID_SIZE - 2.0) * np.array(_pts[quad[0]]) + 2.0 * np.array(_pts[quad[3]])) / GRID_SIZE
-    #         ]
-    #         self.__add_quad(quad_pts_4, alpha / 3, 0.0, _clr)
-
-    #         quad_pts_5 = [
-    #             (np.array(_pts[quad[1]]) * 2.0 + (GRID_SIZE - 2.0) * np.array(_pts[quad[2]])) / GRID_SIZE,
-    #             (np.array(_pts[quad[0]]) * 2.0 + (GRID_SIZE - 2.0) * np.array(_pts[quad[3]])) / GRID_SIZE,
-    #             (np.array(_pts[quad[0]]) * 1.5 + (GRID_SIZE - 1.5) * np.array(_pts[quad[3]])) / GRID_SIZE,
-    #             (np.array(_pts[quad[1]]) * 1.5 + (GRID_SIZE - 1.5) * np.array(_pts[quad[2]])) / GRID_SIZE
-    #         ]
-    #         self.__add_quad(quad_pts_5, 0.0, alpha / 3, _clr)
-
-    #         quad_pts_6 = [
-    #             (np.array(_pts[quad[1]]) * 1.5 + (GRID_SIZE - 1.5) * np.array(_pts[quad[2]])) / GRID_SIZE,
-    #             (np.array(_pts[quad[0]]) * 1.5 + (GRID_SIZE - 1.5) * np.array(_pts[quad[3]])) / GRID_SIZE,
-    #             (np.array(_pts[quad[0]]) + (GRID_SIZE - 1.0) * np.array(_pts[quad[3]])) / GRID_SIZE,
-    #             (np.array(_pts[quad[1]]) + (GRID_SIZE - 1.0) * np.array(_pts[quad[2]])) / GRID_SIZE
-    #         ]
-    #         self.__add_quad(quad_pts_6, alpha / 3, 2 * alpha / 3, _clr)
-
-    #         quad_pts_7 = [
-    #             (np.array(_pts[quad[1]]) + (GRID_SIZE - 1.0) * np.array(_pts[quad[2]])) / GRID_SIZE,
-    #             (np.array(_pts[quad[0]]) + (GRID_SIZE - 1.0) * np.array(_pts[quad[3]])) / GRID_SIZE,
-    #             (np.array(_pts[quad[0]]) * 0.5 + (GRID_SIZE - 0.5) * np.array(_pts[quad[3]])) / GRID_SIZE,
-    #             (np.array(_pts[quad[1]]) * 0.5 + (GRID_SIZE - 0.5) * np.array(_pts[quad[2]])) / GRID_SIZE
-    #         ]
-    #         self.__add_quad(quad_pts_7, 2 * alpha / 3, alpha, _clr)
-
-    #         quad_pts_8 = [
-    #             (np.array(_pts[quad[0]]) * 0.5 + (GRID_SIZE - 0.5) * np.array(_pts[quad[3]])) / GRID_SIZE,
-    #             (np.array(_pts[quad[1]]) * 0.5 + (GRID_SIZE - 0.5) * np.array(_pts[quad[2]])) / GRID_SIZE,
-    #             np.array(_pts[quad[2]]),
-    #             np.array(_pts[quad[3]])
-    #         ]
-    #         self.__add_quad(quad_pts_8, alpha, alpha, _clr)
+                
+                self.add_point_clr_norm(v, _clr, normal)
 
     def push_to_GPU(self):
-        self.vboID = glGenBuffers(4)
+        if( self.is_init == False):
+            self.vboID = glGenBuffers(4)
+            self.is_init = True
 
         if len(self.vertices):
             glBindBuffer(GL_ARRAY_BUFFER, self.vboID[0])
@@ -510,17 +308,14 @@ class Simple3DObject:
             glBindBuffer(GL_ARRAY_BUFFER, self.vboID[1])
             glBufferData(GL_ARRAY_BUFFER, len(self.colors) * self.colors.itemsize, (GLfloat * len(self.colors))(*self.colors), GL_STATIC_DRAW)
 
-        if len(self.indices):
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vboID[2])
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER,len(self.indices) * self.indices.itemsize,(GLuint * len(self.indices))(*self.indices), GL_STATIC_DRAW)
-            self.can_draw = True
-
         if len(self.normals):
-            glBindBuffer(GL_ARRAY_BUFFER, self.vboID[3])
+            glBindBuffer(GL_ARRAY_BUFFER, self.vboID[2])
             glBufferData(GL_ARRAY_BUFFER, len(self.normals) * self.normals.itemsize, (GLfloat * len(self.normals))(*self.normals), GL_STATIC_DRAW)
-            glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0)
-            glEnableVertexAttribArray(2)
 
+        if len(self.indices):
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vboID[3])
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER,len(self.indices) * self.indices.itemsize,(GLuint * len(self.indices))(*self.indices), GL_STATIC_DRAW)
+            
         self.elementbufferSize = len(self.indices)
 
     def clear(self):        
@@ -528,13 +323,12 @@ class Simple3DObject:
         self.colors = array.array('f')
         self.normals = array.array('f')
         self.indices = array.array('I')
-        self.can_draw = False
 
     def set_drawing_type(self, _type):
         self.drawing_type = _type
 
     def draw(self):
-        if (self.elementbufferSize) and self.can_draw:            
+        if (self.elementbufferSize > 0) and self.is_init:            
             glEnableVertexAttribArray(0)
             glBindBuffer(GL_ARRAY_BUFFER, self.vboID[0])
             glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,None)
@@ -543,25 +337,27 @@ class Simple3DObject:
             glBindBuffer(GL_ARRAY_BUFFER, self.vboID[1])
             glVertexAttribPointer(1,4,GL_FLOAT,GL_FALSE,0,None)
             
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vboID[2])
+            glEnableVertexAttribArray(2)
+            glBindBuffer(GL_ARRAY_BUFFER, self.vboID[2])
+            glVertexAttribPointer(2,3,GL_FLOAT,GL_FALSE,0,None)
+
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vboID[3])
             glDrawElements(self.drawing_type, self.elementbufferSize, GL_UNSIGNED_INT, None)      
             
             glDisableVertexAttribArray(0)
             glDisableVertexAttribArray(1)
+            glDisableVertexAttribArray(2)
 
 IMAGE_FRAGMENT_SHADER = """
 # version 330 core
 in vec2 UV;
 out vec4 color;
 uniform sampler2D texImage;
-uniform bool revert;
-uniform bool rgbflip;
 void main() {
-    vec2 scaler  =revert?vec2(UV.x,1.f - UV.y):vec2(UV.x,UV.y);
-    vec3 rgbcolor = rgbflip?vec3(texture(texImage, scaler).zyx):vec3(texture(texImage, scaler).xyz);
-    float gamma = 1.0/1.65;
-    vec3 color_rgb = pow(rgbcolor, vec3(1.0/gamma));
-    color = vec4(color_rgb,1);
+    vec2 scaler =vec2(UV.x,1.f - UV.y);
+    vec3 rgbcolor = vec3(texture(texImage, scaler).zyx);
+    vec3 color_rgb = pow(rgbcolor, vec3(1.65f));
+    color = vec4(color_rgb,1.f);
 }
 """
 
@@ -570,8 +366,8 @@ IMAGE_VERTEX_SHADER = """
 layout(location = 0) in vec3 vert;
 out vec2 UV;
 void main() {
-   UV = (vert.xy+vec2(1,1))/2;
-	gl_Position = vec4(vert, 1);
+    UV = (vert.xy+vec2(1.f,1.f))*.5f;
+    gl_Position = vec4(vert, 1.f);
 }
 """
 
@@ -616,9 +412,6 @@ class ImageHandler:
         glBindTexture(GL_TEXTURE_2D, self.image_tex)
         
         # Set the texture minification and magnification filters
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
         
@@ -640,10 +433,6 @@ class ImageHandler:
         glBindTexture(GL_TEXTURE_2D, self.image_tex)
         glUniform1i(self.tex_id, 0)
 
-        # invert y axis and color for this image
-        glUniform1i(glGetUniformLocation(self.shader_image.get_program_id(), "revert"), 1)
-        glUniform1i(glGetUniformLocation(self.shader_image.get_program_id(), "rgbflip"), 1)
-
         glEnableVertexAttribArray(0)
         glBindBuffer(GL_ARRAY_BUFFER, self.quad_vb)
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
@@ -660,6 +449,13 @@ class GLViewer:
         self.available = False
         self.objects_name = []
         self.mutex = Lock()
+        # Create bone objects
+        self.bones = Simple3DObject(False)
+        # Create joint objects
+        self.joints = Simple3DObject(False)
+        self.image_handler = ImageHandler()
+        # Create the rendering camera
+        self.projection = array.array('f')
 
     def init(self, _params): 
         glutInit()
@@ -675,7 +471,7 @@ class GLViewer:
         glutInitWindowSize(width, height)
         glutInitWindowPosition(0, 0) # The window opens at the upper left corner of the screen
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_SRGB)
-        glutCreateWindow("ZED Object detection")
+        glutCreateWindow("ZED Body Tracking")
         glViewport(0, 0, width, height)
 
         glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE,
@@ -688,39 +484,21 @@ class GLViewer:
         glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
 
         # Initialize image renderer
-        self.image_handler = ImageHandler()
         self.image_handler.initialize(_params.image_size)
 
         glEnable(GL_FRAMEBUFFER_SRGB)
 
         # Compile and create the shader for 3D objects
-        self.shader_basic_image = Shader(VERTEX_SHADER, FRAGMENT_SHADER)
-        self.shader_basic_MVP = glGetUniformLocation(self.shader_basic_image.get_program_id(), "u_mvpMatrix")
-
         self.shader_sk_image = Shader(SK_VERTEX_SHADER, SK_FRAGMENT_SHADER)
         self.shader_sk_MVP = glGetUniformLocation(self.shader_sk_image.get_program_id(), "u_mvpMatrix")
 
-        # Create the rendering camera
-        self.projection = array.array('f')
-        # self.set_render_camera_projection(_params, 500, 20*1000)
         self.set_render_camera_projection(_params, 0.5, 20)
-
-        # Create the bounding box object
-        self.BBox_obj = Simple3DObject(False)
-        self.BBox_obj.set_drawing_type(GL_QUADS)
         
-        # Create bone objects
-        self.bones = Simple3DObject(False)
         self.bones.set_drawing_type(GL_QUADS)
         
-        # Create joint objects
-        self.joints = Simple3DObject(False)
         self.joints.set_drawing_type(GL_QUADS)
 
         self.floor_plane_set = False
-
-        # Set OpenGL settings
-        glDisable(GL_DEPTH_TEST)    # avoid occlusion with bbox
 
         # Register the drawing function with GLUT
         glutDisplayFunc(self.draw_callback)
@@ -785,45 +563,31 @@ class GLViewer:
         self.image_handler.push_new_image(_image)
 
         # Clear frame objects
-        self.BBox_obj.clear()
         self.bones.clear()
         self.joints.clear()
         self.objects_name = []      
 
         # Only show tracked objects
-        for i in range(len(_objs.object_list)):
-            obj = _objs.object_list[i]
+        for obj in _objs.object_list:
             if self.render_object(obj):
-                color_class = get_color_class(0)
+                color_class = generate_color_id(obj.id)
                 # Draw skeletons
                 if obj.keypoint.size > 0:
                     # Bones
                     for bone in sl.BODY_BONES:
                         kp_1 = obj.keypoint[bone[0].value]
                         kp_2 = obj.keypoint[bone[1].value]
-                        norm_1 = np.linalg.norm(kp_1)
-                        norm_2 = np.linalg.norm(kp_2)
-                        if math.isfinite(norm_1) and math.isfinite(norm_2):
+                        if math.isfinite(kp_1[0]) and math.isfinite(kp_2[0]):
                             self.bones.add_cylinder(kp_1, kp_2, color_class)
+
                     # Joints
-                    # joint_count = 0
                     for part in range(len(sl.BODY_PARTS)-1):    # -1 to avoid LAST
-                        # print("iteration nb: {}".format(part))
                         kp = obj.keypoint[part]
                         norm = np.linalg.norm(kp)
                         if math.isfinite(norm):
                             self.joints.add_sphere(kp, color_class)
-                            
-                    # TODO Add bbox here if needed
 
         self.mutex.release()
-
-    # def create_id_rendering(self, _center, _clr, _id):
-    #     tmp = ObjectClassName()
-    #     tmp.name = "ID: " + str(_id)
-    #     tmp.color = _clr
-    #     tmp.position = np.array([_center[0], _center[1], _center[2]], np.float32)
-    #     self.objects_name = np.append(self.objects_name, tmp)
 
     def idle(self):
         if self.available:
@@ -840,7 +604,6 @@ class GLViewer:
             self.image_handler.close()      
 
     def keyPressedCallback(self, key, x, y):
-        print("key pressed : {}\tunicode : {}".format(key, ord(key)))
         if ord(key) == 113 or ord(key) == 27:
             self.close_func() 
 
@@ -851,69 +614,23 @@ class GLViewer:
             self.mutex.acquire()
             self.update()
             self.draw()
-            self.print_text()
             self.mutex.release()  
 
             glutSwapBuffers()
             glutPostRedisplay()
 
     def update(self):
-        self.BBox_obj.push_to_GPU()
         self.bones.push_to_GPU()
         self.joints.push_to_GPU()
 
-    def draw(self):  
-        # glPointSize(1.)
+    def draw(self):
+        glDisable(GL_DEPTH_TEST)
         self.image_handler.draw()
 
         glUseProgram(self.shader_sk_image.get_program_id())
         glUniformMatrix4fv(self.shader_sk_MVP, 1, GL_TRUE,  (GLfloat * len(self.projection))(*self.projection))    
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
-        # glLineWidth(0.5)
+        glEnable(GL_DEPTH_TEST)
         self.bones.draw()
         self.joints.draw()
         glUseProgram(0)
-
-        glUseProgram(self.shader_basic_image.get_program_id())
-        glUniformMatrix4fv(self.shader_basic_MVP, 1, GL_TRUE,  (GLfloat * len(self.projection))(*self.projection))    
-        self.BBox_obj.draw()
-        glUseProgram(0)
-
-    def print_text(self):
-        glDisable(GL_BLEND)
-
-        wnd_size = sl.Resolution()
-        wnd_size.width = glutGet(GLUT_WINDOW_WIDTH)
-        wnd_size.height = glutGet(GLUT_WINDOW_HEIGHT)	
-        
-        if len(self.objects_name) > 0:
-            for obj in self.objects_name:
-                pt2d = self.compute_3D_projection(obj.position, self.projection, wnd_size)
-                glColor4f(obj.color[0], obj.color[1], obj.color[2], 0.85)
-
-                glWindowPos2f(pt2d[0]-40, pt2d[1]+20)
-                for i in range(len(obj.name_lineA)):
-                    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ctypes.c_int(ord(obj.name_lineA[i])))
-                
-                glWindowPos2f(pt2d[0]-40, pt2d[1]+20)
-                for i in range(len(obj.name_lineB)):
-                    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ctypes.c_int(ord(obj.name_lineB[i])))
-            glEnable(GL_BLEND)
-
-    def compute_3D_projection(self, _pt, _cam, _wnd_size):
-        pt4d = np.array([_pt[0],_pt[1],_pt[2], 1], np.float32)
-        _cam_mat = np.array(_cam, np.float32).reshape(4,4)
-           
-        proj3D_cam = np.matmul(pt4d, _cam_mat)     # Should result in a 4 element row vector
-        proj3D_cam[1] = proj3D_cam[1] + 0.25
-        proj2D = [((proj3D_cam[0] / pt4d[3]) * _wnd_size.width) / (2. * proj3D_cam[3]) + (_wnd_size.width * 0.5)
-                , ((proj3D_cam[1] / pt4d[3]) * _wnd_size.height) / (2. * proj3D_cam[3]) + (_wnd_size.height * 0.5)]
-        return proj2D
-
-########################################################################
-class ObjectClassName:
-    def __init__(self):
-        self.position = [0,0,0] # [x,y,z]
-        self.name_lineA = ""
-        self.name_lineB = ""
-        self.color = [0,0,0,0]  # [r,g,b,a]

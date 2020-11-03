@@ -53,7 +53,6 @@ GLchar* SK_FRAGMENT_SHADER =
 "	vec3 lightColor = vec3(1,1,1);\n"
 "	float ambientStrength = 0.3;\n"
 "	vec3 ambient = ambientStrength * lightColor;\n"
-"	vec3 norm = normalize(b_normal); \n"
 "	vec3 lightDir = normalize(lightPosition - b_position);\n"
 "	float diffuse = (1 - ambientStrength) * max(dot(b_normal, lightDir), 0.0);\n"
 "   out_Color = vec4(b_color.rgb * (diffuse + ambient), 1);\n"
@@ -305,11 +304,13 @@ void GLViewer::update() {
 }
 
 void GLViewer::draw() {
+	glDisable(GL_DEPTH_TEST);
 	image_handler.draw();
 
 	glUseProgram(shaderSK.it.getProgramId());
 	glUniformMatrix4fv(shaderSK.MVP_Mat, 1, GL_TRUE, projection_.m);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glEnable(GL_DEPTH_TEST);
 	bones.draw();
 	joints.draw();
 	glUseProgram(0);
@@ -555,21 +556,25 @@ void Simple3DObject::addCylinder(sl::float3 startPosition, sl::float3 endPositio
 	sl::float3 v3;
 	sl::float3 v4;
 	sl::float3 normal;
-	float resolution = 0.1f;
 
-	for (double i = 0; i <= 2 * M_PI - 1; i += resolution) {
-		v1 = sl::float3(m_radius * cos(i), 0, m_radius * sin(i)) * rotation.getRotationMatrix() + startPosition;
-		v2 = sl::float3(m_radius * cos(i), m_height, m_radius * sin(i)) * rotation.getRotationMatrix() + startPosition;
-		v4 = sl::float3(m_radius * cos(i + 1), m_height, m_radius * sin(i + 1)) * rotation.getRotationMatrix() + startPosition;
-		v3 = sl::float3(m_radius * cos(i + 1), 0, m_radius * sin(i + 1)) * rotation.getRotationMatrix() + startPosition;
-
-		normal = sl::float3::cross((v2 - v1), (v3 - v1));
-		normal = normal / normal.norm();
+	const int NB_SEG = 32;
+	const float scale_seg = 1.f / NB_SEG;
+	auto rot = rotation.getRotationMatrix();
+	for(int j = 0; j < NB_SEG; j++){
+		float i = 2.f * M_PI * (j * scale_seg);
+		float i1 = 2.f * M_PI * ((j + 1) * scale_seg);
+		v1 = sl::float3(m_radius * cos(i), 0, m_radius * sin(i)) * rot + startPosition;
+		v2 = sl::float3(m_radius * cos(i), m_height, m_radius * sin(i)) * rot + startPosition;
+		v3 = sl::float3(m_radius * cos(i1), 0, m_radius * sin(i1)) * rot + startPosition;
+		v4 = sl::float3(m_radius * cos(i1), m_height, m_radius * sin(i1)) * rot + startPosition;
 
 		addPoint(v1, clr);
 		addPoint(v2, clr);
 		addPoint(v4, clr);
 		addPoint(v3, clr);
+
+		normal = sl::float3::cross((v2 - v1), (v3 - v1));
+		normal = normal / normal.norm();
 
 		addNormal(normal);
 		addNormal(normal);
@@ -580,8 +585,8 @@ void Simple3DObject::addCylinder(sl::float3 startPosition, sl::float3 endPositio
 
 void Simple3DObject::addSphere(sl::float3 position, sl::float4 clr) {
 	const float m_radius = 0.02f;
-	const int m_stackCount = 20;
-	const int m_sectorCount = 20;
+	const int m_stackCount = 16;
+	const int m_sectorCount = 16;
 
 	sl::float3 point;
 	sl::float3 normal;
@@ -810,14 +815,11 @@ GLchar* IMAGE_FRAGMENT_SHADER =
 " in vec2 UV;\n"
 " out vec4 color;\n"
 " uniform sampler2D texImage;\n"
-" uniform bool revert;\n"
-" uniform bool rgbflip;\n"
 " void main() {\n"
-"    vec2 scaler  =revert?vec2(UV.x,1.f - UV.y):vec2(UV.x,UV.y);\n"
-"    vec3 rgbcolor = rgbflip?vec3(texture(texImage, scaler).zyx):vec3(texture(texImage, scaler).xyz);\n"
-" float gamma = 1.0/1.65;\n"
-"   vec3 color_rgb = pow(rgbcolor, vec3(1.0/gamma));;\n"
-"    color = vec4(color_rgb,1);\n"
+"	vec2 scaler  =vec2(UV.x,1.f - UV.y);\n"
+"	vec3 rgbcolor = vec3(texture(texImage, scaler).zyx);\n"
+"	vec3 color_rgb = pow(rgbcolor, vec3(1.65f));\n"
+"	color = vec4(color_rgb,1);\n"
 "}";
 
 GLchar* IMAGE_VERTEX_SHADER =
@@ -825,7 +827,7 @@ GLchar* IMAGE_VERTEX_SHADER =
 "layout(location = 0) in vec3 vert;\n"
 "out vec2 UV;"
 "void main() {\n"
-"   UV = (vert.xy+vec2(1,1))/2;\n"
+"	UV = (vert.xy+vec2(1,1))* .5f;\n"
 "	gl_Position = vec4(vert, 1);\n"
 "}\n";
 
@@ -885,8 +887,6 @@ void ImageHandler::draw() {
 	glBindTexture(GL_TEXTURE_2D, imageTex);
 	glUniform1i(texID, 0);
 	//invert y axis and color for this image (since its reverted from cuda array)
-	glUniform1i(glGetUniformLocation(id_shade, "revert"), 1);
-	glUniform1i(glGetUniformLocation(id_shade, "rgbflip"), 1);
 
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, quad_vb);
