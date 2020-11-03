@@ -210,6 +210,11 @@ class GLViewer:
         self.new_chunks = False
         self.chunks_pushed = False
         self.change_state = False
+        self.projection_ = sl.Matrix4f()
+        self.projection_.set_identity()
+        self.znear = 0.5
+        self.zfar = 100.
+        self.image_handler = ImageHandler()
         self.sub_maps = []
         self.pose = sl.Transform().set_identity()
         self.tracking_state = sl.POSITIONAL_TRACKING_STATE.OFF
@@ -239,7 +244,6 @@ class GLViewer:
         glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
 
         # Initialize image renderer
-        self.image_handler = ImageHandler()
         self.image_handler.initialize(_params.image_size)
 
         # glEnable(GL_FRAMEBUFFER_SRGB)
@@ -254,8 +258,7 @@ class GLViewer:
         self.shader_MVP = glGetUniformLocation(self.shader_image.get_program_id(), "u_mvpMatrix")
         self.shader_color_loc = glGetUniformLocation(self.shader_image.get_program_id(), "u_color")
         # Create the rendering camera
-        self.projection = array.array('f')
-        self.set_render_camera_projection(_params, 0.5, 20)
+        self.set_render_camera_projection(_params)
 
         glLineWidth(1.)
         glPointSize(4.)
@@ -274,8 +277,7 @@ class GLViewer:
         self.available = True
 
         # Set color for wireframe
-        self.vertices_color = [0.35,0.36,0.95] 
-        # self.vertices_color = [1.0,0.0,0.0] 
+        self.vertices_color = [0.12,0.53,0.84] 
         
         # Ready to start
         self.chunks_pushed = True
@@ -285,34 +287,17 @@ class GLViewer:
         self.draw_mesh = True
         self.mesh = _mesh
 
-    def set_render_camera_projection(self, _params, _znear, _zfar):
+    def set_render_camera_projection(self, _params):
         # Just slightly move up the ZED camera FOV to make a small black border
         fov_y = (_params.v_fov + 0.5) * M_PI / 180
         fov_x = (_params.h_fov + 0.5) * M_PI / 180
 
-        self.projection.append( 1 / math.tan(fov_x * 0.5) )  # Horizontal FoV.
-        self.projection.append( 0)
-        # Horizontal offset.
-        self.projection.append( 2 * ((_params.image_size.width - _params.cx) / _params.image_size.width) - 1)
-        self.projection.append( 0)
-
-        self.projection.append( 0)
-        self.projection.append( 1 / math.tan(fov_y * 0.5))  # Vertical FoV.
-        # Vertical offset.
-        self.projection.append(-(2 * ((_params.image_size.height - _params.cy) / _params.image_size.height) - 1))
-        self.projection.append( 0)
-
-        self.projection.append( 0)
-        self.projection.append( 0)
-        # Near and far planes.
-        self.projection.append( -(_zfar + _znear) / (_zfar - _znear))
-        # Near and far planes.
-        self.projection.append( -(2 * _zfar * _znear) / (_zfar - _znear))
-
-        self.projection.append( 0)
-        self.projection.append( 0)
-        self.projection.append( -1)
-        self.projection.append( 0)
+        self.projection_[(0,0)] = 1. / math.tan(fov_x * .5)
+        self.projection_[(1,1)] = 1. / math.tan(fov_y * .5)
+        self.projection_[(2,2)] = -(self.zfar + self.znear) / (self.zfar - self.znear)
+        self.projection_[(3,2)] = -1.
+        self.projection_[(2,3)] = -(2. * self.zfar * self.znear) / (self.zfar - self.znear)
+        self.projection_[(3,3)] = 0.
     
     def print_GL(self, _x, _y, _string):
         glRasterPos(_x, _y)
@@ -370,7 +355,6 @@ class GLViewer:
             self.image_handler.close()      
 
     def keyReleasedCallback(self, key, x, y):
-        print("key released : {}\tunicode : {}".format(key, ord(key)))
         if ord(key) == 113 or ord(key) == 27:
             self.close_func()
         if  ord(key) == 32:     # space bar
@@ -401,17 +385,14 @@ class GLViewer:
                 nb_c = len(self.mesh.chunks)
             # TODO else FPC
 
-            if nb_c > len(self.sub_maps):
-                step = 500.0
-                new_size = (int)(((nb_c / step) + 1) * step)
-                self.sub_maps = [SubMapObj()] * new_size   
-
+            if nb_c > len(self.sub_maps): 
+                for n in range(len(self.sub_maps),nb_c):
+                    self.sub_maps.append(SubMapObj())
+            
             if self.draw_mesh:
-                c = 0
-                for sub_map in self.sub_maps:
-                    if (c < nb_c) and self.mesh.chunks[c].has_been_updated:
-                        sub_map.update(self.mesh.chunks[c])
-                        c = c + 1 
+                for m in range(len(self.sub_maps)):
+                    if (m < nb_c) and self.mesh.chunks[m].has_been_updated:
+                        self.sub_maps[m].update(self.mesh.chunks[m])
             # TODO else FPC
 
             self.new_chunks = False
@@ -427,19 +408,17 @@ class GLViewer:
                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
 
                 # Send the projection and the Pose to the GLSL shader to make the projection of the 2D image
-                vp_matrix = sl.Transform()
-                if self.pose.inverse():
-                    proj_4d = np.array(self.projection, np.float32).reshape(4,4)
-
-                    vp_matrix = np.matmul(proj_4d, self.pose.m) 
-
+                tmp = self.pose
+                tmp.inverse()
+                proj = (self.projection_ * tmp).m
+                vpMat = proj.flatten()
+                
                 glUseProgram(self.shader_image.get_program_id())
-                vp_matrix_flat = vp_matrix.flatten()         # Turn matrix into 1D array
-                glUniformMatrix4fv(self.shader_MVP, 1, GL_TRUE,  vp_matrix_flat)            
+                glUniformMatrix4fv(self.shader_MVP, 1, GL_TRUE, (GLfloat * len(vpMat))(*vpMat))
                 glUniform3fv(self.shader_color_loc, 1, (GLfloat * len(self.vertices_color))(*self.vertices_color))
         
-                for sub_map in self.sub_maps:
-                    sub_map.draw()
+                for m in range(len(self.sub_maps)):
+                    self.sub_maps[m].draw()
 
                 glUseProgram(0)
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
@@ -453,42 +432,27 @@ class GLViewer:
                 glColor3f(0.25, 0.25, 0.25)
                 self.print_GL(-0.99, 0.9, "Hit Space Bar to stop spatial mapping.")
 
-
-    def compute_3D_projection(self, _pt, _cam, _wnd_size):
-        pt4d = np.array([_pt[0],_pt[1],_pt[2], 1], np.float32)
-        _cam_mat = np.array(_cam, np.float32).reshape(4,4)
-           
-        proj3D_cam = np.matmul(pt4d, _cam_mat)     # Should result in a 4 element row vector
-        proj3D_cam[1] = proj3D_cam[1] + 0.25
-        proj2D = [((proj3D_cam[0] / pt4d[3]) * _wnd_size.width) / (2. * proj3D_cam[3]) + (_wnd_size.width * 0.5)
-                , ((proj3D_cam[1] / pt4d[3]) * _wnd_size.height) / (2. * proj3D_cam[3]) + (_wnd_size.height * 0.5)]
-        return proj2D
-
 class SubMapObj:
     def __init__(self):
         self.current_fc = 0
-        self.vaoID = 0      # see if necessary ?
-        self.index = array.array('I')
+        self.vboID = None
+        self.vert = []
+        self.tri = []
 
     def update(self, _chunk): 
-        self.vboID = glGenBuffers(2)
+        if(self.vboID is None):
+            self.vboID = glGenBuffers(2)
 
         if len(_chunk.vertices):
-            vert_float = _chunk.vertices.astype(np.float32)
-            vert = vert_float.flatten()      # transform _chunk.vertices into 1D array 
+            self.vert = _chunk.vertices.flatten()      # transform _chunk.vertices into 1D array 
             glBindBuffer(GL_ARRAY_BUFFER, self.vboID[0])
-            glBufferData(GL_ARRAY_BUFFER, len(vert_float) * vert_float.itemsize * 3, (GLfloat * len(vert))(*vert), GL_DYNAMIC_DRAW)                  
-
+            glBufferData(GL_ARRAY_BUFFER, len(self.vert) * self.vert.itemsize, (GLfloat * len(self.vert))(*self.vert), GL_DYNAMIC_DRAW)
 
         if len(_chunk.triangles):
-            triangles_uint = _chunk.triangles.astype(np.uintc)      # Force triangle array data type
-            triangles = triangles_uint.flatten()
+            self.tri = _chunk.triangles.flatten()
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vboID[1])
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(triangles_uint) * triangles_uint.itemsize * 3, (GLuint * len(triangles))(*triangles), GL_DYNAMIC_DRAW)
-            
-            # self.current_fc = _chunk.triangles.size * 3
-            self.current_fc = len(_chunk.triangles) * 3
-
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(self.tri) * self.tri.itemsize , (GLuint * len(self.tri))(*self.tri), GL_DYNAMIC_DRAW)
+            self.current_fc = len(self.tri)
     
     def draw(self): 
         if self.current_fc:
@@ -500,11 +464,3 @@ class SubMapObj:
             glDrawElements(GL_TRIANGLES, self.current_fc, GL_UNSIGNED_INT, None)      
             
             glDisableVertexAttribArray(0)
-
-
-########################################################################
-class ObjectClassName:
-    def __init__(self):
-        self.position = [0,0,0] # [x,y,z]
-        self.name = ""
-        self.color = [0,0,0,0]  # [r,g,b,a]

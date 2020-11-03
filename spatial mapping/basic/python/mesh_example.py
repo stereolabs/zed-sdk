@@ -39,7 +39,6 @@ def main():
     init_params.camera_resolution = sl.RESOLUTION.HD720  # Use HD720 video mode
     init_params.coordinate_units = sl.UNIT.METER         # Set coordinate units
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP  # OpenGL coordinates
-    init_params.camera_fps = 15                          # Set fps at 15
 
     # If applicable, use the SVO given as parameter
     # Otherwise use ZED live stream
@@ -92,7 +91,7 @@ def main():
                 # Compute elapsed time since the last call of Camera.request_spatial_map_async()
                 duration = time.time() - last_call  
                 # Ask for a mesh update if 500ms elapsed since last request
-                if(duration > 0.500 and viewer.chunks_updated()):
+                if(duration > .5 and viewer.chunks_updated()):
                     zed.request_spatial_map_async()
                     last_call = time.time()
                 
