@@ -19,85 +19,103 @@
 ########################################################################
 
 """
-    Plane sample that save the floor plane detected as a sl.
+    This sample shows how to detect planes in a 3D scene and
+    displays it on an OpenGL window
 """
 import sys
 import pyzed.sl as sl
-from time import sleep
+import time
+import ogl_viewer.gl_viewer as gl
 
 
 def main():
-    cam = sl.Camera()
+    print("Running Plane Detection sample ... Press 'q' to quit")
+
+    # Create a camera object
+    zed = sl.Camera()
+
+    # Set configuration parameters
     init = sl.InitParameters()
-    init.depth_mode = sl.DEPTH_MODE.ULTRA
     init.coordinate_units = sl.UNIT.METER
-    init.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
+    init.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP     # OpenGL coordinate system
     
+    # If applicable, use the SVO given as parameter
+    # Otherwise use ZED live stream    
     if len(sys.argv) == 2:
         filepath = sys.argv[1]
         print("Reading SVO file: {0}".format(filepath))
         init.set_from_svo_file(filepath)
 
-    status = cam.open(init)
+    # Open the camera
+    status = zed.open(init)
     if status != sl.ERROR_CODE.SUCCESS:
         print(repr(status))
         exit(1)
 
-    runtime = sl.RuntimeParameters()
-    runtime.sensing_mode = sl.SENSING_MODE.STANDARD
-    runtime.measure3D_reference_frame = sl.REFERENCE_FRAME.WORLD
-    spatial = sl.SpatialMappingParameters()
+    # Get camera info and check if IMU data is available
+    camera_infos = zed.get_camera_information()
+    has_imu =  camera_infos.sensors_configuration.gyroscope_parameters.is_available
 
-    transform = sl.Transform()
-    tracking = sl.PositionalTrackingParameters(transform)
-    cam.enable_positional_tracking(tracking)
+    # Initialize OpenGL viewer
+    viewer = gl.GLViewer()
+    viewer.init(camera_infos.camera_configuration.calibration_parameters.left_cam, has_imu)
 
-    pymesh = sl.Mesh()
-    pyplane = sl.Plane()
-    reset_tracking_floor_frame = sl.Transform()
-    found = 0
-    print("Processing...")
-    i = 0
-    while i < 1000:
-        if cam.grab(runtime) == sl.ERROR_CODE.SUCCESS :
-            err = cam.find_floor_plane(pyplane, reset_tracking_floor_frame)
-            if i > 200 and err == sl.ERROR_CODE.SUCCESS:
-                found = 1
-                print('Floor found!')
-                pymesh = pyplane.extract_mesh()
-                break
-            i+=1
+    image = sl.Mat()    # current left image
+    pose = sl.Pose()    # positional tracking data
+    plane = sl.Plane()  # detected plane 
+    mesh = sl.Mesh()    # plane mesh
 
-    if found == 0:
-        print('Floor was not found, please try with another SVO.')
-        cam.close()
-        exit(0)
+    find_plane_status = sl.ERROR_CODE.SUCCESS
+    tracking_state = sl.POSITIONAL_TRACKING_STATE.OFF
 
-    cam.disable_positional_tracking()
-    save_mesh(pymesh)
-    cam.close()
-    print("\nFINISH")
+    # Timestamp of the last mesh request
+    last_call = time.time()
 
+    user_action = gl.UserAction()
+    user_action.clear()
 
-def save_mesh(pymesh):
-    while True:
-        res = input("Do you want to save the mesh? [y/n]: ")
-        if res == "y":
-            msh = sl.ERROR_CODE.FAILURE
-            while msh != sl.ERROR_CODE.SUCCESS:
-                filepath = input("Enter filepath name: ")
-                msh = pymesh.save(filepath)
-                print("Saving mesh: {0}".format(repr(msh)))
-                if msh:
-                    break
-                else:
-                    print("Help : you must enter the filepath + filename without extension.")
-            break
-        elif res == "n":
-            print("Mesh will not be saved.")
-            break
-        else:
-            print("Error, please enter [y/n].")
+    # Enable positional tracking before starting spatial mapping
+    zed.enable_positional_tracking()
+
+    runtime_parameters = sl.RuntimeParameters()
+    runtime_parameters.measure3D_reference_frame = sl.REFERENCE_FRAME.WORLD
+
+    while viewer.is_available():
+        if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
+            # Retrieve left image
+            zed.retrieve_image(image, sl.VIEW.LEFT)
+            # Update pose data (used for projection of the mesh over the current image)
+            tracking_state = zed.get_position(pose)
+
+            if tracking_state == sl.POSITIONAL_TRACKING_STATE.OK:
+                # Compute elapse time since the last call of plane detection
+                duration = time.time() - last_call  
+                # Ask for a mesh update on mouse click
+                if user_action.hit:
+                    image_click = [user_action.hit_coord[0] * camera_infos.camera_configuration.camera_resolution.width
+                                , user_action.hit_coord[1] * camera_infos.camera_configuration.camera_resolution.height]
+                    find_plane_status = zed.find_plane_at_hit(image_click, plane)
+
+                # Check if 500 ms have elapsed since last mesh request
+                if duration > .5 and user_action.press_space:
+                    # Update pose data (used for projection of the mesh over the current image)
+                    reset_tracking_floor_frame = sl.Transform()
+                    find_plane_status = zed.find_floor_plane(plane, reset_tracking_floor_frame)
+                    last_call = time.time()
+
+                if find_plane_status == sl.ERROR_CODE.SUCCESS:
+                    mesh = plane.extract_mesh()
+                    viewer.update_mesh(mesh, plane.type)
+
+            user_action = viewer.update_view(image, pose.pose_data(), tracking_state)
+    
+    viewer.exit()
+    image.free(sl.MEM.CPU)
+    mesh.clear()
+
+    # Disable modules and close camera
+    zed.disable_positional_tracking()
+    zed.close()
 
 if __name__ == "__main__":
     main()

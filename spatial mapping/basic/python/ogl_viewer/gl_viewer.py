@@ -204,7 +204,6 @@ class GLViewer:
     """
     def __init__(self):
         self.available = False
-        self.objects_name = []
         self.mutex = Lock()
         self.draw_mesh = False
         self.new_chunks = False
@@ -245,8 +244,6 @@ class GLViewer:
 
         # Initialize image renderer
         self.image_handler.initialize(_params.image_size)
-
-        # glEnable(GL_FRAMEBUFFER_SRGB)
 
         # Init mesh (TODO fused point cloud)
         self.init_mesh(_mesh)
@@ -304,7 +301,6 @@ class GLViewer:
         for i in range(len(_string)):
             glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ctypes.c_int(ord(_string[i])))
 
-
     def is_available(self):
         if self.available:
             glutMainLoopEvent()
@@ -355,9 +351,9 @@ class GLViewer:
             self.image_handler.close()      
 
     def keyReleasedCallback(self, key, x, y):
-        if ord(key) == 113 or ord(key) == 27:
+        if ord(key) == 113 or ord(key) == 27:   # 'q' key
             self.close_func()
-        if  ord(key) == 32:     # space bar
+        if  ord(key) == 32:                     # space bar
             self.change_state = True
 
     def draw_callback(self):
@@ -425,12 +421,35 @@ class GLViewer:
 
     def print_text(self):
         if self.available:
+            # Display keyboard action
             if self.mapping_state == sl.SPATIAL_MAPPING_STATE.NOT_ENABLED:
                 glColor3f(0.15, 0.15, 0.15)
                 self.print_GL(-0.99, 0.9, "Hit Space Bar to activate Spatial Mapping.")
             else:
                 glColor3f(0.25, 0.25, 0.25)
                 self.print_GL(-0.99, 0.9, "Hit Space Bar to stop spatial mapping.")
+
+            positional_tracking_state_str = "POSITIONAL TRACKING STATE : "
+            spatial_mapping_state_str = "SPATIAL MAPPING STATE : "
+            state_str = ""
+
+            # Display spatial mapping state
+            if self.tracking_state == sl.POSITIONAL_TRACKING_STATE.OK:
+                if self.mapping_state == sl.SPATIAL_MAPPING_STATE.OK or self.mapping_state == sl.SPATIAL_MAPPING_STATE.INITIALIZING:
+                    glColor3f(0.25, 0.99, 0.25)
+                elif self.mapping_state == sl.SPATIAL_MAPPING_STATE.NOT_ENABLED:
+                    glColor3f(0.55, 0.65, 0.55)
+                else:
+                    glColor3f(0.95, 0.25, 0.25)
+                state_str = spatial_mapping_state_str + str(self.mapping_state)
+            else:
+                if self.mapping_state != sl.SPATIAL_MAPPING_STATE.NOT_ENABLED:
+                    glColor3f(0.95, 0.25, 0.25)
+                    state_str = positional_tracking_state_str + str(self.tracking_state)
+                else:
+                    glColor3f(0.55, 0.65, 0.55)
+                    state_str = spatial_mapping_state_str + str(sl.SPATIAL_MAPPING_STATE.NOT_ENABLED)
+            self.print_GL(-0.99, 0.83, state_str)
 
 class SubMapObj:
     def __init__(self):
@@ -449,7 +468,7 @@ class SubMapObj:
             glBufferData(GL_ARRAY_BUFFER, len(self.vert) * self.vert.itemsize, (GLfloat * len(self.vert))(*self.vert), GL_DYNAMIC_DRAW)
 
         if len(_chunk.triangles):
-            self.tri = _chunk.triangles.flatten()
+            self.tri = _chunk.triangles.flatten()      # transform _chunk.triangles into 1D array 
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vboID[1])
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(self.tri) * self.tri.itemsize , (GLuint * len(self.tri))(*self.tri), GL_DYNAMIC_DRAW)
             self.current_fc = len(self.tri)

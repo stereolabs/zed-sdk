@@ -19,8 +19,10 @@
 ########################################################################
 
 """
-    Mesh sample shows mesh information after filtering and applying texture on frames. The mesh and its filter
-    parameters can be saved.
+    This sample shows how to capture a real-time 3D reconstruction      
+    of the scene using the Spatial Mapping API. The resulting mesh      
+    is displayed as a wireframe on top of the left image using OpenGL.  
+    Spatial Mapping can be started and stopped with the Space Bar key
 """
 import sys
 import time
@@ -110,7 +112,6 @@ def main():
                     spatial_mapping_parameters.resolution_meter = sl.SpatialMappingParameters().get_resolution_preset(sl.MAPPING_RESOLUTION.MEDIUM)
                     spatial_mapping_parameters.use_chunk_only = True
                     spatial_mapping_parameters.save_texture = False         # Set to True to apply texture over the created mesh
-                    # TODO FPC
                     spatial_mapping_parameters.map_type = sl.SPATIAL_MAP_TYPE.MESH
 
                     # Enable spatial mapping
@@ -128,9 +129,8 @@ def main():
                     # Extract whole mesh
                     zed.extract_whole_spatial_map(pymesh)
 
-                    # if mesh
                     filter_params = sl.MeshFilterParameters()
-                    filter_params.set(sl.MESH_FILTER.MEDIUM)  #sl.MESH_FILTER.HIGH
+                    filter_params.set(sl.MESH_FILTER.MEDIUM) 
                     # Filter the extracted mesh
                     pymesh.filter(filter_params, True)
                     viewer.clear_current_mesh()
