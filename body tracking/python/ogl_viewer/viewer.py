@@ -67,7 +67,6 @@ def generate_color_id(_idx):
 
 class Shader:
     def __init__(self, _vs, _fs):
-
         self.program_id = glCreateProgram()
         vertex_id = self.compile(GL_VERTEX_SHADER, _vs)
         fragment_id = self.compile(GL_FRAGMENT_SHADER, _fs)
@@ -443,7 +442,7 @@ class ImageHandler:
 
 class GLViewer:
     """
-    Class that manages the rendering in OpenGL
+    Class that manages input events, window and OpenGL rendering pipeline
     """
     def __init__(self):
         self.available = False

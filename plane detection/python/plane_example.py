@@ -25,8 +25,7 @@
 import sys
 import pyzed.sl as sl
 import time
-import ogl_viewer.gl_viewer as gl
-
+import ogl_viewer.viewer as gl
 
 def main():
     print("Running Plane Detection sample ... Press 'q' to quit")

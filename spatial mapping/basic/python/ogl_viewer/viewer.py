@@ -24,18 +24,6 @@ void main() {
 }
 """
 
-FPC_VERTEX_SHADER ="""
-#version 330 core
-layout(location = 0) in vec4 in_Vertex;
-uniform mat4 u_mvpMatrix;
-uniform vec3 u_color;
-out vec3 b_color;
-void main() {
-    b_color = u_color;
-    gl_Position = u_mvpMatrix * vec4(in_Vertex.xyz, 1);
-}
-"""
-
 VERTEX_SHADER = """
 # version 330 core
 layout(location = 0) in vec3 in_Vertex;
@@ -209,8 +197,8 @@ class GLViewer:
         self.new_chunks = False
         self.chunks_pushed = False
         self.change_state = False
-        self.projection_ = sl.Matrix4f()
-        self.projection_.set_identity()
+        self.projection = sl.Matrix4f()
+        self.projection.set_identity()
         self.znear = 0.5
         self.zfar = 100.
         self.image_handler = ImageHandler()
@@ -251,7 +239,7 @@ class GLViewer:
         # Compile and create the shader 
         if(self.draw_mesh):
             self.shader_image = Shader(MESH_VERTEX_SHADER, FRAGMENT_SHADER)
-        # TODO else FPC
+
         self.shader_MVP = glGetUniformLocation(self.shader_image.get_program_id(), "u_mvpMatrix")
         self.shader_color_loc = glGetUniformLocation(self.shader_image.get_program_id(), "u_color")
         # Create the rendering camera
@@ -279,7 +267,6 @@ class GLViewer:
         # Ready to start
         self.chunks_pushed = True
 
-    # TODO for FPC
     def init_mesh(self, _mesh):
         self.draw_mesh = True
         self.mesh = _mesh
@@ -289,12 +276,12 @@ class GLViewer:
         fov_y = (_params.v_fov + 0.5) * M_PI / 180
         fov_x = (_params.h_fov + 0.5) * M_PI / 180
 
-        self.projection_[(0,0)] = 1. / math.tan(fov_x * .5)
-        self.projection_[(1,1)] = 1. / math.tan(fov_y * .5)
-        self.projection_[(2,2)] = -(self.zfar + self.znear) / (self.zfar - self.znear)
-        self.projection_[(3,2)] = -1.
-        self.projection_[(2,3)] = -(2. * self.zfar * self.znear) / (self.zfar - self.znear)
-        self.projection_[(3,3)] = 0.
+        self.projection[(0,0)] = 1. / math.tan(fov_x * .5)
+        self.projection[(1,1)] = 1. / math.tan(fov_y * .5)
+        self.projection[(2,2)] = -(self.zfar + self.znear) / (self.zfar - self.znear)
+        self.projection[(3,2)] = -1.
+        self.projection[(2,3)] = -(2. * self.zfar * self.znear) / (self.zfar - self.znear)
+        self.projection[(3,3)] = 0.
     
     def print_GL(self, _x, _y, _string):
         glRasterPos(_x, _y)
@@ -379,7 +366,6 @@ class GLViewer:
             nb_c = 0
             if self.draw_mesh:
                 nb_c = len(self.mesh.chunks)
-            # TODO else FPC
 
             if nb_c > len(self.sub_maps): 
                 for n in range(len(self.sub_maps),nb_c):
@@ -389,8 +375,7 @@ class GLViewer:
                 for m in range(len(self.sub_maps)):
                     if (m < nb_c) and self.mesh.chunks[m].has_been_updated:
                         self.sub_maps[m].update(self.mesh.chunks[m])
-            # TODO else FPC
-
+                        
             self.new_chunks = False
             self.chunks_pushed = True
 
@@ -406,7 +391,7 @@ class GLViewer:
                 # Send the projection and the Pose to the GLSL shader to make the projection of the 2D image
                 tmp = self.pose
                 tmp.inverse()
-                proj = (self.projection_ * tmp).m
+                proj = (self.projection * tmp).m
                 vpMat = proj.flatten()
                 
                 glUseProgram(self.shader_image.get_program_id())

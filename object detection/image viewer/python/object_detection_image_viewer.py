@@ -23,7 +23,7 @@
     in an OpenGL window
 """
 import sys
-import ogl_viewer.ogl_viewer as gl
+import ogl_viewer.viewer as gl
 import pyzed.sl as sl
 
 if __name__ == "__main__":
@@ -65,7 +65,6 @@ if __name__ == "__main__":
     camera_info = zed.get_camera_information()
     # Create OpenGL viewer
     viewer = gl.GLViewer()
-    # viewer.init(len(sys.argv),sys.argv,camera_info.calibration_parameters.left_cam)
     viewer.init(camera_info.calibration_parameters.left_cam)
 
     # Configure object detection runtime parameters

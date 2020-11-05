@@ -33,27 +33,9 @@ void main() {
 }
 """
 
-POINTCLOUD_VERTEX_SHADER ="""
-#version 330 core
-layout(location = 0) in vec4 in_VertexRGBA;
-uniform mat4 u_mvpMatrix;
-out vec4 b_color;
-void main() {
-    uint vertexColor = floatBitsToUint(in_VertexRGBA.w);
-    vec3 clr_int = vec3((vertexColor & uint(0x000000FF)), (vertexColor & uint(0x0000FF00)) >> 8, (vertexColor & uint(0x00FF0000)) >> 16);
-    b_color = vec4(clr_int.r / 255.0f, clr_int.g / 255.0f, clr_int.b / 255.0f, 1.f);
-    gl_Position = u_mvpMatrix * vec4(in_VertexRGBA.xyz, 1);
-}
-"""
-
-POINTCLOUD_FRAGMENT_SHADER = """
-#version 330 core
-in vec4 b_color;
-layout(location = 0) out vec4 out_Color;
-void main() {
-   out_Color = b_color;
-}
-"""
+def safe_glutBitmapString(font, str_):
+    for i in range(len(str_)):
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, ord(str_[i]))
 
 class Shader:
     def __init__(self, _vs, _fs):
@@ -100,14 +82,15 @@ class Shader:
 
 
 class Simple3DObject:
-    def __init__(self, _is_static, pts_size = 3, clr_size = 3):
-        self.is_init = False
+    def __init__(self, _is_static):
+        self.vaoID = 0
         self.drawing_type = GL_TRIANGLES
         self.is_static = _is_static
-        self.clear()
-        self.pt_type = pts_size
-        self.clr_type = clr_size
+        self.elementbufferSize = 0
 
+        self.vertices = array.array('f')
+        self.colors = array.array('f')
+        self.indices = array.array('I')
 
     def add_pt(self, _pts):  # _pts [x,y,z]
         for pt in _pts:
@@ -126,64 +109,22 @@ class Simple3DObject:
         self.add_point_clr(_p1, _clr)
         self.add_point_clr(_p2, _clr)
             
-    def addFace(self, p1, p2, p3, clr) :
-        self.add_point_clr(p1, clr)
-        self.add_point_clr(p2, clr)
-        self.add_point_clr(p3, clr)
-        
     def push_to_GPU(self):
-        if(self.is_init == False):
-            self.vboID = glGenBuffers(3)
-            self.is_init = True
-
-        if(self.is_static):
-            type_draw = GL_STATIC_DRAW
-        else:
-            type_draw = GL_DYNAMIC_DRAW
+        self.vboID = glGenBuffers(4)
 
         if len(self.vertices):
             glBindBuffer(GL_ARRAY_BUFFER, self.vboID[0])
-            glBufferData(GL_ARRAY_BUFFER, len(self.vertices) * self.vertices.itemsize, (GLfloat * len(self.vertices))(*self.vertices), type_draw)
-        
+            glBufferData(GL_ARRAY_BUFFER, len(self.vertices) * self.vertices.itemsize, (GLfloat * len(self.vertices))(*self.vertices), GL_STATIC_DRAW)
+            
         if len(self.colors):
             glBindBuffer(GL_ARRAY_BUFFER, self.vboID[1])
-            glBufferData(GL_ARRAY_BUFFER, len(self.colors) * self.colors.itemsize, (GLfloat * len(self.colors))(*self.colors), type_draw)
+            glBufferData(GL_ARRAY_BUFFER, len(self.colors) * self.colors.itemsize, (GLfloat * len(self.colors))(*self.colors), GL_STATIC_DRAW)
 
         if len(self.indices):
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vboID[2])
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER,len(self.indices) * self.indices.itemsize,(GLuint * len(self.indices))(*self.indices), type_draw)
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER,len(self.indices) * self.indices.itemsize,(GLuint * len(self.indices))(*self.indices), GL_STATIC_DRAW)
 
         self.elementbufferSize = len(self.indices)
-        
-    def init(self, res):
-        if(self.is_init == False):
-            self.vboID = glGenBuffers(3)
-            self.is_init = True
-
-        if(self.is_static):
-            type_draw = GL_STATIC_DRAW
-        else:
-            type_draw = GL_DYNAMIC_DRAW
-
-        self.elementbufferSize = res.width * res.height
-
-        glBindBuffer(GL_ARRAY_BUFFER, self.vboID[0])
-        glBufferData(GL_ARRAY_BUFFER, self.elementbufferSize * self.pt_type * self.vertices.itemsize, None, type_draw)
-        
-        if(self.clr_type):
-            glBindBuffer(GL_ARRAY_BUFFER, self.vboID[1])
-            glBufferData(GL_ARRAY_BUFFER, self.elementbufferSize * self.clr_type * self.colors.itemsize, None, type_draw)
-
-        for i in range (0, self.elementbufferSize):
-            self.indices.append(i+1)
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vboID[2])
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER,len(self.indices) * self.indices.itemsize,(GLuint * len(self.indices))(*self.indices), type_draw)
-        
-    def setPoints(self, pc):
-        glBindBuffer(GL_ARRAY_BUFFER, self.vboID[0])
-        glBufferSubData(GL_ARRAY_BUFFER, 0, self.elementbufferSize * self.pt_type * self.vertices.itemsize, ctypes.c_void_p(pc.get_pointer()))
-        glBindBuffer(GL_ARRAY_BUFFER, 0)
 
     def clear(self):        
         self.vertices = array.array('f')
@@ -198,24 +139,25 @@ class Simple3DObject:
         if (self.elementbufferSize):            
             glEnableVertexAttribArray(0)
             glBindBuffer(GL_ARRAY_BUFFER, self.vboID[0])
-            glVertexAttribPointer(0,self.pt_type,GL_FLOAT,GL_FALSE,0,None)
+            glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,None)
 
-            if(self.clr_type):
-                glEnableVertexAttribArray(1)
-                glBindBuffer(GL_ARRAY_BUFFER, self.vboID[1])
-                glVertexAttribPointer(1,self.clr_type,GL_FLOAT,GL_FALSE,0,None)
+            glEnableVertexAttribArray(1)
+            glBindBuffer(GL_ARRAY_BUFFER, self.vboID[1])
+            glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,0,None)
             
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vboID[2])
             glDrawElements(self.drawing_type, self.elementbufferSize, GL_UNSIGNED_INT, None)      
             
             glDisableVertexAttribArray(0)
             glDisableVertexAttribArray(1)
-    
+
+def addVert(obj, i_f, limit, clr) :
+    obj.add_line([i_f, 0, -limit], [i_f, 0, limit], clr)
+    obj.add_line([-limit, 0, i_f],[limit, 0, i_f], clr)
+
 class GLViewer:
     def __init__(self):
         self.available = False
-        # TODO : might not be necessary to init it here
-        self.objects_name = []
         self.mutex = Lock()
         self.camera = CameraGL()
         self.wheelPosition = 0.
@@ -223,10 +165,12 @@ class GLViewer:
         self.mouseCurrentPosition = [0., 0.]
         self.previousMouseMotion = [0., 0.]
         self.mouseMotion = [0., 0.]
-        self.zedModel = Simple3DObject(True)
-        self.point_cloud = Simple3DObject(False, 4)
+        self.pose = sl.Transform()
+        self.trackState = sl.POSITIONAL_TRACKING_STATE
+        self.txtT = ""
+        self.txtR = ""
 
-    def init(self, _argc, _argv, camera_model, res): # _params = sl.CameraParameters
+    def init(self, _argc, _argv, camera_model): # _params = sl.CameraParameters
         glutInit(_argc, _argv)
         wnd_w = int(glutGet(GLUT_SCREEN_WIDTH)*0.9)
         wnd_h = int(glutGet(GLUT_SCREEN_HEIGHT) *0.9)
@@ -234,7 +178,7 @@ class GLViewer:
         glutInitWindowPosition(int(wnd_w*0.05), int(wnd_h*0.05))
 
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)
-        glutCreateWindow("ZED Depth Sensing")
+        glutCreateWindow("ZED Positional Tracking")
         glViewport(0, 0, wnd_w, wnd_h)
 
         glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE,
@@ -250,13 +194,30 @@ class GLViewer:
 
         # Compile and create the shader for 3D objects
         self.shader_image = Shader(VERTEX_SHADER, FRAGMENT_SHADER)
-        self.shader_image_MVP = glGetUniformLocation(self.shader_image.get_program_id(), "u_mvpMatrix")
-        
-        self.shader_pc = Shader(POINTCLOUD_VERTEX_SHADER, POINTCLOUD_FRAGMENT_SHADER)
-        self.shader_pc_MVP = glGetUniformLocation(self.shader_pc.get_program_id(), "u_mvpMatrix")
+        self.shader_MVP = glGetUniformLocation(self.shader_image.get_program_id(), "u_mvpMatrix")
         
         self.bckgrnd_clr = np.array([223/255., 230/255., 233/255.])
 
+        # Create the bounding box object
+        self.floor_grid = Simple3DObject(False)
+        self.floor_grid.set_drawing_type(GL_LINES)
+        
+        limit = 20
+        clr1 = np.array([218/255., 223/255., 225/255.])        
+        clr2 = np.array([108/255., 122/255., 137/255.])
+        
+        for i in range (limit * -5, limit * 5):
+            i_f = i / 5.
+            if((i % 5) == 0):
+                addVert(self.floor_grid, i_f, limit, clr2)
+            else:
+                addVert(self.floor_grid, i_f, limit, clr1)
+        self.floor_grid.push_to_GPU()
+
+        self.zedPath = Simple3DObject(False)
+        self.zedPath.set_drawing_type(GL_LINE_STRIP)
+
+        self.zedModel = Simple3DObject(False)
         if(camera_model == sl.MODEL.ZED):
             for i in range(0, zm.NB_ALLUMINIUM_TRIANGLES * 3, 3):
                 for j in range(3):
@@ -301,20 +262,15 @@ class GLViewer:
         self.zedModel.set_drawing_type(GL_TRIANGLES)
         self.zedModel.push_to_GPU()
 
-        self.point_cloud.init(res)
-        self.point_cloud.set_drawing_type(GL_POINTS)
-        
-        # Register the drawing function with GLUT
+        # Register GLUT callback functions 
         glutDisplayFunc(self.draw_callback)
-        # Register the function called when nothing happens
-        glutIdleFunc(self.idle)
-
+        glutIdleFunc(self.idle)   
         glutKeyboardFunc(self.keyPressedCallback)
-        # Register the closing function
         glutCloseFunc(self.close_func)
         glutMouseFunc(self.on_mouse)
         glutMotionFunc(self.on_mousemove)
         glutReshapeFunc(self.on_resize)  
+        
         self.available = True
 
     def is_available(self):
@@ -322,9 +278,13 @@ class GLViewer:
             glutMainLoopEvent()
         return self.available
 
-    def updateData(self, pc):
+    def updateData(self, zed_rt, str_t, str_r, state):
         self.mutex.acquire()
-        self.point_cloud.setPoints(pc)
+        self.pose = zed_rt
+        self.zedPath.add_point_clr(zed_rt.get_translation().get(), [0.1,0.36,0.84])
+        self.trackState = state
+        self.txtT = str_t
+        self.txtR = str_r
         self.mutex.release()
 
     def idle(self):
@@ -376,17 +336,20 @@ class GLViewer:
             self.mutex.acquire()
             self.update()
             self.draw()
+            self.print_text()
             self.mutex.release()  
 
             glutSwapBuffers()
             glutPostRedisplay()
 
     def update(self):
+        self.zedPath.push_to_GPU()
+
         if(self.mouse_button[0]):
             r = sl.Rotation()
             vert=self.camera.vertical_
             tmp = vert.get()
-            vert.init_vector(tmp[0] * 1.,tmp[1] * 1., tmp[2] * 1.)
+            vert.init_vector(tmp[0] * -1.,tmp[1] * -1., tmp[2] * -1.)
             r.init_angle_translation(self.mouseMotion[0] * 0.002, vert)
             self.camera.rotate(r)
 
@@ -396,7 +359,7 @@ class GLViewer:
         if(self.mouse_button[1]):
             t = sl.Translation()
             tmp = self.camera.right_.get()
-            scale = self.mouseMotion[0] *-0.01
+            scale = self.mouseMotion[0] * -0.01
             t.init_vector(tmp[0] * scale, tmp[1] * scale, tmp[2] * scale)
             self.camera.translate(t)
             
@@ -412,25 +375,77 @@ class GLViewer:
             t.init_vector(tmp[0] * scale, tmp[1] * scale, tmp[2] * scale)
             self.camera.translate(t)
 
+
         self.camera.update()
 
         self.mouseMotion = [0., 0.]
         self.wheelPosition = 0
 
-    def draw(self):
-        vpMatrix = self.camera.getViewProjectionMatrix()
-        glUseProgram(self.shader_image.get_program_id())
-        glUniformMatrix4fv(self.shader_image_MVP, 1, GL_TRUE,  (GLfloat * len(vpMatrix))(*vpMatrix))    
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
-        self.zedModel.draw() 
-        glUseProgram(0)
-        
-        glUseProgram(self.shader_pc.get_program_id())
-        glUniformMatrix4fv(self.shader_pc_MVP, 1, GL_TRUE,  (GLfloat * len(vpMatrix))(*vpMatrix))
+    def draw(self): 
         glPointSize(1.)
-        self.point_cloud.draw()
+        glUseProgram(self.shader_image.get_program_id())
+
+        vpMatrix = self.camera.getViewProjectionMatrix()
+        glUniformMatrix4fv(self.shader_MVP, 1, GL_TRUE,  (GLfloat * len(vpMatrix))(*vpMatrix))    
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+        glLineWidth(2)
+        self.zedPath.draw()
+        self.floor_grid.draw()
+        
+        vpMatrix = self.camera.getViewProjectionMatrixRT(self.pose)
+        glUniformMatrix4fv(self.shader_MVP, 1, GL_FALSE,  (GLfloat * len(vpMatrix))(*vpMatrix))
+
+        self.zedModel.draw()
         glUseProgram(0)
         
+    def print_text(self):
+        glMatrixMode(GL_PROJECTION)
+        glPushMatrix()
+        glLoadIdentity()
+        w_wnd = glutGet(GLUT_WINDOW_WIDTH)
+        h_wnd = glutGet(GLUT_WINDOW_HEIGHT)
+        glOrtho(0, w_wnd, 0, h_wnd, -1., 1.)
+
+        glMatrixMode(GL_MODELVIEW)
+        glPushMatrix()
+        glLoadIdentity()
+
+        start_w = 20
+        start_h = h_wnd - 40
+
+        if(self.trackState == sl.POSITIONAL_TRACKING_STATE.OK):
+            glColor3f(0.2, 0.65, 0.2)
+        else:
+            glColor3f(0.85, 0.2, 0.2)
+
+        glRasterPos2i(start_w, start_h)
+
+        safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18,  "POSITIONAL TRACKING : " + str(self.trackState))
+
+        dark_clr = 0.12
+        glColor3f(dark_clr, dark_clr, dark_clr)
+        glRasterPos2i(start_w, start_h - 25)
+        safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, "Translation (m) :")
+
+        glColor3f(0.4980, 0.5490, 0.5529)
+        glRasterPos2i(155, start_h - 25)
+
+        safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, self.txtT)
+
+        glColor3f(dark_clr, dark_clr, dark_clr)
+        glRasterPos2i(start_w, start_h - 50)
+        safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, "Rotation   (rad) :")
+
+        glColor3f(0.4980, 0.5490, 0.5529)
+        glRasterPos2i(155, start_h - 50)
+        safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, self.txtR)
+
+        glMatrixMode(GL_PROJECTION)
+        glPopMatrix()
+        glMatrixMode(GL_MODELVIEW)
+        glPopMatrix()
+
 class CameraGL:
     def __init__(self):
         self.ORIGINAL_FORWARD = sl.Translation()
@@ -449,18 +464,19 @@ class CameraGL:
         self.right_ = sl.Translation()
         self.vertical_ = sl.Translation()
         self.vpMatrix_ = sl.Matrix4f()
-        self.offset_ = sl.Translation()
-        self.offset_.init_vector(0,0,5)
         self.projection_ = sl.Matrix4f()
         self.projection_.set_identity()
         self.setProjection(1.78)
 
-        self.position_.init_vector(0., 0., 0.)
+        self.position_.init_vector(0., 5., -3.)
         tmp = sl.Translation()
-        tmp.init_vector(0, 0, -.1)
+        tmp.init_vector(0, 0, -4)
         tmp2 = sl.Translation()
         tmp2.init_vector(0, 1, 0)
-        self.setDirection(tmp, tmp2)        
+        self.setDirection(tmp, tmp2)
+        cam_rot = sl.Rotation()
+        cam_rot.set_euler_angles(-50., 180., 0., False)
+        self.setRotation(cam_rot)
 
     def update(self): 
         dot_ = sl.Translation.dot_translation(self.vertical_, self.up_)
@@ -468,12 +484,7 @@ class CameraGL:
             tmp = self.vertical_.get()
             self.vertical_.init_vector(tmp[0] * -1.,tmp[1] * -1., tmp[2] * -1.)
         transformation = sl.Transform()
-
-        tmp_position = self.position_.get()
-        tmp = (self.offset_ * self.orientation_).get()
-        new_position = sl.Translation()
-        new_position.init_vector(tmp_position[0] + tmp[0], tmp_position[1] + tmp[1], tmp_position[2] + tmp[2])
-        transformation.init_orientation_translation(self.orientation_, new_position)
+        transformation.init_orientation_translation(self.orientation_, self.position_)
         transformation.inverse()
         self.vpMatrix_ = self.projection_ * transformation
         

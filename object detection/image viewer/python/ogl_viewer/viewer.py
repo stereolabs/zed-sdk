@@ -32,42 +32,6 @@ void main() {
 }
 """
 
-SK_VERTEX_SHADER = """
-# version 330 core
-layout(location = 0) in vec3 in_Vertex;
-layout(location = 1) in vec4 in_Color;
-layout(location = 2) in vec3 in_Normal;
-out vec4 b_color;
-out vec3 b_position;
-out vec3 b_normal;
-uniform mat4 u_mvpMatrix;
-uniform vec4 u_color;
-void main() {
-   b_color = in_Color;
-   b_position = in_Vertex;
-   b_normal = in_Normal;
-	gl_Position =  u_mvpMatrix * vec4(in_Vertex, 1);
-}
-"""
-
-SK_FRAGMENT_SHADER = """
-# version 330 core
-in vec4 b_color;
-in vec3 b_position;
-in vec3 b_normal;
-out vec4 out_Color;
-void main() {
-	vec3 lightPosition = vec3(0, 10, 0);
-	vec3 lightColor = vec3(1,1,1);
-	float ambientStrength = 0.3;
-	vec3 ambient = ambientStrength * lightColor;
-	vec3 norm = normalize(b_normal);
-	vec3 lightDir = normalize(lightPosition - b_position);
-	float diffuse = (1 - ambientStrength) * max(dot(b_normal, lightDir),
-   out_Color = vec4(b_color.rgb * (diffuse + ambient), 1);
-}
-"""
-
 M_PI = 3.1415926
 
 GRID_SIZE = 9.0
@@ -103,7 +67,6 @@ def generate_color_id(_idx):
     else:
         offset = _idx % 5
         clr = [ID_COLORS[offset][0], ID_COLORS[offset][1], ID_COLORS[offset][2], 1]
-        # clr = np.array([ID_COLORS[offset][0], ID_COLORS[offset][1], ID_COLORS[offset][2], 1], np.float32)
     return clr
 
 
@@ -691,7 +654,6 @@ class GLViewer:
 
         # Create the rendering camera
         self.projection = array.array('f')
-        # self.set_render_camera_projection(_params, 500, 20*1000)
         self.set_render_camera_projection(_params, 0.5, 20)
 
         # Create the bounding box object
@@ -708,7 +670,7 @@ class GLViewer:
         glutDisplayFunc(self.draw_callback)
         # Register the function called when nothing happens
         glutIdleFunc(self.idle)   
-
+        # Register the function called on key pressed
         glutKeyboardFunc(self.keyPressedCallback)
         # Register the closing function
         glutCloseFunc(self.close_func)
@@ -814,7 +776,6 @@ class GLViewer:
             self.image_handler.close()      
 
     def keyPressedCallback(self, key, x, y):
-        print("key pressed : {}\tunicode : {}".format(key, ord(key)))
         if ord(key) == 113 or ord(key) == 27:
             self.close_func() 
 

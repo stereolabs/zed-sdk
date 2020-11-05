@@ -19,11 +19,12 @@
 ########################################################################
 
 """
-    Position sample shows the position of the ZED camera in a OpenGL window.
+    This sample shows how to track the position of the ZED camera 
+    and displays it in a OpenGL window.
 """
 
 import sys
-import positional_tracking.tracking_viewer as gl
+import ogl_viewer.tracking_viewer as gl
 import pyzed.sl as sl
 
 

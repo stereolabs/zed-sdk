@@ -18,12 +18,17 @@
 #
 ########################################################################
 
+"""
+    This sample demonstrates how to capture 3D point cloud and detected objects
+    with the ZED SDK and display the result in an OpenGL window.
+"""
+
 import sys
-import ogl_viewer.ogl_viewer as gl
+import ogl_viewer.viewer as gl
 import pyzed.sl as sl
 
 if __name__ == "__main__":
-
+    print("Running object detection ... Press 'Esc' to quit")
     zed = sl.Camera()
     
     # Create a InitParameters object and set configuration parameters

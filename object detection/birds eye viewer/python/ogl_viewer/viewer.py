@@ -490,17 +490,15 @@ class GLViewer:
         self.BBox_faces.set_drawing_type(GL_QUADS)
         self.skeletons.set_drawing_type(GL_LINES)
         
-        # Register the drawing function with GLUT
+        # Register GLUT callback functions
         glutDisplayFunc(self.draw_callback)
-        # Register the function called when nothing happens
         glutIdleFunc(self.idle)
-
         glutKeyboardFunc(self.keyPressedCallback)
-        # Register the closing function
         glutCloseFunc(self.close_func)
         glutMouseFunc(self.on_mouse)
         glutMotionFunc(self.on_mousemove)
         glutReshapeFunc(self.on_resize)  
+
         self.available = True
 
     def is_available(self):
@@ -568,7 +566,7 @@ class GLViewer:
             self.available = False
 
     def keyPressedCallback(self, key, x, y):
-        if ord(key) == 27:
+        if ord(key) == 27:          # 'Esc' key
             self.close_func()
 
     def on_mouse(self,*args,**kwargs):

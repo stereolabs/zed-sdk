@@ -118,7 +118,6 @@ class Shader:
 class MeshObject:
     def __init__(self):
         self.current_fc = 0
-        self.vaoID = 0
         self.need_update = False
         self.vert = []
         self.edge_dist = array.array('f')
@@ -126,7 +125,6 @@ class MeshObject:
         self.type = sl.PLANE_TYPE.UNKNOWN
 
     def alloc(self):
-        self.vaoID = glGenVertexArrays(1)
         self.vboID = glGenBuffers(3)
         self.shader_image = Shader(MESH_VERTEX_SHADER, MESH_FRAGMENT_SHADER)
         self.shader_MVP = glGetUniformLocation(self.shader_image.get_program_id(), "u_mvpMatrix")
@@ -159,7 +157,7 @@ class MeshObject:
         if self.need_update:
             if len(self.vert):
                 glBindBuffer(GL_ARRAY_BUFFER, self.vboID[0])
-                glBufferData(GL_ARRAY_BUFFER, len(self.vert) * self.vert.itemsize , (GLfloat * len(self.vert))(*self.vert), GL_DYNAMIC_DRAW) # TODO might need to flatten
+                glBufferData(GL_ARRAY_BUFFER, len(self.vert) * self.vert.itemsize , (GLfloat * len(self.vert))(*self.vert), GL_DYNAMIC_DRAW)
 
             if len(self.edge_dist):
                 glBindBuffer(GL_ARRAY_BUFFER, self.vboID[1])
@@ -406,7 +404,6 @@ class GLViewer:
             self.image_handler.close()      
 
     def keyReleasedCallback(self, key, x, y):
-        print("key pressed : {}".format(ord(key)))
         if ord(key) == 113 or ord(key) == 27:   # Esc or 'q' key
             self.close_func()
         if ord(key) == 32:      # space bar

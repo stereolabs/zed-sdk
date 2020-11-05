@@ -18,11 +18,17 @@
 #
 ########################################################################
 
+"""
+    This sample demonstrates how to capture a live 3D point cloud   
+    with the ZED SDK and display the result in an OpenGL window.    
+"""
+
 import sys
-import ogl_viewer.ogl_viewer as gl
+import ogl_viewer.viewer as gl
 import pyzed.sl as sl
 
 if __name__ == "__main__":
+    print("Running Depth Sensing sample ... Press 'Esc' to quit")
 
     init = sl.InitParameters(camera_resolution=sl.RESOLUTION.HD720,
                                  depth_mode=sl.DEPTH_MODE.ULTRA,

@@ -25,7 +25,6 @@
 import sys
 import pyzed.sl as sl
 import ogl_viewer.viewer as gl
-# import cv2
 import numpy as np
 
 if __name__ == "__main__":
@@ -52,16 +51,15 @@ if __name__ == "__main__":
     if err != sl.ERROR_CODE.SUCCESS:
         exit(1)
 
-    
     # Enable Positional tracking (mandatory for object detection)
     positional_tracking_parameters = sl.PositionalTrackingParameters()
     # If the camera is static, uncomment the following line to have better performances and boxes sticked to the ground.
-    # positional_tracking_parameters.set_as_static = true;
+    # positional_tracking_parameters.set_as_static = True
     zed.enable_positional_tracking(positional_tracking_parameters)
     
     obj_param = sl.ObjectDetectionParameters()
     obj_param.enable_body_fitting = True        # Smooth skeleton move
-    obj_param.detection_model = sl.DETECTION_MODEL.HUMAN_BODY_FAST # sl.DETECTION.HUMAN_BODY_ACCURATE
+    obj_param.detection_model = sl.DETECTION_MODEL.HUMAN_BODY_FAST 
 
     # Enable Object Detection module
     zed.enable_object_detection(obj_param)
@@ -92,7 +90,7 @@ if __name__ == "__main__":
         
     viewer.exit()
 
-    image.free()
+    image.free(sl.MEM.CPU)
     # Disable modules and close camera
     zed.disable_object_detection()
     zed.disable_positional_tracking()

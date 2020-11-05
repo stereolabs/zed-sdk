@@ -27,7 +27,7 @@
 import sys
 import time
 import pyzed.sl as sl
-import ogl_viewer.gl_viewer as gl
+import ogl_viewer.viewer as gl
 
 
 def main():
