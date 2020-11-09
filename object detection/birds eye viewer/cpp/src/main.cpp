@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
 	init_parameters.sdk_verbose = true;
     // On Jetson (Nano, TX1/2) the object detection combined with an heavy depth mode could reduce the frame rate too much
     init_parameters.depth_mode = isJetson ? DEPTH_MODE::PERFORMANCE : DEPTH_MODE::ULTRA;
-    init_parameters.depth_maximum_distance = 5.0f * 1000.0f;
+    init_parameters.depth_maximum_distance = 10.0f * 1000.0f;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
     parseArgs(argc, argv, init_parameters);
     
@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
 
     // Define the Objects detection module parameters
     ObjectDetectionParameters detection_parameters;
-    detection_parameters.enable_tracking = true;
+    detection_parameters.enable_tracking = false;
     detection_parameters.enable_mask_output = false; // designed to give person pixel mask
     detection_parameters.detection_model = isJetson ? DETECTION_MODEL::MULTI_CLASS_BOX : DETECTION_MODEL::MULTI_CLASS_BOX_ACCURATE;
 

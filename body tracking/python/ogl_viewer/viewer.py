@@ -460,15 +460,11 @@ class GLViewer:
         glutInit()
         wnd_w = glutGet(GLUT_SCREEN_WIDTH)
         wnd_h = glutGet(GLUT_SCREEN_HEIGHT)
-        width = wnd_w*0.9
-        height = wnd_h*0.9
+        width = (int)(wnd_w*0.9)
+        height = (int)(wnd_h*0.9)
      
-        if width > _params.image_size.width and height > _params.image_size.height:
-            width = _params.image_size.width
-            height = _params.image_size.height
-
         glutInitWindowSize(width, height)
-        glutInitWindowPosition(0, 0) # The window opens at the upper left corner of the screen
+        glutInitWindowPosition((int)(wnd_w*0.05), (int)(wnd_h*0.05)) # The window opens at the upper left corner of the screen
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_SRGB)
         glutCreateWindow("ZED Body Tracking")
         glViewport(0, 0, width, height)

@@ -53,7 +53,6 @@ ID_COLORS = np.array([
     , [0.989, 0.388, 0.419]]
     , np.float32)
 
-
 def get_color_class(_idx):
     _idx = min(5, _idx)
     clr = [CLASS_COLORS[_idx][0], CLASS_COLORS[_idx][1], CLASS_COLORS[_idx][2], 1.0]
@@ -68,7 +67,6 @@ def generate_color_id(_idx):
         offset = _idx % 5
         clr = [ID_COLORS[offset][0], ID_COLORS[offset][1], ID_COLORS[offset][2], 1]
     return clr
-
 
 class Shader:
     def __init__(self, _vs, _fs):
@@ -182,136 +180,9 @@ class Simple3DObject:
         self.add_point_clr(_p1, _clr)
         self.add_point_clr(_p2, _clr)
     
-    """
-    Define a cylinder from its top and bottom faces and its corresponding color
-    """
-    def add_cylinder(self, _start_position, _end_position, _clr):
-        m_radius = 0.010  
-
-        dir = np.array([_end_position[0] - _start_position[0], _end_position[1] -
-                       _start_position[1], _end_position[2] - _start_position[2]])
-
-        height = np.linalg.norm(dir)
-
-        dir = np.divide(dir, height)
-
-        yAxis = np.array([0, 1, 0])
-        v = np.cross(dir, yAxis)
-
-        rotation = sl.Transform()   # identity matrix
-
-        sinTheta = np.linalg.norm(v)
-        if(sinTheta < 0.00001):
-            rotation = sl.Transform()   # identity matrix
-        else:
-            cosTheta = np.dot(dir, yAxis)
-            scale = (1-cosTheta)/(1-(cosTheta*cosTheta))
-
-            data = sl.Matrix4f()
-            data.set_zeros()
-
-            # Set data to :
-            # [ 0    , v[2] , -v[1], 0,
-            #  -v[2] ,  0   ,  v[0], 0,
-            #   v[1] ,-v[0] ,   0  , 0,
-            #   0    ,  0   ,   0  , 1 ]
-            data[0, 1] = v[2]
-            data[0, 2] = -v[1]
-            data[1, 0] = -v[2]
-            data[1, 2] = v[0]
-            data[2, 0] = v[1]
-            data[2, 1] = -v[0]
-            data[3, 3] = 1
-
-            vx = sl.Transform()
-            vx.init_matrix(data)
-            vx2 = vx * vx
-            vx2Scaled = vx2 * scale
-
-            rotation = rotation + vx
-            rotation = rotation + vx2Scaled
-
-            ######################################
-
-            resolution = 0.1
-            i = 0
-            while i <= (2 * M_PI) - 1:
-                v1_vec = [m_radius * math.cos(i), 0, m_radius * math.sin(i)]
-                v1 = v1_vec * rotation.get_rotation_matrix().r + _start_position
-                v2_vec = [m_radius *
-                    math.cos(i), height, m_radius * math.sin(i)]
-                v2 = v2_vec * rotation.get_rotation_matrix().r + _start_position
-                v3_vec = [m_radius *
-                    math.cos(i+1), 0, m_radius * math.sin(i+1)]
-                v3 = v3_vec * rotation.get_rotation_matrix().r + _start_position
-                v4_vec = [m_radius *
-                    math.cos(i+1), height, m_radius * math.sin(i+1)]
-                v4 = v4_vec * rotation.get_rotation_matrix().r + _start_position
-
-                normal = np.cross((v2 - v1), (v3 - v1))
-                normal = np.divide(normal, np.linalg.norm(normal))
-
-                self.add_points(v1, _clr)
-                self.add_points(v2, _clr)
-                self.add_points(v3, _clr)
-                self.add_points(v4, _clr)
-
-                self.add_normal(normal)
-                self.add_normal(normal)
-                self.add_normal(normal)
-                self.add_normal(normal)
-
-                i = i + resolution
-
-    def add_sphere(self, _position, _clr): 
-        m_radius = 0.02 
-
-        m_stack_count = 20
-        m_sector_count = 20
-
-        for i in range(m_stack_count+1):
-            lat0 = M_PI * (-0.5 + (i - 1) / m_stack_count)
-            z0 = math.sin(lat0)
-            zr0 = math.cos(lat0)
-
-            lat1 = M_PI * (-0.5 + i / m_stack_count)
-            z1 = math.sin(lat1)
-            zr1 = math.cos(lat1)
-            for j in range(m_sector_count):
-                lng = 2 * M_PI * (j - 1) / m_sector_count
-                x = math.cos(lng)
-                y = math.sin(lng)
-
-                v1 = [m_radius * x * zr0, m_radius *
-                    y * zr0, m_radius * z0] + _position
-                normal = [x * zr0, y * zr0, z0]
-                self.add_points(v1, _clr)
-                self.add_normal(normal)
-
-                v2 = [m_radius * x * zr1, m_radius *
-                    y * zr1, m_radius * z1] + _position
-                normal = [x * zr1, y * zr1, z1]
-                self.add_points(v2, _clr)
-                self.add_normal(normal)
-
-                lng = 2 * M_PI * j / m_sector_count
-                x = math.cos(lng)
-                y = math.sin(lng)
-
-                v4 = [m_radius * x * zr1, m_radius *
-                    y * zr1, m_radius * z1] + _position
-                normal = [x * zr1, y * zr1, z1]
-                self.add_points(v4, _clr)
-                self.add_normal(normal)
-
-                v3 = [m_radius * x * zr0, m_radius *
-                    y * zr0, m_radius * z0] + _position
-                normal = [x * zr0, y * zr0, z0]
-                self.add_points(v3, _clr)
-                self.add_normal(normal)
-
     def add_full_edges(self, _pts, _clr):
         start_id = int(len(self.vertices) / 3)
+        _clr[3] = 0.4
 
         for i in range(len(_pts)):
             self.add_pt(_pts[i])
@@ -344,9 +215,9 @@ class Simple3DObject:
         for i in range(len(current_pts)):
             self.add_pt(current_pts[i])
             if (i == 2 or i == 3):
-                _clr[2] = 0
+                _clr[3] = 0
             else:
-                _clr[2] = 0.75
+                _clr[3] = 0.4
             self.add_clr(_clr)
 
         box_links = np.array([0, 1, 1, 2, 2, 3, 3, 4, 4, 5])
@@ -620,15 +491,11 @@ class GLViewer:
         glutInit()
         wnd_w = glutGet(GLUT_SCREEN_WIDTH)
         wnd_h = glutGet(GLUT_SCREEN_HEIGHT)
-        width = wnd_w*0.9
-        height = wnd_h*0.9
+        width = (int)(wnd_w*0.9)
+        height = (int)(wnd_h*0.9)
      
-        if width > _params.image_size.width and height > _params.image_size.height:
-            width = _params.image_size.width
-            height = _params.image_size.height
-
         glutInitWindowSize(width, height)
-        glutInitWindowPosition(0, 0) # The window opens at the upper left corner of the screen
+        glutInitWindowPosition((int)(wnd_w*0.05),(int)(wnd_h*0.05))
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_SRGB)
         glutCreateWindow("ZED Object detection")
         glViewport(0, 0, width, height)
@@ -665,6 +532,7 @@ class GLViewer:
 
         # Set OpenGL settings
         glDisable(GL_DEPTH_TEST)    # avoid occlusion with bbox
+        glLineWidth(1.5)
 
         # Register the drawing function with GLUT
         glutDisplayFunc(self.draw_callback)
@@ -797,13 +665,10 @@ class GLViewer:
         self.BBox_faces.push_to_GPU()
 
     def draw(self):  
-        glPointSize(1.)
         self.image_handler.draw()
 
         glUseProgram(self.shader_image.get_program_id())
-        glUniformMatrix4fv(self.shader_MVP, 1, GL_TRUE,  (GLfloat * len(self.projection))(*self.projection))    
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
-        glLineWidth(0.5)
+        glUniformMatrix4fv(self.shader_MVP, 1, GL_TRUE,  (GLfloat * len(self.projection))(*self.projection))   
         self.BBox_edges.draw()
         self.BBox_faces.draw()
         glUseProgram(0)
