@@ -57,6 +57,8 @@ target_link_libraries(${PROJECT_NAME}
                         ${OPENGL_LIBRARIES}
                         ${GLUT_LIBRARY}
                         ${GLEW_LIBRARIES})
-                        
-LIST(APPEND SAMPLE_LIST ${PROJECT_NAME})
-SET(SAMPLE_LIST "${SAMPLE_LIST}" PARENT_SCOPE)
+
+if(INSTALL_SAMPLES)
+    LIST(APPEND SAMPLE_LIST ${PROJECT_NAME})
+    SET(SAMPLE_LIST "${SAMPLE_LIST}" PARENT_SCOPE)
+endif()
