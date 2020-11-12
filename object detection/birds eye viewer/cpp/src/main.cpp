@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
 
     // Define the Objects detection module parameters
     ObjectDetectionParameters detection_parameters;
-    detection_parameters.enable_tracking = false;
+    detection_parameters.enable_tracking = true;
     detection_parameters.enable_mask_output = false; // designed to give person pixel mask
     detection_parameters.detection_model = isJetson ? DETECTION_MODEL::MULTI_CLASS_BOX : DETECTION_MODEL::MULTI_CLASS_BOX_ACCURATE;
 
