@@ -8,5 +8,3 @@ add_subdirectory("tutorial 4 - positional tracking/cpp")
 add_subdirectory("tutorial 5 - spatial mapping/cpp")
 add_subdirectory("tutorial 6 - object detection/cpp")
 add_subdirectory("tutorial 7 - sensor data/cpp")
-
-SET(SAMPLE_LIST "${SAMPLE_LIST}" PARENT_SCOPE)

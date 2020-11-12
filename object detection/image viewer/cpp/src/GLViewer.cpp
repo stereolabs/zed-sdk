@@ -122,11 +122,7 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters param) {
     int wnd_h = glutGet(GLUT_SCREEN_HEIGHT);
     int width = wnd_w*0.9;
     int height = wnd_h*0.9;
-    if (width > param.image_size.width && height > param.image_size.height) {
-        width = param.image_size.width;
-        height = param.image_size.height;
-    }
-
+   
     glutInitWindowSize(width, height);
     glutInitWindowPosition(wnd_w*0.05, wnd_h*0.05);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_SRGB);
@@ -169,6 +165,7 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters param) {
     bckgrnd_clr = sl::float3(0, 0, 0);
 
     // Set OpenGL settings
+	glLineWidth(1.5f);
     glDisable(GL_DEPTH_TEST); //avoid occlusion with bbox
 
     // Map glut function on this class methods
@@ -305,16 +302,12 @@ void GLViewer::update() {
 }
 
 void GLViewer::draw() {
-    glPointSize(1.0);
     image_handler.draw();
 
     glUseProgram(shader.it.getProgramId());
     glUniformMatrix4fv(shader.MVP_Mat, 1, GL_TRUE, projection_.m);
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glLineWidth(1.5f);
 	BBox_edges.draw();
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	BBox_faces.draw();
     glUseProgram(0);
 

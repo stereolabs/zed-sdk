@@ -57,9 +57,7 @@ int main(int argc, char** argv) {
     // track detects object accross time and space
     detection_parameters.enable_tracking = true;
     // compute a binary mask for each object aligned on the left image
-    detection_parameters.enable_mask_output = true;
-
-    auto camera_infos = zed.getCameraInformation();
+    detection_parameters.enable_mask_output = true; // designed to give person pixel mask
 
     // If you want to have object tracking you need to enable positional tracking first
     if (detection_parameters.enable_tracking)

@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 2.4)
 PROJECT(ZED_Object_detection_image_viewer)
-list(APPEND SAMPLE_LIST ${PROJECT_NAME})
 
 option(LINK_SHARED_ZED "Link with the ZED SDK shared executable" ON)
 
@@ -58,3 +57,8 @@ target_link_libraries(${PROJECT_NAME}
                         ${OPENGL_LIBRARIES}
                         ${GLUT_LIBRARY}
                         ${GLEW_LIBRARIES})
+
+if(INSTALL_SAMPLES)
+    LIST(APPEND SAMPLE_LIST ${PROJECT_NAME})
+    SET(SAMPLE_LIST "${SAMPLE_LIST}" PARENT_SCOPE)
+endif()

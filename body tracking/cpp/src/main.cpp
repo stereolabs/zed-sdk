@@ -75,6 +75,7 @@ int main(int argc, char **argv) {
 
     // Enable the Objects detection module
     ObjectDetectionParameters obj_det_params;
+    obj_det_params.enable_tracking = true; // track people across images flow
     obj_det_params.enable_body_fitting = true; // smooth skeletons moves
     obj_det_params.detection_model = isJetson ? DETECTION_MODEL::HUMAN_BODY_FAST : DETECTION_MODEL::HUMAN_BODY_ACCURATE;
 
@@ -85,7 +86,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    auto camera_info = zed.getCameraInformation();
+    auto camera_info = zed.getCameraInformation().camera_configuration;
     // Create OpenGL Viewer
     GLViewer viewer;
     viewer.init(argc, argv, camera_info.calibration_parameters.left_cam);

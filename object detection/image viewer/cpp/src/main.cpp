@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
 		return EXIT_FAILURE;
 	}
 
-	auto camera_info = zed.getCameraInformation();
+	auto camera_info = zed.getCameraInformation().camera_configuration;
 	// Create OpenGL Viewer
 	GLViewer viewer;
 	viewer.init(argc, argv, camera_info.calibration_parameters.left_cam);
