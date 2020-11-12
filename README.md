@@ -24,9 +24,11 @@ The ZED SDK includes tutorials and samples that demonstrate the API features and
 
 * **Positional Tracking** - This sample shows how to use positional tracking and display the result with OpenGL.
 
-* **Spatial Mapping** - This sample shows how to capture a mesh with the ZED and display it with OpenGL
+* **Spatial Mapping** - This sample shows how to capture a mesh with the ZED and display it with OpenGL. Classic Mesh and Point Cloud fusion are available.
 
-* **Object Detection** - This sample shows how to use the object detection module with the ZED 2
+* **Object Detection** - This sample shows how to use the object detection module with the ZED 2. Two ways of display are available.
+
+* **Body Tracking** - This sample shows how to use the object detection module to track persons with the ZED 2
 
 * **SVO Recording** - This sample shows how to record and playback video files in SVO format. SVO files lets you use all the ZED SDK features without having a ZED connected.
 
