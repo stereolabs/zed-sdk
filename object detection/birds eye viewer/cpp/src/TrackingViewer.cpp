@@ -206,9 +206,9 @@ void TrackingViewer::addToTracklets(sl::Objects &objects) {
     for (const auto &obj : objects.object_list) {
         unsigned int id = obj.id;
 
-        if (obj.tracking_state != sl::OBJECT_TRACKING_STATE::OK) {
+        if ((obj.tracking_state != sl::OBJECT_TRACKING_STATE::OK) || !std::isfinite(obj.position.x))
             continue;
-        }
+        
 
         bool new_object = true;
         for (Tracklet &track : tracklets) {
