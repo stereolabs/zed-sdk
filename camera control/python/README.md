@@ -1,32 +1,30 @@
-# Stereolabs ZED - Camera Control
+# ZED SDK - Camera Control
 
 This sample shows how to capture images with the ZED SDK and adjust camera settings.
 
-## Getting started
+## Getting Started
+ - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://www.stereolabs.com/docs/app-development/python/install/)
+ - Check the [Documentation](https://www.stereolabs.com/docs/)
+ 
+## Run the program
 
-- First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
-- For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
+      python "camera_control.py"
 
-## Features
+### Features
+ - Camera images are displayed on an OpenCV windows
 
-This sample demonstrates how to captures images and change camera settings with the ZED SDK.
 The following parameters can be changed:
-
-  - Exposure
-  - Gain
+  - Brightness
+  - Contrast
   - Saturation
   - Hue
-  - Contrast
-  - Brightness
+  - Sharpness
+  - Gamma
+  - Gain
+  - Exposure
+  - Automatic GAIN_EXP behavior
+  - White Balance
+  - LED state
 
-## Run the examples
-
-Some Python samples require OpenCV and OpenGL, you can install them via pip with **opencv-python** and **PyOpenGL** packages.
-
-### Live camera
-
-Live camera sample showing the camera information and video in real time and allows to control the different settings.
-    
-```
-python "camera_control.py"
-```
+## Support
+If you need assistance go to our Community site at https://community.stereolabs.com/

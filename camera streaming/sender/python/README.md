@@ -2,21 +2,17 @@
 
 This sample shows how to enable streaming module of the ZED SDK as image sender.
 
-## Getting started
+## Getting Started
+ - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://www.stereolabs.com/docs/app-development/python/install/)
+ - Check the [Documentation](https://www.stereolabs.com/docs/)
+ 
+## Run the program
 
-- First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
-- For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
+        python "streaming_sender.py"
 
-### Prerequisites
+### Features
+ - Defines camera resolution and its frame-rate
+ - Broadcast Camera images on network
 
-- Windows 10, Ubuntu LTS, L4T
-- [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
-- [ZED Python API](https://www.stereolabs.com/docs/app-development/python/)
-
-## Run the example
-
-The port 4000 is used to stream the data.
-
-```
-python streaming_sender.py
-```
+## Support
+If you need assistance go to our Community site at https://community.stereolabs.com/

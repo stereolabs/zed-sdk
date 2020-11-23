@@ -120,7 +120,7 @@ int main(int argc, char** argv) {
                     zed.resetPositionalTracking(init_pose);
 
                     // Configure Spatial Mapping parameters
-					spatial_mapping_parameters.resolution_meter = SpatialMappingParameters::get(SpatialMappingParameters::MAPPING_RESOLUTION::MEDIUM);
+					spatial_mapping_parameters.resolution_meter = SpatialMappingParameters::get(SpatialMappingParameters::MAPPING_RESOLUTION::LOW);
                     spatial_mapping_parameters.use_chunk_only = true;
                     spatial_mapping_parameters.save_texture = false;
 #if CREATE_MESH

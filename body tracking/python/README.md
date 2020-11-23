@@ -1,23 +1,18 @@
-# Stereolabs ZED - 3D Body Tracking
+# ZED SDK - Body Tracking
 
-This sample shows how to detect and track human skeletons in space.
+This sample shows how to detect and track human bodies in space.
 
-## Getting started
+## Getting Started
+ - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://www.stereolabs.com/docs/app-development/python/install/)
+ - Check the [Documentation](https://www.stereolabs.com/docs/)
+ 
+## Run the program
+*NOTE: A [ZED 2](https://store.stereolabs.com/products/zed-2) is required to use this module.*
 
-- First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
-- For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
+      python "body_tracking.py"
 
-### Prerequisites
+## Features
+ - Display bodies bounding boxes by pressing the `b` key.
 
-- Windows 10, Ubuntu LTS, L4T
-- [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
-
-### Body Tracking
-
-Body Tracking sample gets and displays detected persons with their skeleton by the camera.
-
-```
-python "body_tracking_2d.py"
-```
-
-*NOTE:* A ZED 2 is required to run use this module.
+## Support
+If you need assistance go to our Community site at https://community.stereolabs.com/

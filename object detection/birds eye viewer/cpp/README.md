@@ -1,48 +1,26 @@
-# Stereolabs ZED - 3D Object Detection
+# ZED SDK - Object Detection
 
-This sample shows how to detect and track objects in space and display it in an OpenGL window. It demonstrates how to:
+This sample shows how to detect and track objects in space.
 
-- Detect and track objects in the scene using the API
-- Display the 2D detection on the image, including the object mask
-- Display the bird-view of the tracked objects trajectory relative to the camera
-- Display the point cloud with the 3D bounding box of the detected objects
-
-## Getting started
-
-- First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
-- For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
-
-### Prerequisites
-
-- Windows 10, Ubuntu LTS, L4T
-- [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
+## Getting Started
+ - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/)
+ - Check the [Documentation](https://www.stereolabs.com/docs/)
 
 ## Build the program
-
-#### Build for Windows
-
-- Create a "build" folder in the source folder
-- Open cmake-gui and select the source and build folders
-- Generate the Visual Studio `Win64` solution
-- Open the resulting solution and change configuration to `Release`
-- Build solution
-
-#### Build for Linux
-
-Open a terminal in the sample directory and execute the following command:
-
-    mkdir build
-    cd build
-    cmake ..
-    make
+ - Build for [Windows](https://www.stereolabs.com/docs/app-development/cpp/windows/)
+ - Build for [Linux/Jetson](https://www.stereolabs.com/docs/app-development/cpp/linux/)
 
 ## Run the program
-
-- Navigate to the build directory and launch the executable file
+*NOTE: A [ZED 2](https://store.stereolabs.com/products/zed-2) is required to use this module.*
+- Navigate to the build directory and launch the executable
 - Or open a terminal in the build directory and run the sample :
 
-        ./ZED_Object_Detection
+      ./ZED_Object_detection_birds_eye_viewer
 
-You can optionally provide an SVO file path (recorded stereo video of the ZED 2).
+### Features
+ - The camera point cloud is displayed in a 3D OpenGL view
+ - 3D bounding boxes around detected objects are drawn
+ - Objects classes and confidences can be changed
 
-*NOTE:* A ZED 2 is required to run use this module.
+## Support
+If you need assistance go to our Community site at https://community.stereolabs.com/

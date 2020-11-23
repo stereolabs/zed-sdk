@@ -1,19 +1,9 @@
-# Stereolabs ZED - Point Cloud Mapping
+# ZED SDK - Point Cloud Fusion
 
-This sample shows how to capture a real-time 3D reconstruction of the scene with the ZED API and display it as a fused colored point cloud. It demonstrates how to:
+## This sample shows how to map your environment as a Point cloud.
 
-- Start spatial mapping in point cloud mode to capture the surrounding area.
-- Display the live 3D reconstruction while following the camera or in free navigation mode.
-- Display the live RGB image.
+### Features
+ - real time 3D display of the current fused point cloud
+ - press 'f' to un/follow the camera movement
 
-## Commands
-- `f`|`F`: Toggle between "Follow Camera" and "Free Navigation" mode.
-- `q`|`Q`: Close the application.
-- Mouse wheel: Zoom In/Out.
-- Left mouse button: Rotate the scene in "free" mode.
-- Right mouse button: Navigate the scene in "free" mode.
-
-## Getting Started
-
-- Download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
-- For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
+![](fused_point_cloud.jpg)

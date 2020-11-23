@@ -1,23 +1,20 @@
-# Stereolabs ZED - 3D Object Detection
+# ZED SDK - Object Detection
 
 This sample shows how to detect and track objects in space.
 
-## Getting started
+## Getting Started
+ - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://www.stereolabs.com/docs/app-development/python/install/)
+ - Check the [Documentation](https://www.stereolabs.com/docs/)
+ 
+## Run the program
+*NOTE: A [ZED 2](https://store.stereolabs.com/products/zed-2) is required to use this module.*
 
-- First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
-- For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
+      python "object_detection_image_viewer.py"
 
-### Prerequisites
+### Features
+ - The camera point cloud is displayed in a 3D OpenGL view
+ - 3D bounding boxes around detected objects are drawn
+ - Objects classes and confidences can be changed
 
-- Windows 10, Ubuntu LTS, L4T
-- [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
-
-### Object Detection
-
-Object Detection sample gets and displays detected objects (persons, vehicles) by the camera.
-
-```
-python "object_detection_2d.py"
-```
-
-*NOTE:* A ZED 2 is required to run use this module.
+## Support
+If you need assistance go to our Community site at https://community.stereolabs.com/

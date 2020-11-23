@@ -1,16 +1,9 @@
-# Stereolabs ZED - Positional Tracking
+# ZED SDK - Positional Tracking
 
-This sample shows how to track camera motion in space and display it in an OpenGL window. It demonstrates how to:
+## This sample shows how to get the camera pose in a world reference
 
-- Get position and orientation of the device using the API
-- Select your coordinate system, frames and units
-- Tranform pose data at the center of the camera
-- Write pose data and timestamps in a CSV file
-- Display camera motion in an OpenGL window
-
-## Getting started
-
-- First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
-- For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
-
-*NOTE*: To improve tracking performance, we recommend using the ZED in HD720 mode at 60fps.
+### Features
+ - An OpenGL window displays the camera path in a 3D window
+ - path data, translation and rotation, are displayed
+ 
+![](positional_tracking.jpg)

@@ -1,44 +1,26 @@
-# Stereolabs ZED - Spatial Mapping
+# ZED SDK - Spatial Mapping
 
-This sample shows how to capture a real-time 3D map of the scene with the ZED API. It demonstrates how to:
-- Start spatial mapping to capture the surrounding area.
-- Display the live reconstruction as a wireframe mesh over the image using OpenGL.
-- Process and save the mesh in OBJ format.
-- Use the lower-level API to asynchronously capture, update and display the mesh.
-- Access and retrieve chunks of the entire mesh.
+This sample shows how to map your environment.
 
-## Getting started
-
-- First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
-- For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
-
-### Prerequisites
-
-- Windows 10, Ubuntu LTS, L4T
-- [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
+## Getting Started
+ - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/)
+ - Check the [Documentation](https://www.stereolabs.com/docs/)
 
 ## Build the program
-
-#### Build for Windows
-
-- Create a "build" folder in the source folder
-- Open cmake-gui and select the source and build folders
-- Generate the Visual Studio `Win64` solution
-- Open the resulting solution and change configuration to `Release`
-- Build solution
-
-#### Build for Linux
-
-Open a terminal in the sample directory and execute the following command:
-
-    mkdir build
-    cd build
-    cmake ..
-    make
-
+ - Build for [Windows](https://www.stereolabs.com/docs/app-development/cpp/windows/)
+ - Build for [Linux/Jetson](https://www.stereolabs.com/docs/app-development/cpp/linux/)
+ 
 ## Run the program
-
-- Navigate to the build directory and launch the executable file
+- Navigate to the build directory and launch the executable
 - Or open a terminal in the build directory and run the sample :
 
-        ./ZED_Spatial_Mapping
+      ./ZED_Spatial_Mapping
+
+### Features
+ - Press 'Spacebar' to start/stop the mapping process
+ - real time overlay of the mesh to the image
+ - textures and post filters can be apply to the Mesh
+ - final mesh is saved
+ 
+## Support
+If you need assistance go to our Community site at https://community.stereolabs.com/

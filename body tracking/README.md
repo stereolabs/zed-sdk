@@ -1,14 +1,13 @@
-# Stereolabs ZED - Body Tracking Viewer
+# ZED SDK - Body Tracking
 
-This sample shows how to detect and track bodies in space and display it. It demonstrates how to:
+## This sample shows how to detect and track human bodies in space.
 
-- Detect and track bodies/objects in the scene using the ZED SDK API
-- Show the image with 3D bounding box with OpenGL
+### Features
+ - Camera images are displayed with human bodies as skeletons
+ - Bodies are tracked across time and space
+ - Display bodies bounding boxes by pressing the `b` key
 
-## Getting started
+![](body_tracking.jpg)
 
-- First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
-- For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
 
-*NOTE:* A ZED 2 is required to run use this module.
-*NOTE2:* This sample is only available in C++
+>*NOTE: A [ZED 2](https://store.stereolabs.com/products/zed-2) is required to use this module.*

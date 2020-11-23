@@ -1,43 +1,24 @@
-# Stereolabs ZED - SVO Export
+# ZED SDK - SVO Export
 
 This sample demonstrates how to read a SVO file and convert it into an AVI file (LEFT + RIGHT) or (LEFT + DEPTH_VIEW).
 
 It can also convert a SVO in the following png image sequences: LEFT+RIGHT, LEFT+DEPTH_VIEW, and LEFT+DEPTH_16Bit.
 
-## Getting started
-
-- First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
-- For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
-
-### Prerequisites
-
-- Windows 10, Ubuntu LTS, L4T
-- [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
-- OpenCV
+## Getting Started
+ - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/)
+ - Check the [Documentation](https://www.stereolabs.com/docs/)
 
 ## Build the program
-
-#### Build for Windows
-
-- Create a "build" folder in the source folder
-- Open cmake-gui and select the source and build folders
-- Generate the Visual Studio `Win64` solution
-- Open the resulting solution and change configuration to `Release`
-- Build solution
-
-#### Build for Linux
-
-Open a terminal in the sample directory and execute the following command:
-
-    mkdir build
-    cd build
-    cmake ..
-    make
-
+ - Build for [Windows](https://www.stereolabs.com/docs/app-development/cpp/windows/)
+ - Build for [Linux/Jetson](https://www.stereolabs.com/docs/app-development/cpp/linux/)
+ 
 ## Run the program
+- Navigate to the build directory and launch the executable
+- Or open a terminal in the build directory and run the sample :
 
-Open a command terminal in build directory and follow the instructions bellow:
+      ./ZED_SVO_Export  svo_file.svo
 
+### Features
 ```
 Usage:
 
@@ -64,3 +45,6 @@ Examples:
 ## Troubleshooting
 
 If you want to tweak the video file option in the sample code (for example recording a mp4 file), you may have to recompile OpenCV with the FFmpeg option (WITH_FFMPEG).
+
+## Support
+If you need assistance go to our Community site at https://community.stereolabs.com/

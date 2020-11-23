@@ -4,29 +4,21 @@ This sample demonstrates how to read a SVO file and convert it into an AVI file 
 
 It can also convert a SVO in the following png image sequences: LEFT+RIGHT, LEFT+DEPTH_VIEW, and LEFT+DEPTH_16Bit.
 
-## Getting started
-
-- First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
-- For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
-  
-### Prerequisites
-
-- Windows 10, Ubuntu LTS, L4T
-- [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
-- [ZED Python API](https://www.stereolabs.com/docs/app-development/python/)
-- OpenCV python (`python -m pip install opencv-python`)
-
-## Run the example
+## Getting Started
+ - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://www.stereolabs.com/docs/app-development/python/install/)
+ - Check the [Documentation](https://www.stereolabs.com/docs/)
+ 
+## Run the program
 
 ```
-python "export_svo.py" svo_file.svo
+python "svo_export.py" svo_file.svo
 ```
 
-Usage:
+### Features
 
 ```
 
-export_svo.py A B C
+svo_export.py A B C
 
 Please use the following parameters from the command line:
  A - SVO file path (input) : "path/to/file.svo"
@@ -45,3 +37,6 @@ Examples:
   (SEQUENCE LEFT+DEPTH)         export_svo.py "path/to/file.svo" "path/to/output/folder/" 3
   (SEQUENCE LEFT+DEPTH_16Bit)   export_svo.py "path/to/file.svo" "path/to/output/folder/" 4
 ```
+
+## Support
+If you need assistance go to our Community site at https://community.stereolabs.com/

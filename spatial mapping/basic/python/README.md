@@ -1,20 +1,20 @@
-# Stereolabs ZED - Camera Control
+# ZED SDK - Spatial Mapping
 
-This sample shows how to capture a real-time 3D map of the scene with the ZED API.
+This sample shows how to map your environment.
 
-## Getting started
+## Getting Started
+ - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://www.stereolabs.com/docs/app-development/python/install/)
+ - Check the [Documentation](https://www.stereolabs.com/docs/)
+ 
+## Run the program
 
-- First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
-- For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
+      python "spatial_mapping.py"
 
-## Run the examples
+### Features
+ - Press 'Spacebar' to start/stop the mapping process
+ - real time overlay of the mesh to the image
+ - textures and post filters can be apply to the Mesh
+ - final mesh is saved
 
-Some Python samples require OpenCV and OpenGL, you can install them via pip with **opencv-python** and **PyOpenGL** packages.
-
-### Spatial Mapping
-
-Spatial Mapping sample shows mesh information after filtering and applying texture on frames. The mesh and its filter parameters can be saved.
-
-```
-python "mesh_example.py" svo_file.svo
-```
+## Support
+If you need assistance go to our Community site at https://community.stereolabs.com/

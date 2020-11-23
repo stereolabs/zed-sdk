@@ -1,9 +1,9 @@
-# Stereolabs ZED - SVO Playback
+# ZED SDK - SVO Playback
 
-This sample demonstrates how to read a SVO video file.
-We use OpenCV to display the video.
+## This sample demonstrates how to read a SVO video file.
 
-## Getting started
-
-- First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
-- For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
+### Features
+ - Displays readed frame as an OpenCV image
+ - Press 's' to save the current image as a PNG
+ - Press 'f' to move forward in the recorded file
+ - Press 'b' to move backward in the recorded file

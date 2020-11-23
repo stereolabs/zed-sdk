@@ -1,23 +1,18 @@
-# Stereolabs ZED - Streaming Receiver
+# ZED SDK - Streaming Receiver
 
-This sample shows how to open a stream from an other ZED and display the left image.
+This sample shows how to connect to a broadcasting device.
 
-## Getting started
+## Getting Started
+ - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://www.stereolabs.com/docs/app-development/python/install/)
+ - Check the [Documentation](https://www.stereolabs.com/docs/)
+ 
+## Run the program
 
-- First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
-- For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
+        python "streaming_receiver.py"
 
-### Prerequisites
+### Features
+ - Connects to a network ZED device.
+ - Uses SDK to compute point cloud and displays it with OpenGL.
 
-- Windows 10, Ubuntu LTS, L4T
-- [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
-- [ZED Python API](https://www.stereolabs.com/docs/app-development/python/)
-- OpenCV python (`python -m pip install opencv-python`)
-
-## Run the example
-    
-This sample need a sender to operate (See streaming sender sample)
-
-```
-python streaming_receiver.py <sender_IP>
-```
+## Support
+If you need assistance go to our Community site at https://community.stereolabs.com/

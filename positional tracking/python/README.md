@@ -1,20 +1,18 @@
-# Stereolabs ZED - Camera Control
+# ZED SDK - Positional Tracking
 
-This sample shows how to track camera motion in space.
+This sample shows how to get the camera pose in a world reference
 
-## Getting started
-
-- First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
-- For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
-
-## Run the examples
-
-Some Python samples require OpenCV and OpenGL, you can install them via pip with **opencv-python** and **PyOpenGL** packages.
-
-### Position
+## Getting Started
+ - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://www.stereolabs.com/docs/app-development/python/install/)
+ - Check the [Documentation](https://www.stereolabs.com/docs/)
  
-Position sample shows that the position of the camera can be get and used with OpenGL.
+## Run the program
 
-```
-python "position_example.py"
-```
+      python "positional_tracking.py"
+
+### Features
+ - An OpenGL window displays the camera path in a 3D window
+ - path data, translation and rotation, are displayed
+
+## Support
+If you need assistance go to our Community site at https://community.stereolabs.com/

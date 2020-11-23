@@ -1,49 +1,24 @@
-# Stereolabs ZED - Positional Tracking
+# ZED SDK - Positional Tracking
 
-This sample shows how to track camera motion in space and display it in an OpenGL window. It demonstrates how to:
-- Get position and orientation of the device using the API
-- Select your coordinate system, frames and units
-- Tranform pose data at the center of the camera
-- Write pose data and timestamps in a CSV file
-- Display camera motion in an OpenGL window
+This sample shows how to get the camera pose in a world reference
 
-## Getting started
-
-- First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com).
-- For more information, read the ZED [API documentation](https://www.stereolabs.com/developers/documentation/API/).
-
-### Prerequisites
-
-- Windows 10, Ubuntu LTS, L4T
-- [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
+## Getting Started
+ - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/)
+ - Check the [Documentation](https://www.stereolabs.com/docs/)
 
 ## Build the program
-
-#### Build for Windows
-
-- Create a "build" folder in the source folder
-- Open cmake-gui and select the source and build folders
-- Generate the Visual Studio `Win64` solution
-- Open the resulting solution and change configuration to `Release`
-- Build solution
-
-#### Build for Linux
-
-Open a terminal in the sample directory and execute the following command:
-
-    mkdir build
-    cd build
-    cmake ..
-    make
-
-
+ - Build for [Windows](https://www.stereolabs.com/docs/app-development/cpp/windows/)
+ - Build for [Linux/Jetson](https://www.stereolabs.com/docs/app-development/cpp/linux/)
+ 
 ## Run the program
-
-- Navigate to the build directory and launch the executable file
+- Navigate to the build directory and launch the executable
 - Or open a terminal in the build directory and run the sample :
 
-        ./ZED_Motion_Tracking
+      ./ZED_Positional_Tracking
 
-You can optionally provide an SVO file path (recorded stereo video of the ZED).
+### Features
+ - An OpenGL window displays the camera path in a 3D window
+ - path data, translation and rotation, are displayed
 
-*NOTE:* ZED camera tracking is based on stereo vision only. Quick and sudden camera movements can be difficult to track if the image is too blurry or there is no visual information in the scene. To improve tracking performance, we recommend using the ZED in HD720 mode at 60fps.
+## Support
+If you need assistance go to our Community site at https://community.stereolabs.com/
