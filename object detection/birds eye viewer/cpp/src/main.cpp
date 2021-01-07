@@ -70,22 +70,47 @@ cv::Mat image_track_ocv;
 
 #if TRACKLET_MERGER
 std::deque<sl::Objects> objects_tracked_queue;
-std::map<unsigned long long,Pose> camPoseMap;
+std::map<unsigned long long,Pose> camPoseMap_ms;
 
 
+///
+/// \brief ingestPoseInMap
+/// \param ts: timestamp of the pose
+/// \param pose : sl::Pose of the camera
+/// \param batch_duration_sc: duration in seconds in order to remove past elements.
+///
+void ingestPoseInMap(sl::Timestamp ts, sl::Pose pose, int batch_duration_sc)
+{
+    std::map<unsigned long long,Pose>::iterator it = camPoseMap_ms.begin();
+    for(auto it = camPoseMap_ms.begin(); it != camPoseMap_ms.end(); ) {
+        if(it->first<ts.getMilliseconds() - (unsigned long long)batch_duration_sc*1000)
+            it = camPoseMap_ms.erase(it);
+        else
+            ++it;
+    }
+
+    camPoseMap_ms[ts.getMilliseconds()]=pose;
+}
+
+///
+/// \brief findClosestPoseFromTS : find closest sl::Pose according to timestamp. Use when resampling is used in tracklet merger, since generated objects can have a different
+/// timestamp than the camera timestamp. If resampling==0, then std::map::find() will be enough.
+/// \param timestamp in milliseconds. ( at least in the same unit than camPoseMap_ms)
+/// \return sl::Pose found.
+///
 sl::Pose findClosestPoseFromTS(unsigned long long timestamp)
 {
     sl::Pose pose = sl::Pose();
     unsigned long long ts_found = 0;
-    if (camPoseMap.find(timestamp)!=camPoseMap.end()) {
+    if (camPoseMap_ms.find(timestamp)!=camPoseMap_ms.end()) {
         ts_found = timestamp;
-        pose = camPoseMap[timestamp];
+        pose = camPoseMap_ms[timestamp];
     }
     else
     {
-        std::map<unsigned long long,Pose>::iterator it = camPoseMap.begin();
+        std::map<unsigned long long,Pose>::iterator it = camPoseMap_ms.begin();
         unsigned long long diff_max_time = ULONG_LONG_MAX;
-        while(it!=camPoseMap.end())
+        while(it!=camPoseMap_ms.end())
         {
             long long diff = abs((long long)timestamp - (long long)it->first);
             if (diff<diff_max_time)
@@ -100,14 +125,20 @@ sl::Pose findClosestPoseFromTS(unsigned long long timestamp)
     return pose;
 }
 
+///
+/// \brief ingestInObjectsQueue : convert a list of trajectory from SDK retreiveBatchTrajectories to a sorted list of sl::Objects
+/// \n Use this function to fill a std::deque<sl::Objects> that can be considered and used as a stream of objects with a delay.
+/// \param trajs from retreiveBatchTrajectories
+///
 void ingestInObjectsQueue(std::vector<sl::Trajectory> trajs)
 {
     // If list is empty, do nothing.
     if (trajs.empty())
         return;
 
-    std::vector<sl::Objects> list_of_newobjects;
-
+    // add objects in map with timestamp as a key.
+    // This ensure
+    std::map<uint64_t,sl::Objects> list_of_newobjects;
     for (int i=0;i<trajs.size();i++)
     {
         sl::Trajectory current_traj = trajs.at(i);
@@ -129,43 +160,33 @@ void ingestInObjectsQueue(std::vector<sl::Trajectory> trajs)
             newObjectData.sublabel = current_traj.sublabel;
 
 
-            sl::Objects current_obj;
-            int index_has_already=-1;
-            for (int k=0;k<list_of_newobjects.size();k++)
+            if (list_of_newobjects.find(ts.getMilliseconds())!=list_of_newobjects.end())
+                list_of_newobjects[ts.getMilliseconds()].object_list.push_back(newObjectData);
+            else
             {
-                if (list_of_newobjects.at(k).timestamp == ts)
-                {
-                    index_has_already=k;
-                    break;
-                }
-            }
-
-            if (index_has_already>=0) {
-                current_obj = list_of_newobjects[index_has_already];
-                current_obj.object_list.push_back(newObjectData);
-                current_obj.is_new = true;
-                current_obj.is_tracked = true;
-                list_of_newobjects[index_has_already] = current_obj;
-            }
-            else if (index_has_already==-1){
-                current_obj.timestamp = ts;
+                sl::Objects current_obj;
+                current_obj.timestamp.setMilliseconds(ts.getMilliseconds());
                 current_obj.is_new = true;
                 current_obj.is_tracked = true;
                 current_obj.object_list.push_back(newObjectData);
-                list_of_newobjects.push_back(current_obj);
+               list_of_newobjects[ts.getMilliseconds()] = current_obj;
             }
         }
     }
 
 
-    //Ingest in Queue of objects that will be empty by the main loop
-    for (int p=0;p<list_of_newobjects.size();p++)
-        objects_tracked_queue.push_back(list_of_newobjects.at(p));
+    // Ingest in Queue of objects that will be empty by the main loop
+    // Since std::map is sorted by key, we are sure that timestamp are continous.
+    for (auto &elem : list_of_newobjects)
+       objects_tracked_queue.push_back(elem.second);
 
     return;
 }
 #endif
 
+///
+/// \brief run : thread function that capture ZED
+///
 void run()
 {
     while(!quit)
@@ -191,30 +212,10 @@ void run()
     }
 }
 
-void displayBirdView()
-{
-    unsigned long long old_ts_ms = 0ULL;
-    while(!quit)
-    {
-#if TRACKLET_MERGER
-        std::vector<sl::Trajectory> trajectories;
-        zed.retrieveProcessedTrajectories(trajectories);
-        ingestInObjectsQueue(trajectories);
-        if (objects_tracked_queue.size()>0)
-        {
-            sl::Objects tracked_merged_obj = objects_tracked_queue.front();
-            if (tracked_merged_obj.timestamp.getMilliseconds()>old_ts_ms)
-                track_view_generator.generate_view(tracked_merged_obj, camPoseMap[tracked_merged_obj.timestamp.data_ns], image_track_ocv, tracked_merged_obj.is_tracked);
-            old_ts_ms = tracked_merged_obj.timestamp.getMilliseconds();
-            objects_tracked_queue.pop_front();
-        }
-#endif
-        sl::sleep_ms(10);
-    }
 
-    objects_tracked_queue.clear();
-}
-
+///
+/// \brief main function
+///
 int main(int argc, char **argv) {
     
 #ifdef _SL_JETSON_
@@ -239,7 +240,6 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    std::cout<<" Resolution : "<<zed.getInitParameters().camera_resolution<<std::endl;
     // Define the Objects detection module parameters
     detection_parameters.enable_tracking = true;
     detection_parameters.enable_mask_output = false; // designed to give person pixel mask
@@ -262,8 +262,8 @@ int main(int argc, char **argv) {
 #if TRACKLET_MERGER
     sl::BatchTrajectoryParameters trajectory_parameters;
     trajectory_parameters.resampling_rate = 0;
-    trajectory_parameters.latency = 2.f;
-    returned_state = zed.enableTrajectoryPostProcess(trajectory_parameters);
+    trajectory_parameters.batch_duration = 2.f;
+    returned_state = zed.enableBatchTrajectories(trajectory_parameters);
     if (returned_state != ERROR_CODE::SUCCESS) {
         print("enableTrajectoryPostProcess", returned_state, "\nExit program.");
         zed.close();
@@ -297,7 +297,7 @@ int main(int argc, char **argv) {
     sl::float2 img_scale(display_resolution.width / (float)camera_config.resolution.width, display_resolution.height / (float)camera_config.resolution.height);
 
     // 2D tracks
-    track_view_generator=TrackingViewer(tracks_resolution, camera_config.fps, init_parameters.depth_maximum_distance);
+    track_view_generator=TrackingViewer(tracks_resolution, camera_config.fps, init_parameters.depth_maximum_distance,3);
     track_view_generator.setCameraCalibration(camera_config.calibration_parameters);
 
     string window_name = "ZED| 2D View and Birds view";
@@ -316,8 +316,6 @@ int main(int argc, char **argv) {
     cam_pose.pose_data.setIdentity();
     bool gl_viewer_available=true;
     std::thread runner(run);
-    //std::thread displayer(displayBirdView);
-
     sl::Timestamp init_app_ts = 0ULL;
     sl::Timestamp init_queue_ts = 0ULL;
     while (
@@ -338,9 +336,10 @@ int main(int argc, char **argv) {
             //Save the pose at the current timestamp. Since the tracklet merger version outputs objects in the past,
             //we need to save the pose at that timestamp to make the camera -> world transformation, with the pose at that time.
             unsigned long long ts = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE).data_ns;
-            camPoseMap[ts] = cam_pose;
+            ingestPoseInMap(zed.getTimestamp(sl::TIME_REFERENCE::IMAGE),cam_pose,trajectory_parameters.batch_duration*2);
             if (init_app_ts.data_ns==0ULL)
                 init_app_ts =  zed.getTimestamp(sl::TIME_REFERENCE::IMAGE);
+
 #endif
 
             // Get a protected copy of the vector of objects
@@ -364,26 +363,33 @@ int main(int argc, char **argv) {
 
 #if TRACKLET_MERGER
         std::vector<sl::Trajectory> trajectories;
-        zed.retrieveProcessedTrajectories(trajectories);
+        zed.retrieveBatchTrajectories(trajectories);
         ingestInObjectsQueue(trajectories);
         if (objects_tracked_queue.size()>0)
         {
             sl::Objects tracked_merged_obj = objects_tracked_queue.front();
-            if (init_queue_ts.data_ns==0ULL)
-                init_queue_ts = tracked_merged_obj.timestamp;
-            else
+            do
             {
-                //Compare delay between live. Keep it close to live with latency.
-                // The queue contains data between [live - 2*latency , live - latency], therefore make sure the delay is not higher than live - 2*latency
-                unsigned long long delay_queue_ms = tracked_merged_obj.timestamp.getMilliseconds() - init_queue_ts.getMilliseconds();
-                unsigned long long delay_app_ms = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE).getMilliseconds() - init_app_ts.getMilliseconds();
-                if (delay_app_ms-trajectory_parameters.latency*2*1000>0 && delay_queue_ms<delay_app_ms-trajectory_parameters.latency*2.0*1000 && objects_tracked_queue.size()>1){
-                    objects_tracked_queue.pop_front();
-                    tracked_merged_obj = objects_tracked_queue.front();
+                if (init_queue_ts.data_ns==0ULL)
+                {
+                    init_queue_ts = tracked_merged_obj.timestamp;
+                    break;
                 }
-            }
-
-            track_view_generator.generate_view(tracked_merged_obj, findClosestPoseFromTS(tracked_merged_obj.timestamp.data_ns), image_track_ocv, tracked_merged_obj.is_tracked);
+                else
+                {
+                    //Compare delay between live. Keep it close to live with batch_duration.
+                    // The queue contains data between [live - 2*batch_duration , live - batch_duration], therefore make sure the delay is not higher than live - 2*batch_duration
+                    unsigned long long delay_queue_ms = tracked_merged_obj.timestamp.getMilliseconds() - init_queue_ts.getMilliseconds();
+                    unsigned long long delay_app_ms = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE).getMilliseconds() - init_app_ts.getMilliseconds();
+                    if (delay_app_ms-trajectory_parameters.batch_duration*2*1000>0 && delay_queue_ms<delay_app_ms-trajectory_parameters.batch_duration*2.0*1000 && objects_tracked_queue.size()>1){
+                        objects_tracked_queue.pop_front();
+                        tracked_merged_obj = objects_tracked_queue.front();
+                    }
+                    else
+                        break;
+                }
+            } while(trajectory_parameters.resampling_rate!=0);
+            track_view_generator.generate_view(tracked_merged_obj, findClosestPoseFromTS(tracked_merged_obj.timestamp.getMilliseconds()), image_track_ocv, tracked_merged_obj.is_tracked);
             objects_tracked_queue.pop_front();
         }
 #endif
@@ -419,9 +425,6 @@ int main(int argc, char **argv) {
 
     if (runner.joinable())
         runner.join();
-
-    //if (displayer.joinable())
-    //    displayer.join();
 
 #if ENABLE_GUI
     viewer.exit();
