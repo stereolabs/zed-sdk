@@ -32,6 +32,11 @@
 // down the detection and increase the memory consumption
 #define ENABLE_GUI 1
 
+// Flag to enable/disable the tracklet merger module.
+// Tracklet merger allows to reconstruct trajectories from objects from object detection module by using Re-ID between objects.
+// For example, if an object is not seen during some time, it can be re-ID to a previous ID if the matching score is high enough
+#define TRACKLET_MERGER 1
+
 // ZED includes
 #include <sl/Camera.hpp>
 
@@ -48,6 +53,168 @@ bool is_playback = false;
 void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
 void parseArgs(int argc, char **argv, InitParameters& param);
 
+Camera zed;
+InitParameters init_parameters;
+ObjectDetectionParameters detection_parameters;
+PositionalTrackingParameters positional_tracking_parameters;
+RuntimeParameters runtime_parameters;
+Objects objects;
+Pose cam_pose;
+ObjectDetectionRuntimeParameters detection_parameters_rt;
+bool quit = false;
+bool newFrame = false;
+std::mutex guard;
+int detection_confidence = 35;
+TrackingViewer track_view_generator;
+cv::Mat image_track_ocv;
+
+#if TRACKLET_MERGER
+std::deque<sl::Objects> objects_tracked_queue;
+std::map<unsigned long long,Pose> camPoseMap;
+
+
+sl::Pose findClosestPoseFromTS(unsigned long long timestamp)
+{
+    sl::Pose pose = sl::Pose();
+    unsigned long long ts_found = 0;
+    if (camPoseMap.find(timestamp)!=camPoseMap.end()) {
+        ts_found = timestamp;
+        pose = camPoseMap[timestamp];
+    }
+    else
+    {
+        std::map<unsigned long long,Pose>::iterator it = camPoseMap.begin();
+        unsigned long long diff_max_time = ULONG_LONG_MAX;
+        while(it!=camPoseMap.end())
+        {
+            long long diff = abs((long long)timestamp - (long long)it->first);
+            if (diff<diff_max_time)
+            {
+                pose = it->second;
+                diff_max_time = diff;
+                ts_found = it->first;
+            }
+            it++;
+        }
+    }
+    return pose;
+}
+
+void ingestInObjectsQueue(std::vector<sl::Trajectory> trajs)
+{
+    // If list is empty, do nothing.
+    if (trajs.empty())
+        return;
+
+    std::vector<sl::Objects> list_of_newobjects;
+
+    for (int i=0;i<trajs.size();i++)
+    {
+        sl::Trajectory current_traj = trajs.at(i);
+
+        // Impossible but still better to check...
+        if (current_traj.timestamp.size()!=current_traj.position.size())
+            continue;
+
+
+        //For each sample, construct a objetdata and put it in the corresponding sl::Objects
+        for (int j=0;j<current_traj.timestamp.size();j++)
+        {
+            sl::Timestamp ts = current_traj.timestamp.at(j);
+            sl::ObjectData newObjectData;
+            newObjectData.id = current_traj.ID;
+            newObjectData.tracking_state = current_traj.tracking_state;
+            newObjectData.position = current_traj.position.at(j);
+            newObjectData.label = current_traj.label;
+            newObjectData.sublabel = current_traj.sublabel;
+
+
+            sl::Objects current_obj;
+            int index_has_already=-1;
+            for (int k=0;k<list_of_newobjects.size();k++)
+            {
+                if (list_of_newobjects.at(k).timestamp == ts)
+                {
+                    index_has_already=k;
+                    break;
+                }
+            }
+
+            if (index_has_already>=0) {
+                current_obj = list_of_newobjects[index_has_already];
+                current_obj.object_list.push_back(newObjectData);
+                current_obj.is_new = true;
+                current_obj.is_tracked = true;
+                list_of_newobjects[index_has_already] = current_obj;
+            }
+            else if (index_has_already==-1){
+                current_obj.timestamp = ts;
+                current_obj.is_new = true;
+                current_obj.is_tracked = true;
+                current_obj.object_list.push_back(newObjectData);
+                list_of_newobjects.push_back(current_obj);
+            }
+        }
+    }
+
+
+    //Ingest in Queue of objects that will be empty by the main loop
+    for (int p=0;p<list_of_newobjects.size();p++)
+        objects_tracked_queue.push_back(list_of_newobjects.at(p));
+
+    return;
+}
+#endif
+
+void run()
+{
+    while(!quit)
+    {
+        if (zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS)
+        {
+            // update confidence threshold based on TrackBar
+            if(detection_parameters_rt.object_class_filter.empty())
+                detection_parameters_rt.detection_confidence_threshold = detection_confidence;
+            else // if using class filter, set confidence for each class
+                for (auto& it : detection_parameters_rt.object_class_filter)
+                    detection_parameters_rt.object_class_detection_confidence_threshold[it] = detection_confidence;
+
+            guard.lock();
+            zed.retrieveObjects(objects, detection_parameters_rt);
+            guard.unlock();
+            newFrame = true;
+        }
+        else
+            quit=true;
+
+
+    }
+}
+
+void displayBirdView()
+{
+    unsigned long long old_ts_ms = 0ULL;
+    while(!quit)
+    {
+#if TRACKLET_MERGER
+        std::vector<sl::Trajectory> trajectories;
+        zed.retrieveProcessedTrajectories(trajectories);
+        ingestInObjectsQueue(trajectories);
+        if (objects_tracked_queue.size()>0)
+        {
+            sl::Objects tracked_merged_obj = objects_tracked_queue.front();
+            if (tracked_merged_obj.timestamp.getMilliseconds()>old_ts_ms)
+                track_view_generator.generate_view(tracked_merged_obj, camPoseMap[tracked_merged_obj.timestamp.data_ns], image_track_ocv, tracked_merged_obj.is_tracked);
+            old_ts_ms = tracked_merged_obj.timestamp.getMilliseconds();
+            objects_tracked_queue.pop_front();
+        }
+#endif
+        sl::sleep_ms(10);
+    }
+
+    objects_tracked_queue.clear();
+}
+
 int main(int argc, char **argv) {
     
 #ifdef _SL_JETSON_
@@ -57,10 +224,8 @@ int main(int argc, char **argv) {
 #endif
 
     // Create ZED objects
-    Camera zed;
-    InitParameters init_parameters;
     init_parameters.camera_resolution = RESOLUTION::HD2K;
-	init_parameters.sdk_verbose = true;
+    init_parameters.sdk_verbose = true;
     // On Jetson (Nano, TX1/2) the object detection combined with an heavy depth mode could reduce the frame rate too much
     init_parameters.depth_mode = isJetson ? DEPTH_MODE::PERFORMANCE : DEPTH_MODE::ULTRA;
     init_parameters.depth_maximum_distance = 10.0f * 1000.0f;
@@ -74,17 +239,16 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
+    std::cout<<" Resolution : "<<zed.getInitParameters().camera_resolution<<std::endl;
     // Define the Objects detection module parameters
-    ObjectDetectionParameters detection_parameters;
     detection_parameters.enable_tracking = true;
     detection_parameters.enable_mask_output = false; // designed to give person pixel mask
     detection_parameters.detection_model = isJetson ? DETECTION_MODEL::MULTI_CLASS_BOX : DETECTION_MODEL::MULTI_CLASS_BOX_ACCURATE;
 
     auto camera_config = zed.getCameraInformation().camera_configuration;
 
-    PositionalTrackingParameters positional_tracking_parameters;
     // If the camera is static in space, enabling this settings below provides better depth quality and faster computation
-    // positional_tracking_parameters.set_as_static = true;
+    positional_tracking_parameters.set_as_static = true;
     zed.enablePositionalTracking(positional_tracking_parameters);
 
     print("Object Detection: Loading Module...");
@@ -95,37 +259,46 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
+#if TRACKLET_MERGER
+    sl::BatchTrajectoryParameters trajectory_parameters;
+    trajectory_parameters.resampling_rate = 0;
+    trajectory_parameters.latency = 2.f;
+    returned_state = zed.enableTrajectoryPostProcess(trajectory_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        print("enableTrajectoryPostProcess", returned_state, "\nExit program.");
+        zed.close();
+        return EXIT_FAILURE;
+    }
+#endif
+
     // Detection runtime parameters
     // default detection threshold, apply to all object class
-    int detection_confidence = 35;
-    ObjectDetectionRuntimeParameters detection_parameters_rt(detection_confidence);
+    detection_parameters_rt.detection_confidence_threshold = detection_confidence;
     // To select a set of specific object classes:
     detection_parameters_rt.object_class_filter = {OBJECT_CLASS::VEHICLE, OBJECT_CLASS::PERSON};
     // To set a specific threshold
     detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::PERSON] = detection_confidence;
     detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::VEHICLE] = detection_confidence;
 
-    // Detection output
-    Objects objects;
-    bool quit = false;
 
 #if ENABLE_GUI
 
-    Resolution display_resolution(min((int)camera_config.resolution.width, 1280) , min((int)camera_config.resolution.height, 720));   
+    Resolution display_resolution(min((int)camera_config.resolution.width, 1280) , min((int)camera_config.resolution.height, 720));
     Resolution tracks_resolution(400, display_resolution.height);
     // create a global image to store both image and tracks view
     cv::Mat global_image(display_resolution.height, display_resolution.width + tracks_resolution.width, CV_8UC4);
     // retrieve ref on image part
     auto image_left_ocv = global_image(cv::Rect(0, 0, display_resolution.width, display_resolution.height));
     // retrieve ref on tracks view part
-    auto image_track_ocv = global_image(cv::Rect(display_resolution.width, 0, tracks_resolution.width, tracks_resolution.height));
+    image_track_ocv = global_image(cv::Rect(display_resolution.width, 0, tracks_resolution.width, tracks_resolution.height));
+    image_track_ocv.setTo(0);
     // init an sl::Mat from the ocv image ref (which is in fact the memory of global_image)
     Mat image_left(display_resolution, MAT_TYPE::U8_C4, image_left_ocv.data, image_left_ocv.step);
     sl::float2 img_scale(display_resolution.width / (float)camera_config.resolution.width, display_resolution.height / (float)camera_config.resolution.height);
 
     // 2D tracks
-    TrackingViewer track_view_generator(tracks_resolution, camera_config.fps, init_parameters.depth_maximum_distance);
-    track_view_generator.setCameraCalibration(camera_config.calibration_parameters);    
+    track_view_generator=TrackingViewer(tracks_resolution, camera_config.fps, init_parameters.depth_maximum_distance);
+    track_view_generator.setCameraCalibration(camera_config.calibration_parameters);
 
     string window_name = "ZED| 2D View and Birds view";
     cv::namedWindow(window_name, cv::WINDOW_NORMAL); // Create Window
@@ -139,54 +312,87 @@ int main(int argc, char **argv) {
     viewer.init(argc, argv, camera_parameters);
 #endif
 
-    RuntimeParameters runtime_parameters;
     runtime_parameters.confidence_threshold = 50;
-        
-    Pose cam_pose;
     cam_pose.pose_data.setIdentity();
     bool gl_viewer_available=true;
+    std::thread runner(run);
+    //std::thread displayer(displayBirdView);
+
+    sl::Timestamp init_app_ts = 0ULL;
+    sl::Timestamp init_queue_ts = 0ULL;
     while (
+       #if ENABLE_GUI
+           gl_viewer_available &&
+       #endif
+           !quit) {
+
+        if (newFrame && objects.is_new) {
+            newFrame = false;
 #if ENABLE_GUI
-            gl_viewer_available &&
-#endif
-            !quit && zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS) {
-
-        // update confidence threshold based on TrackBar
-        if(detection_parameters_rt.object_class_filter.empty())
-            detection_parameters_rt.detection_confidence_threshold = detection_confidence;
-        else // if using class filter, set confidence for each class
-            for (auto& it : detection_parameters_rt.object_class_filter)
-                detection_parameters_rt.object_class_detection_confidence_threshold[it] = detection_confidence;
-
-        returned_state = zed.retrieveObjects(objects, detection_parameters_rt);
-
-        if ((returned_state == ERROR_CODE::SUCCESS) && objects.is_new) {
-#if ENABLE_GUI
-
             zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, pc_resolution);
             zed.getPosition(cam_pose, REFERENCE_FRAME::WORLD);
-            viewer.updateData(point_cloud, objects.object_list, cam_pose.pose_data);
-
             zed.retrieveImage(image_left, VIEW::LEFT, MEM::CPU, display_resolution);
-            // as image_left_ocv is a ref of image_left, it contains directly the new grabbed image
-            render_2D(image_left_ocv, img_scale, objects.object_list, true);
             zed.getPosition(cam_pose, REFERENCE_FRAME::CAMERA);
+
+#if TRACKLET_MERGER
+            //Save the pose at the current timestamp. Since the tracklet merger version outputs objects in the past,
+            //we need to save the pose at that timestamp to make the camera -> world transformation, with the pose at that time.
+            unsigned long long ts = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE).data_ns;
+            camPoseMap[ts] = cam_pose;
+            if (init_app_ts.data_ns==0ULL)
+                init_app_ts =  zed.getTimestamp(sl::TIME_REFERENCE::IMAGE);
+#endif
+
+            // Get a protected copy of the vector of objects
+            guard.lock();
+            std::vector<sl::ObjectData> object_data_list = objects.object_list;
+            guard.unlock();
+
+            // Update the 3D window with point cloud and 3D boxes.
+            viewer.updateData(point_cloud,object_data_list, cam_pose.pose_data);
+            // as image_left_ocv is a ref of image_left, it contains directly the new grabbed image
+            render_2D(image_left_ocv, img_scale, object_data_list, true);
+
             // update birds view of tracks based on camera position and detected objects
+#if !TRACKLET_MERGER
             track_view_generator.generate_view(objects, cam_pose, image_track_ocv, objects.is_tracked);
+#endif
 #else
             cout << "Detected " << objects.object_list.size() << " Object(s)" << endl;
 #endif
         }
 
-        if (is_playback && zed.getSVOPosition() == zed.getSVONumberOfFrames()) {
-            quit = true;
+#if TRACKLET_MERGER
+        std::vector<sl::Trajectory> trajectories;
+        zed.retrieveProcessedTrajectories(trajectories);
+        ingestInObjectsQueue(trajectories);
+        if (objects_tracked_queue.size()>0)
+        {
+            sl::Objects tracked_merged_obj = objects_tracked_queue.front();
+            if (init_queue_ts.data_ns==0ULL)
+                init_queue_ts = tracked_merged_obj.timestamp;
+            else
+            {
+                //Compare delay between live. Keep it close to live with latency.
+                // The queue contains data between [live - 2*latency , live - latency], therefore make sure the delay is not higher than live - 2*latency
+                unsigned long long delay_queue_ms = tracked_merged_obj.timestamp.getMilliseconds() - init_queue_ts.getMilliseconds();
+                unsigned long long delay_app_ms = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE).getMilliseconds() - init_app_ts.getMilliseconds();
+                if (delay_app_ms-trajectory_parameters.latency*2*1000>0 && delay_queue_ms<delay_app_ms-trajectory_parameters.latency*2.0*1000 && objects_tracked_queue.size()>1){
+                    objects_tracked_queue.pop_front();
+                    tracked_merged_obj = objects_tracked_queue.front();
+                }
+            }
+
+            track_view_generator.generate_view(tracked_merged_obj, findClosestPoseFromTS(tracked_merged_obj.timestamp.data_ns), image_track_ocv, tracked_merged_obj.is_tracked);
+            objects_tracked_queue.pop_front();
         }
+#endif
 
 #if ENABLE_GUI
         gl_viewer_available = viewer.isAvailable();
         // as image_left_ocv and image_track_ocv are both ref of global_image, no need to update it
         cv::imshow(window_name, global_image);
-        key = cv::waitKey(10);
+        key = cv::waitKey(5);
         if (key == 'i') {
             track_view_generator.zoomIn();
         } else if (key == 'o') {
@@ -208,9 +414,15 @@ int main(int argc, char **argv) {
             detection_parameters_rt.object_class_detection_confidence_threshold.clear();
             cout << "Clear Filters" << endl;
         }
-        
 #endif
     }
+
+    if (runner.joinable())
+        runner.join();
+
+    //if (displayer.joinable())
+    //    displayer.join();
+
 #if ENABLE_GUI
     viewer.exit();
     point_cloud.free();

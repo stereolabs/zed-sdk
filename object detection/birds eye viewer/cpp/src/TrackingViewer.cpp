@@ -107,6 +107,10 @@ void Tracklet::addDetectedPoint(const sl::ObjectData obj, uint64_t timestamp, in
 // -------------------------------------------------------
 //              TrackingViewer code
 // -------------------------------------------------------
+TrackingViewer::TrackingViewer()
+{
+
+}
 
 TrackingViewer::TrackingViewer(sl::Resolution res, const int fps_, const float D_max)  {
     // ----------- Default configuration -----------------
@@ -142,8 +146,8 @@ TrackingViewer::TrackingViewer(sl::Resolution res, const int fps_, const float D
 
     // FPS 
     frame_time_step = uint64_t(ceil(1000000000.0f / fps_));
-    // Show last 1.5 seconds
-    history_size = int(1.5f * fps_);
+    // Show last 3.0 seconds
+    history_size = int(3.0f * fps_);
 
     // Threshold to delete track
     max_missing_points = std::max(fps_ / 6, 4);

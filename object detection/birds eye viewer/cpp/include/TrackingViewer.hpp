@@ -108,6 +108,8 @@ private:
 
 class TrackingViewer {
 public:
+    TrackingViewer();
+
     TrackingViewer(sl::Resolution res, const int fps_, const float D_max);
 
     ~TrackingViewer() {
