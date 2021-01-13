@@ -59,7 +59,7 @@ GLchar* SK_FRAGMENT_SHADER =
 		"   out_Color = vec4(b_color.rgb * (diffuse + ambient), 1);\n"
 		"}";
 
-const float grid_size = 10.0f;
+const float grid_size = 15.0f;
 
 GLViewer* currentInstance_ = nullptr;
 
@@ -617,7 +617,7 @@ void Simple3DObject::addSphere(sl::float3 position, sl::float4 clr) {
 }
 
 void Simple3DObject::addFullEdges(std::vector<sl::float3> &pts, sl::float4 clr) {
-	clr.w = 0.4f;
+	clr.w = 0.2f;
 	int start_id = vertices_.size() / 3;
 
 	for (unsigned int i = 0; i < pts.size(); i++) {
@@ -651,7 +651,7 @@ void Simple3DObject::addVerticalEdges(std::vector<sl::float3> &pts, sl::float4 c
 		int start_id = vertices_.size() / 3;
 		for (unsigned int i = 0; i < current_pts.size(); i++) {
 			addPt(current_pts[i]);
-			clr.a = (i == 2 || i == 3) ? 0.0f : 0.4f;
+			clr.a = (i == 2 || i == 3) ? 0.0f : 0.2f;
 			addClr(clr);
 		}
 
@@ -669,7 +669,7 @@ void Simple3DObject::addVerticalEdges(std::vector<sl::float3> &pts, sl::float4 c
 }
 
 void Simple3DObject::addTopFace(std::vector<sl::float3> &pts, sl::float4 clr) {
-	clr.a = 0.3f;
+	clr.a = 0.25f;
 	for (auto it : pts)
 		addPoint(it, clr);
 }
@@ -704,7 +704,7 @@ void Simple3DObject::addVerticalFaces(std::vector<sl::float3> &pts, sl::float4 c
 			1, 0, 4, 5
 		} // left face
 	};
-	float alpha = 0.5f;
+	float alpha = 0.25f;
 
 	for (const auto quad : quads) {
 

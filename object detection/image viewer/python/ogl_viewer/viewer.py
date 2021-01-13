@@ -34,22 +34,22 @@ void main() {
 
 M_PI = 3.1415926
 
-GRID_SIZE = 9.0
+GRID_SIZE = 15.0
 
 CLASS_COLORS = np.array([
 	[44, 117, 255]          # People
 	, [255, 0, 255]         # Vehicle
-	, [0, 0, 255]	
-    , [0, 255, 255]	
-    , [0, 255, 0]	
+	, [0, 0, 255]
+    , [0, 255, 255]
+    , [0, 255, 0]
     , [255, 255, 255]]
     , np.float32)
 
 ID_COLORS = np.array([
-	[0.231, 0.909, 0.69]	
-    , [0.098, 0.686, 0.816]	
-    , [0.412, 0.4, 0.804]	
-    , [1, 0.725, 0]	
+	[0.231, 0.909, 0.69]
+    , [0.098, 0.686, 0.816]
+    , [0.412, 0.4, 0.804]
+    , [1, 0.725, 0]
     , [0.989, 0.388, 0.419]]
     , np.float32)
 
@@ -135,14 +135,14 @@ class Simple3DObject:
     """
     Add a unique point to the list of points
     """
-    def add_pt(self, _pts):  
+    def add_pt(self, _pts):
         for pt in _pts:
             self.vertices.append(pt)
 
     """
     Add a unique color to the list of colors
     """
-    def add_clr(self, _clrs):   
+    def add_clr(self, _clrs):
         for clr in _clrs:
             self.colors.append(clr)
 
@@ -179,10 +179,10 @@ class Simple3DObject:
     def add_line(self, _p1, _p2, _clr):
         self.add_point_clr(_p1, _clr)
         self.add_point_clr(_p2, _clr)
-    
+
     def add_full_edges(self, _pts, _clr):
         start_id = int(len(self.vertices) / 3)
-        _clr[3] = 0.4
+        _clr[3] = 0.2
 
         for i in range(len(_pts)):
             self.add_pt(_pts[i])
@@ -204,7 +204,7 @@ class Simple3DObject:
 
     def __add_single_vertical_line(self, _top_pt, _bottom_pt, _clr):
         current_pts = np.array(
-            [_top_pt, 
+            [_top_pt,
             ((GRID_SIZE - 1) * np.array(_top_pt) + np.array(_bottom_pt)) / GRID_SIZE,
             ((GRID_SIZE - 2) * np.array(_top_pt) + np.array(_bottom_pt) * 2) / GRID_SIZE,
             (2 * np.array(_top_pt) + np.array(_bottom_pt) * (GRID_SIZE - 2)) / GRID_SIZE,
@@ -217,7 +217,7 @@ class Simple3DObject:
             if (i == 2 or i == 3):
                 _clr[3] = 0
             else:
-                _clr[3] = 0.4
+                _clr[3] = 0.2
             self.add_clr(_clr)
 
         box_links = np.array([0, 1, 1, 2, 2, 3, 3, 4, 4, 5])
@@ -234,7 +234,7 @@ class Simple3DObject:
         self.__add_single_vertical_line(_pts[3], _pts[7], _clr)
 
     def add_top_face(self, _pts, _clr):
-        _clr[3] = 0.5
+        _clr[3] = 0.25
         for pt in _pts:
             self.add_point_clr(pt, _clr)
 
@@ -259,7 +259,7 @@ class Simple3DObject:
                 , [2, 1, 5, 6]      # Back face
                 , [1, 0, 4, 5]]     # Left face
 
-        alpha = 0.5
+        alpha = 0.25
 
         # Create gradually fading quads
         for quad in quads:
@@ -332,8 +332,8 @@ class Simple3DObject:
 
         if len(self.vertices):
             glBindBuffer(GL_ARRAY_BUFFER, self.vboID[0])
-            glBufferData(GL_ARRAY_BUFFER, len(self.vertices) * self.vertices.itemsize, (GLfloat * len(self.vertices))(*self.vertices), GL_STATIC_DRAW)         
-            
+            glBufferData(GL_ARRAY_BUFFER, len(self.vertices) * self.vertices.itemsize, (GLfloat * len(self.vertices))(*self.vertices), GL_STATIC_DRAW)
+
         if len(self.colors):
             glBindBuffer(GL_ARRAY_BUFFER, self.vboID[1])
             glBufferData(GL_ARRAY_BUFFER, len(self.colors) * self.colors.itemsize, (GLfloat * len(self.colors))(*self.colors), GL_STATIC_DRAW)
@@ -350,7 +350,7 @@ class Simple3DObject:
 
         self.elementbufferSize = len(self.indices)
 
-    def clear(self):        
+    def clear(self):
         self.vertices = array.array('f')
         self.colors = array.array('f')
         self.normals = array.array('f')
@@ -360,7 +360,7 @@ class Simple3DObject:
         self.drawing_type = _type
 
     def draw(self):
-        if (self.elementbufferSize):            
+        if (self.elementbufferSize):
             glEnableVertexAttribArray(0)
             glBindBuffer(GL_ARRAY_BUFFER, self.vboID[0])
             glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,None)
@@ -368,10 +368,10 @@ class Simple3DObject:
             glEnableVertexAttribArray(1)
             glBindBuffer(GL_ARRAY_BUFFER, self.vboID[1])
             glVertexAttribPointer(1,4,GL_FLOAT,GL_FALSE,0,None)
-            
+
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vboID[2])
-            glDrawElements(self.drawing_type, self.elementbufferSize, GL_UNSIGNED_INT, None)      
-            
+            glDrawElements(self.drawing_type, self.elementbufferSize, GL_UNSIGNED_INT, None)
+
             glDisableVertexAttribArray(0)
             glDisableVertexAttribArray(1)
 
@@ -415,7 +415,7 @@ class ImageHandler:
         if self.image_tex:
             self.image_tex = 0
 
-    def initialize(self, _res):    
+    def initialize(self, _res):
         self.shader_image = Shader(IMAGE_VERTEX_SHADER, IMAGE_FRAGMENT_SHADER)
         self.tex_id = glGetUniformLocation( self.shader_image.get_program_id(), "texImage")
 
@@ -437,28 +437,28 @@ class ImageHandler:
 
         # Generate a texture name
         self.image_tex = glGenTextures(1)
-        
+
         # Select the created texture
         glBindTexture(GL_TEXTURE_2D, self.image_tex)
-        
+
         # Set the texture minification and magnification filters
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        
+
         # Fill the texture with an image
         # None means reserve texture memory, but texels are undefined
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, _res.width, _res.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, None)
-        
+
         # Unbind the texture
-        glBindTexture(GL_TEXTURE_2D, 0)   
+        glBindTexture(GL_TEXTURE_2D, 0)
 
     def push_new_image(self, _zed_mat):
         glBindTexture(GL_TEXTURE_2D, self.image_tex)
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _zed_mat.get_width(), _zed_mat.get_height(), GL_RGBA, GL_UNSIGNED_BYTE,  ctypes.c_void_p(_zed_mat.get_pointer()))
-        glBindTexture(GL_TEXTURE_2D, 0)            
+        glBindTexture(GL_TEXTURE_2D, 0)
 
     def draw(self):
         glUseProgram(self.shader_image.get_program_id())
@@ -475,7 +475,7 @@ class ImageHandler:
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ctypes.c_void_p(0))
         glDrawArrays(GL_TRIANGLES, 0, 6)
         glDisableVertexAttribArray(0)
-        glBindTexture(GL_TEXTURE_2D, 0)            
+        glBindTexture(GL_TEXTURE_2D, 0)
         glUseProgram(0)
 
 class GLViewer:
@@ -487,13 +487,13 @@ class GLViewer:
         self.objects_name = []
         self.mutex = Lock()
 
-    def init(self, _params): 
+    def init(self, _params):
         glutInit()
         wnd_w = glutGet(GLUT_SCREEN_WIDTH)
         wnd_h = glutGet(GLUT_SCREEN_HEIGHT)
         width = (int)(wnd_w*0.9)
         height = (int)(wnd_h*0.9)
-     
+
         glutInitWindowSize(width, height)
         glutInitWindowPosition((int)(wnd_w*0.05),(int)(wnd_h*0.05))
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_SRGB)
@@ -537,7 +537,7 @@ class GLViewer:
         # Register the drawing function with GLUT
         glutDisplayFunc(self.draw_callback)
         # Register the function called when nothing happens
-        glutIdleFunc(self.idle)   
+        glutIdleFunc(self.idle)
         # Register the function called on key pressed
         glutKeyboardFunc(self.keyPressedCallback)
         # Register the closing function
@@ -572,7 +572,7 @@ class GLViewer:
         self.projection.append( 0)
         self.projection.append( -1)
         self.projection.append( 0)
-        
+
 
     def is_available(self):
         if self.available:
@@ -594,7 +594,7 @@ class GLViewer:
         # Clear frame objects
         self.BBox_edges.clear()
         self.BBox_faces.clear()
-        self.objects_name = []      
+        self.objects_name = []
 
         for i in range(len(_objs.object_list)):
             if self.render_object(_objs.object_list[i]):
@@ -633,19 +633,19 @@ class GLViewer:
         if self.available:
             glutPostRedisplay()
 
-    def exit(self):      
+    def exit(self):
         if self.available:
             self.available = False
             self.image_handler.close()
 
-    def close_func(self): 
+    def close_func(self):
         if self.available:
             self.available = False
-            self.image_handler.close()      
+            self.image_handler.close()
 
     def keyPressedCallback(self, key, x, y):
         if ord(key) == 113 or ord(key) == 27:
-            self.close_func() 
+            self.close_func()
 
     def draw_callback(self):
         if self.available:
@@ -655,7 +655,7 @@ class GLViewer:
             self.update()
             self.draw()
             self.print_text()
-            self.mutex.release()  
+            self.mutex.release()
 
             glutSwapBuffers()
             glutPostRedisplay()
@@ -664,11 +664,11 @@ class GLViewer:
         self.BBox_edges.push_to_GPU()
         self.BBox_faces.push_to_GPU()
 
-    def draw(self):  
+    def draw(self):
         self.image_handler.draw()
 
         glUseProgram(self.shader_image.get_program_id())
-        glUniformMatrix4fv(self.shader_MVP, 1, GL_TRUE,  (GLfloat * len(self.projection))(*self.projection))   
+        glUniformMatrix4fv(self.shader_MVP, 1, GL_TRUE,  (GLfloat * len(self.projection))(*self.projection))
         self.BBox_edges.draw()
         self.BBox_faces.draw()
         glUseProgram(0)
@@ -678,8 +678,8 @@ class GLViewer:
 
         wnd_size = sl.Resolution()
         wnd_size.width = glutGet(GLUT_WINDOW_WIDTH)
-        wnd_size.height = glutGet(GLUT_WINDOW_HEIGHT)	
-        
+        wnd_size.height = glutGet(GLUT_WINDOW_HEIGHT)
+
         if len(self.objects_name) > 0:
             for obj in self.objects_name:
                 pt2d = self.compute_3D_projection(obj.position, self.projection, wnd_size)
@@ -692,7 +692,7 @@ class GLViewer:
     def compute_3D_projection(self, _pt, _cam, _wnd_size):
         pt4d = np.array([_pt[0],_pt[1],_pt[2], 1], np.float32)
         _cam_mat = np.array(_cam, np.float32).reshape(4,4)
-           
+
         proj3D_cam = np.matmul(pt4d, _cam_mat)     # Should result in a 4 element row vector
         proj3D_cam[1] = proj3D_cam[1] + 0.25
         proj2D = [((proj3D_cam[0] / pt4d[3]) * _wnd_size.width) / (2. * proj3D_cam[3]) + (_wnd_size.width * 0.5)
