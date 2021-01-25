@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2020, STEREOLABS.
+// Copyright (c) 2021, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -39,6 +39,10 @@ class Program
     static int step_camera_setting = 1;
     static bool led_on = true;
 
+    static OpenCvSharp.Point originRect = new Point();
+    static sl.Rect selectionRect = new sl.Rect();
+    static bool selectInProgress = false;
+
     static void Main(string[] args)
     {
         Camera zed = new Camera(0);
@@ -60,6 +64,7 @@ class Program
 
         string winName = "Camera control";
         Cv2.NamedWindow(winName);
+        Cv2.SetMouseCallback(winName, onMouse);
 
         Console.WriteLine("ZED Model             : " + zed.GetCameraModel());
         Console.WriteLine("ZED Serial Number     : " + zed.GetZEDSerialNumber());
@@ -91,6 +96,11 @@ class Program
                 // Convert to cvMat
                 OpenCvSharp.Mat cvImage = new OpenCvSharp.Mat(zedImage.GetHeight(), zedImage.GetWidth(), OpenCvSharp.MatType.CV_8UC4, zedImage.GetPtr());
 
+                // Check that selection rectangle is valid and draw it on the image
+                if (!(selectionRect.width == 0))
+                {
+                    Cv2.Rectangle(cvImage, new OpenCvSharp.Rect(selectionRect.x, selectionRect.y, selectionRect.width, selectionRect.height), new OpenCvSharp.Scalar(220, 180, 20), 2);
+                }
                 Cv2.ImShow(winName, cvImage);
             }
             else
@@ -129,7 +139,7 @@ class Program
             // Decrease camera settings value ('-' key)
             case '-':
                 current_value = zed.GetCameraSettings(camera_settings_);
-                current_value = current_value > 0 ? current_value - step_camera_setting : 0;
+                current_value = current_value > 0 ? current_value - step_camera_setting : 0; // take care of the 'default' value parameter:  VIDEO_SETTINGS_VALUE_AUTO
                 zed.SetCameraSettings(camera_settings_, current_value);
                 Console.WriteLine(str_camera_settings + ": " + zed.GetCameraSettings(camera_settings_));
                 break;
@@ -143,12 +153,19 @@ class Program
             // Reset to default parameters
             case 'r':
                 Console.WriteLine("Reset all settings to default\n");
-                ResetCameraSettings(ref zed);
+                zed.ResetCameraSettings();
+                break;
+
+            case 'a':
+                {
+                    Console.WriteLine("[Sample] set AEC_AGC_ROI on target [" + selectionRect.x + "," + selectionRect.y + "," + selectionRect.width + "," + selectionRect.height + "]");
+                    zed.SetCameraSettings(VIDEO_SETTINGS.AEC_AGC_ROI, sl.SIDE.BOTH, selectionRect, false);
+                }
                 break;
 
             case 'f':
-                Console.WriteLine("reset AEC_AGC_ROI");
-                zed.SetCameraSettings(VIDEO_SETTINGS.AEC_AGC, 1);
+                Console.WriteLine("reset AEC_AGC_ROI to full res");
+                zed.SetCameraSettings(VIDEO_SETTINGS.AEC_AGC_ROI, sl.SIDE.BOTH, selectionRect, true);
                 break;
 
         }
@@ -172,7 +189,45 @@ class Program
         // get the name of the selected SETTING
         str_camera_settings = camera_settings_.ToString();
 
-        Console.WriteLine("Switch to camera settings : "  + str_camera_settings);
+        Console.WriteLine("Switch to camera settings : " + str_camera_settings);
+    }
+
+    static void onMouse(MouseEventTypes @event, int x, int y, MouseEventFlags flags, IntPtr userData)
+    {
+        switch (@event)
+        {
+            case OpenCvSharp.MouseEventTypes.LButtonDown:
+                {
+                    originRect = new OpenCvSharp.Point(x, y);
+                    selectInProgress = true;
+                    break;
+                }
+
+            case OpenCvSharp.MouseEventTypes.LButtonUp:
+                {
+                    selectInProgress = false;
+                    break;
+                }
+
+            case OpenCvSharp.MouseEventTypes.RButtonDown:
+                {
+                    //Reset selection
+                    selectInProgress = false;
+                    selectionRect = new sl.Rect();
+                    selectionRect.x = 0;
+                    selectionRect.y = 0;
+                    selectionRect.width = 0;
+                    selectionRect.height = 0;
+                    break;
+                }
+        }
+        if (selectInProgress)
+        {
+            selectionRect.x = Math.Min(x, originRect.X);
+            selectionRect.y = Math.Min(y, originRect.Y);
+            selectionRect.width = Math.Abs(x - originRect.X) + 1;
+            selectionRect.height = Math.Abs(y - originRect.Y) + 1;
+        }
     }
 
     static private void parseArgs(string[] args, ref sl.InitParameters param)
@@ -233,26 +288,9 @@ class Program
         Console.WriteLine("* Toggle camera settings:          's'");
         Console.WriteLine("* Toggle camera LED:               'l' (lower L)");
         Console.WriteLine("* Reset all parameters:            'r'");
-        Console.WriteLine("* Reset AEC_AGC:                  'f'");
+        Console.WriteLine("* Reset exposure ROI to full image 'f'");
+        Console.WriteLine("* Use mouse to select an image area to apply exposure (press 'a')");
         Console.WriteLine("* Exit :                           'q'");
         Console.WriteLine("");
-    }
-
-    /// <summary>
-    /// Reset camera settings to default
-    /// </summary>
-    static void ResetCameraSettings(ref Camera zed)
-    {
-
-        zed.SetCameraSettings(sl.VIDEO_SETTINGS.BRIGHTNESS, sl.Camera.brightnessDefault);
-        zed.SetCameraSettings(sl.VIDEO_SETTINGS.CONTRAST, sl.Camera.contrastDefault);
-        zed.SetCameraSettings(sl.VIDEO_SETTINGS.HUE, sl.Camera.hueDefault);
-        zed.SetCameraSettings(sl.VIDEO_SETTINGS.SATURATION, sl.Camera.saturationDefault);
-        zed.SetCameraSettings(sl.VIDEO_SETTINGS.SHARPNESS, sl.Camera.sharpnessDefault);
-        zed.SetCameraSettings(sl.VIDEO_SETTINGS.GAMMA, sl.Camera.gammaDefault);
-        zed.SetCameraSettings(sl.VIDEO_SETTINGS.AUTO_WHITEBALANCE, 1);
-        zed.SetCameraSettings(sl.VIDEO_SETTINGS.LED_STATUS, 1);
-        zed.SetCameraSettings(sl.VIDEO_SETTINGS.AEC_AGC, 1);
-
     }
 }
