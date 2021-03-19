@@ -109,7 +109,7 @@ sl::Pose findClosestPoseFromTS(unsigned long long timestamp)
     else
     {
         std::map<unsigned long long,Pose>::iterator it = camPoseMap_ms.begin();
-        unsigned long long diff_max_time = ULONG_LONG_MAX;
+        unsigned long long diff_max_time = UINT64_MAX;
         while(it!=camPoseMap_ms.end())
         {
             long long diff = abs((long long)timestamp - (long long)it->first);
