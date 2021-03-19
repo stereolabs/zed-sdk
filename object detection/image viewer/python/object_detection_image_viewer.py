@@ -1,6 +1,6 @@
 ########################################################################
 #
-# Copyright (c) 2020, STEREOLABS.
+# Copyright (c) 2021, STEREOLABS.
 #
 # All rights reserved.
 #
@@ -70,6 +70,7 @@ if __name__ == "__main__":
     # Configure object detection runtime parameters
     obj_runtime_param = sl.ObjectDetectionRuntimeParameters()
     obj_runtime_param.detection_confidence_threshold = 50
+    obj_runtime_param.object_class_filter = [sl.OBJECT_CLASS.PERSON]    # Only detect Persons
 
     # Create ZED objects filled in the main loop
     objects = sl.Objects()
@@ -83,7 +84,7 @@ if __name__ == "__main__":
             # Retrieve objects
             zed.retrieve_objects(objects, obj_runtime_param)
             # Update GL view
-            viewer.update_view(image, objects)        
+            viewer.update_view(image, objects)
 
     viewer.exit()
 

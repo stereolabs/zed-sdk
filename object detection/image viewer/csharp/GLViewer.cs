@@ -549,7 +549,7 @@ namespace sl
 
         public void addFullEdges(List<Vector3> pts, float4 clr)
         {
-            clr.w = 0.4f;
+            clr.w = 0.2f;
             int start_id = vertices_.Count / 3;
 
             for (int i = 0; i < pts.Count; i++)
@@ -589,7 +589,7 @@ namespace sl
             for (int i = 0; i<current_pts.Count; i++)
             {
                 addPt(new float3(current_pts[i].X, current_pts[i].Y, current_pts[i].Z));
-                clr.w = (i == 2 || i == 3) ? 0.0f : 0.4f;
+                clr.w = (i == 2 || i == 3) ? 0.0f : 0.2f;
                 addClr(clr);
             }
 
@@ -612,7 +612,7 @@ namespace sl
 
         public void addTopFace(List<Vector3> pts, float4 clr)
         {
-            clr.w = 0.2f;
+            clr.w = 0.25f;
             foreach (Vector3 it in pts)
                 addPoint(new float3(it.X, it.Y, it.Z), clr);
         }
@@ -654,7 +654,7 @@ namespace sl
                         1, 0, 4, 5
                 } // left face
             };
-            float alpha = 0.5f;
+            float alpha = 0.25f;
 
             foreach (int[] quad in quads)
             {
@@ -781,7 +781,7 @@ namespace sl
             }
         }
 
-        public float grid_size = 9.0f;
+        public float grid_size = 15.0f;
 
         private List<float> vertices_;
         private List<float> colors_;
