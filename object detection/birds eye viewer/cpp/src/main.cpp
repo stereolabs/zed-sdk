@@ -346,7 +346,7 @@ int main(int argc, char **argv) {
 
 #if USE_BATCHING
         std::vector<sl::ObjectsBatch> trajectories;
-        zed.retrieveObjectsBatch(trajectories);
+        zed.getObjectsBatch(trajectories);
         ingestInObjectsQueue(trajectories);
         if (objects_tracked_queue.size()>0)
         {
