@@ -55,7 +55,6 @@ void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string 
 void parseArgs(int argc, char **argv, InitParameters& param);
 
 
-
 int main(int argc, char **argv) {
 
 #ifdef _SL_JETSON_
@@ -128,7 +127,7 @@ int main(int argc, char **argv) {
     Resolution display_resolution(min((int)camera_config.resolution.width, 1280) , min((int)camera_config.resolution.height, 720));
     Resolution tracks_resolution(400, display_resolution.height);
     // create a global image to store both image and tracks view
-    cv::Mat global_image(display_resolution.height, display_resolution.width + tracks_resolution.width, CV_8UC4);
+    cv::Mat global_image(display_resolution.height, display_resolution.width + tracks_resolution.width, CV_8UC4,1);
     // retrieve ref on image part
     auto image_left_ocv = global_image(cv::Rect(0, 0, display_resolution.width, display_resolution.height));
     // retrieve ref on tracks view part
@@ -179,11 +178,6 @@ int main(int argc, char **argv) {
         returned_state = zed.retrieveObjects(objects, detection_parameters_rt);
 
         if ((returned_state == ERROR_CODE::SUCCESS) && objects.is_new) {
-
-#if USE_BATCHING
-
-
-#endif
 
 #if ENABLE_GUI
 
