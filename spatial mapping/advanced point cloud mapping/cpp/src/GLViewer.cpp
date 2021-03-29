@@ -108,17 +108,19 @@ sl::CameraParameters param, sl::FusedPointCloud* ptr, sl::MODEL zed_model) {
 
     zedPath.setDrawingType(GL_LINE_STRIP);
     zedModel.setDrawingType(GL_TRIANGLES);
-    Model3D *model;
+    Model3D *model = nullptr;
     switch (zed_model)
     {
     case sl::MODEL::ZED: model = new Model3D_ZED(); break;
+    case sl::MODEL::ZED2i: 
     case sl::MODEL::ZED2: model = new Model3D_ZED2(); break;
     case sl::MODEL::ZED_M: model = new Model3D_ZED_M(); break;
     }
-    for (auto it : model->part)
-        fillZED(it.nb_triangles, model->vertices, it.triangles, it.color, &zedModel);
-    delete model;
-
+    if(model) {
+        for (auto it : model->part)
+            fillZED(it.nb_triangles, model->vertices, it.triangles, it.color, &zedModel);
+        delete model;
+    }
     zedModel.pushToGPU();
     updateZEDposition = false;
 
