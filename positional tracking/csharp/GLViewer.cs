@@ -94,6 +94,9 @@ namespace sl
                 case MODEL.ZED2:
                     model = new Model3D_ZED2();
                     break;
+                case MODEL.ZED2i:
+                    model = new Model3D_ZED2();
+                    break;
                 case MODEL.ZED_M:
                     model = new Model3D_ZED();
                     break;
