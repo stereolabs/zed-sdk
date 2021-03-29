@@ -27,7 +27,7 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DOTNET_REFERENCES
 )
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_PACKAGE_REFERENCES
-	"Stereolabs.zed_3.4.0"
-	"sl_zed_interface_3.4.0"
+	"Stereolabs.zed_3.5.0"
+	"sl_zed_interface_3.5.0"
 	"OpenCvSharp4.Windows_4.5.0.20201013"
 )
