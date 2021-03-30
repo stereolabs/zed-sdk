@@ -108,7 +108,10 @@ private:
 
 class TrackingViewer {
 public:
-    TrackingViewer(sl::Resolution res, const int fps_, const float D_max);
+    TrackingViewer();
+
+    // duration: duration of the trajectory in seconds
+    TrackingViewer(sl::Resolution res, const int fps_, const float D_max, const int duration);
 
     ~TrackingViewer() {
     };
@@ -137,7 +140,7 @@ private:
     std::vector<Tracklet> tracklets;
 
     // history management
-    size_t history_size;
+    uint64_t history_duration; //in ns
     int min_length_to_draw;
 
     // Visualization configuration
@@ -145,10 +148,6 @@ private:
     bool has_background_ready;
     cv::Scalar background_color, fov_color;
     int camera_offset;
-
-    // To keep track of frames
-    int max_missing_points;
-    uint64_t frame_time_step;
 
     // Camera settings
     sl::CalibrationParameters camera_calibration;
@@ -161,7 +160,7 @@ private:
     // ----------- Private methods ----------------------
     void addToTracklets(sl::Objects &objects);
     void detectUnchangedTrack(uint64_t current_timestamp);
-    void pruneOldPoints();
+    void pruneOldPoints(uint64_t current_timestamp);
     void computeFOV();
     void zoom(const float factor);
 

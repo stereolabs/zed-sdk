@@ -107,8 +107,12 @@ void Tracklet::addDetectedPoint(const sl::ObjectData obj, uint64_t timestamp, in
 // -------------------------------------------------------
 //              TrackingViewer code
 // -------------------------------------------------------
+TrackingViewer::TrackingViewer()
+{
 
-TrackingViewer::TrackingViewer(sl::Resolution res, const int fps_, const float D_max)  {
+}
+
+TrackingViewer::TrackingViewer(sl::Resolution res, const int fps_, const float D_max,const int duration)  {
     // ----------- Default configuration -----------------
    
     // window size
@@ -140,13 +144,8 @@ TrackingViewer::TrackingViewer(sl::Resolution res, const int fps_, const float D
     // SMOOTH
     do_smooth = false;
 
-    // FPS 
-    frame_time_step = uint64_t(ceil(1000000000.0f / fps_));
-    // Show last 1.5 seconds
-    history_size = int(1.5f * fps_);
-
-    // Threshold to delete track
-    max_missing_points = std::max(fps_ / 6, 4);
+    // Show last 3.0 seconds
+    history_duration = (unsigned long long)duration * 1000ULL * 1000ULL * 1000ULL; //convert sc to ns
 
     // Smoothing window: 80ms
     smoothing_window_size = static_cast<int>(ceil(0.08f * fps_) + .5f);
@@ -182,7 +181,7 @@ void TrackingViewer::generate_view(sl::Objects &objects, sl::Pose current_camera
         uint64_t current_timestamp = objects.timestamp.getNanoseconds();
         addToTracklets(objects);
         detectUnchangedTrack(current_timestamp);
-        pruneOldPoints();
+        pruneOldPoints(current_timestamp);
 
         // Draw all tracklets
         drawTracklets(tracking_view, current_camera_pose);
@@ -220,7 +219,6 @@ void TrackingViewer::addToTracklets(sl::Objects &objects) {
 
         // In case this object does not belong to existing tracks
         if (new_object) {
-            // printf(" - Adding new tracklet with id: %u\n", id);
             Tracklet new_track(obj, obj.label, current_timestamp);
             tracklets.push_back(new_track);
         }
@@ -230,9 +228,9 @@ void TrackingViewer::addToTracklets(sl::Objects &objects) {
 void TrackingViewer::detectUnchangedTrack(uint64_t current_timestamp) {
     for (size_t track_index = 0; track_index < tracklets.size(); ++track_index) {
         Tracklet &track = tracklets[track_index];
-        if (track.last_detected_timestamp != current_timestamp) {
+        if (track.last_detected_timestamp < current_timestamp && track.last_detected_timestamp>0) {
             // If track missed more than N frames, delete it
-            if (current_timestamp - track.last_detected_timestamp >= (max_missing_points * frame_time_step)) {
+            if (current_timestamp - track.last_detected_timestamp >= history_duration) {
                 track.is_alive = false;
                 continue;
             }
@@ -240,14 +238,14 @@ void TrackingViewer::detectUnchangedTrack(uint64_t current_timestamp) {
     }
 }
 
-void TrackingViewer::pruneOldPoints() {
+void TrackingViewer::pruneOldPoints(uint64_t ts) {
     std::vector<size_t> track_to_delete; // If a dead track does not contain drawing points, juste erase it
     for (size_t track_index = 0; track_index < tracklets.size(); ++track_index) {
         if (tracklets[track_index].is_alive) {
-            while (tracklets[track_index].positions.size() > history_size) {
-                tracklets[track_index].positions.pop_front();
+            while (tracklets[track_index].positions.size()>0 && tracklets[track_index].positions.front().timestamp < ts - history_duration) {
+                tracklets[track_index].positions.pop_front();             
             }
-            while (tracklets[track_index].positions_to_draw.size() > history_size) {
+            while (tracklets[track_index].positions_to_draw.size()>0 && tracklets[track_index].positions_to_draw.front().timestamp < ts - history_duration) {
                 tracklets[track_index].positions_to_draw.pop_front();
             }
         } else { // Here, we fade the dead trajectories faster than the alive one (4 points every frame)
