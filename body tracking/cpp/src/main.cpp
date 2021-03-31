@@ -28,6 +28,7 @@
 
 // Sample includes
 #include "GLViewer.hpp"
+#include "TrackingViewer.hpp"
 
 // Using std and sl namespaces
 using namespace std;
@@ -76,7 +77,7 @@ int main(int argc, char **argv) {
     // Enable the Objects detection module
     ObjectDetectionParameters obj_det_params;
     obj_det_params.enable_tracking = true; // track people across images flow
-    obj_det_params.enable_body_fitting = true; // smooth skeletons moves
+    obj_det_params.enable_body_fitting = false; // smooth skeletons moves
     obj_det_params.detection_model = isJetson ? DETECTION_MODEL::HUMAN_BODY_FAST : DETECTION_MODEL::HUMAN_BODY_ACCURATE;
 
     returned_state = zed.enableObjectDetection(obj_det_params);
@@ -91,9 +92,16 @@ int main(int argc, char **argv) {
     GLViewer viewer;
     viewer.init(argc, argv, camera_info.calibration_parameters.left_cam);
 
+    // For 2D GUI
+    Resolution display_resolution(min((int) camera_info.resolution.width, 1280), min((int) camera_info.resolution.height, 720));
+    cv::Mat image_left_ocv(display_resolution.height, display_resolution.width, CV_8UC4, 1);
+    Mat image_left(display_resolution, MAT_TYPE::U8_C4, image_left_ocv.data, image_left_ocv.step);
+    sl::float2 img_scale(display_resolution.width / (float) camera_info.resolution.width, display_resolution.height / (float) camera_info.resolution.height);
+    char key = ' ';
+
     // Configure object detection runtime parameters
     ObjectDetectionRuntimeParameters objectTracker_parameters_rt;
-    objectTracker_parameters_rt.detection_confidence_threshold = 50;
+    objectTracker_parameters_rt.detection_confidence_threshold = 30;
 
     // Create ZED Objects filled in the main loop
     Objects bodies;
@@ -104,7 +112,7 @@ int main(int argc, char **argv) {
 
     // Main Loop
     bool need_floor_plane = positional_tracking_parameters.set_as_static;
-    while (viewer.isAvailable()) {
+    while (viewer.isAvailable() && key != 'q') {
         // Grab images
         if (zed.grab() == ERROR_CODE::SUCCESS) {
 
@@ -122,7 +130,13 @@ int main(int argc, char **argv) {
 
             // Retrieve Detected Human Bodies
             zed.retrieveObjects(bodies, objectTracker_parameters_rt);
-            
+
+            //OCV View
+            zed.retrieveImage(image_left, VIEW::LEFT, MEM::CPU, display_resolution);
+            render_2D(image_left_ocv, img_scale, bodies.object_list);
+            cv::imshow("ZED| 2D View", image_left_ocv);
+            key = cv::waitKey(10);
+
             //Update GL View
             viewer.updateView(image, bodies);
         }
@@ -176,8 +190,8 @@ void parseArgs(int argc, char **argv, InitParameters& param) {
 void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     cout << "[Sample]";
     if (err_code != ERROR_CODE::SUCCESS)
-        cout << "[Error]";    
-    cout << " "<< msg_prefix << " ";
+        cout << "[Error]";
+    cout << " " << msg_prefix << " ";
     if (err_code != ERROR_CODE::SUCCESS) {
         cout << " | " << toString(err_code) << " : ";
         cout << toVerbose(err_code);
