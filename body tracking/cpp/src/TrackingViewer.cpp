@@ -30,12 +30,11 @@ void render_2D(cv::Mat &left_display, sl::float2 img_scale, std::vector<sl::Obje
                     auto kp_a = cvt(obj.keypoint_2d[getIdx(parts.first)], img_scale);
                     auto kp_b = cvt(obj.keypoint_2d[getIdx(parts.second)], img_scale);
                     if (roi_render.contains(kp_a) && roi_render.contains(kp_b))
-                        cv::line(left_display, kp_a, kp_b, color, 2);
+                        cv::line(left_display, kp_a, kp_b, color, 1);
                 }
             }
         }
     }
-
     // Here, overlay is as the left image, but with opaque masks on each detected objects
-    cv::addWeighted(left_display, 0.7, overlay, 0.3, 0.0, left_display);
+    cv::addWeighted(left_display, 0.9, overlay, 0.1, 0.0, left_display);
 }
