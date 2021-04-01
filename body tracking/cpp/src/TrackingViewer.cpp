@@ -29,8 +29,8 @@ void render_2D(cv::Mat &left_display, sl::float2 img_scale, std::vector<sl::Obje
                 for (const auto& parts : sl::BODY_BONES) {
                     auto kp_a = cvt(obj.keypoint_2d[getIdx(parts.first)], img_scale);
                     auto kp_b = cvt(obj.keypoint_2d[getIdx(parts.second)], img_scale);
-                    if (roi_render.contains(kp_a) && roi_render.contains(kp_b))
-                        cv::line(left_display, kp_a, kp_b, color, 1);
+					if (roi_render.contains(kp_a) && roi_render.contains(kp_b))
+						cv::line(left_display, kp_a, kp_b, color, 1, cv::LINE_AA);
                 }
             }
         }
