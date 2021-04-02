@@ -22,5 +22,22 @@ This sample shows how to detect and track objects in space.
  - 3D bounding boxes around detected objects are drawn
  - Objects classes and confidences can be changed
 
+### Notes
+This samples support the batching system introduced in 3.5, but note that it is not supported on all platform. 
+See ZD SDK 3.5 Release notes for the supported platform. 
+
+- To use batching system, set the `USE_BATCHING` flag to 1 in main.cpp. 
+The batching works in 2 different modes: 
+--> without image retention : images and point cloud will be live ( no latency) but data will be output with the batching latency parameters. 
+This means that images and data will not be synced and you will see that objects are moving with a latency compared to the image.
+--> with image retention : images and point cloud will be stored and available when data is output with the batching latency parameters.
+This means that images and data will be synced, but this requires more memories to be able to store and pop the images/data correctly. Therefore, use this mode with caution. 
+Since the sync is based on objects output, note that images/point cloud can be drawn only if an objects is detected in the scene. 
+
+--> The image retention flag is define with `#define WITH_IMAGE_RETENTION true` in BatchSystemHandler.hpp
+
+- If you want to use the batching system in your application, a good starting point is to use the BatchSystemHandler class and modify it to your needs.
+
+
 ## Support
 If you need assistance go to our Community site at https://community.stereolabs.com/
