@@ -159,7 +159,7 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters &param) {
 
 	// Create the camera
 	camera_ = CameraGL(sl::Translation(0, 0, 1000), sl::Translation(0, 0, -100));
-	camera_.setOffsetFromPosition(sl::Translation(0, 0, 1500));
+	camera_.setOffsetFromPosition(sl::Translation(0, 200, 500));
 
 	// Create the skeletons objects
 	bones = Simple3DObject(sl::Translation(0, 0, 0), false);
@@ -175,9 +175,10 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters &param) {
 	floor_grid = Simple3DObject(sl::Translation(0, 0, 0), false);
 	floor_grid.setDrawingType(GL_LINES);
 
-	float limit = 20.f;
+	float limit = 20.0f;
 	sl::float4 clr_grid(80, 80, 80, 255);
 	clr_grid /= 255.f;
+
 	float grid_height = -3;
 	for (int i = (int)(-limit); i <= (int)(limit); i++)
 		addVert(floor_grid, i * 1000, limit * 1000, grid_height * 1000, clr_grid);
@@ -263,7 +264,7 @@ void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs
 			// draw skeletons
 			auto clr_id = generateColorID(objs[i].id);
 			if (objs[i].keypoint.size()) {
-				for (auto& limb : sl::BODY_BONES) {
+				for (auto& limb : SKELETON_BONES) {
 					sl::float3 kp_1 = objs[i].keypoint[getIdx(limb.first)];
 					sl::float3 kp_2 = objs[i].keypoint[getIdx(limb.second)];
 					float norm_1 = kp_1.norm();
@@ -273,10 +274,21 @@ void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs
 						bones.addCylinder(kp_1, kp_2, clr_id);
 					}
 				}
+				// Create bone between spine and neck (not existing in sl::BODY_BONES
+				sl::float3 spine = (objs[i].keypoint[getIdx(sl::BODY_PARTS::LEFT_HIP)] + objs[i].keypoint[getIdx(sl::BODY_PARTS::RIGHT_HIP)]) / 2;  // Create new KP (spine for rendering)
+				sl::float3 neck = objs[i].keypoint[getIdx(sl::BODY_PARTS::NECK)];
+				float norm_1 = spine.norm();
+				float norm_2 = neck.norm();
+				// draw cylinder between two keypoints
+				if (std::isfinite(norm_1) && std::isfinite(norm_2)) {
+					bones.addCylinder(spine, neck, clr_id);
+				}
 				for (int j = 0; j < static_cast<int>(sl::BODY_PARTS::LAST); j++) {
 					sl::float3 kp = objs[i].keypoint[j];
 					if (std::isfinite(kp.norm()))joints.addSphere(kp, clr_id);
 				}
+				// Add Sphere at the Spine position
+				if (std::isfinite(spine.norm()))joints.addSphere(spine, clr_id);
 			}
 		}
 	}
