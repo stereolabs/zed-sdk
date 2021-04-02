@@ -30,7 +30,6 @@ public:
     BatchSystemHandler(int data_retention_time);
     ~BatchSystemHandler();
 
-
     ///
     /// \brief clear the remaining data in queue (free memory).
     /// Make sure it's called before zed is closed, otherwise you will have memory leaks.
@@ -45,7 +44,7 @@ public:
     /// \param point cloud as sl::Mat (on GPU memory) to be stored
     /// \param batch_ : batch_ from ZED SDK batching system
     ///
-    void push(sl::Pose local_pose_, sl::Pose world_pose_, sl::Mat image_, sl::Mat pc_, std::vector<sl::ObjectsBatch> batch_);
+    void push(sl::Pose local_pose_, sl::Pose world_pose_, sl::Mat image_, sl::Mat pc_, std::vector<sl::ObjectsBatch> &batch_);
 
 
     ///
@@ -61,7 +60,7 @@ public:
     /// \brief push: push data in the FIFO system. Overloaded fct for objects data only
     /// \param batch_ : batch_ from ZED SDK batching system
     ///
-    void push(std::vector<sl::ObjectsBatch> batch_);
+    void push(std::vector<sl::ObjectsBatch> &batch_);
 
     ///
     /// \brief pop : pop the data from the FIFO system. Overloaded fct for objects data only
@@ -73,9 +72,9 @@ private:
     /// Ingest fcts
     void ingestWorldPoseInMap(sl::Pose pose);
     void ingestLocalPoseInMap(sl::Pose pose);
-    void ingestImageInMap(sl::Timestamp ts, sl::Mat image);
-    void ingestDepthInMap(sl::Timestamp ts, sl::Mat depth);
-    void ingestInObjectsQueue(std::vector<sl::ObjectsBatch> trajs);
+    void ingestImageInMap(sl::Timestamp ts, sl::Mat &image);
+    void ingestDepthInMap(sl::Timestamp ts, sl::Mat &depth);
+    void ingestInObjectsQueue(std::vector<sl::ObjectsBatch> &batch_);
 
     /// Retrieve fct
     sl::Pose findClosestWorldPoseFromTS(unsigned long long timestamp);
