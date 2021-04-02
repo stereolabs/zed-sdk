@@ -9,21 +9,38 @@ import array
 import math
 import ctypes
 import pyzed.sl as sl
-
+import time
 M_PI = 3.1415926
+
+SK_SPHERE_SHADER = """
+# version 330 core
+layout(location = 0) in vec3 in_Vertex;
+layout(location = 1) in vec3 in_Normal;
+out vec4 b_color;
+out vec3 b_position;
+out vec3 b_normal;
+uniform mat4 u_mvpMatrix;
+uniform vec4 u_color;
+uniform vec4 u_pt;
+void main() {
+   b_color = u_color;
+   b_position = in_Vertex;
+   b_normal = in_Normal;
+   gl_Position =  u_mvpMatrix * (u_pt + vec4(in_Vertex, 1));
+}
+"""
 
 SK_VERTEX_SHADER = """
 # version 330 core
 layout(location = 0) in vec3 in_Vertex;
-layout(location = 1) in vec4 in_Color;
-layout(location = 2) in vec3 in_Normal;
+layout(location = 1) in vec3 in_Normal;
 out vec4 b_color;
 out vec3 b_position;
 out vec3 b_normal;
 uniform mat4 u_mvpMatrix;
 uniform vec4 u_color;
 void main() {
-   b_color = in_Color;
+   b_color = u_color;
    b_position = in_Vertex;
    b_normal = in_Normal;
    gl_Position =  u_mvpMatrix * vec4(in_Vertex, 1);
@@ -107,7 +124,6 @@ class Shader:
     def get_program_id(self):
         return self.program_id
 
-
 class Simple3DObject:
     """
     Class that manages simple 3D objects to render with OpenGL
@@ -120,7 +136,6 @@ class Simple3DObject:
         self.is_init = False
 
         self.vertices = array.array('f')
-        self.colors = array.array('f')
         self.normals = array.array('f')
         self.indices = array.array('I')
 
@@ -138,13 +153,6 @@ class Simple3DObject:
             self.vertices.append(pt)
 
     """
-    Add a unique color to the list of colors
-    """
-    def add_clr(self, _clrs):   
-        for clr in _clrs:
-            self.colors.append(clr)
-
-    """
     Add a unique normal to the list of normals
     """
     def add_normal(self, _normals):
@@ -154,11 +162,10 @@ class Simple3DObject:
     """
     Add a set of points to the list of points and their corresponding color
     """
-    def add_points(self, _pts, _base_clr):
+    def add_points(self, _pts):
         for i in range(len(_pts)):
             pt = _pts[i]
             self.add_pt(pt)
-            self.add_clr(_base_clr)
             current_size_index = int((len(self.vertices)/3))-1
             self.indices.append(current_size_index)
             self.indices.append(current_size_index+1)
@@ -166,97 +173,27 @@ class Simple3DObject:
     """
     Add a point and its corresponding color to the list of points
     """
-    def add_point_clr(self, _pt, _clr):
+    def add_point_clr(self, _pt):
         self.add_pt(_pt)
-        self.add_clr(_clr)
+        self.add_normal([0.3,0.3,0.3])
         self.indices.append(len(self.indices))
 
-    def add_point_clr_norm(self, _pt, _clr, _norm):
+    def add_point_clr_norm(self, _pt,  _norm):
         self.add_pt(_pt)
-        self.add_clr(_clr)
         self.add_normal(_norm)
         self.indices.append(len(self.indices))
 
     """
     Define a line from two points
     """
-    def add_line(self, _p1, _p2, _clr):
-        self.add_point_clr(_p1, _clr)
-        self.add_point_clr(_p2, _clr)
+    def add_line(self, _p1, _p2):
+        self.add_point_clr(_p1)
+        self.add_point_clr(_p2)
     
-    """
-    Define a cylinder from its top and bottom faces and its corresponding color
-    """
-    def add_cylinder(self, _start_position, _end_position, _clr):
-        # Compute rotation matrix
-        m_radius = 0.010  
-
-        dir = np.array([_end_position[0] - _start_position[0], _end_position[1] -
-                       _start_position[1], _end_position[2] - _start_position[2]])
-
-        m_height = np.linalg.norm(dir)
-
-        dir = np.divide(dir, m_height)
-
-        yAxis = np.array([0, 1, 0])
-        v = np.cross(dir, yAxis)
-
-        rotation = sl.Matrix3f()   # identity matrix
-        rotation.set_identity()
-
-        data = sl.Matrix3f()
-
-        if(np.linalg.norm(v) > 0.00001):
-            cosTheta = np.dot(dir, yAxis)
-            scale = (1-cosTheta)/(1-(cosTheta*cosTheta))
-
-            data.set_zeros()
-            data[0, 1] = v[2]
-            data[0, 2] = -v[1]
-            data[1, 0] = -v[2]
-            data[1, 2] = v[0]
-            data[2, 0] = v[1]
-            data[2, 1] = -v[0]
-
-            vx2 = np.matmul(data.r, data.r) * scale 
-
-            for i in range(3):
-                for j in range(3):
-                    rotation[i,j] = rotation[i,j] + data[i,j]
-
-            for i in range(3):
-                for j in range(3):
-                    rotation[i,j] = rotation[i,j] + vx2[i,j]
-                    
-        ######################################
-        rot = rotation.r
-
-        NB = 8
-        for j in range(NB):
-            i = 2. * M_PI * (j/NB)
-            i1 = 2. * M_PI * ((j+1)/NB)
-            v1_vec = [m_radius * math.cos(i), 0, m_radius * math.sin(i)]
-            v1 = np.matmul(rot, v1_vec) + _start_position
-            v2_vec = [v1_vec[0], m_height, v1_vec[2]]
-            v2 = np.matmul(rot, v2_vec) + _start_position
-            v3_vec = [m_radius * math.cos(i1), 0, m_radius * math.sin(i1)]
-            v3 = np.matmul(rot, v3_vec) + _start_position
-            v4_vec =  [v3_vec[0], m_height, v3_vec[2]]
-            v4 = np.matmul(rot, v4_vec) + _start_position
-            
-            normal = np.cross((v2 - v1), (v3 - v1))
-            normal = np.divide(normal, np.linalg.norm(normal))
-
-            self.add_point_clr_norm(v1, _clr, normal)
-            self.add_point_clr_norm(v2, _clr, normal)
-            self.add_point_clr_norm(v4, _clr, normal)
-            self.add_point_clr_norm(v3, _clr, normal)
-
-    def add_sphere(self, _position, _clr): 
+    def add_sphere(self): 
         m_radius = 0.02
-
-        m_stack_count = 6
-        m_sector_count = 6
+        m_stack_count = 16
+        m_sector_count = 16
 
         for i in range(m_stack_count+1):
             lat0 = M_PI * (-0.5 + (i - 1) / m_stack_count)
@@ -271,55 +208,47 @@ class Simple3DObject:
                 x = math.cos(lng)
                 y = math.sin(lng)
 
-                v = [m_radius * x * zr0, m_radius * y * zr0, m_radius * z0] + _position
+                v = [m_radius * x * zr0, m_radius * y * zr0, m_radius * z0]
                 normal = [x * zr0, y * zr0, z0]
-                self.add_point_clr_norm(v, _clr, normal)
+                self.add_point_clr_norm(v, normal)
 
-                v = [m_radius * x * zr1, m_radius * y * zr1, m_radius * z1] + _position
+                v = [m_radius * x * zr1, m_radius * y * zr1, m_radius * z1]
                 normal = [x * zr1, y * zr1, z1]
-                self.add_point_clr_norm(v, _clr, normal)
+                self.add_point_clr_norm(v, normal)
 
                 lng = 2 * M_PI * j / m_sector_count
                 x = math.cos(lng)
                 y = math.sin(lng)
 
-                v= [m_radius * x * zr1, m_radius *
-                    y * zr1, m_radius * z1] + _position
+                v= [m_radius * x * zr1, m_radius * y * zr1, m_radius * z1]
                 normal = [x * zr1, y * zr1, z1]
-                self.add_point_clr_norm(v, _clr, normal)
+                self.add_point_clr_norm(v, normal)
 
-                v = [m_radius * x * zr0, m_radius *
-                    y * zr0, m_radius * z0] + _position
-                normal = [x * zr0, y * zr0, z0]
-                
-                self.add_point_clr_norm(v, _clr, normal)
+                v = [m_radius * x * zr0, m_radius * y * zr0, m_radius * z0]
+                normal = [x * zr0, y * zr0, z0]                
+                self.add_point_clr_norm(v, normal)
 
     def push_to_GPU(self):
         if( self.is_init == False):
-            self.vboID = glGenBuffers(4)
+            self.vboID = glGenBuffers(3)
             self.is_init = True
 
         if len(self.vertices):
             glBindBuffer(GL_ARRAY_BUFFER, self.vboID[0])
             glBufferData(GL_ARRAY_BUFFER, len(self.vertices) * self.vertices.itemsize, (GLfloat * len(self.vertices))(*self.vertices), GL_STATIC_DRAW)         
-            
-        if len(self.colors):
-            glBindBuffer(GL_ARRAY_BUFFER, self.vboID[1])
-            glBufferData(GL_ARRAY_BUFFER, len(self.colors) * self.colors.itemsize, (GLfloat * len(self.colors))(*self.colors), GL_STATIC_DRAW)
-
+        
         if len(self.normals):
-            glBindBuffer(GL_ARRAY_BUFFER, self.vboID[2])
+            glBindBuffer(GL_ARRAY_BUFFER, self.vboID[1])
             glBufferData(GL_ARRAY_BUFFER, len(self.normals) * self.normals.itemsize, (GLfloat * len(self.normals))(*self.normals), GL_STATIC_DRAW)
 
         if len(self.indices):
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vboID[3])
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vboID[2])
             glBufferData(GL_ELEMENT_ARRAY_BUFFER,len(self.indices) * self.indices.itemsize,(GLuint * len(self.indices))(*self.indices), GL_STATIC_DRAW)
             
         self.elementbufferSize = len(self.indices)
 
     def clear(self):        
         self.vertices = array.array('f')
-        self.colors = array.array('f')
         self.normals = array.array('f')
         self.indices = array.array('I')
 
@@ -331,21 +260,57 @@ class Simple3DObject:
             glEnableVertexAttribArray(0)
             glBindBuffer(GL_ARRAY_BUFFER, self.vboID[0])
             glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,None)
-
+            
             glEnableVertexAttribArray(1)
             glBindBuffer(GL_ARRAY_BUFFER, self.vboID[1])
-            glVertexAttribPointer(1,4,GL_FLOAT,GL_FALSE,0,None)
-            
-            glEnableVertexAttribArray(2)
-            glBindBuffer(GL_ARRAY_BUFFER, self.vboID[2])
-            glVertexAttribPointer(2,3,GL_FLOAT,GL_FALSE,0,None)
+            glVertexAttribPointer(1,3,GL_FLOAT,GL_FALSE,0,None)
 
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vboID[3])
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vboID[2])
             glDrawElements(self.drawing_type, self.elementbufferSize, GL_UNSIGNED_INT, None)      
             
             glDisableVertexAttribArray(0)
             glDisableVertexAttribArray(1)
-            glDisableVertexAttribArray(2)
+
+class Skeleton:
+    def __init__(self):
+        self.clr = [0,0,0,1]
+        self.kps = []
+        self.joints = Simple3DObject(False)
+        self.Z = 1
+
+    def set(self, obj):
+        self.joints.set_drawing_type(GL_LINES)
+        self.clr = generate_color_id(obj.id)
+        self.Z = abs(obj.position[2])
+        # Draw skeletons
+        if obj.keypoint.size > 0:
+            # Bones
+            for bone in sl.BODY_BONES:
+                kp_1 = obj.keypoint[bone[0].value]
+                kp_2 = obj.keypoint[bone[1].value]
+                if math.isfinite(kp_1[0]) and math.isfinite(kp_2[0]):
+                    self.joints.add_line(kp_1, kp_2)
+        
+            for part in range(len(sl.BODY_PARTS)-1):    # -1 to avoid LAST
+                kp = obj.keypoint[part]
+                norm = np.linalg.norm(kp)
+                if math.isfinite(norm):
+                    self.kps.append(kp)
+    
+    def push_to_GPU(self):
+        self.joints.push_to_GPU()
+
+    def draw(self, shader_sk_clr, sphere, shader_mvp, projection):
+        glUniform4f(shader_sk_clr, self.clr[0],self.clr[1],self.clr[2],self.clr[3])
+        line_w = (20. / self.Z)
+        glLineWidth(line_w)
+        self.joints.draw()
+
+    def drawKPS(self, shader_clr, sphere, shader_pt):
+        glUniform4f(shader_clr, self.clr[0],self.clr[1],self.clr[2],self.clr[3])         
+        for k in self.kps:
+            glUniform4f(shader_pt, k[0],k[1],k[2], 1)
+            sphere.draw()
 
 IMAGE_FRAGMENT_SHADER = """
 # version 330 core
@@ -446,15 +411,13 @@ class GLViewer:
     """
     def __init__(self):
         self.available = False
-        self.objects_name = []
+        self.bodies = []
         self.mutex = Lock()
         # Create bone objects
-        self.bones = Simple3DObject(False)
-        # Create joint objects
-        self.joints = Simple3DObject(False)
         self.image_handler = ImageHandler()
         # Create the rendering camera
         self.projection = array.array('f')
+        self.basic_sphere = Simple3DObject(True)
 
     def init(self, _params): 
         glutInit()
@@ -477,6 +440,7 @@ class GLViewer:
 
         glEnable(GL_LINE_SMOOTH)
         glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+        glDisable(GL_DEPTH_TEST)
 
         # Initialize image renderer
         self.image_handler.initialize(_params.image_size)
@@ -486,14 +450,20 @@ class GLViewer:
         # Compile and create the shader for 3D objects
         self.shader_sk_image = Shader(SK_VERTEX_SHADER, SK_FRAGMENT_SHADER)
         self.shader_sk_MVP = glGetUniformLocation(self.shader_sk_image.get_program_id(), "u_mvpMatrix")
+        self.shader_sk_clr = glGetUniformLocation(self.shader_sk_image.get_program_id(), "u_color")
+        
+        self.shader_sphere_image = Shader(SK_SPHERE_SHADER, SK_FRAGMENT_SHADER)
+        self.shader_sphere_MVP = glGetUniformLocation(self.shader_sphere_image.get_program_id(), "u_mvpMatrix")
+        self.shader_sphere_clr = glGetUniformLocation(self.shader_sphere_image.get_program_id(), "u_color")
+        self.shader_sphere_pt = glGetUniformLocation(self.shader_sphere_image.get_program_id(), "u_pt")
 
-        self.set_render_camera_projection(_params, 0.5, 20)
-        
-        self.bones.set_drawing_type(GL_QUADS)
-        
-        self.joints.set_drawing_type(GL_QUADS)
+        self.set_render_camera_projection(_params, 0.1, 200)
 
         self.floor_plane_set = False
+
+        self.basic_sphere.add_sphere()        
+        self.basic_sphere.set_drawing_type(GL_QUADS)
+        self.basic_sphere.push_to_GPU()
 
         # Register the drawing function with GLUT
         glutDisplayFunc(self.draw_callback)
@@ -557,31 +527,14 @@ class GLViewer:
         # update image
         self.image_handler.push_new_image(_image)
 
-        # Clear frame objects
-        self.bones.clear()
-        self.joints.clear()
-        self.objects_name = []      
-
+        # Clear objects
+        self.bodies.clear()
         # Only show tracked objects
         for obj in _objs.object_list:
             if self.render_object(obj):
-                color_class = generate_color_id(obj.id)
-                # Draw skeletons
-                if obj.keypoint.size > 0:
-                    # Bones
-                    for bone in sl.BODY_BONES:
-                        kp_1 = obj.keypoint[bone[0].value]
-                        kp_2 = obj.keypoint[bone[1].value]
-                        if math.isfinite(kp_1[0]) and math.isfinite(kp_2[0]):
-                            self.bones.add_cylinder(kp_1, kp_2, color_class)
-
-                    # Joints
-                    for part in range(len(sl.BODY_PARTS)-1):    # -1 to avoid LAST
-                        kp = obj.keypoint[part]
-                        norm = np.linalg.norm(kp)
-                        if math.isfinite(norm):
-                            self.joints.add_sphere(kp, color_class)
-
+                current_sk = Skeleton()
+                current_sk.set(obj)
+                self.bodies.append(current_sk)
         self.mutex.release()
 
     def idle(self):
@@ -615,17 +568,21 @@ class GLViewer:
             glutPostRedisplay()
 
     def update(self):
-        self.bones.push_to_GPU()
-        self.joints.push_to_GPU()
+        for body in self.bodies:
+            body.push_to_GPU()
 
     def draw(self):
-        glDisable(GL_DEPTH_TEST)
         self.image_handler.draw()
 
         glUseProgram(self.shader_sk_image.get_program_id())
         glUniformMatrix4fv(self.shader_sk_MVP, 1, GL_TRUE,  (GLfloat * len(self.projection))(*self.projection))    
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
-        glEnable(GL_DEPTH_TEST)
-        self.bones.draw()
-        self.joints.draw()
+        for body in self.bodies:
+            body.draw(self.shader_sphere_clr, self.basic_sphere, self.shader_sphere_MVP, self.projection)
+        glUseProgram(0)
+
+        glUseProgram(self.shader_sphere_image.get_program_id())
+        glUniformMatrix4fv(self.shader_sphere_MVP, 1, GL_TRUE,  (GLfloat * len(self.projection))(*self.projection))
+        for body in self.bodies:
+            body.drawKPS(self.shader_sphere_clr, self.basic_sphere, self.shader_sphere_pt)
         glUseProgram(0)
