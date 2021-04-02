@@ -38,12 +38,16 @@ void render_2D(cv::Mat &left_display, sl::float2 img_scale, std::vector<sl::Obje
 	cv::Mat mask(left_display.rows, left_display.cols, CV_8UC1);
 
     const int line_thickness = 2;
+
     for (auto i = objects.rbegin(); i != objects.rend(); ++i) {
         sl::ObjectData& obj = (*i);
         if(renderObject(obj)) {
             cv::Scalar base_color = generateColorID_u(obj.id);
 
-            // Display Image scaled bounding box 2D
+          // Display Image scaled bounding box 2D
+            if (obj.bounding_box_2d.size()<4)
+                continue;
+
             cv::Point top_left_corner = cvt(obj.bounding_box_2d[0], img_scale);
             cv::Point top_right_corner = cvt(obj.bounding_box_2d[1], img_scale);
             cv::Point bottom_right_corner = cvt(obj.bounding_box_2d[2], img_scale);
@@ -55,6 +59,7 @@ void render_2D(cv::Mat &left_display, sl::float2 img_scale, std::vector<sl::Obje
             // Creation of two vertical lines
             drawVerticalLine(left_display, bottom_left_corner, top_left_corner, base_color, line_thickness);
             drawVerticalLine(left_display, bottom_right_corner, top_right_corner, base_color, line_thickness);
+
 
             // scaled ROI
             cv::Rect roi(top_left_corner, bottom_right_corner);
@@ -77,8 +82,12 @@ void render_2D(cv::Mat &left_display, sl::float2 img_scale, std::vector<sl::Obje
                 putText(left_display, text, cv::Point2d(position_image.x - 20, position_image.y),
                         cv::FONT_HERSHEY_COMPLEX_SMALL, 0.5, cv::Scalar(255, 255, 255, 255), 1 );
             }
+
         }
+
     }
+
+
     // Here, overlay is as the left image, but with opaque masks on each detected objects
     cv::addWeighted(left_display, 0.7, overlay, 0.3, 0.0, left_display);
 }

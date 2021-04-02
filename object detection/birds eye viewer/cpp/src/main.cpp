@@ -35,7 +35,9 @@
 // Flag to enable/disable the batch option in Object Detection module
 // Batching system allows to reconstruct trajectories from objects from object detection module by adding Re-Identification / Appareance matching.
 // For example, if an object is not seen during some time, it can be re-ID to a previous ID if the matching score is high enough
-#define USE_BATCHING 1
+// Use with caution if image retention is activated (See BatchSystemhandler.hpp) :
+//   --> Images will only appears if a object is detected since the batching system is based on OD detection.
+#define USE_BATCHING 0
 
 // ZED includes
 #include <sl/Camera.hpp>
@@ -133,8 +135,10 @@ int main(int argc, char **argv) {
     // retrieve ref on tracks view part
     auto image_track_ocv = global_image(cv::Rect(display_resolution.width, 0, tracks_resolution.width, tracks_resolution.height));
     // init an sl::Mat from the ocv image ref (which is in fact the memory of global_image)
-    Mat image_left(display_resolution, MAT_TYPE::U8_C4, image_left_ocv.data, image_left_ocv.step);
+    cv::Mat image_render_left = cv::Mat(display_resolution.height,display_resolution.width,CV_8UC4,1);
+    Mat image_left(display_resolution, MAT_TYPE::U8_C4, image_render_left.data, image_render_left.step);
     sl::float2 img_scale(display_resolution.width / (float)camera_config.resolution.width, display_resolution.height / (float)camera_config.resolution.height);
+
 
     // 2D tracks
     TrackingViewer track_view_generator(tracks_resolution, camera_config.fps, init_parameters.depth_maximum_distance,3);
@@ -155,13 +159,13 @@ int main(int argc, char **argv) {
     RuntimeParameters runtime_parameters;
     runtime_parameters.confidence_threshold = 50;
 
-    Pose cam_pose;
-    cam_pose.pose_data.setIdentity();
+    Pose cam_c_pose;
+    cam_c_pose.pose_data.setIdentity();
+
+    Pose cam_w_pose;
+    cam_w_pose.pose_data.setIdentity();
+
     bool gl_viewer_available=true;
-
-    sl::Timestamp init_app_ts = 0ULL;
-    sl::Timestamp init_queue_ts = 0ULL;
-
     while (
 #if ENABLE_GUI
             gl_viewer_available &&
@@ -180,31 +184,44 @@ int main(int argc, char **argv) {
         if ((returned_state == ERROR_CODE::SUCCESS) && objects.is_new) {
 
 #if ENABLE_GUI
-
             zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, pc_resolution);
-            zed.getPosition(cam_pose, REFERENCE_FRAME::WORLD);
-            viewer.updateData(point_cloud, objects.object_list, cam_pose.pose_data);
-
+            zed.getPosition(cam_w_pose, REFERENCE_FRAME::WORLD);
+            zed.getPosition(cam_c_pose, REFERENCE_FRAME::CAMERA);
             zed.retrieveImage(image_left, VIEW::LEFT, MEM::CPU, display_resolution);
-            // as image_left_ocv is a ref of image_left, it contains directly the new grabbed image
-            render_2D(image_left_ocv, img_scale, objects.object_list, true);
-            zed.getPosition(cam_pose, REFERENCE_FRAME::CAMERA);
-            sl::Timestamp current_ts = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE);
 
+            bool update_render_view = true;
+            bool update_3d_view = true;
+            bool update_tracking_view = true;
 
-            bool update_track_view = true;
             #if USE_BATCHING
             std::vector<sl::ObjectsBatch> trajectories;
             zed.getObjectsBatch(trajectories);
-            batchHandler.push(cam_pose,trajectories);
-            batchHandler.pop(current_ts,cam_pose,objects);
-            update_track_view = objects.is_new;
+            batchHandler.push(cam_c_pose,cam_w_pose,image_left,point_cloud,trajectories);
+            batchHandler.pop(cam_c_pose,cam_w_pose,image_left,point_cloud,objects);
+            update_tracking_view = objects.is_new;
+            update_render_view = WITH_IMAGE_RETENTION?objects.is_new:true;
+            update_3d_view = WITH_IMAGE_RETENTION?objects.is_new:true;
             #endif
 
-            if (update_track_view)
-            track_view_generator.generate_view(objects, cam_pose, image_track_ocv, objects.is_tracked);
+            if (update_render_view) {
+            image_render_left.copyTo(image_left_ocv);
+            render_2D(image_left_ocv, img_scale, objects.object_list, true);
+            }
+
+            if (update_3d_view)
+                viewer.updateData(point_cloud, objects.object_list, cam_w_pose.pose_data);
+
+            if (update_tracking_view)
+                track_view_generator.generate_view(objects, cam_c_pose, image_track_ocv, objects.is_tracked);
 
 #else
+
+            #if USE_BATCHING
+            std::vector<sl::ObjectsBatch> trajectories;
+            zed.getObjectsBatch(trajectories);
+            batchHandler.push(trajectories);
+            batchHandler.pop(objects);
+            #endif
             cout << "Detected " << objects.object_list.size() << " Object(s)" << endl;
 #endif
         }
@@ -246,6 +263,9 @@ int main(int argc, char **argv) {
     viewer.exit();
     point_cloud.free();
     image_left.free();
+#endif
+#if USE_BATCHING
+    batchHandler.clear();
 #endif
     zed.disableObjectDetection();
     zed.close();
