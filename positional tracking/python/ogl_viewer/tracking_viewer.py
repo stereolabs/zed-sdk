@@ -170,8 +170,8 @@ class GLViewer:
         self.txtT = ""
         self.txtR = ""
 
-    def init(self, _argc, _argv, camera_model): # _params = sl.CameraParameters
-        glutInit(_argc, _argv)
+    def init(self, camera_model): # _params = sl.CameraParameters
+        glutInit()
         wnd_w = int(glutGet(GLUT_SCREEN_WIDTH)*0.9)
         wnd_h = int(glutGet(GLUT_SCREEN_HEIGHT) *0.9)
         glutInitWindowSize(wnd_w, wnd_h)
