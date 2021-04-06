@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
     // Enable the Objects detection module
     ObjectDetectionParameters obj_det_params;
     obj_det_params.enable_tracking = true; // track people across images flow
-    obj_det_params.enable_body_fitting = false; // smooth skeletons moves
+    obj_det_params.enable_body_fitting = true; // smooth skeletons moves
     obj_det_params.detection_model = isJetson ? DETECTION_MODEL::HUMAN_BODY_FAST : DETECTION_MODEL::HUMAN_BODY_ACCURATE;
 
     returned_state = zed.enableObjectDetection(obj_det_params);
@@ -143,24 +143,24 @@ int main(int argc, char **argv) {
 			zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, pc_resolution);
 			zed.getPosition(cam_pose, REFERENCE_FRAME::WORLD);
 
+			string window_name = "ZED| 2D View";
+
 			//Update GL View
 			viewer.updateData(point_cloud, bodies.object_list, cam_pose.pose_data);
-
-			render_2D(image_left_ocv, img_scale, bodies.object_list);
-			string window_name = "ZED| 2D View";
-			cv::imshow(window_name, image_left_ocv);
-			key = cv::waitKey(10);
 
 			gl_viewer_available = viewer.isAvailable();
 			if (is_playback && zed.getSVOPosition() == zed.getSVONumberOfFrames()) {
 				quit = true;
 			}
-
+			render_2D(image_left_ocv, img_scale, bodies.object_list);
+			cv::imshow(window_name, image_left_ocv);
+			key = cv::waitKey(10);
         }
     }
 
     // Release objects
 	viewer.exit();
+	image_left.free();
     point_cloud.free();
     floor_plane.clear();
     bodies.object_list.clear();

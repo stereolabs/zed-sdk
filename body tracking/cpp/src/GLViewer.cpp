@@ -49,9 +49,9 @@ GLchar* SK_FRAGMENT_SHADER =
 "in vec3 b_normal;\n"
 "out vec4 out_Color;\n"
 "void main() {\n"
-"	vec3 lightPosition = vec3(0, 10, 0);\n"
+"	vec3 lightPosition = vec3(0, 25, 0);\n"
 "	vec3 lightColor = vec3(1,1,1);\n"
-"	float ambientStrength = 0.3;\n"
+"	float ambientStrength = 0.5;\n"
 "	vec3 ambient = ambientStrength * lightColor;\n"
 "	vec3 lightDir = normalize(lightPosition - b_position);\n"
 "	float diffuse = (1 - ambientStrength) * max(dot(b_normal, lightDir), 0.0);\n"
@@ -83,18 +83,21 @@ inline sl::float4 generateColorClass(int idx) {
 	return  sl::float4(colors[offset][0], colors[offset][1], colors[offset][2], 1.f);
 }
 
-float const id_colors[5][3] = {
+float const id_colors[8][3] = {
 	{ 232.0f, 176.0f ,59.0f },
 	{ 175.0f, 208.0f ,25.0f },
 	{ 102.0f, 205.0f ,105.0f},
 	{ 185.0f, 0.0f   ,255.0f},
-	{ 99.0f, 107.0f  ,252.0f}
+	{ 99.0f, 107.0f  ,252.0f},
+	{252.0f, 225.0f, 8.0f},
+	{167.0f, 130.0f, 141.0f},
+	{194.0f, 72.0f, 113.0f}
 };
 
 inline sl::float4 generateColorID(int idx) {
 	if (idx < 0) return sl::float4(236, 184, 36, 255);
 	else {
-		int const offset = std::max(0, idx % 5);
+		int const offset = std::max(0, idx % 8);
 		return  sl::float4(id_colors[offset][2] / 255.0f, id_colors[offset][1] / 255.0f, id_colors[offset][0] / 255.0f, 1.f);
 	}
 }
@@ -110,8 +113,8 @@ GLViewer::~GLViewer() {}
 
 void GLViewer::exit() {
 	if (currentInstance_) {
-		pointCloud_.close();
 		available = false;
+		pointCloud_.close();
 	}
 }
 
@@ -158,15 +161,12 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters &param) {
 	shaderLine.MVP_Mat = glGetUniformLocation(shaderLine.it.getProgramId(), "u_mvpMatrix");
 
 	// Create the camera
-	camera_ = CameraGL(sl::Translation(0, 0, 1000), sl::Translation(0, 0, -100));
-	camera_.setOffsetFromPosition(sl::Translation(0, 200, 500));
+	camera_ = CameraGL(sl::Translation(0, 0, 1500), sl::Translation(0, 0, -100));
+	//camera_.setOffsetFromPosition(sl::Translation(0, 0, 1000));
 
 	// Create the skeletons objects
-	bones = Simple3DObject(sl::Translation(0, 0, 0), false);
-	bones.setDrawingType(GL_QUADS);
-
-	joints = Simple3DObject(sl::Translation(0, 0, 0), false);
-	joints.setDrawingType(GL_QUADS);
+	skeletons = Simple3DObject(sl::Translation(0, 0, 0), false);
+	skeletons.setDrawingType(GL_QUADS);
 
 	floor_plane_set = false;
 	// Set background color (black)
@@ -179,7 +179,7 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters &param) {
 	sl::float4 clr_grid(80, 80, 80, 255);
 	clr_grid /= 255.f;
 
-	float grid_height = -3;
+	float grid_height = -1;
 	for (int i = (int)(-limit); i <= (int)(limit); i++)
 		addVert(floor_grid, i * 1000, limit * 1000, grid_height * 1000, clr_grid);
 
@@ -253,8 +253,7 @@ inline bool renderObject(const sl::ObjectData& i) {
 void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs, sl::Transform& pose) {
 	mtx.lock();
 	pointCloud_.pushNewPC(matXYZRGBA);
-	bones.clear();
-	joints.clear();
+	skeletons.clear();
 	cam_pose = pose;
 	sl::float3 tr_0(0, 0, 0);
 	cam_pose.setTranslation(tr_0);
@@ -271,7 +270,7 @@ void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs
 					float norm_2 = kp_2.norm();
 					// draw cylinder between two keypoints
 					if (std::isfinite(norm_1) && std::isfinite(norm_2)) {
-						bones.addCylinder(kp_1, kp_2, clr_id);
+						skeletons.addCylinder(kp_1, kp_2, clr_id);
 					}
 				}
 				// Create bone between spine and neck (not existing in sl::BODY_BONES
@@ -281,18 +280,20 @@ void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs
 				float norm_2 = neck.norm();
 				// draw cylinder between two keypoints
 				if (std::isfinite(norm_1) && std::isfinite(norm_2)) {
-					bones.addCylinder(spine, neck, clr_id);
+					skeletons.addCylinder(spine, neck, clr_id);
 				}
+
 				for (int j = 0; j < static_cast<int>(sl::BODY_PARTS::LAST); j++) {
 					sl::float3 kp = objs[i].keypoint[j];
-					if (std::isfinite(kp.norm()))joints.addSphere(kp, clr_id);
+					if (std::isfinite(kp.norm()))skeletons.addSphere(kp, clr_id);
 				}
 				// Add Sphere at the Spine position
-				if (std::isfinite(spine.norm()))joints.addSphere(spine, clr_id);
+				if (std::isfinite(spine.norm()))skeletons.addSphere(spine, clr_id);
 			}
 		}
 	}
-	mtx.unlock(); }
+	mtx.unlock(); 
+}
 
 void GLViewer::update() {
 	if (keyStates_['q'] == KEY_STATE::UP || keyStates_['Q'] == KEY_STATE::UP || keyStates_[27] == KEY_STATE::UP) {
@@ -303,7 +304,7 @@ void GLViewer::update() {
 	if (keyStates_['o'] == KEY_STATE::UP || keyStates_['O'] == KEY_STATE::UP)
 		currentInstance_->showPC = !currentInstance_->showPC;
 
-	if (keyStates_['r'] == KEY_STATE::UP || keyStates_['R'] == KEY_STATE::UP) {
+	/*if (keyStates_['r'] == KEY_STATE::UP || keyStates_['R'] == KEY_STATE::UP) {
 		camera_.setPosition(sl::Translation(0.0f, 0.0f, 1500.0f));
 		camera_.setDirection(sl::Translation(0.0f, 0.0f, 1.0f), sl::Translation(0.0f, 1.0f, 0.0f));
 	}
@@ -314,7 +315,7 @@ void GLViewer::update() {
 		camera_.translate(sl::Translation(0.0f, 1500.0f, -4000.0f));
 		camera_.setDirection(sl::Translation(0.0f, -1.0f, 0.0f), sl::Translation(0.0f, 1.0f, 0.0f));
 	}
-
+	*/
 	// Rotate camera with mouse
 	if (mouseButton_[MOUSE_BUTTON::LEFT]) {
 		camera_.rotate(sl::Rotation((float)mouseMotion_[1] * MOUSE_R_SENSITIVITY, camera_.getRight()));
@@ -329,20 +330,20 @@ void GLViewer::update() {
 
 	// Zoom in with mouse wheel
 	if (mouseWheelPosition_ != 0) {
-		float distance = sl::Translation(camera_.getOffsetFromPosition()).norm();
-		if (mouseWheelPosition_ > 0  && distance > camera_.getZNear()) { // zoom
-			camera_.setOffsetFromPosition(camera_.getOffsetFromPosition() * MOUSE_UZ_SENSITIVITY);
+		//float distance = sl::Translation(camera_.getOffsetFromPosition()).norm();
+		if (mouseWheelPosition_ > 0 /* && distance > camera_.getZNear()*/) { // zoom
+			camera_.translate(camera_.getForward() * MOUSE_UZ_SENSITIVITY * 500 * -1);
 		}
-		else if (distance < camera_.getZFar()) {// unzoom
-			camera_.setOffsetFromPosition(camera_.getOffsetFromPosition() * MOUSE_DZ_SENSITIVITY);
+		else if (/*distance < camera_.getZFar()*/ mouseWheelPosition_ < 0) {// unzoom
+			//camera_.setOffsetFromPosition(camera_.getOffsetFromPosition() * MOUSE_DZ_SENSITIVITY);
+			camera_.translate(camera_.getForward() * MOUSE_UZ_SENSITIVITY * 500);
 		}
 	}
 
 	camera_.update();
 	mtx.lock();
 	// Update point cloud buffers
-	bones.pushToGPU();
-	joints.pushToGPU();
+	skeletons.pushToGPU();
 	pointCloud_.update();
 	mtx.unlock();
 	clearInputs();
@@ -363,10 +364,9 @@ void GLViewer::draw() {
 	if (showPC)	pointCloud_.draw(vpMatrix);
 
 	glUseProgram(shaderSK.it.getProgramId());
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glUniformMatrix4fv(shaderSK.MVP_Mat, 1, GL_TRUE, vpMatrix.m);
-	bones.draw();
-	joints.draw();
+	skeletons.draw();
 	glUseProgram(0);
 }
 

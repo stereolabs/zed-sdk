@@ -18,10 +18,10 @@
 #define M_PI 3.141592653f
 #endif
 
-#define MOUSE_R_SENSITIVITY 0.04f
+#define MOUSE_R_SENSITIVITY 0.03f
 #define MOUSE_UZ_SENSITIVITY 0.75f
 #define MOUSE_DZ_SENSITIVITY 1.25f
-#define MOUSE_T_SENSITIVITY 100.f
+#define MOUSE_T_SENSITIVITY 50.f
 #define KEY_T_SENSITIVITY 0.1f
 
 using namespace sl;
@@ -360,8 +360,7 @@ private:
 
 	PointCloud pointCloud_;
 	CameraGL camera_;
-	Simple3DObject bones;
-	Simple3DObject joints;
+	Simple3DObject skeletons;
 	Simple3DObject floor_grid;
 
 	sl::Transform cam_pose;
