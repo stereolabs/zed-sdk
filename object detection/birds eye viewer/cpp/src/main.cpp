@@ -33,7 +33,7 @@
 #define ENABLE_GUI 1
 
 // Flag to enable/disable the batch option in Object Detection module
-// Batching system allows to reconstruct trajectories from objects from object detection module by adding Re-Identification / Appareance matching.
+// Batching system allows to reconstruct trajectories from the object detection module by adding Re-Identification / Appareance matching.
 // For example, if an object is not seen during some time, it can be re-ID to a previous ID if the matching score is high enough
 // Use with caution if image retention is activated (See BatchSystemhandler.hpp) :
 //   --> Images will only appears if a object is detected since the batching system is based on OD detection.
@@ -55,7 +55,6 @@ using namespace sl;
 bool is_playback = false;
 void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
 void parseArgs(int argc, char **argv, InitParameters& param);
-
 
 int main(int argc, char **argv) {
 
@@ -82,7 +81,6 @@ int main(int argc, char **argv) {
         print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
-
 
     auto camera_config = zed.getCameraInformation().camera_configuration;
     PositionalTrackingParameters positional_tracking_parameters;
@@ -181,8 +179,7 @@ int main(int argc, char **argv) {
 
         returned_state = zed.retrieveObjects(objects, detection_parameters_rt);
 
-        if ((returned_state == ERROR_CODE::SUCCESS) && objects.is_new) {
-
+        if ((returned_state == ERROR_CODE::SUCCESS) && objects.is_new) {            
 #if ENABLE_GUI
             zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, pc_resolution);
             zed.getPosition(cam_w_pose, REFERENCE_FRAME::WORLD);
@@ -193,15 +190,15 @@ int main(int argc, char **argv) {
             bool update_3d_view = true;
             bool update_tracking_view = true;
 
-            #if USE_BATCHING
-            std::vector<sl::ObjectsBatch> trajectories;
-            zed.getObjectsBatch(trajectories);
-            batchHandler.push(cam_c_pose,cam_w_pose,image_left,point_cloud,trajectories);
-            batchHandler.pop(cam_c_pose,cam_w_pose,image_left,point_cloud,objects);
+#if USE_BATCHING
+            std::vector<sl::ObjectsBatch> objectsBatch;
+            zed.getObjectsBatch(objectsBatch);
+            batchHandler.push(cam_c_pose, cam_w_pose, image_left, point_cloud, objectsBatch);
+            batchHandler.pop(cam_c_pose, cam_w_pose, image_left, point_cloud, objects);
             update_tracking_view = objects.is_new;
             update_render_view = WITH_IMAGE_RETENTION?objects.is_new:true;
             update_3d_view = WITH_IMAGE_RETENTION?objects.is_new:true;
-            #endif
+#endif
 
             if (update_render_view) {
             image_render_left.copyTo(image_left_ocv);
@@ -213,15 +210,13 @@ int main(int argc, char **argv) {
 
             if (update_tracking_view)
                 track_view_generator.generate_view(objects, cam_c_pose, image_track_ocv, objects.is_tracked);
-
 #else
-
-            #if USE_BATCHING
-            std::vector<sl::ObjectsBatch> trajectories;
-            zed.getObjectsBatch(trajectories);
-            batchHandler.push(trajectories);
+#if USE_BATCHING
+            std::vector<sl::ObjectsBatch> objectsBatch;
+            zed.getObjectsBatch(objectsBatch);
+            batchHandler.push(objectsBatch);
             batchHandler.pop(objects);
-            #endif
+#endif
             cout << "Detected " << objects.object_list.size() << " Object(s)" << endl;
 #endif
         }

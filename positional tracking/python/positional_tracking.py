@@ -30,11 +30,19 @@ import pyzed.sl as sl
 
 if __name__ == "__main__":
 
-    init = sl.InitParameters(camera_resolution=sl.RESOLUTION.HD720,
+    init_params = sl.InitParameters(camera_resolution=sl.RESOLUTION.HD720,
                                  coordinate_units=sl.UNIT.METER,
                                  coordinate_system=sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP)
+                                 
+    # If applicable, use the SVO given as parameter
+    # Otherwise use ZED live stream
+    if len(sys.argv) == 2:
+        filepath = sys.argv[1]
+        print("Using SVO file: {0}".format(filepath))
+        init_params.set_from_svo_file(filepath)
+
     zed = sl.Camera()
-    status = zed.open(init)
+    status = zed.open(init_params)
     if status != sl.ERROR_CODE.SUCCESS:
         print(repr(status))
         exit()
@@ -48,7 +56,7 @@ if __name__ == "__main__":
     camera_info = zed.get_camera_information()
     # Create OpenGL viewer
     viewer = gl.GLViewer()
-    viewer.init(len(sys.argv),sys.argv,camera_info.camera_model)
+    viewer.init(camera_info.camera_model)
 
     py_translation = sl.Translation()
     pose_data = sl.Transform()
