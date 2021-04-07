@@ -24,13 +24,26 @@ void render_2D(cv::Mat &left_display, sl::float2 img_scale, std::vector<sl::Obje
                     auto kp_a = cvt(obj.keypoint_2d[getIdx(parts.first)], img_scale);
                     auto kp_b = cvt(obj.keypoint_2d[getIdx(parts.second)], img_scale);
 					if (roi_render.contains(kp_a) && roi_render.contains(kp_b))
+                    {
+                        #if (defined(CV_VERSION_EPOCH) && CV_VERSION_EPOCH == 2)
+                        cv::line(left_display, kp_a, kp_b, color, 1);
+                        #else
 						cv::line(left_display, kp_a, kp_b, color, 1, cv::LINE_AA);
+                        #endif
+                    }
                 }
 				auto spine = (obj.keypoint_2d[getIdx(sl::BODY_PARTS::LEFT_HIP)] + obj.keypoint_2d[getIdx(sl::BODY_PARTS::RIGHT_HIP)]) / 2;
 				auto kp_a = cvt(spine, img_scale);
 				auto kp_b = cvt(obj.keypoint_2d[getIdx(sl::BODY_PARTS::NECK)], img_scale);
 				if (roi_render.contains(kp_a) && roi_render.contains(kp_b))
-					cv::line(left_display, kp_a, kp_b, color, 1, cv::LINE_AA);
+                {
+                    #if (defined(CV_VERSION_EPOCH) && CV_VERSION_EPOCH == 2)
+                    cv::line(left_display, kp_a, kp_b, color, 1);
+                    #else
+                    cv::line(left_display, kp_a, kp_b, color, 1, cv::LINE_AA);
+                    #endif
+                }
+
 
 				// skeleton joints
 				for (auto& kp : obj.keypoint_2d) {
