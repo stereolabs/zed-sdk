@@ -50,17 +50,20 @@ inline cv::Mat slMat2cvMat(sl::Mat& input) {
 }
 
 
-float const id_colors[5][3] = {
-    { 232.0f, 176.0f ,59.0f },
-    { 175.0f, 208.0f ,25.0f },
-    { 102.0f, 205.0f ,105.0f},
-    { 185.0f, 0.0f   ,255.0f},
-    { 99.0f, 107.0f  ,252.0f}
+float const id_colors[8][3] = {
+	{ 232.0f, 176.0f ,59.0f },
+	{ 175.0f, 208.0f ,25.0f },
+	{ 102.0f, 205.0f ,105.0f},
+	{ 185.0f, 0.0f   ,255.0f},
+	{ 99.0f, 107.0f  ,252.0f},
+	{252.0f, 225.0f, 8.0f},
+	{167.0f, 130.0f, 141.0f},
+	{194.0f, 72.0f, 113.0f}
 };
 
 inline cv::Scalar generateColorID_u(int idx) {
     if (idx < 0) return cv::Scalar(236, 184, 36, 255);
-    int color_idx = idx % 5;
+    int color_idx = idx % 8;
     return cv::Scalar(id_colors[color_idx][0], id_colors[color_idx][1], id_colors[color_idx][2], 255);
 }
 

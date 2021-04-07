@@ -49,12 +49,12 @@ GLchar* SK_FRAGMENT_SHADER =
 "in vec3 b_normal;\n"
 "out vec4 out_Color;\n"
 "void main() {\n"
-"	vec3 lightPosition = vec3(0, 25, 0);\n"
+"	vec3 lightPosition = vec3(0, 10000, 0);\n"
 "	vec3 lightColor = vec3(1,1,1);\n"
-"	float ambientStrength = 0.5;\n"
+"	float ambientStrength = 0.4;\n"
 "	vec3 ambient = ambientStrength * lightColor;\n"
 "	vec3 lightDir = normalize(lightPosition - b_position);\n"
-"	float diffuse = (1 - ambientStrength) * max(dot(b_normal, lightDir), 0.0);\n"
+"	float diffuse = (1 - 0) * max(dot(b_normal, lightDir), 0.0);\n"
 "   out_Color = vec4(b_color.rgb * (diffuse + ambient), 1);\n"
 "}";
 
@@ -135,7 +135,7 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters &param) {
 	glutInitWindowPosition(wnd_w * 0.05, wnd_h * 0.05);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_SRGB | GLUT_DEPTH);
 
-	glutCreateWindow("ZED Body Tracking Viewer");
+	glutCreateWindow("ZED| 3D View");
 	//glViewport(0, 0, width, height);
 
 	GLenum err = glewInit();
@@ -143,7 +143,6 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters &param) {
 		std::cout << "ERROR: glewInit failed: " << glewGetErrorString(err) << "\n";
 
 	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
-	glEnable(GL_DEPTH_TEST);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -161,7 +160,7 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters &param) {
 	shaderLine.MVP_Mat = glGetUniformLocation(shaderLine.it.getProgramId(), "u_mvpMatrix");
 
 	// Create the camera
-	camera_ = CameraGL(sl::Translation(0, 0, 1500), sl::Translation(0, 0, -100));
+	camera_ = CameraGL(sl::Translation(0, 0, 0), sl::Translation(0, 0, -100));
 	//camera_.setOffsetFromPosition(sl::Translation(0, 0, 1000));
 
 	// Create the skeletons objects
@@ -179,11 +178,13 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters &param) {
 	sl::float4 clr_grid(80, 80, 80, 255);
 	clr_grid /= 255.f;
 
-	float grid_height = -1;
+	float grid_height = -3;
 	for (int i = (int)(-limit); i <= (int)(limit); i++)
 		addVert(floor_grid, i * 1000, limit * 1000, grid_height * 1000, clr_grid);
 
 	floor_grid.pushToGPU();
+
+	glDisable(GL_DEPTH_TEST);
 
 	// Map glut function on this class methods
 	glutDisplayFunc(GLViewer::drawCallback);
@@ -304,7 +305,7 @@ void GLViewer::update() {
 	if (keyStates_['o'] == KEY_STATE::UP || keyStates_['O'] == KEY_STATE::UP)
 		currentInstance_->showPC = !currentInstance_->showPC;
 
-	/*if (keyStates_['r'] == KEY_STATE::UP || keyStates_['R'] == KEY_STATE::UP) {
+	if (keyStates_['r'] == KEY_STATE::UP || keyStates_['R'] == KEY_STATE::UP) {
 		camera_.setPosition(sl::Translation(0.0f, 0.0f, 1500.0f));
 		camera_.setDirection(sl::Translation(0.0f, 0.0f, 1.0f), sl::Translation(0.0f, 1.0f, 0.0f));
 	}
@@ -315,7 +316,7 @@ void GLViewer::update() {
 		camera_.translate(sl::Translation(0.0f, 1500.0f, -4000.0f));
 		camera_.setDirection(sl::Translation(0.0f, -1.0f, 0.0f), sl::Translation(0.0f, 1.0f, 0.0f));
 	}
-	*/
+	
 	// Rotate camera with mouse
 	if (mouseButton_[MOUSE_BUTTON::LEFT]) {
 		camera_.rotate(sl::Rotation((float)mouseMotion_[1] * MOUSE_R_SENSITIVITY, camera_.getRight()));
@@ -351,23 +352,23 @@ void GLViewer::update() {
 
 void GLViewer::draw() {
 	sl::Transform vpMatrix = camera_.getViewProjectionMatrix();
-
 	glUseProgram(shaderLine.it.getProgramId());
 	glUniformMatrix4fv(shaderLine.MVP_Mat, 1, GL_TRUE, vpMatrix.m);
 	glLineWidth(1.f);
 	floor_grid.draw();
 	glUseProgram(0);
-
 	glPointSize(1.f);
 	// Apply IMU Rotation compensation
 	vpMatrix = vpMatrix * cam_pose;
 	if (showPC)	pointCloud_.draw(vpMatrix);
 
+	glEnable(GL_DEPTH_TEST);
 	glUseProgram(shaderSK.it.getProgramId());
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glUniformMatrix4fv(shaderSK.MVP_Mat, 1, GL_TRUE, vpMatrix.m);
 	skeletons.draw();
 	glUseProgram(0);
+	glDisable(GL_DEPTH_TEST);
 }
 
 sl::float2 compute3Dprojection(sl::float3 &pt, const sl::Transform &cam, sl::Resolution wnd_size) {
@@ -589,7 +590,7 @@ void Simple3DObject::addLine(sl::float3 p1, sl::float3 p2, sl::float3 clr) {
 }
 
 void Simple3DObject::addCylinder(sl::float3 startPosition, sl::float3 endPosition, sl::float4 clr) {
-	const float m_radius = 0.005f * 1000.f; //  convert to millimeters
+	const float m_radius = 0.01f * 1000.f; //  convert to millimeters
 
 	sl::float3 dir = endPosition - startPosition;
 	float m_height = dir.norm();
@@ -651,7 +652,7 @@ void Simple3DObject::addCylinder(sl::float3 startPosition, sl::float3 endPositio
 }
 
 void Simple3DObject::addSphere(sl::float3 position, sl::float4 clr) {
-	const float m_radius = 0.01f * 1000.0f; // convert to millimeters
+	const float m_radius = 0.01f * 1000.0f * 2; // convert to millimeters
 	const int m_stackCount = 16;
 	const int m_sectorCount = 16;
 
