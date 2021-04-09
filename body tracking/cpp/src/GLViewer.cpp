@@ -125,7 +125,7 @@ bool GLViewer::isAvailable() {
 
 void CloseFunc(void) { if (currentInstance_) currentInstance_->exit(); }
 
-void GLViewer::init(int argc, char **argv, sl::CameraParameters &param) {
+void GLViewer::init(int argc, char **argv, sl::CameraParameters &param, bool showOnlyOK) {
 
 	glutInit(&argc, argv);
 	int wnd_w = glutGet(GLUT_SCREEN_WIDTH);
@@ -168,6 +168,7 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters &param) {
 	skeletons.setDrawingType(GL_QUADS);
 
 	floor_plane_set = false;
+	showOnlyOK_ = showOnlyOK;
 	// Set background color (black)
 	bckgrnd_clr = sl::float4(0.2f, 0.19f, 0.2f, 1.0f);
 
@@ -247,8 +248,11 @@ void GLViewer::setFloorPlaneEquation(sl::float4 eq) {
 	floor_plane_eq = eq;
 }
 
-inline bool renderObject(const sl::ObjectData& i) {
-	return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK || i.tracking_state == sl::OBJECT_TRACKING_STATE::OFF);
+inline bool renderObject(const sl::ObjectData& i, const bool showOnlyOK) {
+	if (showOnlyOK)
+		return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK);
+	else 
+		return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK || i.tracking_state == sl::OBJECT_TRACKING_STATE::OFF);
 }
 
 void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs, sl::Transform& pose) {
@@ -260,7 +264,7 @@ void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs
 	cam_pose.setTranslation(tr_0);
 
 	for (unsigned int i = 0; i < objs.size(); i++) {
-		if (renderObject(objs[i])) {
+		if (renderObject(objs[i], showOnlyOK_)) {
 			// draw skeletons
 			auto clr_id = generateColorID(objs[i].id);
 			if (objs[i].keypoint.size()) {
@@ -274,7 +278,7 @@ void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs
 						skeletons.addCylinder(kp_1, kp_2, clr_id);
 					}
 				}
-				// Create bone between spine and neck (not existing in sl::BODY_BONES
+				// Create bone between spine and neck (not existing in sl::BODY_BONES)
 				sl::float3 spine = (objs[i].keypoint[getIdx(sl::BODY_PARTS::LEFT_HIP)] + objs[i].keypoint[getIdx(sl::BODY_PARTS::RIGHT_HIP)]) / 2;  // Create new KP (spine for rendering)
 				sl::float3 neck = objs[i].keypoint[getIdx(sl::BODY_PARTS::NECK)];
 				float norm_1 = spine.norm();

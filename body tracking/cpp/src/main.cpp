@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
     // Create ZED objects
     Camera zed;
     InitParameters init_parameters;
-    init_parameters.camera_resolution = RESOLUTION::HD2K;
+    init_parameters.camera_resolution = RESOLUTION::HD1080;
     // On Jetson the object detection combined with an heavy depth mode could reduce the frame rate too much
     init_parameters.depth_mode = isJetson ? DEPTH_MODE::PERFORMANCE : DEPTH_MODE::ULTRA;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
 	Mat point_cloud(pc_resolution, MAT_TYPE::F32_C4, MEM::GPU);
 	// Create OpenGL Viewer
 	GLViewer viewer;
-	viewer.init(argc, argv, camera_parameters);
+	viewer.init(argc, argv, camera_parameters, obj_det_params.enable_tracking);
 
 	Pose cam_pose;
 	cam_pose.pose_data.setIdentity();
