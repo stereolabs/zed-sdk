@@ -3,13 +3,13 @@ from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
 from threading import Lock
+from cv_viewer.utils import *
 import numpy as np
 import sys
 import array
 import math
 import ctypes
 import pyzed.sl as sl
-import time
 M_PI = 3.1415926
 
 SK_SPHERE_SHADER = """
@@ -64,23 +64,10 @@ void main() {
 }
 """
 
-ID_COLORS = np.array([
-	[0.231, 0.909, 0.69]	
-    , [0.098, 0.686, 0.816]	
-    , [0.412, 0.4, 0.804]	
-    , [1, 0.725, 0]	
-    , [0.989, 0.388, 0.419]]
-    , np.float32)
-
 def generate_color_id(_idx):
-    clr = []
-    if _idx < 0:
-        clr = [0.84, 0.52, 0.1, 1.]
-    else:
-        offset = _idx % 5
-        clr = [ID_COLORS[offset][0], ID_COLORS[offset][1], ID_COLORS[offset][2], 1]
+    clr = np.divide(generate_color_id_u(_idx),255.0)
+    clr[0], clr[2] = clr[2], clr[0]
     return clr
-
 
 class Shader:
     def __init__(self, _vs, _fs):
@@ -144,6 +131,14 @@ class Simple3DObject:
         if self.vaoID:
             self.vaoID = 0
 
+    def add_vert(self, i_f, limit, height):
+        p1 = [i_f, height, -limit]
+        p2 = [i_f, height, limit]
+        p3 = [-limit, height, i_f]
+        p4 = [limit, height, i_f]
+
+        self.add_line(p1, p2)
+        self.add_line(p3, p4)
 
     """
     Add a unique point to the list of points
@@ -285,18 +280,28 @@ class Skeleton:
         # Draw skeletons
         if obj.keypoint.size > 0:
             # Bones
-            for bone in sl.BODY_BONES:
+            # Definition of SKELETON_BONES in cv_viewer.utils.py, which slightly differs from BODY_BONES
+            for bone in SKELETON_BONES:
                 kp_1 = obj.keypoint[bone[0].value]
                 kp_2 = obj.keypoint[bone[1].value]
                 if math.isfinite(kp_1[0]) and math.isfinite(kp_2[0]):
                     self.joints.add_line(kp_1, kp_2)
-        
+            
             for part in range(len(sl.BODY_PARTS)-1):    # -1 to avoid LAST
                 kp = obj.keypoint[part]
                 norm = np.linalg.norm(kp)
                 if math.isfinite(norm):
                     self.kps.append(kp)
-    
+            
+            # Create backbone (not defined in sl.BODY_BONES)
+            spine = (obj.keypoint[sl.BODY_PARTS.LEFT_HIP.value] + obj.keypoint[sl.BODY_PARTS.RIGHT_HIP.value]) / 2
+            neck = obj.keypoint[sl.BODY_PARTS.NECK.value]
+            self.joints.add_line(spine, neck)
+
+            # Spine base joint
+            if math.isfinite(np.linalg.norm(spine)):
+                self.kps.append(spine)
+
     def push_to_GPU(self):
         self.joints.push_to_GPU()
 
@@ -414,13 +419,13 @@ class GLViewer:
         self.available = False
         self.bodies = []
         self.mutex = Lock()
-        # Create bone objects
-        self.image_handler = ImageHandler()
         # Create the rendering camera
         self.projection = array.array('f')
         self.basic_sphere = Simple3DObject(True)
+        # Show tracked objects only
+        self.show_only_ok = False
 
-    def init(self, _params): 
+    def init(self, _params, _show_only_ok): 
         glutInit()
         wnd_w = glutGet(GLUT_SCREEN_WIDTH)
         wnd_h = glutGet(GLUT_SCREEN_HEIGHT)
@@ -443,9 +448,6 @@ class GLViewer:
         glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
         glDisable(GL_DEPTH_TEST)
 
-        # Initialize image renderer
-        self.image_handler.initialize(_params.image_size)
-
         glEnable(GL_FRAMEBUFFER_SRGB)
 
         # Compile and create the shader for 3D objects
@@ -461,6 +463,8 @@ class GLViewer:
         self.set_render_camera_projection(_params, 0.1, 200)
 
         self.floor_plane_set = False
+
+        self.show_only_ok = _show_only_ok
 
         self.basic_sphere.add_sphere()        
         self.basic_sphere.set_drawing_type(GL_QUADS)
@@ -517,22 +521,19 @@ class GLViewer:
         return self.available
 
     def render_object(self, _object_data):      # _object_data of type sl.ObjectData
-        if _object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK or _object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OFF:
-            return True
+        if self.show_only_ok:
+            return (_object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK)
         else:
-            return False
+            return (_object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK or _object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OFF)
 
     def update_view(self, _image, _objs):       # _objs of type sl.Objects
         self.mutex.acquire()
 
-        # update image
-        self.image_handler.push_new_image(_image)
-
         # Clear objects
         self.bodies.clear()
-            # Only show tracked objects
-            for obj in _objs.object_list:
-                if self.render_object(obj):
+        # Only show tracked objects
+        for obj in _objs.object_list:
+            if self.render_object(obj):
                 current_sk = Skeleton()
                 current_sk.set(obj)
                 self.bodies.append(current_sk)
@@ -545,12 +546,10 @@ class GLViewer:
     def exit(self):      
         if self.available:
             self.available = False
-            self.image_handler.close()
 
     def close_func(self): 
         if self.available:
-            self.available = False
-            self.image_handler.close()      
+            self.available = False     
 
     def keyPressedCallback(self, key, x, y):
         if ord(key) == 113 or ord(key) == 27:
@@ -573,8 +572,6 @@ class GLViewer:
             body.push_to_GPU()
 
     def draw(self):
-        self.image_handler.draw()
-
         glUseProgram(self.shader_sk_image.get_program_id())
         glUniformMatrix4fv(self.shader_sk_MVP, 1, GL_TRUE,  (GLfloat * len(self.projection))(*self.projection))    
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)

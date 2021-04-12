@@ -22,9 +22,11 @@
    This sample shows how to detect a human bodies and draw their 
    modelised skeleton in an OpenGL window
 """
+import cv2
 import sys
 import pyzed.sl as sl
 import ogl_viewer.viewer as gl
+import cv_viewer.tracking_viewer as cv_viewer
 import numpy as np
 
 if __name__ == "__main__":
@@ -37,13 +39,15 @@ if __name__ == "__main__":
     init_params = sl.InitParameters()
     init_params.camera_resolution = sl.RESOLUTION.HD720  # Use HD720 video mode
     init_params.coordinate_units = sl.UNIT.METER         # Set coordinate units
+    init_params.depth_mode = sl.DEPTH_MODE.ULTRA
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
-
+    
     # If applicable, use the SVO given as parameter
     # Otherwise use ZED live stream
     if len(sys.argv) == 2:
         filepath = sys.argv[1]
         print("Using SVO file: {0}".format(filepath))
+        init_params.svo_real_time_mode = True
         init_params.set_from_svo_file(filepath)
 
     # Open the camera
@@ -58,21 +62,27 @@ if __name__ == "__main__":
     zed.enable_positional_tracking(positional_tracking_parameters)
     
     obj_param = sl.ObjectDetectionParameters()
-    obj_param.enable_body_fitting = True        # Smooth skeleton move
+    obj_param.enable_body_fitting = True         # Smooth skeleton move
+    obj_param.enable_tracking = True             # Track people across images flow
     obj_param.detection_model = sl.DETECTION_MODEL.HUMAN_BODY_FAST 
 
     # Enable Object Detection module
     zed.enable_object_detection(obj_param)
 
     obj_runtime_param = sl.ObjectDetectionRuntimeParameters()
-    obj_runtime_param.detection_confidence_threshold = 50
+    obj_runtime_param.detection_confidence_threshold = 40
 
     # Get ZED camera information
     camera_info = zed.get_camera_information()
 
+    # 2D viewer utilities
+    display_resolution = sl.Resolution(min(camera_info.camera_resolution.width, 1280), min(camera_info.camera_resolution.height, 720))
+    image_scale = [display_resolution.width / camera_info.camera_resolution.width
+                 , display_resolution.height / camera_info.camera_resolution.height]
+
     # Create OpenGL viewer
     viewer = gl.GLViewer()
-    viewer.init(camera_info.calibration_parameters.left_cam)
+    viewer.init(camera_info.calibration_parameters.left_cam, obj_param.enable_tracking)
 
     # Create ZED objects filled in the main loop
     bodies = sl.Objects()
@@ -82,12 +92,18 @@ if __name__ == "__main__":
         # Grab an image
         if zed.grab() == sl.ERROR_CODE.SUCCESS:
             # Retrieve left image
-            zed.retrieve_image(image, sl.VIEW.LEFT)
+            zed.retrieve_image(image, sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
             # Retrieve objects
             zed.retrieve_objects(bodies, obj_runtime_param)
+
             # Update GL view
             viewer.update_view(image, bodies) 
-        
+            # Update OCV view
+            image_left_ocv = image.get_data()
+            cv_viewer.render_2D(image_left_ocv,image_scale,bodies.object_list)
+            cv2.imshow("ZED | 2D View", image_left_ocv)
+            cv2.waitKey(10)
+
     viewer.exit()
 
     image.free(sl.MEM.CPU)
