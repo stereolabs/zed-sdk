@@ -114,8 +114,8 @@ class GLViewer
             {
                 List<Vector3> bb_ = new List<Vector3>();
                 bb_.AddRange(obj.boundingBox);
-                float4 clr_id = generateColorClass(obj.id);
-                float4 clr_class = generateColorClass((int)obj.label);
+                float4 clr_id = Utils.generateColorID(obj.id);
+                float4 clr_class = Utils.generateColorClass((int)obj.label);
 
                 if (obj.objectTrackingState != sl.OBJECT_TRACKING_STATE.OK)
                     clr_id = clr_class;

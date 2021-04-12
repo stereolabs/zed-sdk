@@ -227,8 +227,10 @@ void BatchSystemHandler::ingestInObjectsQueue(std::vector<sl::ObjectsBatch> &bat
             newObjectData.sublabel = current_traj.sublabel;
 
             newObjectData.bounding_box_2d.clear();
-            for (int p = 0;p<current_traj.bounding_boxes_2d.at(j).size();p++)
-                newObjectData.bounding_box_2d.push_back(current_traj.bounding_boxes_2d.at(j).at(p));
+			for (int p = 0; p < current_traj.bounding_boxes_2d.at(j).size(); p++) {
+				newObjectData.bounding_box_2d.push_back(current_traj.bounding_boxes_2d.at(j).at(p));
+			}
+
             newObjectData.bounding_box.clear();
             for (int k=0;k<current_traj.bounding_boxes.at(j).size();k++)
                 newObjectData.bounding_box.push_back(current_traj.bounding_boxes.at(j).at(k));
@@ -257,10 +259,10 @@ void BatchSystemHandler::ingestInObjectsQueue(std::vector<sl::ObjectsBatch> &bat
 sl::Mat BatchSystemHandler::findClosestImageFromTS(unsigned long long timestamp) {
     sl::Mat image;
     unsigned long long ts_found = 0;
-    if (imageMap_ms.find(timestamp)!=imageMap_ms.end()) {
-        ts_found = timestamp;
-        image = imageMap_ms[timestamp];
-    }
+	if (imageMap_ms.find(timestamp) != imageMap_ms.end()) {
+		ts_found = timestamp;
+		image = imageMap_ms[timestamp];
+	}
     return image;
 }
 
