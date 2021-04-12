@@ -191,7 +191,7 @@ class Simple3DObject:
         self.add_point_clr(_p2)
     
     def add_sphere(self): 
-        m_radius = 0.02
+        m_radius = 0.025
         m_stack_count = 16
         m_sector_count = 16
 
@@ -310,6 +310,7 @@ class Skeleton:
         glUniform4f(shader_clr, self.clr[0],self.clr[1],self.clr[2],self.clr[3])         
         for k in self.kps:
             glUniform4f(shader_pt, k[0],k[1],k[2], 1)
+            sphere.draw()
             sphere.draw()
 
 IMAGE_FRAGMENT_SHADER = """
@@ -529,9 +530,9 @@ class GLViewer:
 
         # Clear objects
         self.bodies.clear()
-        # Only show tracked objects
-        for obj in _objs.object_list:
-            if self.render_object(obj):
+            # Only show tracked objects
+            for obj in _objs.object_list:
+                if self.render_object(obj):
                 current_sk = Skeleton()
                 current_sk.set(obj)
                 self.bodies.append(current_sk)
@@ -585,4 +586,5 @@ class GLViewer:
         glUniformMatrix4fv(self.shader_sphere_MVP, 1, GL_TRUE,  (GLfloat * len(self.projection))(*self.projection))
         for body in self.bodies:
             body.drawKPS(self.shader_sphere_clr, self.basic_sphere, self.shader_sphere_pt)
+
         glUseProgram(0)

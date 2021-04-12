@@ -29,7 +29,10 @@ void BatchSystemHandler::clear() {
 
 ///
 /// \brief push: push data in the FIFO system
-/// \param pose_ : current pose of the camera
+/// \param local_pose_ : current pose of the camera in Camera reference frame
+/// \param world_pose_ : current pose of the camera in World reference frame
+/// \param image_ : as sl::Mat (on CPU memory) to be stored
+/// \param pc_ : point cloud as sl::Mat (on GPU memory) to be stored
 /// \param batch_ : batch_ from ZED SDK batching system
 ///
 void BatchSystemHandler::push(sl::Pose local_pose_, sl::Pose world_pose_, sl::Mat image_, sl::Mat pc_, std::vector<sl::ObjectsBatch> &batch_) {
@@ -44,7 +47,10 @@ void BatchSystemHandler::push(sl::Pose local_pose_, sl::Pose world_pose_, sl::Ma
 
 ///
 /// \brief pop : pop the data from the FIFO system
-/// \param pose_ : pose at the sl::Objects timestamp
+/// \param local_pose_ : pose at the sl::Objects timestamp in camera reference frame
+/// \param world_pose_ : pose at the sl::Objects timestamp in world reference frame
+/// \param image_ : as sl::Mat (on CPU memory) at the sl::Objects timestamp
+/// \param depth_ : point cloud as sl::Mat (on GPU memory) at the sl::Objects timestamp
 /// \param objects_ : sl::Objects in the past.
 ///
 void BatchSystemHandler::pop(sl::Pose& local_pose_,sl::Pose& world_pose_,sl::Mat& image_, sl::Mat& depth_,sl::Objects& objects_) {
@@ -102,10 +108,8 @@ void BatchSystemHandler::pop(sl::Objects& objects_) {
 }
 
 ///
-/// \brief ingestPoseInMap
-/// \param ts: timestamp of the pose
-/// \param pose : sl::Pose of the camera
-/// \param batch_duration_sc: duration in seconds in order to remove past elements.
+/// \brief ingestWorldPoseInMap
+/// \param pose : sl::Pose of the camera in world reference frame
 ///
 void BatchSystemHandler::ingestWorldPoseInMap(sl::Pose pose) {
     std::map<unsigned long long,sl::Pose>::iterator it = camWorldPoseMap_ms.begin();
@@ -123,6 +127,10 @@ void BatchSystemHandler::ingestWorldPoseInMap(sl::Pose pose) {
     camWorldPoseMap_ms[ts.getMilliseconds()]=pose;
 }
 
+///
+/// \brief ingestLocalPoseInMap
+/// \param pose : sl::Pose of the camera in camera reference frame
+///
 void BatchSystemHandler::ingestLocalPoseInMap(sl::Pose pose) {
     std::map<unsigned long long,sl::Pose>::iterator it = camLocalPoseMap_ms.begin();
     sl::Timestamp ts = pose.timestamp;
@@ -190,9 +198,9 @@ sl::Pose BatchSystemHandler::findClosestLocalPoseFromTS(unsigned long long times
 }
 
 ///
-/// \brief ingestInObjectsQueue : convert a list of batched objects from SDK retreiveObjectsBatch() to a sorted list of sl::Objects
+/// \brief ingestInObjectsQueue : convert a list of batched objects from SDK getObjectsBatch() to a sorted list of sl::Objects
 /// \n Use this function to fill a std::deque<sl::Objects> that can be considered and used as a stream of objects with a delay.
-/// \param batch_ from retreiveObjectsBatch()
+/// \param batch_ from getObjectsBatch()
 ///
 void BatchSystemHandler::ingestInObjectsQueue(std::vector<sl::ObjectsBatch> &batch_) {
     // If list is empty, do nothing.

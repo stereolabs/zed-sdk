@@ -39,9 +39,9 @@ public:
     ///
     /// \brief push: push data in the FIFO system
     /// \param local_pose_ : current pose of the camera in Camera reference frame
-    /// \param local_pose_ : current pose of the camera in World reference frame
-    /// \param image_ as sl::Mat (on CPU memory) to be stored
-    /// \param point cloud as sl::Mat (on GPU memory) to be stored
+    /// \param world_pose_ : current pose of the camera in World reference frame
+    /// \param image_ : as sl::Mat (on CPU memory) to be stored
+    /// \param pc_ : point cloud as sl::Mat (on GPU memory) to be stored
     /// \param batch_ : batch_ from ZED SDK batching system
     ///
     void push(sl::Pose local_pose_, sl::Pose world_pose_, sl::Mat image_, sl::Mat pc_, std::vector<sl::ObjectsBatch> &batch_);
@@ -49,9 +49,10 @@ public:
 
     ///
     /// \brief pop : pop the data from the FIFO system
-    /// \param pose_ : pose at the sl::Objects timestamp
-    /// \param image_ as sl::Mat (on CPU memory) at the sl::Objects timestamp
-    /// \param point cloud as sl::Mat (on GPU memory) at the sl::Objects timestamp
+    /// \param local_pose_ : pose at the sl::Objects timestamp in camera reference frame
+    /// \param world_pose_ : pose at the sl::Objects timestamp in world reference frame
+    /// \param image_ : as sl::Mat (on CPU memory) at the sl::Objects timestamp
+    /// \param depth_ : point cloud as sl::Mat (on GPU memory) at the sl::Objects timestamp
     /// \param objects_ : sl::Objects in the past.
     ///
     void pop(sl::Pose& local_pose_, sl::Pose &world_pose_, sl::Mat &image_, sl::Mat &depth_, sl::Objects& objects_);

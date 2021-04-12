@@ -43,7 +43,10 @@
 #include <sl/Camera.hpp>
 
 // Sample includes
+#if USE_BATCHING
 #include "BatchSystemHandler.hpp"
+#endif
+
 #if ENABLE_GUI
 #include "GLViewer.hpp"
 #include "TrackingViewer.hpp"
@@ -183,7 +186,6 @@ int main(int argc, char **argv) {
 #if ENABLE_GUI
             zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, pc_resolution);
             zed.getPosition(cam_w_pose, REFERENCE_FRAME::WORLD);
-            zed.getPosition(cam_c_pose, REFERENCE_FRAME::CAMERA);
             zed.retrieveImage(image_left, VIEW::LEFT, MEM::CPU, display_resolution);
 
             bool update_render_view = true;
@@ -191,6 +193,7 @@ int main(int argc, char **argv) {
             bool update_tracking_view = true;
 
 #if USE_BATCHING
+            zed.getPosition(cam_c_pose, REFERENCE_FRAME::CAMERA);
             std::vector<sl::ObjectsBatch> objectsBatch;
             zed.getObjectsBatch(objectsBatch);
             batchHandler.push(cam_c_pose, cam_w_pose, image_left, point_cloud, objectsBatch);
@@ -209,7 +212,7 @@ int main(int argc, char **argv) {
                 viewer.updateData(point_cloud, objects.object_list, cam_w_pose.pose_data);
 
             if (update_tracking_view)
-                track_view_generator.generate_view(objects, cam_c_pose, image_track_ocv, objects.is_tracked);
+                track_view_generator.generate_view(objects, cam_w_pose, image_track_ocv, objects.is_tracked);
 #else
 #if USE_BATCHING
             std::vector<sl::ObjectsBatch> objectsBatch;
