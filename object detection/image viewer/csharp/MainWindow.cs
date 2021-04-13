@@ -64,7 +64,7 @@ namespace sl
             if (err != ERROR_CODE.SUCCESS)
                 Environment.Exit(-1);
 
-            if (zedCamera.CameraModel != sl.MODEL.ZED2)
+			if (!(zedCamera.CameraModel == sl.MODEL.ZED2 || zedCamera.CameraModel == sl.MODEL.ZED2i))
             {
                 Console.WriteLine(" ERROR : Use ZED2 Camera only");
                 return;

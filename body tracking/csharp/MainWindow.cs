@@ -33,28 +33,38 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using OpenGL;
 using OpenGL.CoreUI;
+using OpenCvSharp;
 
 namespace sl
 {
     class MainWindow
     {
+        Resolution pcRes;
+        Resolution displayRes;
         GLViewer viewer;
         Camera zedCamera;
         ObjectDetectionRuntimeParameters obj_runtime_parameters;
         RuntimeParameters runtimeParameters;
-        Mat zedMat;
+        sl.Mat pointCloud;
+        sl.Mat imageLeft;
+        OpenCvSharp.Mat imageLeftOcv;
         Objects objects;
+        sl.float2 imgScale;
+        sl.Pose camPose;
+        string window_name;
+        int key;
+        bool isTrackingON = false;
+        bool isPlayback = false;
 
         public MainWindow(string[] args)
         {
             // Set configuration parameters
             InitParameters init_params = new InitParameters();
-            init_params.resolution = RESOLUTION.HD720;
-            init_params.cameraFPS = 60;
+            init_params.resolution = RESOLUTION.HD1080;
+            init_params.cameraFPS = 30;
             init_params.depthMode = DEPTH_MODE.ULTRA;
             init_params.coordinateUnits = UNIT.METER;
             init_params.coordinateSystem = COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP;
-            init_params.depthMaximumDistance = 15f;
 
             parseArgs(args, ref init_params);
             // Open the camera
@@ -64,9 +74,9 @@ namespace sl
             if (err != ERROR_CODE.SUCCESS)
                 Environment.Exit(-1);
 
-            if (zedCamera.CameraModel != sl.MODEL.ZED2)
+            if (!(zedCamera.CameraModel == sl.MODEL.ZED2 || zedCamera.CameraModel == sl.MODEL.ZED2i))
             {
-                Console.WriteLine(" ERROR : Use ZED2 Camera only");
+                Console.WriteLine(" ERROR : Use ZED2/ZED2i Camera only");
                 return;
             }
 
@@ -79,6 +89,7 @@ namespace sl
             // Enable the Objects detection module
             ObjectDetectionParameters obj_det_params = new ObjectDetectionParameters();
             obj_det_params.enableObjectTracking = true; // the object detection will track objects across multiple images, instead of an image-by-image basis
+            isTrackingON = obj_det_params.enableObjectTracking;
             obj_det_params.enable2DMask = false;
             obj_det_params.enableBodyFitting = true; // smooth skeletons moves
             obj_det_params.imageSync = true; // the object detection is synchronized to the image
@@ -87,20 +98,31 @@ namespace sl
             zedCamera.EnableObjectDetection(ref obj_det_params);
 
             // Create ZED Objects filled in the main loop
+            camPose = new sl.Pose();
             objects = new Objects();
-            zedMat = new Mat();
             int Height = zedCamera.ImageHeight;
             int Width = zedCamera.ImageWidth;
 
-            Resolution res = new Resolution((uint)Width, (uint)Height);
-            zedMat.Create(res, MAT_TYPE.MAT_8U_C4, MEM.CPU);
+            imageLeft = new Mat();
+            displayRes = new Resolution(Math.Min((uint)Width, 1280), Math.Min((uint)Height, 720));
+            imgScale = new sl.float2((int)displayRes.width / (float)Width, (int)displayRes.height / (float)Height);
+            imageLeft.Create(displayRes, MAT_TYPE.MAT_8U_C4, MEM.CPU);
+
+            imageLeftOcv = new OpenCvSharp.Mat((int)displayRes.height, (int)displayRes.width, OpenCvSharp.MatType.CV_8UC4, imageLeft.GetPtr());
+
+            pointCloud = new sl.Mat();
+            pcRes = new Resolution(Math.Min((uint)Width, 720), Math.Min((uint)Height, 404));
+            pointCloud.Create(pcRes, MAT_TYPE.MAT_32F_C4, MEM.CPU);
 
             // Create OpenGL Viewer
             viewer = new GLViewer(new Resolution((uint)Width, (uint)Height));
 
             // Configure object detection runtime parameters
             obj_runtime_parameters = new ObjectDetectionRuntimeParameters();
-            obj_runtime_parameters.detectionConfidenceThreshold = 50;
+            obj_runtime_parameters.detectionConfidenceThreshold = 40;
+
+            window_name = "ZED| 2D View";
+            Cv2.NamedWindow(window_name, WindowMode.Normal);// Create Window
 
             // Create OpenGL window
             CreateWindow();
@@ -113,6 +135,8 @@ namespace sl
             {
                 nativeWindow.ContextCreated += NativeWindow_ContextCreated;
                 nativeWindow.Render += NativeWindow_Render;
+                nativeWindow.MouseMove += NativeWindow_MouseEvent;
+                nativeWindow.Resize += NativeWindow_Resize;
                 nativeWindow.KeyDown += (object obj, NativeWindowKeyEventArgs e) =>
                 {
                     switch (e.Key)
@@ -126,8 +150,10 @@ namespace sl
                             nativeWindow.Fullscreen = !nativeWindow.Fullscreen;
                             break;
                     }
-                };
 
+                    viewer.keyEventFunction(e);
+                };
+                nativeWindow.CursorVisible = false;
                 nativeWindow.MultisampleBits = 4;
 
                 int wnd_h = Screen.PrimaryScreen.Bounds.Height;
@@ -142,10 +168,23 @@ namespace sl
                     height = zedCamera.ImageHeight;
                 }
 
-                nativeWindow.Create((int)(zedCamera.ImageWidth * 0.05f), (int)(zedCamera.ImageHeight * 0.05f), (uint)width, (uint)height, NativeWindowStyle.Resizeable);
+                nativeWindow.Create((int)(zedCamera.ImageWidth * 0.05f), (int)(zedCamera.ImageHeight * 0.05f), 1200, 700, NativeWindowStyle.Resizeable);
                 nativeWindow.Show();
                 nativeWindow.Run();
             }
+        }
+
+        private void NativeWindow_Resize(object sender, EventArgs e)
+        {
+            OpenGL.CoreUI.NativeWindow nativeWindow = (OpenGL.CoreUI.NativeWindow)sender;
+
+            viewer.resizeCallback((int)nativeWindow.Width, (int)nativeWindow.Height);
+        }
+
+        private void NativeWindow_MouseEvent(object sender, NativeWindowMouseEventArgs e)
+        {
+            viewer.mouseEventFunction(e);
+            viewer.computeMouseMotion(e.Location.X, e.Location.Y);
         }
 
         // Init Window
@@ -154,7 +193,7 @@ namespace sl
             OpenGL.CoreUI.NativeWindow nativeWindow = (OpenGL.CoreUI.NativeWindow)sender;
 
             Gl.ReadBuffer(ReadBufferMode.Back);
-            Gl.ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            Gl.ClearColor(0.2f, 0.19f, 0.2f, 1.0f);
 
             Gl.Enable(EnableCap.Blend);
             Gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
@@ -162,7 +201,7 @@ namespace sl
             Gl.Enable(EnableCap.LineSmooth);
             Gl.Hint(HintTarget.LineSmoothHint, HintMode.Nicest);
 
-            viewer.init(zedCamera.GetCalibrationParameters().leftCam);
+            viewer.init(zedCamera.GetCalibrationParameters().leftCam, isTrackingON);
         }
 
         // Render loop
@@ -175,19 +214,25 @@ namespace sl
             ERROR_CODE err = ERROR_CODE.FAILURE;
             if (viewer.isAvailable() && zedCamera.Grab(ref runtimeParameters) == ERROR_CODE.SUCCESS)
             {
-                if (zedMat.IsInit())
+                if (imageLeft.IsInit())
                 {
                     // Retrieve left image
-                    err = zedCamera.RetrieveImage(zedMat, sl.VIEW.LEFT, sl.MEM.CPU);
-                    if (err == ERROR_CODE.SUCCESS)
-                    {
-                        // Retrieve Objects
-                        zedCamera.RetrieveObjects(ref objects, ref obj_runtime_parameters);
+                    zedCamera.RetrieveMeasure(pointCloud, sl.MEASURE.XYZRGBA, sl.MEM.CPU, pcRes);
+                    zedCamera.RetrieveImage(imageLeft, sl.VIEW.LEFT, sl.MEM.CPU, displayRes);
+                    zedCamera.GetPosition(ref camPose, REFERENCE_FRAME.WORLD);
 
-                        //Update GL View
-                        viewer.update(zedMat, objects);
-                        viewer.render();
-                    }
+                    // Retrieve Objects
+                    zedCamera.RetrieveObjects(ref objects, ref obj_runtime_parameters);
+
+                    TrackingViewer.render_2D(ref imageLeftOcv, imgScale, ref objects, true);
+
+                    //Update GL View
+                    viewer.update(pointCloud, objects, camPose);
+                    viewer.render();
+
+                    if (isPlayback && zedCamera.GetSVOPosition() == zedCamera.GetSVONumberOfFrames()) return;
+
+                    Cv2.ImShow(window_name, imageLeftOcv);
                 }
             }
         }
@@ -198,6 +243,8 @@ namespace sl
             zedCamera.DisableObjectDetection();
             zedCamera.Close();
             viewer.exit();
+            pointCloud.Free();
+            imageLeft.Free();
         }
 
         private void parseArgs(string[] args , ref sl.InitParameters param)
@@ -207,6 +254,7 @@ namespace sl
                 // SVO input mode
                 param.inputType = INPUT_TYPE.SVO;
                 param.pathSVO = args[0];
+                isPlayback = true;
                 Console.WriteLine("[Sample] Using SVO File input: " + args[0]);
             }
             else if (args.Length > 0 && args[0].IndexOf(".svo") == -1)

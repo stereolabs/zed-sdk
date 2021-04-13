@@ -22,15 +22,12 @@ namespace sl
     {
         public GLViewer(Resolution res)
         {
-            image_handler = new ImageHandler(res);
             available = false;
             currentInstance = this;
 
-            bones = new Simple3DObject();
-            joints = new Simple3DObject();
-
-            BBox_edges = new Simple3DObject();
-            BBox_faces = new Simple3DObject();
+            floorGrid = new Simple3DObject();
+            skeleton = new Simple3DObject();
+            pointCloud = new PointCloud();
         }
 
         public bool isAvailable()
@@ -39,7 +36,7 @@ namespace sl
         }
 
 
-        public void init(CameraParameters param)
+        public void init(CameraParameters param, bool showOnlyOk)
         {
             Gl.Enable(EnableCap.FramebufferSrgb);
 
@@ -47,38 +44,54 @@ namespace sl
             shaderSK.it = new Shader(Shader.SK_VERTEX_SHADER, Shader.SK_FRAGMENT_SHADER);
             shaderSK.MVP_Mat = Gl.GetUniformLocation(shaderSK.it.getProgramId(), "u_mvpMatrix");
 
-            shaderBbox = new ShaderData();
-            shaderBbox.it = new Shader(Shader.VERTEX_SHADER, Shader.FRAGMENT_SHADER);
-            shaderBbox.MVP_Mat = Gl.GetUniformLocation(shaderBbox.it.getProgramId(), "u_mvpMatrix");
+            shaderLine = new ShaderData();
+            shaderLine.it = new Shader(Shader.VERTEX_SHADER, Shader.FRAGMENT_SHADER);
+            shaderLine.MVP_Mat = Gl.GetUniformLocation(shaderSK.it.getProgramId(), "u_mvpMatrix");
 
-            setRenderCameraProjection(param, 0.5f, 20);
+            //Create Camera
+            camera_ = new CameraGL(new Vector3(0, 0, 0), new Vector3(0, 0, -1f), Vector3.UnitY);
 
-            image_handler.initialize();
-            bones.init();
-            bones.setDrawingType(PrimitiveType.Quads);
-            joints.init();
-            joints.setDrawingType(PrimitiveType.Quads);
-            BBox_edges.init();
-            BBox_edges.setDrawingType(PrimitiveType.Lines);
-            BBox_faces.init();
-            BBox_faces.setDrawingType(PrimitiveType.Quads);
+            showOnlyOK_ = showOnlyOk;
 
-            objectsName = new List<ObjectClassName>();
+            pointCloud.initialize(param.resolution);
+
+            skeleton.init();
+            skeleton.setDrawingType(PrimitiveType.Quads);
+
+            floorGrid.init();
+            floorGrid.setDrawingType(PrimitiveType.Lines);
+
+            float limit = 20;
+            float4 clr_grid = new float4();
+            clr_grid.x = 0.35f;
+            clr_grid.y = 0.35f;
+            clr_grid.z = 0.35f;
+            clr_grid.w = 1f;
+
+            float height = -3;
+            for (int i = -(int)limit; i <= (int)limit; i++)
+            {
+                addVert(ref floorGrid, i, limit, height, clr_grid);
+            }
+
+            floorGrid.pushToGPU();
+
+            cam_pose = new Matrix4x4();
 
             available = true;
         }
 
-        public void update(Mat image, Objects objects)
+        public void update(Mat pointCloud_, Objects objects, sl.Pose pose)
         {
-            image_handler.pushNewImage(image);
+            pointCloud.pushNewPC(pointCloud_);
 
-            bones.clear();
-            joints.clear();
+            cam_pose = Matrix4x4.Identity;
+            cam_pose = Matrix4x4.Transform(cam_pose, pose.rotation);
+            cam_pose = Matrix4x4.Transpose(cam_pose);
 
-            BBox_faces.clear();
-            BBox_edges.clear();
+            skeleton.clear();
 
-            if (Keyboard.IsKeyDown(Key.B)) showbbox = !showbbox;
+            if (Keyboard.IsKeyDown(Key.O)) showPC = !showPC;
 
             // For each object
             for (int idx = 0; idx < objects.numObject; idx++)
@@ -86,23 +99,10 @@ namespace sl
                 sl.ObjectData obj = objects.objectData[idx];
 
                 // Only show tracked objects
-                if (renderObject(obj))
+                if (renderObject(obj, showOnlyOK_))
                 {
-                    List<Vector3> bb_ = new List<Vector3>();
-                    bb_.AddRange(obj.boundingBox);
-                    float4 clr_id = generateColorClass(obj.id);
-                    float4 clr_class = generateColorClass((int)obj.label);
+                    float4 clr_id = generateColorID(obj.id);
                     Vector3[] keypoints = obj.keypoints;
-
-                    if (showbbox)
-                    {
-                        if (obj.objectTrackingState != sl.OBJECT_TRACKING_STATE.OK)
-                            clr_id = clr_class;
-                        else
-                            createIDRendering(obj.position, clr_id, obj.id);
-
-                        createBboxRendering(bb_, clr_id);
-                    }
 
                     if (keypoints.Length > 0)
                     {
@@ -115,24 +115,51 @@ namespace sl
                             float norm_2 = kp_2.Length();
 
                             if (!float.IsNaN(norm_1) && norm_1 > 0 && !float.IsNaN(norm_2) && norm_2 > 0){
-                                bones.addCylinder(new float3(kp_1.X, kp_1.Y, kp_1.Z), new float3(kp_2.X, kp_2.Y, kp_2.Z), clr_id);
+                                skeleton.addCylinder(new float3(kp_1.X, kp_1.Y, kp_1.Z), new float3(kp_2.X, kp_2.Y, kp_2.Z), clr_id);
                             }
                         }
+
+                        Vector3 spine = (obj.keypoints[getIdx(sl.BODY_PARTS.LEFT_HIP)] + obj.keypoints[getIdx(sl.BODY_PARTS.RIGHT_HIP)]) / 2;
+                        Vector3 neck = obj.keypoints[getIdx(sl.BODY_PARTS.NECK)];
+                        float norm_spine = spine.Length();
+                        float norm_neck = neck.Length();
+
+                        if (!float.IsNaN(norm_spine) && norm_spine > 0 && !float.IsNaN(norm_neck) && norm_neck > 0)
+                        {
+                            skeleton.addCylinder(new float3(spine.X, spine.Y, spine.Z), new float3(neck.X, neck.Y, neck.Z), clr_id);
+                        }
+
                         for (int i = 0; i < (int)BODY_PARTS.LAST; i++)
                         {
                             Vector3 kp = keypoints[i];
                             float norm = kp.Length();
                             if (!float.IsNaN(norm) && norm > 0)
                             {
-                                joints.addSphere(new float3(kp.X, kp.Y, kp.Z), clr_id);
+                                skeleton.addSphere(new float3(kp.X, kp.Y, kp.Z), clr_id);
                             }
+                        }
+
+                        if (!float.IsNaN(norm_spine) && norm_spine > 0)
+                        {
+                            skeleton.addSphere(new float3(spine.X, spine.Y, spine.Z), clr_id);
                         }
                     }
                 }
             }
         }
 
-        void createBboxRendering(List<Vector3> bb_, float4 bbox_clr)
+        void addVert(ref Simple3DObject obj, float i_f, float limit, float height, float4 clr)
+        {
+            float3 p1 = new float3(i_f, height, -limit);
+            float3 p2 = new float3(i_f, height, limit);
+            float3 p3 = new float3(-limit, height, i_f);
+            float3 p4 = new float3(limit, height, i_f);
+
+            obj.addLine(p1, p2, clr);
+            obj.addLine(p3, p4, clr);
+        }
+
+        /*void createBboxRendering(List<Vector3> bb_, float4 bbox_clr)
         {
             // First create top and bottom full edges
             BBox_edges.addFullEdges(bb_, bbox_clr);
@@ -151,56 +178,120 @@ namespace sl
             tmp.color = clr;
             tmp.position = center; // Reference point
             objectsName.Add(tmp);
-        }
+        }*/
 
         public void render()
         {
-            BBox_edges.pushToGPU();
-            BBox_faces.pushToGPU();
-            bones.pushToGPU();
-            joints.pushToGPU();
+            camera_.update();
+            skeleton.pushToGPU();
 
             draw();
         }
 
+        public void keyEventFunction(NativeWindowKeyEventArgs e)
+        {
+            if (e.Key == KeyCode.R)
+            {
+                camera_.setPosition(new Vector3(0, 0, 1.5f));
+                camera_.setDirection(new Vector3(0, 0, -1), Vector3.UnitY);
+            }
+            if (e.Key == KeyCode.T)
+            {
+                camera_.setPosition(new Vector3(0, 0.0f, 1.5f));
+                camera_.setOffsetFromPosition(new Vector3(0, 0, 6));
+                camera_.translate(new Vector3(0, 1.5f, -4));
+                camera_.setDirection(new Vector3(0, -1, 0), Vector3.UnitY);
+            }
+        }
+
+        public void mouseEventFunction(NativeWindowMouseEventArgs e)
+        {
+            // Rotate camera with mouse
+            if (e.Buttons == OpenGL.CoreUI.MouseButton.Left)
+            {
+                camera_.rotate(Quaternion.CreateFromAxisAngle(camera_.getRight(), (float)mouseMotion_[1] * MOUSE_R_SENSITIVITY));
+                camera_.rotate(Quaternion.CreateFromAxisAngle(camera_.getVertical() * -1f, (float)mouseMotion_[0] * MOUSE_R_SENSITIVITY));
+            }
+            if (e.Buttons == OpenGL.CoreUI.MouseButton.Right)
+            {
+                camera_.translate(camera_.getUp() * (float)mouseMotion_[1] * MOUSE_T_SENSITIVITY  * -1);
+                camera_.translate(camera_.getRight() * (float)mouseMotion_[0] * MOUSE_T_SENSITIVITY * - 1);
+            }
+            if (e.Buttons == OpenGL.CoreUI.MouseButton.Middle)
+            {
+                camera_.translate(camera_.getForward() * (float)mouseMotion_[1] * MOUSE_T_SENSITIVITY * -1);
+                camera_.translate(camera_.getForward() * (float)mouseMotion_[0] * MOUSE_T_SENSITIVITY * -1);
+            }
+        }
+
+        public void resizeCallback(int width, int height)
+        {
+            Gl.Viewport(0, 0, width, height);
+            float hfov = (180.0f / (float)Math.PI) * (float)(2.0 * Math.Atan(width / (2.0f * 500)));
+            float vfov = (180.0f / (float)Math.PI) * (float)(2.0f * Math.Atan(height / (2.0f * 500)));
+
+            camera_.setProjection(hfov, vfov, camera_.getZNear(), camera_.getZFar());
+        }
+
+        public void computeMouseMotion(int x, int y)
+        {
+            currentInstance.mouseMotion_[0] = x - currentInstance.previousMouseMotion_[0];
+            currentInstance.mouseMotion_[1] = y - currentInstance.previousMouseMotion_[1];
+            currentInstance.previousMouseMotion_[0] = x;
+            currentInstance.previousMouseMotion_[1] = y;
+        }
+
         public void draw()
         {
-            Gl.Disable(EnableCap.DepthTest);
-            image_handler.draw();
+            Matrix4x4 vpMatrix = camera_.getViewProjectionMatrix();
+
+            Gl.UseProgram(shaderLine.it.getProgramId());
+            Gl.UniformMatrix4f(shaderSK.MVP_Mat, 1, true, vpMatrix);
+            Gl.LineWidth(1.0f);
+            floorGrid.draw();
+            Gl.UseProgram(0);
+
+            Gl.PointSize(1.0f);
+            vpMatrix = vpMatrix * cam_pose;
+            if (showPC) pointCloud.draw(vpMatrix);
 
             Gl.Enable(EnableCap.DepthTest);
             Gl.UseProgram(shaderSK.it.getProgramId());
-            Gl.UniformMatrix4f(shaderSK.MVP_Mat, 1, true, projection_);
-            bones.draw();
-            joints.draw();
-
-            Gl.UseProgram(shaderBbox.it.getProgramId());
-            Gl.UniformMatrix4f(shaderBbox.MVP_Mat, 1, true, projection_);
-            Gl.LineWidth(1.5f);
-            BBox_edges.draw();
-            BBox_faces.draw();
-
+            Gl.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
+            Gl.UniformMatrix4f(shaderSK.MVP_Mat, 1, true, vpMatrix);
+            skeleton.draw();
+            Gl.UseProgram(0);
+            Gl.Disable(EnableCap.DepthTest);
         }
 
-        sl.float4 generateColorClass(int idx)
+        sl.float4 generateColorID(int idx)
         {
+            sl.float4 default_color = new float4();
+            default_color.x = 236.0f / 255;
+            default_color.y = 184.0f / 255;
+            default_color.z = 36.0f / 255;
+            default_color.z = 255.0f/ 255;
 
-            int offset = Math.Max(0, idx % 5);
+            if (idx < 0) return default_color;
+
+            int offset = Math.Max(0, idx % 8);
             sl.float4 color = new float4();
-            color.x = id_colors[offset, 0];
-            color.y = id_colors[offset, 1];
-            color.z = id_colors[offset, 2];
+            color.x = id_colors[offset, 2] / 255;
+            color.y = id_colors[offset, 1] / 255;
+            color.z = id_colors[offset, 0] / 255;
             color.w = 1.0f;
             return color;
         }
 
-        float[,] id_colors = new float[5, 3]{
-
-            {.231f, .909f, .69f},
-            {.098f, .686f, .816f},
-            {.412f, .4f, .804f},
-            {1, .725f, .0f},
-            {.989f, .388f, .419f}
+        float[,] id_colors = new float[8, 3]{
+            { 232.0f, 176.0f ,59.0f },
+        { 165.0f, 218.0f ,25.0f },
+            { 102.0f, 205.0f ,105.0f},
+            { 185.0f, 0.0f   ,255.0f},
+            { 99.0f, 107.0f  ,252.0f},
+            {252.0f, 225.0f, 8.0f},
+            {167.0f, 130.0f, 141.0f},
+            {194.0f, 72.0f, 113.0f}
         };
 
         float[,] class_colors = new float[6, 3]{
@@ -223,8 +314,11 @@ namespace sl
             return color;
         }
 
-        bool renderObject(ObjectData i) {
-            return (i.objectTrackingState == OBJECT_TRACKING_STATE.OK || i.objectTrackingState == OBJECT_TRACKING_STATE.OFF);
+        bool renderObject(ObjectData i, bool showOnlyOK) {
+            if (showOnlyOK)
+                return (i.objectTrackingState == sl.OBJECT_TRACKING_STATE.OK);
+            else
+                return (i.objectTrackingState == sl.OBJECT_TRACKING_STATE.OK || i.objectTrackingState == sl.OBJECT_TRACKING_STATE.OFF);
         }
 
     private void setRenderCameraProjection(CameraParameters camParams, float znear, float zfar)
@@ -271,10 +365,8 @@ namespace sl
             Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.NECK, BODY_PARTS.LEFT_SHOULDER),
             Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_SHOULDER, BODY_PARTS.LEFT_ELBOW),
             Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_ELBOW, BODY_PARTS.LEFT_WRIST),
-            Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_SHOULDER, BODY_PARTS.RIGHT_HIP),
             Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_HIP, BODY_PARTS.RIGHT_KNEE),
             Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_KNEE, BODY_PARTS.RIGHT_ANKLE),
-            Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_SHOULDER, BODY_PARTS.LEFT_HIP),
             Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_HIP, BODY_PARTS.LEFT_KNEE),
             Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_KNEE, BODY_PARTS.LEFT_ANKLE),
             Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_SHOULDER, BODY_PARTS.LEFT_SHOULDER),
@@ -289,32 +381,37 @@ namespace sl
         {
             if (currentInstance != null)
             {
-                image_handler.close();
                 available = false;
-                bones.clear();
-                joints.clear();
+                skeleton.clear();
             }
         }
 
+        int[] mouseCurrentPosition_ = new int[2];
+        int[] mouseMotion_ = new int[2];
+        int[] previousMouseMotion_ = new int[2];
+
+        const float MOUSE_R_SENSITIVITY = 0.004f;
+        const float MOUSE_T_SENSITIVITY = 0.05f;
+        const float MOUSE_UZ_SENSITIVITY = 0.75f;
+        const float MOUSE_DZ_SENSITIVITY = 1.25f;
+
         bool available;
-
+        bool showOnlyOK_ = false;
         Matrix4x4 projection_;
+        Matrix4x4 cam_pose;
 
-        ImageHandler image_handler;
+        PointCloud pointCloud;
 
         ShaderData shaderSK;
-        ShaderData shaderBbox;
+        ShaderData shaderLine;
 
-        List<ObjectClassName> objectsName;
-
-        Simple3DObject BBox_edges;
-        Simple3DObject BBox_faces;
-        Simple3DObject bones;
-        Simple3DObject joints;
+        Simple3DObject skeleton;
+        Simple3DObject floorGrid;
 
         GLViewer currentInstance;
+        CameraGL camera_;
 
-        bool showbbox = false;
+        bool showPC = false;
     }
 
     class ImageHandler
@@ -390,6 +487,235 @@ namespace sl
 
     };
 
+    class PointCloud
+    {
+        public PointCloud()
+        {
+            shader = new ShaderData();
+            mat_ = new Mat();
+        }
+
+        void close()
+        {
+            if (mat_.IsInit())
+            {
+                mat_.Free();
+                Gl.DeleteBuffers(1, bufferGLID_);
+            }
+        }
+
+        public void initialize(Resolution res)
+        {
+            bufferGLID_ = Gl.GenBuffer();
+            Gl.BindBuffer(BufferTarget.ArrayBuffer, bufferGLID_);
+            Gl.BufferData(BufferTarget.ArrayBuffer, (uint)res.height * (uint)res.width * sizeof(float) * 4, IntPtr.Zero, BufferUsage.StaticDraw);
+            Gl.BindBuffer(BufferTarget.ArrayBuffer, 0);
+
+            shader.it = new Shader(Shader.POINTCLOUD_VERTEX_SHADER, Shader.POINTCLOUD_FRAGMENT_SHADER);
+            shader.MVP_Mat = Gl.GetUniformLocation(shader.it.getProgramId(), "u_mvpMatrix");
+
+            mat_.Create(res, sl.MAT_TYPE.MAT_32F_C4, MEM.CPU);
+            //mat_.Create(new Resolution(Math.Min((uint)res.width, 720), Math.Min((uint)res.height, 404)), sl.MAT_TYPE.MAT_32F_C4, MEM.CPU);
+        }
+
+        public void pushNewPC(Mat matXYZRGBA)
+        {
+            if (mat_.IsInit())
+            {
+                mat_.SetFrom(matXYZRGBA, COPY_TYPE.CPU_CPU);
+            }
+        }
+
+        public void draw(Matrix4x4 vp)
+        {
+            if (mat_.IsInit())
+            {
+                Gl.UseProgram(shader.it.getProgramId());
+                Gl.UniformMatrix4f(shader.MVP_Mat, 1, true, vp);
+
+                Gl.EnableVertexAttribArray(Shader.ATTRIB_VERTICES_POS);
+                Gl.BindBuffer(BufferTarget.ArrayBuffer, bufferGLID_);
+                Gl.BufferData(BufferTarget.ArrayBuffer, (uint)mat_.GetResolution().height * (uint)mat_.GetResolution().width * sizeof(float) * 4, mat_.GetPtr(), BufferUsage.StaticDraw);
+                Gl.VertexAttribPointer(Shader.ATTRIB_VERTICES_POS, 4, VertexAttribType.Float, false, 0, IntPtr.Zero);
+                Gl.DrawArrays(PrimitiveType.Points, 0, (int)mat_.GetResolution().height * (int)mat_.GetResolution().width);
+                Gl.BindBuffer(BufferTarget.ArrayBuffer, 0);
+                Gl.UseProgram(0);
+
+            }
+        }
+        uint bufferGLID_;
+
+        Mat mat_;
+        ShaderData shader;
+    };
+
+    class CameraGL
+    {
+        public CameraGL() { }
+
+        public CameraGL(Vector3 position, Vector3 direction, Vector3 vertical)
+        {
+            position_ = position;
+            setDirection(direction, vertical);
+            offset_ = new Vector3(0, 0, 0);
+            view_ = Matrix4x4.Identity;
+            updateView();
+            setProjection(70, 70, 0.2f, 50);
+            updateVPMatrix();
+        }
+
+        public void update()
+        {
+            if (Vector3.Dot(vertical_, up_) < 0)
+            {
+                vertical_ = vertical_ * -1f;
+            }
+            updateView();
+            updateVPMatrix();
+        }
+
+        public void setProjection(float horizontalFOV, float verticalFOV, float znear, float zfar)
+        {
+            horizontalFieldOfView_ = horizontalFOV;
+            verticalFieldOfView_ = verticalFOV;
+            znear_ = znear;
+            zfar_ = zfar;
+
+            float fov_y = verticalFOV * (float)Math.PI / 180.0f;
+            float fov_x = horizontalFOV * (float)Math.PI / 180.0f;
+
+            projection_ = Matrix4x4.Identity;
+
+            projection_.M11 = 1.0f / (float)Math.Tan(fov_x * 0.5f);
+            projection_.M22 = 1.0f / (float)Math.Tan(fov_y * 0.5f);
+            projection_.M33 = -(zfar + znear) / (zfar - znear);
+            projection_.M43 = -1;
+            projection_.M34 = -(2.0f * zfar * znear) / (zfar - znear);
+            projection_.M44 = 0;
+
+        }
+
+        public Matrix4x4 getViewProjectionMatrix() { return vpMatrix_; }
+
+        public float getHorizontalFOV() { return horizontalFieldOfView_; }
+
+        public float getVerticalFOV() { return verticalFieldOfView_; }
+
+        public void setOffsetFromPosition(Vector3 o) { offset_ = o; }
+
+        public Vector3 getOffsetFromPosition() { return offset_; }
+
+        public void setDirection(Vector3 direction, Vector3 vertical)
+        {
+            Vector3 dirNormalized = Vector3.Normalize(direction);
+
+            // Create rotation
+            Vector3 tr1 = Vector3.UnitZ;
+            Vector3 tr2 = dirNormalized * -1f;
+            float cos_theta = Vector3.Dot(Vector3.Normalize(tr1), Vector3.Normalize(tr2));
+            float angle = 0.5f * (float)Math.Acos(cos_theta);
+            Vector3 w = Vector3.Cross(tr1, tr2);
+            if (Vector3.Zero != w)
+            {
+
+                w = Vector3.Normalize(w);
+            }
+
+            float half_sin = (float)Math.Sin(angle);
+            rotation_.W = (float)Math.Cos(angle);
+            rotation_.X = half_sin * w.X;
+            rotation_.Y = half_sin * w.Y;
+            rotation_.Z = half_sin * w.Z;
+
+            ///////////////////////
+            updateVectors();
+            vertical_ = vertical;
+            if (Vector3.Dot(vertical, up_) < 0) rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitZ, (float)Math.PI));
+        }
+
+        public void translate(Vector3 t) { position_ = position_ + t; }
+
+        public void setPosition(Vector3 p) { position_ = p; }
+
+        public void rotate(Quaternion rot)
+        {
+            rotation_ = rot * rotation_;
+            updateVectors();
+        }
+
+        public void rotate(Matrix4x4 m)
+        {
+            rotate(Quaternion.CreateFromRotationMatrix(m));
+        }
+
+        public void setRotation(Quaternion rot)
+        {
+            rotation_ = rot;
+            updateVectors();
+        }
+
+        public void setRotation(Matrix4x4 m)
+        {
+            setRotation(Quaternion.CreateFromRotationMatrix(m));
+        }
+
+        public Vector3 getPosition() { return position_; }
+
+        public Vector3 getForward() { return forward_; }
+
+        public Vector3 getRight() { return right_; }
+
+        public Vector3 getUp() { return up_; }
+
+        public Vector3 getVertical() { return vertical_; }
+
+        public float getZNear() { return znear_; }
+
+        public float getZFar() { return zfar_; }
+
+        void updateVectors()
+        {
+            forward_ = Vector3.Transform(Vector3.UnitZ, rotation_);
+            up_ = Vector3.Transform(Vector3.UnitY, rotation_);
+            right_ = Vector3.Transform(Vector3.UnitX, rotation_);
+        }
+
+        void updateView()
+        {
+            Matrix4x4 transformation = Matrix4x4.Identity;
+
+            transformation = Matrix4x4.Transform(transformation, rotation_);
+            transformation.Translation = Vector3.Transform(offset_, rotation_) + position_;
+            transformation = Matrix4x4.Transpose(transformation);
+
+            Matrix4x4.Invert(transformation, out view_);
+        }
+
+        void updateVPMatrix()
+        {
+            vpMatrix_ = projection_ * view_;
+        }
+
+        public Matrix4x4 projection_;
+
+        Vector3 offset_;
+        Vector3 position_;
+        Vector3 forward_;
+        Vector3 up_;
+        Vector3 right_;
+        Vector3 vertical_;
+
+        Quaternion rotation_;
+
+        Matrix4x4 view_;
+        Matrix4x4 vpMatrix_;
+
+        float horizontalFieldOfView_;
+        float verticalFieldOfView_;
+        float znear_;
+        float zfar_;
+    };
+
     class Shader
     {
 
@@ -444,7 +770,7 @@ namespace sl
             "void main() {\n",
             "	vec3 lightPosition = vec3(0, 10, 0);\n",
             "	vec3 lightColor = vec3(1,1,1);\n",
-            "	float ambientStrength = 0.3;\n",
+            "	float ambientStrength = 0.4;\n",
             "	vec3 ambient = ambientStrength * lightColor;\n",
             "	vec3 norm = normalize(b_normal); \n",
             "	vec3 lightDir = normalize(lightPosition - b_position);\n",
@@ -452,6 +778,29 @@ namespace sl
             "   out_Color = vec4(b_color.rgb * (diffuse + ambient), 1);\n",
             "}"
         };
+
+        public static readonly string[] POINTCLOUD_VERTEX_SHADER = new string[] {
+        "#version 330 core\n",
+        "layout(location = 0) in vec4 in_VertexRGBA;\n",
+        "uniform mat4 u_mvpMatrix;\n",
+        "out vec4 b_color;\n",
+        "void main() {\n",
+        // Decompose the 4th channel of the XYZRGBA buffer to retrieve the color of the point (1float to 4uint)
+        "   uint vertexColor = floatBitsToUint(in_VertexRGBA.w); \n",
+        "   vec3 clr_int = vec3((vertexColor & uint(0x000000FF)), (vertexColor & uint(0x0000FF00)) >> 8, (vertexColor & uint(0x00FF0000)) >> 16);\n",
+        "   b_color = vec4(clr_int.r / 255.0f, clr_int.g / 255.0f, clr_int.b / 255.0f, 1.f);",
+        "	gl_Position = u_mvpMatrix * vec4(in_VertexRGBA.xyz, 1);\n",
+        "}"
+    };
+
+        public static readonly string[] POINTCLOUD_FRAGMENT_SHADER = new string[] {
+        "#version 330 core\n",
+        "in vec4 b_color;\n",
+        "layout(location = 0) out vec4 out_Color;\n",
+        "void main() {\n",
+        "   out_Color = b_color;\n",
+        "}"
+    };
 
         public static readonly string[] VERTEX_SHADER = new string[] {
             "#version 330 core\n",
