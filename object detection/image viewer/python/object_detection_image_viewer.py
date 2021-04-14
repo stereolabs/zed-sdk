@@ -65,7 +65,7 @@ if __name__ == "__main__":
     camera_info = zed.get_camera_information()
     # Create OpenGL viewer
     viewer = gl.GLViewer()
-    viewer.init(camera_info.calibration_parameters.left_cam)
+    viewer.init(camera_info.calibration_parameters.left_cam, obj_param.enable_tracking)
 
     # Configure object detection runtime parameters
     obj_runtime_param = sl.ObjectDetectionRuntimeParameters()

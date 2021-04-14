@@ -381,8 +381,9 @@ class GLViewer:
         self.BBox_edges = Simple3DObject(False, 3, 4)
         self.skeletons = Simple3DObject(False, 3, 4)
         self.point_cloud = Simple3DObject(False, 4)
+        self.is_tracking_on = False         # Show tracked objects only
 
-    def init(self, camera_model, res): # _params = sl.CameraParameters
+    def init(self, camera_model, res, is_tracking_on):
         glutInit(sys.argv)
         wnd_w = int(glutGet(GLUT_SCREEN_WIDTH)*0.9)
         wnd_h = int(glutGet(GLUT_SCREEN_HEIGHT) *0.9)
@@ -403,6 +404,8 @@ class GLViewer:
 
         glEnable(GL_LINE_SMOOTH)
         glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
+
+        self.is_tracking_on = is_tracking_on
 
         # Compile and create the shader for 3D objects
         self.shader_image = Shader(VERTEX_SHADER, FRAGMENT_SHADER)
@@ -481,10 +484,10 @@ class GLViewer:
         return self.available
 
     def render_object(self, _object_data):      # _object_data of type sl.ObjectData
-        if _object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK or _object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OFF:
-            return True
+        if self.is_tracking_on:
+            return (_object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK)
         else:
-            return False
+           return (_object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK or _object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OFF) 
 
     def updateData(self, pc, _objs):
         self.mutex.acquire()

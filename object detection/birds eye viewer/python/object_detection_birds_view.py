@@ -95,7 +95,7 @@ if __name__ == "__main__":
     viewer = gl.GLViewer()
     point_cloud_res = sl.Resolution(min(camera_infos.camera_resolution.width, 720), min(camera_infos.camera_resolution.height, 404)) 
     point_cloud_render = sl.Mat()
-    viewer.init(camera_infos.camera_model, point_cloud_res)
+    viewer.init(camera_infos.camera_model, point_cloud_res, obj_param.enable_tracking)
     
     # Configure object detection runtime parameters
     obj_runtime_param = sl.ObjectDetectionRuntimeParameters()
@@ -181,7 +181,7 @@ if __name__ == "__main__":
                 # 2D rendering
                 if update_render_view:
                     np.copyto(image_left_ocv,image_render_left)
-                    cv_viewer.render_2D(image_left_ocv,image_scale,objects)
+                    cv_viewer.render_2D(image_left_ocv,image_scale,objects, obj_param.enable_tracking)
                     global_image = cv2.hconcat([image_left_ocv,image_track_ocv])
 
                 # Tracking view

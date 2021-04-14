@@ -14,7 +14,7 @@ def cvt(pt, scale):
     out = [pt[0]*scale[0], pt[1]*scale[1]]
     return out
 
-def render_2D(left_display, img_scale, objects):
+def render_2D(left_display, img_scale, objects, is_tracking_on):
     '''
     Parameters
         left_display (np.array): numpy array containing image data
@@ -25,7 +25,7 @@ def render_2D(left_display, img_scale, objects):
 
     # Render skeleton joints and bones
     for obj in objects:
-        if render_object(obj):
+        if render_object(obj, is_tracking_on):
             if len(obj.keypoint_2d) > 0:
                 color = generate_color_id_u(obj.id)
                 # Draw skeleton bones

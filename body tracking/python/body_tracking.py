@@ -37,8 +37,8 @@ if __name__ == "__main__":
 
     # Create a InitParameters object and set configuration parameters
     init_params = sl.InitParameters()
-    init_params.camera_resolution = sl.RESOLUTION.HD1080  # Use HD720 video mode
-    init_params.coordinate_units = sl.UNIT.METER         # Set coordinate units
+    init_params.camera_resolution = sl.RESOLUTION.HD1080  # Use HD1080 video mode
+    init_params.coordinate_units = sl.UNIT.METER          # Set coordinate units
     init_params.depth_mode = sl.DEPTH_MODE.ULTRA
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
     
@@ -100,7 +100,7 @@ if __name__ == "__main__":
             viewer.update_view(image, bodies) 
             # Update OCV view
             image_left_ocv = image.get_data()
-            cv_viewer.render_2D(image_left_ocv,image_scale,bodies.object_list)
+            cv_viewer.render_2D(image_left_ocv,image_scale,bodies.object_list, obj_param.enable_tracking)
             cv2.imshow("ZED | 2D View", image_left_ocv)
             cv2.waitKey(10)
 

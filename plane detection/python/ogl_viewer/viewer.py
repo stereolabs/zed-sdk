@@ -303,7 +303,7 @@ class GLViewer:
             width = _params.image_size.width
             height = _params.image_size.height
 
-        glutInitWindowSize(width, height)
+        glutInitWindowSize(int(width), int(height))
         glutInitWindowPosition(0, 0) # The window opens at the upper left corner of the screen
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA)
         glutCreateWindow("ZED Plane Detection")
@@ -426,7 +426,7 @@ class GLViewer:
             glutPostRedisplay()
 
     def reshape_callback(self, _width, _height):
-        glViewport(0, 0, _width, _height)
+        glViewport(0, 0, int(_width), int(_height))
         self.wnd_w = _width
         self.wnd_h = _height
 
