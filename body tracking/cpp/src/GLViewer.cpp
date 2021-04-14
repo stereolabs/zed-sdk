@@ -125,7 +125,7 @@ bool GLViewer::isAvailable() {
 
 void CloseFunc(void) { if (currentInstance_) currentInstance_->exit(); }
 
-void GLViewer::init(int argc, char **argv, sl::CameraParameters &param, bool showOnlyOK) {
+void GLViewer::init(int argc, char **argv, sl::CameraParameters &param, bool isTrackingON) {
 
 	glutInit(&argc, argv);
 	int wnd_w = glutGet(GLUT_SCREEN_WIDTH);
@@ -168,7 +168,7 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters &param, bool sho
 	skeletons.setDrawingType(GL_QUADS);
 
 	floor_plane_set = false;
-	showOnlyOK_ = showOnlyOK;
+	isTrackingON_ = isTrackingON;
 	// Set background color (black)
 	bckgrnd_clr = sl::float4(0.2f, 0.19f, 0.2f, 1.0f);
 
