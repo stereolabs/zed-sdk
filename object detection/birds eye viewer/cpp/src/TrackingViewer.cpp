@@ -41,7 +41,7 @@ void render_2D(cv::Mat &left_display, sl::float2 img_scale, std::vector<sl::Obje
 
     for (auto i = objects.rbegin(); i != objects.rend(); ++i) {
         sl::ObjectData& obj = (*i);
-        if(renderObject(obj)) {
+        if(renderObject(obj, isTrackingON)) {
             cv::Scalar base_color = generateColorID_u(obj.id);
 
           // Display Image scaled bounding box 2D

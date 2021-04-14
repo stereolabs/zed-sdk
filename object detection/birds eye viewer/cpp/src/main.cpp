@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
     auto camera_parameters = zed.getCameraInformation(pc_resolution).camera_configuration.calibration_parameters.left_cam;
     Mat point_cloud(pc_resolution, MAT_TYPE::F32_C4, MEM::GPU);
     GLViewer viewer;
-    viewer.init(argc, argv, camera_parameters, obj_det_params.enable_tracking);
+    viewer.init(argc, argv, camera_parameters, detection_parameters.enable_tracking);
 #endif
 
     RuntimeParameters runtime_parameters;
@@ -205,7 +205,7 @@ int main(int argc, char **argv) {
 
             if (update_render_view) {
             image_render_left.copyTo(image_left_ocv);
-            render_2D(image_left_ocv, img_scale, objects.object_list, true, obj_det_params.enable_tracking);
+            render_2D(image_left_ocv, img_scale, objects.object_list, true, detection_parameters.enable_tracking);
             }
 
             if (update_3d_view)
