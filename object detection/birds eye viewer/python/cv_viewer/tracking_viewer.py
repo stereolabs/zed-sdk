@@ -24,12 +24,12 @@ def get_image_position(bounding_box_image, img_scale):
     out_position[1] = (bounding_box_image[0][1] + (bounding_box_image[2][1] - bounding_box_image[0][1])*0.5) * img_scale[1]
     return out_position
 
-def render_2D(left_display, img_scale, objects):
+def render_2D(left_display, img_scale, objects, is_tracking_on):
     overlay = left_display.copy()
 
     line_thickness = 2
     for obj in objects.object_list:
-        if(render_object(obj)):
+        if(render_object(obj, is_tracking_on)):
             base_color = generate_color_id_u(obj.id)
             # Display image scaled 2D bounding box
             top_left_corner = cvt(obj.bounding_box_2d[0], img_scale)

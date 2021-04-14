@@ -9,12 +9,12 @@ id_colors = [(232, 176,59),
             (99, 107,252)]
 
 
-def render_object(object_data):
-    out = False
-    if ((object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK) or (object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OFF)):
-        out = True
-    return out
-
+def render_object(object_data, is_tracking_on):
+    if is_tracking_on:
+        return (object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK)
+    else:
+        return ((object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK) or (object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OFF))
+    
 def generate_color_id_u(idx):
     arr = []
     if(idx < 0):

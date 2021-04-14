@@ -27,12 +27,12 @@ SKELETON_BONES = [ (sl.BODY_PARTS.NOSE, sl.BODY_PARTS.NECK),
                 (sl.BODY_PARTS.NOSE, sl.BODY_PARTS.LEFT_EYE),
                 (sl.BODY_PARTS.LEFT_EYE, sl.BODY_PARTS.LEFT_EAR) ]
 
-def render_object(object_data):
-    out = False
-    if ((object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK) or (object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OFF)):
-        out = True
-    return out
-
+def render_object(object_data, is_tracking_on):
+    if is_tracking_on:
+        return (object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK)
+    else:
+        return ((object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK) or (object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OFF))
+        
 
 def generate_color_id_u(idx):
     arr = []

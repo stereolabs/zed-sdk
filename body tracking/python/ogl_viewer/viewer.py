@@ -423,9 +423,9 @@ class GLViewer:
         self.projection = array.array('f')
         self.basic_sphere = Simple3DObject(True)
         # Show tracked objects only
-        self.show_only_ok = False
+        self.is_tracking_on = False
 
-    def init(self, _params, _show_only_ok): 
+    def init(self, _params, _is_tracking_on): 
         glutInit()
         wnd_w = glutGet(GLUT_SCREEN_WIDTH)
         wnd_h = glutGet(GLUT_SCREEN_HEIGHT)
@@ -464,7 +464,7 @@ class GLViewer:
 
         self.floor_plane_set = False
 
-        self.show_only_ok = _show_only_ok
+        self.is_tracking_on = _is_tracking_on
 
         self.basic_sphere.add_sphere()        
         self.basic_sphere.set_drawing_type(GL_QUADS)
@@ -521,7 +521,7 @@ class GLViewer:
         return self.available
 
     def render_object(self, _object_data):      # _object_data of type sl.ObjectData
-        if self.show_only_ok:
+        if self.is_tracking_on:
             return (_object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK)
         else:
             return (_object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK or _object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OFF)

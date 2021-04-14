@@ -218,11 +218,11 @@ class GLViewer:
             width = _params.image_size.width
             height = _params.image_size.height
 
-        glutInitWindowSize(width, height)
+        glutInitWindowSize(int(width), int(height))
         glutInitWindowPosition(0, 0) # The window opens at the upper left corner of the screen
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_SRGB)
         glutCreateWindow("ZED Spatial Mapping")
-        glViewport(0, 0, width, height)
+        glViewport(0, 0, int(width), int(height))
 
         glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE,
                       GLUT_ACTION_CONTINUE_EXECUTION)

@@ -486,8 +486,10 @@ class GLViewer:
         self.available = False
         self.objects_name = []
         self.mutex = Lock()
+        # Show tracked objects only
+        self.is_tracking_on = False
 
-    def init(self, _params):
+    def init(self, _params, _is_tracking_on):
         glutInit()
         wnd_w = glutGet(GLUT_SCREEN_WIDTH)
         wnd_h = glutGet(GLUT_SCREEN_HEIGHT)
@@ -529,6 +531,8 @@ class GLViewer:
 
         self.BBox_faces = Simple3DObject(False)
         self.BBox_faces.set_drawing_type(GL_QUADS)
+
+        self.is_tracking_on = _is_tracking_on
 
         # Set OpenGL settings
         glDisable(GL_DEPTH_TEST)    # avoid occlusion with bbox
@@ -580,10 +584,10 @@ class GLViewer:
         return self.available
 
     def render_object(self, _object_data):      # _object_data of type sl.ObjectData
-        if _object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK or _object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OFF:
-            return True
+        if self.is_tracking_on:
+            return _object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK
         else:
-            return False
+            return _object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK or _object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OFF
 
     def update_view(self, _image, _objs):       # _objs of type sl.Objects
         self.mutex.acquire()
