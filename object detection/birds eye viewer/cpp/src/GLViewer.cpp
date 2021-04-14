@@ -104,7 +104,7 @@ void CloseFunc(void) {
         currentInstance_->exit();
 }
 
-void GLViewer::init(int argc, char **argv, sl::CameraParameters &param) {
+void GLViewer::init(int argc, char **argv, sl::CameraParameters &param, bool isTrackingON) {
     glutInit(&argc, argv);
     int wnd_w = glutGet(GLUT_SCREEN_WIDTH);
     int wnd_h = glutGet(GLUT_SCREEN_HEIGHT);
@@ -128,6 +128,8 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters &param) {
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 
     pointCloud_.initialize(param.image_size);
+
+	isTrackingON_ = isTrackingON;
 
     // Compile and create the shader
     shader.it = Shader(VERTEX_SHADER, FRAGMENT_SHADER);
@@ -201,7 +203,7 @@ void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs
     cam_pose.setTranslation(tr_0);
 
     for (unsigned int i = 0; i < objs.size(); i++) {
-        if (renderObject(objs[i])) {
+        if (renderObject(objs[i], isTrackingON_)) {
             auto bb_ = objs[i].bounding_box;
             if (!bb_.empty()) {
                 auto clr_class = getColorClass((int) objs[i].label);

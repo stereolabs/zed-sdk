@@ -41,8 +41,9 @@ class GLViewer
     }
 
 
-    public void init(CameraParameters param)
+    public void init(CameraParameters param, bool isTrackingON)
     {
+        isTrackingON_ = isTrackingON;
         pointCloud.initialize(param.resolution);
         // Compile and create the shader
         shaderBbox = new ShaderData();
@@ -110,7 +111,7 @@ class GLViewer
             sl.ObjectData obj = objects.objectData[idx];
 
             // Only show tracked objects
-            if (renderObject(obj))
+            if (renderObject(obj, isTrackingON_))
             {
                 List<Vector3> bb_ = new List<Vector3>();
                 bb_.AddRange(obj.boundingBox);
@@ -285,39 +286,43 @@ class GLViewer
         return color;
     }
 
-    bool renderObject(ObjectData i) {
-        return (i.objectTrackingState == OBJECT_TRACKING_STATE.OK || i.objectTrackingState == OBJECT_TRACKING_STATE.OFF);
+    bool renderObject(ObjectData i, bool showOnlyOK)
+    {
+        if (showOnlyOK)
+            return (i.objectTrackingState == sl.OBJECT_TRACKING_STATE.OK);
+        else
+            return (i.objectTrackingState == sl.OBJECT_TRACKING_STATE.OK || i.objectTrackingState == sl.OBJECT_TRACKING_STATE.OFF);
     }
 
     private void setRenderCameraProjection(CameraParameters camParams, float znear, float zfar)
-        {
-            float PI = 3.141592653f;
-            // Just slightly up the ZED camera FOV to make a small black border
-            float fov_y = (camParams.vFOV+0.5f) *PI / 180;
-            float fov_x = (camParams.hFOV+0.5f) * PI / 180;
+    {
+        float PI = 3.141592653f;
+        // Just slightly up the ZED camera FOV to make a small black border
+        float fov_y = (camParams.vFOV+0.5f) *PI / 180;
+        float fov_x = (camParams.hFOV+0.5f) * PI / 180;
 
-            projection_.M11 = 1.0f / (float)Math.Tan(fov_x * 0.5f);
-            projection_.M22 = 1.0f / (float)Math.Tan(fov_y * 0.5f);
-            projection_.M33 = -(zfar + znear) / (zfar - znear);
-            projection_.M43 = -1;
-            projection_.M34 = -(2.0f * zfar * znear) / (zfar - znear);
-            projection_.M44 = 0;
+        projection_.M11 = 1.0f / (float)Math.Tan(fov_x * 0.5f);
+        projection_.M22 = 1.0f / (float)Math.Tan(fov_y * 0.5f);
+        projection_.M33 = -(zfar + znear) / (zfar - znear);
+        projection_.M43 = -1;
+        projection_.M34 = -(2.0f * zfar * znear) / (zfar - znear);
+        projection_.M44 = 0;
 
-            projection_.M12 = 0;
-            projection_.M13 = 2.0f * (((int)camParams.resolution.width - 1.0f * camParams.cx) / (int)camParams.resolution.width) -1.0f; //Horizontal offset.
-            projection_.M14 = 0;
+        projection_.M12 = 0;
+        projection_.M13 = 2.0f * (((int)camParams.resolution.width - 1.0f * camParams.cx) / (int)camParams.resolution.width) -1.0f; //Horizontal offset.
+        projection_.M14 = 0;
 
-            projection_.M21 = 0;
-            projection_.M22 = 1.0f / (float)Math.Tan(fov_y * 0.5f); //Vertical FoV.
-            projection_.M23 = -(2.0f * (((int)camParams.resolution.height -1.0f * camParams.cy) / (int)camParams.resolution.height) -1.0f); //Vertical offset.
-            projection_.M24 = 0;
+        projection_.M21 = 0;
+        projection_.M22 = 1.0f / (float)Math.Tan(fov_y * 0.5f); //Vertical FoV.
+        projection_.M23 = -(2.0f * (((int)camParams.resolution.height -1.0f * camParams.cy) / (int)camParams.resolution.height) -1.0f); //Vertical offset.
+        projection_.M24 = 0;
 
-            projection_.M31 = 0;
-            projection_.M32 = 0;
+        projection_.M31 = 0;
+        projection_.M32 = 0;
 
-            projection_.M41 = 0;
-            projection_.M42 = 0;
-        }
+        projection_.M41 = 0;
+        projection_.M42 = 0;
+    }
 
     int getIdx(BODY_PARTS part)
     {
@@ -361,6 +366,7 @@ class GLViewer
     }
 
     bool available;
+    bool isTrackingON_ = false;
 
     int[] mouseCurrentPosition_ = new int[2];
     int[] mouseMotion_ = new int[2];

@@ -36,8 +36,9 @@ namespace sl
         }
 
 
-        public void init(CameraParameters param)
+        public void init(CameraParameters param, bool isTrackingON)
         {
+            isTrackingON_ = isTrackingON;
             Gl.Enable(EnableCap.FramebufferSrgb);
 
             shaderBasic = new ShaderData();
@@ -76,7 +77,7 @@ namespace sl
                 sl.ObjectData obj = objects.objectData[idx];
 
                 // Only show tracked objects
-                if (renderObject(obj))
+                if (renderObject(obj, isTrackingON_))
                 {
                     List<Vector3> bb_ = new List<Vector3>();
                     bb_.AddRange(obj.boundingBox);
@@ -179,8 +180,12 @@ namespace sl
             return color;
         }
 
-        bool renderObject(ObjectData i) {
-            return (i.objectTrackingState == OBJECT_TRACKING_STATE.OK || i.objectTrackingState == OBJECT_TRACKING_STATE.OFF);
+        bool renderObject(ObjectData i, bool showOnlyOK)
+        {
+            if (showOnlyOK)
+                return (i.objectTrackingState == sl.OBJECT_TRACKING_STATE.OK);
+            else
+                return (i.objectTrackingState == sl.OBJECT_TRACKING_STATE.OK || i.objectTrackingState == sl.OBJECT_TRACKING_STATE.OFF);
         }
 
         private void setRenderCameraProjection(CameraParameters camParams, float znear, float zfar)
@@ -235,6 +240,7 @@ namespace sl
         }
 
         bool available;
+        bool isTrackingON_ = false;
 
         Matrix4x4 projection_;
 

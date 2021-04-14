@@ -150,7 +150,7 @@ public:
     GLViewer();
     ~GLViewer();
     bool isAvailable();
-    void init(int argc, char **argv, sl::CameraParameters param);
+    void init(int argc, char **argv, sl::CameraParameters param, bool isTrackingON);
     void updateView(sl::Mat image, sl::Objects &obj);
     void exit();
 
@@ -174,6 +174,7 @@ private:
     static void idle();
 
     bool available;
+	bool isTrackingON_ = false;
 
     enum MOUSE_BUTTON {
         LEFT = 0,

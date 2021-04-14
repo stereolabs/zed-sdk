@@ -301,7 +301,7 @@ public:
 	GLViewer();
 	~GLViewer();
 	bool isAvailable();
-	void init(int argc, char **argv, sl::CameraParameters& param, bool showOnlyOk);
+	void init(int argc, char **argv, sl::CameraParameters& param, bool isTrackingON);
 	void updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs, sl::Transform& pose);
 	void exit();
 	void setFloorPlaneEquation(sl::float4 eq);
@@ -369,7 +369,7 @@ private:
 	sl::float4 floor_plane_eq;
 
 	bool showPC = false;
-	bool showOnlyOK_ = false;
+	bool isTrackingON_ = false;
 };
 
 #endif /* __VIEWER_INCLUDE__ */

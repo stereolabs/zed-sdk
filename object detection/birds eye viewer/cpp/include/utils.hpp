@@ -25,8 +25,11 @@ inline sl::float4 generateColorID_f(int idx) {
     return sl::float4(static_cast<float>(clr_u.val[0]) / 255.f, static_cast<float>(clr_u.val[1]) / 255.f, static_cast<float>(clr_u.val[2]) / 255.f, 1.f);
 }
 
-inline bool renderObject(const sl::ObjectData& i) {
-    return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK || i.tracking_state == sl::OBJECT_TRACKING_STATE::OFF);
+inline bool renderObject(const sl::ObjectData& i, const bool isTrackingON) {
+	if (isTrackingON)
+		return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK);
+	else
+		return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK || i.tracking_state == sl::OBJECT_TRACKING_STATE::OFF);
 }
 
 float const class_colors[6][3] = {

@@ -115,8 +115,9 @@ bool GLViewer::isAvailable() {
 
 void CloseFunc(void) { if (currentInstance_) currentInstance_->exit(); }
 
-void GLViewer::init(int argc, char **argv, sl::CameraParameters param) {
+void GLViewer::init(int argc, char **argv, sl::CameraParameters param, bool isTrackingON) {
 
+	isTrackingON_ = isTrackingON;
     glutInit(&argc, argv);
     int wnd_w = glutGet(GLUT_SCREEN_WIDTH);
     int wnd_h = glutGet(GLUT_SCREEN_HEIGHT);
@@ -232,8 +233,11 @@ const std::vector< sl::float3> bones_colors = {
     sl::float3(1, 0, 1), sl::float3(1, 0, 0.666), sl::float3(1, 0, 0.333)
 };
 
-inline bool renderObject(const sl::ObjectData& i) {
-    return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK || i.tracking_state == sl::OBJECT_TRACKING_STATE::OFF);
+inline bool renderObject(const sl::ObjectData& i, const bool isTrackingON) {
+	if (isTrackingON)
+		return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK);
+	else
+		return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK || i.tracking_state == sl::OBJECT_TRACKING_STATE::OFF);
 }
 
 void GLViewer::updateView(sl::Mat image, sl::Objects &objs)
@@ -248,7 +252,7 @@ void GLViewer::updateView(sl::Mat image, sl::Objects &objs)
 	objectsName.clear();
 
 	for (unsigned int i = 0; i < objs.object_list.size(); i++) {
-		if (renderObject(objs.object_list[i])) {
+		if (renderObject(objs.object_list[i], isTrackingON_)) {
 			auto bb_ = objs.object_list[i].bounding_box;
 			if (!bb_.empty()) {
 				auto clr_class = getColorClass((int)objs.object_list[i].label);

@@ -8,14 +8,14 @@ inline cv::Point2f cvt(T pt, sl::float2 scale) {
     return cv::Point2f(pt.x * scale.x, pt.y * scale.y);
 }
 
-void render_2D(cv::Mat &left_display, sl::float2 img_scale, std::vector<sl::ObjectData> &objects, bool render_mask) {
+void render_2D(cv::Mat &left_display, sl::float2 img_scale, std::vector<sl::ObjectData> &objects, bool render_mask, bool isTrackingON) {
     cv::Mat overlay = left_display.clone();
     cv::Rect roi_render(0, 0, left_display.size().width, left_display.size().height);
 
     // render skeleton joints and bones
     for (auto i = objects.rbegin(); i != objects.rend(); ++i) {
         sl::ObjectData& obj = (*i);
-        if(renderObject(obj)) {
+        if(renderObject(obj, isTrackingON)) {
             if (obj.keypoint_2d.size()) {
                 cv::Scalar color = generateColorID_u(obj.id);
                 // skeleton joints

@@ -231,7 +231,7 @@ public:
     ~GLViewer();
     bool isAvailable();
 
-    void init(int argc, char **argv, sl::CameraParameters& param);
+    void init(int argc, char **argv, sl::CameraParameters& param, bool isTrackingON);
     void updateData(sl::Mat& matXYZRGBA, std::vector<sl::ObjectData>& objs, sl::Transform &cam_pose);
 
     void exit();
@@ -273,6 +273,8 @@ private:
         DOWN = 'd',
         FREE = 'f'
     };
+
+	bool isTrackingON_ = false;
 
     bool mouseButton_[3];
     int mouseWheelPosition_;

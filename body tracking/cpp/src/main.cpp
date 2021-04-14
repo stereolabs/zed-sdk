@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
 			if (is_playback && zed.getSVOPosition() == zed.getSVONumberOfFrames()) {
 				quit = true;
 			}
-			render_2D(image_left_ocv, img_scale, bodies.object_list);
+			render_2D(image_left_ocv, img_scale, bodies.object_list, obj_det_params.enable_tracking);
 			cv::imshow(window_name, image_left_ocv);
 			key = cv::waitKey(10);
         }

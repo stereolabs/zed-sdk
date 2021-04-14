@@ -224,7 +224,7 @@ namespace sl
                     // Retrieve Objects
                     zedCamera.RetrieveObjects(ref objects, ref obj_runtime_parameters);
 
-                    TrackingViewer.render_2D(ref imageLeftOcv, imgScale, ref objects, true);
+                    TrackingViewer.render_2D(ref imageLeftOcv, imgScale, ref objects, isTrackingON);
 
                     //Update GL View
                     viewer.update(pointCloud, objects, camPose);

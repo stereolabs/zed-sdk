@@ -46,6 +46,7 @@ class MainWindow
     //   --> Images will only appears if a object is detected since the batching system is based on OD detection.
     static bool USE_BATCHING = false;
 
+    bool isTrackingON = false;
     bool isPlayback = false;
     GLViewer viewer;
     Camera zedCamera;
@@ -75,7 +76,7 @@ class MainWindow
     {
         // Set configuration parameters
         InitParameters init_params = new InitParameters();
-        init_params.resolution = RESOLUTION.HD2K;
+        init_params.resolution = RESOLUTION.HD1080;
         init_params.depthMode = DEPTH_MODE.ULTRA;
         init_params.coordinateUnits = UNIT.METER;
         init_params.coordinateSystem = COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP;
@@ -107,6 +108,7 @@ class MainWindow
         // Enable the Objects detection module
         ObjectDetectionParameters obj_det_params = new ObjectDetectionParameters();
         obj_det_params.enableObjectTracking = true; // the object detection will track objects across multiple images, instead of an image-by-image basis
+        isTrackingON = obj_det_params.enableObjectTracking;
         obj_det_params.enable2DMask = false;
         obj_det_params.imageSync = true; // the object detection is synchronized to the image
         obj_det_params.detectionModel = sl.DETECTION_MODEL.MULTI_CLASS_BOX_ACCURATE;
@@ -250,7 +252,7 @@ class MainWindow
         Gl.Enable(EnableCap.LineSmooth);
         Gl.Hint(HintTarget.LineSmoothHint, HintMode.Nicest);
 
-        viewer.init(zedCamera.GetCalibrationParameters().leftCam);
+        viewer.init(zedCamera.GetCalibrationParameters().leftCam, isTrackingON);
     }
 
     // Render loop
@@ -302,7 +304,7 @@ class MainWindow
                 if (update_render_view)
                 {
                     imageRenderLeft.CopyTo(imageLeftOcv);
-                    TrackingViewer.render_2D(ref imageLeftOcv, imgScale, ref objects, true);
+                    TrackingViewer.render_2D(ref imageLeftOcv, imgScale, ref objects, true, isTrackingON);
                 }
                 if (update_3d_view)
                 {

@@ -21,7 +21,7 @@ inline sl::float2 getImagePosition(std::vector<sl::uint2> &bounding_box_image, s
     return position;
 }
 
-void render_2D(cv::Mat &left, sl::float2 img_scale, std::vector<sl::ObjectData> &objects);
+void render_2D(cv::Mat &left, sl::float2 img_scale, std::vector<sl::ObjectData> &objects, bool isTrackingON);
 
 inline cv::Mat slMat2cvMat(sl::Mat& input) {
     // Mapping between MAT_TYPE and CV_TYPE
@@ -72,8 +72,11 @@ inline sl::float4 generateColorID_f(int idx) {
     return sl::float4(static_cast<float>(clr_u.val[0]) / 255.f, static_cast<float>(clr_u.val[1]) / 255.f, static_cast<float>(clr_u.val[2]) / 255.f, 1.f);
 }
 
-inline bool renderObject(const sl::ObjectData& i) {
-    return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK || i.tracking_state == sl::OBJECT_TRACKING_STATE::OFF);
+inline bool renderObject(const sl::ObjectData& i, const bool isTrackingON) {
+	if (isTrackingON)
+		return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK);
+	else
+		return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK || i.tracking_state == sl::OBJECT_TRACKING_STATE::OFF);
 }
 
 float const class_colors[6][3] = {

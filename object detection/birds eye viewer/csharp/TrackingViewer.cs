@@ -129,7 +129,7 @@ public class TrackingViewer
         return position;
     }
 
-    public static void render_2D(ref OpenCvSharp.Mat left_display, sl.float2 img_scale, ref sl.Objects objects, bool render_mask)
+    public static void render_2D(ref OpenCvSharp.Mat left_display, sl.float2 img_scale, ref sl.Objects objects, bool render_mask, bool isTrackingON)
     {
         OpenCvSharp.Mat overlay = left_display.Clone();
         OpenCvSharp.Rect roi_render = new OpenCvSharp.Rect(0, 0, left_display.Size().Width, left_display.Size().Height);
@@ -141,7 +141,7 @@ public class TrackingViewer
         for (int i = 0; i < objects.numObject; i++)
         {
             sl.ObjectData obj = objects.objectData[i];
-            if (Utils.renderObject(obj))
+            if (Utils.renderObject(obj, isTrackingON))
             {
                 OpenCvSharp.Scalar base_color = Utils.generateColorID_u(obj.id);
 

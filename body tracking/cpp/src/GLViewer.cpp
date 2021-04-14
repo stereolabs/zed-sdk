@@ -248,8 +248,8 @@ void GLViewer::setFloorPlaneEquation(sl::float4 eq) {
 	floor_plane_eq = eq;
 }
 
-inline bool renderObject(const sl::ObjectData& i, const bool showOnlyOK) {
-	if (showOnlyOK)
+inline bool renderObject(const sl::ObjectData& i, const bool isTrackingON) {
+	if (isTrackingON)
 		return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK);
 	else 
 		return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK || i.tracking_state == sl::OBJECT_TRACKING_STATE::OFF);
@@ -264,7 +264,7 @@ void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs
 	cam_pose.setTranslation(tr_0);
 
 	for (unsigned int i = 0; i < objs.size(); i++) {
-		if (renderObject(objs[i], showOnlyOK_)) {
+		if (renderObject(objs[i], isTrackingON_)) {
 			// draw skeletons
 			auto clr_id = generateColorID(objs[i].id);
 			if (objs[i].keypoint.size()) {
