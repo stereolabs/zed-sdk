@@ -92,12 +92,13 @@ int main(int argc, char **argv) {
 
 	// Configure object detection runtime parameters
 	ObjectDetectionRuntimeParameters objectTracker_parameters_rt;
-	objectTracker_parameters_rt.detection_confidence_threshold = 35;
+	int detection_confidence = 60;
+	objectTracker_parameters_rt.detection_confidence_threshold = detection_confidence;
 	// To select a set of specific object classes, like persons, vehicles and animals for instance:
 	objectTracker_parameters_rt.object_class_filter = {OBJECT_CLASS::PERSON /*, OBJECT_CLASS::VEHICLE, OBJECT_CLASS::ANIMAL*/ };
 	// To set a specific threshold
-	objectTracker_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::PERSON] = 35;
-	//detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::CAR] = 35;
+	objectTracker_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::PERSON] = detection_confidence;
+	//detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::CAR] = detection_confidence;
 
 	// Create ZED Objects filled in the main loop
 	Objects objects;

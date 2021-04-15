@@ -99,7 +99,7 @@ if __name__ == "__main__":
     
     # Configure object detection runtime parameters
     obj_runtime_param = sl.ObjectDetectionRuntimeParameters()
-    detection_confidence = 35
+    detection_confidence = 60
     obj_runtime_param.detection_confidence_threshold = detection_confidence
     # To select a set of specific object classes
     obj_runtime_param.object_class_filter = [sl.OBJECT_CLASS.PERSON]

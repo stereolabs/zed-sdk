@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
 
     // Detection runtime parameters
     // default detection threshold, apply to all object class
-    int detection_confidence = 35;
+    int detection_confidence = 60;
     ObjectDetectionRuntimeParameters detection_parameters_rt(detection_confidence);
     // To select a set of specific object classes:
     detection_parameters_rt.object_class_filter = {OBJECT_CLASS::VEHICLE, OBJECT_CLASS::PERSON};

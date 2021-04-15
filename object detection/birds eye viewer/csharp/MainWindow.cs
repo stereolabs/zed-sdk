@@ -126,7 +126,7 @@ class MainWindow
 
         // Configure object detection runtime parameters
         obj_runtime_parameters = new ObjectDetectionRuntimeParameters();
-        detection_confidence = 40;
+        detection_confidence = 60;
         obj_runtime_parameters.detectionConfidenceThreshold = detection_confidence;
         obj_runtime_parameters.objectClassFilter = new int[(int)OBJECT_CLASS.LAST];
         obj_runtime_parameters.objectClassFilter[(int)sl.OBJECT_CLASS.PERSON] = Convert.ToInt32(true);
@@ -134,7 +134,7 @@ class MainWindow
         // To set a specific threshold
         obj_runtime_parameters.objectConfidenceThreshold = new int[(int)OBJECT_CLASS.LAST];
         obj_runtime_parameters.objectConfidenceThreshold[(int)sl.OBJECT_CLASS.PERSON] = detection_confidence;
-        //obj_runtime_parameters.object_confidence_threshold[(int)sl.OBJECT_CLASS.VEHICLE] = 35;
+        //obj_runtime_parameters.object_confidence_threshold[(int)sl.OBJECT_CLASS.VEHICLE] = detection_confidence;
 
         // Create ZED Objects filled in the main loop
         objects = new Objects();

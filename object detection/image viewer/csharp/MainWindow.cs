@@ -102,13 +102,14 @@ namespace sl
 
             // Configure object detection runtime parameters
             obj_runtime_parameters = new ObjectDetectionRuntimeParameters();
-            obj_runtime_parameters.detectionConfidenceThreshold = 35;
+			int detection_confidence = 60;
+            obj_runtime_parameters.detectionConfidenceThreshold = detection_confidence;
             obj_runtime_parameters.objectClassFilter = new int[(int)OBJECT_CLASS.LAST];
             obj_runtime_parameters.objectClassFilter[(int)sl.OBJECT_CLASS.PERSON] = Convert.ToInt32(true);
 
             // To set a specific threshold
             obj_runtime_parameters.objectConfidenceThreshold = new int[(int)OBJECT_CLASS.LAST];
-            obj_runtime_parameters.objectConfidenceThreshold[(int)sl.OBJECT_CLASS.PERSON] = 35;
+            obj_runtime_parameters.objectConfidenceThreshold[(int)sl.OBJECT_CLASS.PERSON] = detection_confidence;
 
             // Create OpenGL window
             CreateWindow();

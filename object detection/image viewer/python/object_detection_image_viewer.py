@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     # Configure object detection runtime parameters
     obj_runtime_param = sl.ObjectDetectionRuntimeParameters()
-    obj_runtime_param.detection_confidence_threshold = 50
+    obj_runtime_param.detection_confidence_threshold = 60
     obj_runtime_param.object_class_filter = [sl.OBJECT_CLASS.PERSON]    # Only detect Persons
 
     # Create ZED objects filled in the main loop
