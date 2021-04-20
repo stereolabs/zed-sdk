@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
     // Enable the Objects detection module
     ObjectDetectionParameters obj_det_params;
     obj_det_params.enable_tracking = true; // track people across images flow
-    obj_det_params.enable_body_fitting = true; // smooth skeletons moves
+    obj_det_params.enable_body_fitting = false; // smooth skeletons moves
     obj_det_params.detection_model = isJetson ? DETECTION_MODEL::HUMAN_BODY_FAST : DETECTION_MODEL::HUMAN_BODY_ACCURATE;
 
     returned_state = zed.enableObjectDetection(obj_det_params);
@@ -125,7 +125,6 @@ int main(int argc, char **argv) {
     while (gl_viewer_available && !quit && key != 'q') {
         // Grab images
         if (zed.grab() == ERROR_CODE::SUCCESS) {
-
             // Once the camera has started, get the floor plane to stick the bounding box to the floor plane.
             // Only called if camera is static (see PositionalTrackingParameters)
             if (need_floor_plane) {
@@ -169,6 +168,7 @@ int main(int argc, char **argv) {
     zed.disableObjectDetection();
     zed.disablePositionalTracking();
     zed.close();
+
     return EXIT_SUCCESS;
 }
 

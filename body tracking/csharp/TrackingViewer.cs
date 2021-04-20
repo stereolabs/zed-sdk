@@ -11,23 +11,25 @@ using OpenCvSharp;
 public class TrackingViewer
 {
 
-    private static readonly Tuple<sl.BODY_PARTS, sl.BODY_PARTS>[] SKELETON_BONES = new Tuple<sl.BODY_PARTS, sl.BODY_PARTS>[] {
-    new Tuple<BODY_PARTS, BODY_PARTS>(BODY_PARTS.NOSE, BODY_PARTS.NECK),
-    new Tuple<BODY_PARTS, BODY_PARTS>(BODY_PARTS.NECK, BODY_PARTS.RIGHT_SHOULDER),
-    new Tuple<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_SHOULDER, BODY_PARTS.RIGHT_ELBOW),
-    new Tuple<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_ELBOW, BODY_PARTS.RIGHT_WRIST),
-    new Tuple<BODY_PARTS, BODY_PARTS>(BODY_PARTS.NECK, BODY_PARTS.LEFT_SHOULDER),
-    new Tuple<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_SHOULDER, BODY_PARTS.LEFT_ELBOW),
-    new Tuple<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_ELBOW, BODY_PARTS.LEFT_WRIST),
-    new Tuple<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_HIP, BODY_PARTS.RIGHT_KNEE),
-    new Tuple<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_KNEE, BODY_PARTS.RIGHT_ANKLE),
-    new Tuple<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_HIP, BODY_PARTS.LEFT_KNEE),
-    new Tuple<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_KNEE, BODY_PARTS.LEFT_ANKLE),
-    new Tuple<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_HIP, BODY_PARTS.LEFT_HIP),
-    new Tuple<BODY_PARTS, BODY_PARTS>(BODY_PARTS.NOSE, BODY_PARTS.RIGHT_EYE),
-    new Tuple<BODY_PARTS, BODY_PARTS>(BODY_PARTS.NOSE, BODY_PARTS.LEFT_EYE),
-    new Tuple<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_EYE, BODY_PARTS.LEFT_EAR),
-    new Tuple<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_EYE, BODY_PARTS.RIGHT_EAR),
+    private static readonly Tuple<sl.BODY_PARTS, sl.BODY_PARTS>[] SKELETON_BONES =
+        {
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.NOSE, BODY_PARTS.NECK),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.NECK, BODY_PARTS.RIGHT_SHOULDER),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_SHOULDER, BODY_PARTS.RIGHT_ELBOW),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_ELBOW, BODY_PARTS.RIGHT_WRIST),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.NECK, BODY_PARTS.LEFT_SHOULDER),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_SHOULDER, BODY_PARTS.LEFT_ELBOW),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_ELBOW, BODY_PARTS.LEFT_WRIST),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_HIP, BODY_PARTS.RIGHT_KNEE),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_KNEE, BODY_PARTS.RIGHT_ANKLE),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_HIP, BODY_PARTS.LEFT_KNEE),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_KNEE, BODY_PARTS.LEFT_ANKLE),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_SHOULDER, BODY_PARTS.LEFT_SHOULDER),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_HIP, BODY_PARTS.LEFT_HIP),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.NOSE, BODY_PARTS.RIGHT_EYE),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_EYE, BODY_PARTS.RIGHT_EAR),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.NOSE, BODY_PARTS.LEFT_EYE),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_EYE, BODY_PARTS.LEFT_EAR)
     };
 
     static float[,] id_colors = new float[8, 3]{
@@ -80,7 +82,7 @@ public class TrackingViewer
     public static void render_2D(ref OpenCvSharp.Mat left_display, sl.float2 img_scale, ref sl.Objects objects, bool showOnlyOK)
     {
         OpenCvSharp.Mat overlay = left_display.Clone();
-        OpenCvSharp.Rect roi_render = new OpenCvSharp.Rect(0, 0, left_display.Size().Width, left_display.Size().Height);
+        OpenCvSharp.Rect roi_render = new OpenCvSharp.Rect(1, 1, left_display.Size().Width, left_display.Size().Height);
 
         for (int i = 0; i < objects.numObject; i++)
         {
@@ -98,14 +100,20 @@ public class TrackingViewer
                         Cv2.Line(left_display, kp_a, kp_b, base_color, 1, LineTypes.AntiAlias);
                     }
                 }
-                
-                var spine = (obj.keypoints2D[(int)sl.BODY_PARTS.LEFT_HIP] + obj.keypoints2D[(int)sl.BODY_PARTS.RIGHT_HIP]) / 2;
-                var spine_a = cvt(spine, img_scale);
-                var spine_b = cvt(obj.keypoints2D[(int)sl.BODY_PARTS.NECK], img_scale);
-                if (roi_render.Contains(spine_a) && roi_render.Contains(spine_b))
-                {
-                    Cv2.Line(left_display, spine_a, spine_b, base_color, 1, LineTypes.AntiAlias);
 
+                var hip_left = obj.keypoints2D[(int)sl.BODY_PARTS.LEFT_HIP];
+                var hip_right = obj.keypoints2D[(int)sl.BODY_PARTS.RIGHT_HIP];
+                var spine = (hip_left + hip_right) / 2;
+                var neck = obj.keypoints2D[(int)sl.BODY_PARTS.NECK];
+
+                if (hip_left.X > 0 && hip_left.Y > 0 && hip_right.X > 0 && hip_right.Y > 0 && neck.X > 0 && neck.Y > 0)
+                {
+                    var spine_a = cvt(spine, img_scale);
+                    var spine_b = cvt(neck, img_scale);
+                    if (roi_render.Contains(spine_a) && roi_render.Contains(spine_b))
+                    {
+                        Cv2.Line(left_display, spine_a, spine_b, base_color, 1, LineTypes.AntiAlias);
+                    }
                 }
 
                 // Draw Skeleton joints
@@ -117,10 +125,14 @@ public class TrackingViewer
                         Cv2.Circle(left_display, cv_kp, 3, base_color, -1);
                     }
                 }
-                Point cv_spine = cvt(spine, img_scale);
-                if (roi_render.Contains(cv_spine))
+
+                if (hip_left.X > 0 && hip_left.Y > 0 && hip_right.X > 0 && hip_right.Y > 0)
                 {
-                    Cv2.Circle(left_display, cv_spine, 3, base_color, -1);
+                    Point cv_spine = cvt(spine, img_scale);
+                    if (roi_render.Contains(cv_spine))
+                    {
+                        Cv2.Circle(left_display, cv_spine, 3, base_color, -1);
+                    }
                 }
             }
         }
