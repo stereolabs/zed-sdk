@@ -55,6 +55,11 @@ namespace sl
 
             pointCloud.initialize(param.resolution);
 
+            sphere = new Simple3DObject();
+            sphere.init();
+            sphere.setDrawingType(PrimitiveType.Quads);
+            sphere.createSphere();
+
             skeleton.init();
             skeleton.setDrawingType(PrimitiveType.Quads);
 
@@ -106,7 +111,7 @@ namespace sl
 
                     if (keypoints.Length > 0)
                     {
-                        foreach(var limb in BODY_BONES)
+                        foreach (var limb in BODY_BONES)
                         {
                             Vector3 kp_1 = keypoints[getIdx(limb.Item1)];
                             Vector3 kp_2 = keypoints[getIdx(limb.Item2)];
@@ -114,7 +119,8 @@ namespace sl
                             float norm_1 = kp_1.Length();
                             float norm_2 = kp_2.Length();
 
-                            if (!float.IsNaN(norm_1) && norm_1 > 0 && !float.IsNaN(norm_2) && norm_2 > 0){
+                            if (!float.IsNaN(norm_1) && norm_1 > 0 && !float.IsNaN(norm_2) && norm_2 > 0)
+                            {
                                 skeleton.addCylinder(new float3(kp_1.X, kp_1.Y, kp_1.Z), new float3(kp_2.X, kp_2.Y, kp_2.Z), clr_id);
                             }
                         }
@@ -135,13 +141,13 @@ namespace sl
                             float norm = kp.Length();
                             if (!float.IsNaN(norm) && norm > 0)
                             {
-                                skeleton.addSphere(new float3(kp.X, kp.Y, kp.Z), clr_id);
+                                skeleton.addSphere(sphere, new float3(kp.X, kp.Y, kp.Z), clr_id);
                             }
                         }
 
                         if (!float.IsNaN(norm_spine) && norm_spine > 0)
                         {
-                            skeleton.addSphere(new float3(spine.X, spine.Y, spine.Z), clr_id);
+                            skeleton.addSphere(sphere, new float3(spine.X, spine.Y, spine.Z), clr_id);
                         }
                     }
                 }
@@ -214,8 +220,8 @@ namespace sl
             }
             if (e.Buttons == OpenGL.CoreUI.MouseButton.Right)
             {
-                camera_.translate(camera_.getUp() * (float)mouseMotion_[1] * MOUSE_T_SENSITIVITY  * -1);
-                camera_.translate(camera_.getRight() * (float)mouseMotion_[0] * MOUSE_T_SENSITIVITY * - 1);
+                camera_.translate(camera_.getUp() * (float)mouseMotion_[1] * MOUSE_T_SENSITIVITY * -1);
+                camera_.translate(camera_.getRight() * (float)mouseMotion_[0] * MOUSE_T_SENSITIVITY * -1);
             }
             if (e.Buttons == OpenGL.CoreUI.MouseButton.Middle)
             {
@@ -270,7 +276,7 @@ namespace sl
             default_color.x = 236.0f / 255;
             default_color.y = 184.0f / 255;
             default_color.z = 36.0f / 255;
-            default_color.z = 255.0f/ 255;
+            default_color.z = 255.0f / 255;
 
             if (idx < 0) return default_color;
 
@@ -314,19 +320,20 @@ namespace sl
             return color;
         }
 
-        bool renderObject(ObjectData i, bool showOnlyOK) {
+        bool renderObject(ObjectData i, bool showOnlyOK)
+        {
             if (showOnlyOK)
                 return (i.objectTrackingState == sl.OBJECT_TRACKING_STATE.OK);
             else
                 return (i.objectTrackingState == sl.OBJECT_TRACKING_STATE.OK || i.objectTrackingState == sl.OBJECT_TRACKING_STATE.OFF);
         }
 
-    private void setRenderCameraProjection(CameraParameters camParams, float znear, float zfar)
+        private void setRenderCameraProjection(CameraParameters camParams, float znear, float zfar)
         {
             float PI = 3.141592653f;
             // Just slightly up the ZED camera FOV to make a small black border
-            float fov_y = (camParams.vFOV+0.5f) *PI / 180;
-            float fov_x = (camParams.hFOV+0.5f) * PI / 180;
+            float fov_y = (camParams.vFOV + 0.5f) * PI / 180;
+            float fov_x = (camParams.hFOV + 0.5f) * PI / 180;
 
             projection_.M11 = 1.0f / (float)Math.Tan(fov_x * 0.5f);
             projection_.M22 = 1.0f / (float)Math.Tan(fov_y * 0.5f);
@@ -336,12 +343,12 @@ namespace sl
             projection_.M44 = 0;
 
             projection_.M12 = 0;
-            projection_.M13 = 2.0f * (((int)camParams.resolution.width - 1.0f * camParams.cx) / (int)camParams.resolution.width) -1.0f; //Horizontal offset.
+            projection_.M13 = 2.0f * (((int)camParams.resolution.width - 1.0f * camParams.cx) / (int)camParams.resolution.width) - 1.0f; //Horizontal offset.
             projection_.M14 = 0;
 
             projection_.M21 = 0;
             projection_.M22 = 1.0f / (float)Math.Tan(fov_y * 0.5f); //Vertical FoV.
-            projection_.M23 = -(2.0f * (((int)camParams.resolution.height -1.0f * camParams.cy) / (int)camParams.resolution.height) -1.0f); //Vertical offset.
+            projection_.M23 = -(2.0f * (((int)camParams.resolution.height - 1.0f * camParams.cy) / (int)camParams.resolution.height) - 1.0f); //Vertical offset.
             projection_.M24 = 0;
 
             projection_.M31 = 0;
@@ -405,6 +412,7 @@ namespace sl
         ShaderData shaderSK;
         ShaderData shaderLine;
 
+        Simple3DObject sphere;
         Simple3DObject skeleton;
         Simple3DObject floorGrid;
 
@@ -416,7 +424,8 @@ namespace sl
 
     class ImageHandler
     {
-        public ImageHandler(Resolution res) {
+        public ImageHandler(Resolution res)
+        {
             resolution = res;
         }
 
@@ -923,8 +932,6 @@ namespace sl
             vaoID_ = 0;
             isStatic_ = false;
 
-
-
             shader.it = new Shader(Shader.SK_VERTEX_SHADER, Shader.SK_FRAGMENT_SHADER);
             shader.MVP_Mat = Gl.GetUniformLocation(shader.it.getProgramId(), "u_mvpMatrix");
 
@@ -1193,7 +1200,7 @@ namespace sl
 
             dir.divide(m_height);
 
-            float3 yAxis = new float3(0,1,0);
+            float3 yAxis = new float3(0, 1, 0);
 
             float3 v = dir.cross(yAxis); ;
 
@@ -1242,7 +1249,7 @@ namespace sl
             for (int j = 0; j < NB_SEG; j++)
             {
                 float i = (float)2 * PI * ((float)j * scale_seg);
-                float i1 = (float)2 * PI * ((float)(j+1) * scale_seg);
+                float i1 = (float)2 * PI * ((float)(j + 1) * scale_seg);
                 v1 = rotationMatrix.multiply(new float3(m_radius * (float)Math.Cos(i), 0, m_radius * (float)Math.Sin(i))).add(startPosition);
                 v2 = rotationMatrix.multiply(new float3(m_radius * (float)Math.Cos(i), m_height, m_radius * (float)Math.Sin(i))).add(startPosition);
                 v4 = rotationMatrix.multiply(new float3(m_radius * (float)Math.Cos(i1), m_height, m_radius * (float)Math.Sin(i1))).add(startPosition);
@@ -1265,15 +1272,15 @@ namespace sl
             }
         }
 
-        public void addSphere(float3 position, float4 clr)
+        public void createSphere()
         {
             const float PI = 3.1415926f;
 
             float m_radius = 0.02f;
             float radiusInv = 1.0f / m_radius;
 
-            int m_stackCount = 20;
-            int m_sectorCount = 20;
+            int m_stackCount = 16;
+            int m_sectorCount = 16;
 
             float3 v1;
             float3 v2;
@@ -1297,30 +1304,45 @@ namespace sl
                     float x = (float)Math.Cos(lng);
                     float y = (float)Math.Sin(lng);
 
-                    v1 = new float3(m_radius * x * zr0, m_radius * y * zr0, m_radius * z0).add(position);
+                    v1 = new float3(m_radius * x * zr0, m_radius * y * zr0, m_radius * z0);
                     normal = new float3(x * zr0, y * zr0, z0);
-                    addPoint(v1, clr);
+                    addPt(v1);
+                    indices_.Add((uint)indices_.Count());
                     addNormal(normal);
 
-                    v2 = new float3(m_radius * x * zr1, m_radius * y * zr1, m_radius * z1).add(position);
+                    v2 = new float3(m_radius * x * zr1, m_radius * y * zr1, m_radius * z1);
                     normal = new float3(x * zr1, y * zr1, z1);
-                    addPoint(v2, clr);
+                    addPt(v2);
+                    indices_.Add((uint)indices_.Count());
                     addNormal(normal);
 
                     lng = 2 * PI * (double)j / m_sectorCount;
                     x = (float)Math.Cos(lng);
                     y = (float)Math.Sin(lng);
 
-                    v4 = new float3(m_radius * x * zr1, m_radius * y * zr1, m_radius * z1).add(position);
+                    v4 = new float3(m_radius * x * zr1, m_radius * y * zr1, m_radius * z1);
                     normal = new float3(x * zr1, y * zr1, z1);
-                    addPoint(v4, clr);
+                    addPt(v4);
+                    indices_.Add((uint)indices_.Count());
                     addNormal(normal);
 
-                    v3 = new float3(m_radius * x * zr0, m_radius * y * zr0, m_radius * z0).add(position);
+                    v3 = new float3(m_radius * x * zr0, m_radius * y * zr0, m_radius * z0);
                     normal = new float3(x * zr0, y * zr0, z0);
-                    addPoint(v3, clr);
+                    addPt(v3);
+                    indices_.Add((uint)indices_.Count());
                     addNormal(normal);
                 }
+            }
+        }
+
+        public void addSphere(Simple3DObject sphere, float3 position, float4 clr)
+        {
+            for (int i = 0; i < sphere.vertices_.Count; i += 3)
+            {
+                float3 point = new float3(sphere.vertices_[i], sphere.vertices_[i + 1], sphere.vertices_[i + 2]).add(position);
+                addPoint(point, clr);
+                float3 normal = new float3(sphere.normals_[i], sphere.normals_[i + 1], sphere.normals_[i + 2]);
+                addNormal(normal);
             }
         }
 
@@ -1422,8 +1444,5 @@ namespace sl
 
         PrimitiveType drawingType_;
     };
-
-
-
 
 }
