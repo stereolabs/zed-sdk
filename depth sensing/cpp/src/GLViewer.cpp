@@ -131,7 +131,6 @@ GLenum GLViewer::init(int argc, char **argv, sl::CameraParameters param) {
 
     // Create the camera
     camera_ = CameraGL(sl::Translation(0, 0, 0), sl::Translation(0, 0, -100));
-    camera_.setOffsetFromPosition(sl::Translation(0, 0, 5000));
 
     frustum = createFrustum(param);
     frustum.pushToGPU();
@@ -178,27 +177,29 @@ void GLViewer::update() {
         return;
     }
 
-    // Rotate camera with mouse
-    if (mouseButton_[MOUSE_BUTTON::LEFT]) {
-        camera_.rotate(sl::Rotation((float) mouseMotion_[1] * MOUSE_R_SENSITIVITY, camera_.getRight()));
-        camera_.rotate(sl::Rotation((float) mouseMotion_[0] * MOUSE_R_SENSITIVITY, camera_.getVertical() * -1.f));
-    }
+	// Rotate camera with mouse
+	if (mouseButton_[MOUSE_BUTTON::LEFT]) {
+		camera_.rotate(sl::Rotation((float)mouseMotion_[1] * MOUSE_R_SENSITIVITY, camera_.getRight()));
+		camera_.rotate(sl::Rotation((float)mouseMotion_[0] * MOUSE_R_SENSITIVITY, camera_.getVertical() * -1.f));
+	}
 
-    // Translate camera with mouse
-    if (mouseButton_[MOUSE_BUTTON::RIGHT]) {
-        camera_.translate(camera_.getUp() * (float) mouseMotion_[1] * MOUSE_T_SENSITIVITY);
-        camera_.translate(camera_.getRight() * (float) mouseMotion_[0] * MOUSE_T_SENSITIVITY);
-    }
+	// Translate camera with mouse
+	if (mouseButton_[MOUSE_BUTTON::RIGHT]) {
+		camera_.translate(camera_.getUp() * (float)mouseMotion_[1] * MOUSE_T_SENSITIVITY * 1000);
+		camera_.translate(camera_.getRight() * (float)mouseMotion_[0] * MOUSE_T_SENSITIVITY * 1000);
+	}
 
-    // Zoom in with mouse wheel
-    if (mouseWheelPosition_ != 0) {
-        float distance = sl::Translation(camera_.getOffsetFromPosition()).norm();
-        if (mouseWheelPosition_ > 0 && distance > camera_.getZNear()) { // zoom
-            camera_.setOffsetFromPosition(camera_.getOffsetFromPosition() * MOUSE_UZ_SENSITIVITY);
-        } else if (distance < camera_.getZFar()) {// unzoom
-            camera_.setOffsetFromPosition(camera_.getOffsetFromPosition() * MOUSE_DZ_SENSITIVITY);
-        }
-    }
+	// Zoom in with mouse wheel
+	if (mouseWheelPosition_ != 0) {
+		//float distance = sl::Translation(camera_.getOffsetFromPosition()).norm();
+		if (mouseWheelPosition_ > 0 /* && distance > camera_.getZNear()*/) { // zoom
+			camera_.translate(camera_.getForward() * MOUSE_UZ_SENSITIVITY * 1000 * -1);
+		}
+		else if (/*distance < camera_.getZFar()*/ mouseWheelPosition_ < 0) {// unzoom
+			//camera_.setOffsetFromPosition(camera_.getOffsetFromPosition() * MOUSE_DZ_SENSITIVITY);
+			camera_.translate(camera_.getForward() * MOUSE_UZ_SENSITIVITY * 1000);
+		}
+	}
     
     // Update point cloud buffers
     pointCloud_.mutexData.lock();
