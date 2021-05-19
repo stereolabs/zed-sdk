@@ -37,7 +37,7 @@ Once the camera is opened, we must enable the positional tracking module in orde
 ```python
 # Enable positional tracking with default parameters
 tracking_parameters = sl.PositionalTrackingParameters()
-err = zed.enablePositionalTracking(tracking_parameters)
+err = zed.enable_positional_tracking(tracking_parameters)
 if (err != sl.ERROR_CODE.SUCCESS):
     exit(-1)
 ```
