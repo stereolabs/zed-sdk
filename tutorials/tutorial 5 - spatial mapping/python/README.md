@@ -47,7 +47,7 @@ if (err != sl.ERROR_CODE.SUCCESS):
 Now that tracking is enabled, we need to enable the spatial mapping module. You will see that it is very close to the positional tracking: We create a spatial mapping parameters and call `enable_spatial_mapping()` function with this parameter.
 
 ```python
-mapping_parameters sl.SpatialMappingParameters()
+mapping_parameters = sl.SpatialMappingParameters()
 err = zed.enable_spatial_mapping(mapping_parameters)
 if (err != sl.ERROR_CODE.SUCCESS):
     exit(-1)
@@ -84,7 +84,7 @@ We have now grabbed 500 frames and the mesh has been created in background. Now 
 First, we need to create a mesh object to manipulate it: a `sl.Mesh`. Then launch the extraction with Camera.extract_whole_spatial_map(). This function will block until the mesh is available.
 
 ```python
-zed.extrac_whole_spatial_map(mesh) # Extract the whole mesh
+zed.extract_whole_spatial_map(mesh) # Extract the whole mesh
 ```
 
 We have now a mesh. This mesh can be filtered (if needed) to remove duplicate vertices and unneeded faces. This will make the mesh lighter to manipulate.<br/>
