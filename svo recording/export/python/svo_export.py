@@ -135,7 +135,8 @@ def main():
     nb_frames = zed.get_svo_number_of_frames()
 
     while True:
-        if zed.grab(rt_param) == sl.ERROR_CODE.SUCCESS:
+        grab_result = zed.grab(rt_param)
+        if grab_result == sl.ERROR_CODE.SUCCESS:
             svo_position = zed.get_svo_position()
 
             # Retrieve SVO images
@@ -183,6 +184,10 @@ def main():
             if svo_position >= (nb_frames - 1):  # End of SVO
                 sys.stdout.write("\nSVO end has been reached. Exiting now.\n")
                 break
+
+        else:
+            sys.stdout.write('\nUnexpected error: %s at frame %i / %i\n' % (grab_result, svo_position, nb_frames - 1))
+            break
 
     if output_as_video:
         # Close the video writer
