@@ -1,0 +1,87 @@
+name: Bug Report 🐛
+description: Something isn't working as expected? Report your bugs here.
+labels: "bug"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # Welcome 👋 
+
+        Thanks for taking the time to fill out this bug report.
+        Please fill out each section below. This info allows Stereolabs developers to diagnose (and fix!) your issue as quickly as possible. Otherwise we might need to close the issue without e.g. clear reproduction steps.
+
+        Bug reports also shoulnd't be used for generic questions, please use the [Stereolabs Community forum](https://community.stereolabs.com/) instead.
+
+        Useful Links:
+        - Documentation: https://www.stereolabs.com/docs/
+        - Stereolabs support: https://support.stereolabs.com/hc/en-us/
+  - type: checkboxes
+    attributes:
+      label: Preliminary Checks
+      description: Please make sure that you verify each checkbox and follow the instructions for them.
+      options:
+        - label: "This issue is not a duplicate. Before opening a new issue, please search existing issues."
+          required: true
+        - label: "This issue is not a question, feature request, or anything other than a bug report directly related to this project."
+          required: true
+  - type: textarea
+    attributes:
+      label: Description
+      description: Describe the issue that you're seeing.
+      placeholder: Be as precise as you can. Feel free to share screenshots, videos, or data. The more information you provide the easier will be to provide you with a fast solution.
+    validations:
+      required: true     
+  - type: textarea
+    attributes:
+      label: Steps to Reproduce
+      description: Clear steps describing how to reproduce the issue.
+      value: |
+        1.
+        2.
+        3.
+        ...
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Expected Result
+      description: Describe what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Actual Result
+      description: Describe what actually happened.
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: ZED Camera model
+      description: What model of ZED camera are you using?
+      options:
+        - "ZED"
+        - "ZED Mini"
+        - "ZED2"
+        - "ZED2i"
+    validations:
+      required: true       
+  - type: textarea
+    attributes:
+      label: Environment
+      render: shell
+      description: Useful information about your system.
+      placeholder: |
+        OS: Operating System
+        CPU: e.g. ARM
+        GPU: Nvidia Jetson Xavier NX
+        ZED SDK version: e.g. v3.5.3
+        Other info: e.g. ROS Melodic	
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Anything else?
+      description: Please add any other information or comment that you think may be useful for solving the problem
+      placeholder:        
+    validations:
+      required: false

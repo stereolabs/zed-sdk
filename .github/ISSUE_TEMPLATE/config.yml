@@ -1,0 +1,12 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Online Documentation
+    url: https://www.stereolabs.com/docs/
+    about: Check out the Stereolabs documentation for answers to common questions.
+  - name: Stereolabs Community
+    url: https://community.stereolabs.com/
+    about: Ask questions, request features & discuss with other users and developers.
+  - name: Stereolabs Twitter
+    url: https://twitter.com/Stereolabs3D
+    about: The official Stereolabs Twitter account to ask questions, comment our products and share your projects with the ZED community. 
+
