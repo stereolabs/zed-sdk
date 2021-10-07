@@ -1,6 +1,6 @@
 name: Bug Report 🐛
 description: Something isn't working as expected? Report your bugs here.
-labels: "bug"
+labels: "bug_report"
 body:
   - type: markdown
     attributes:
