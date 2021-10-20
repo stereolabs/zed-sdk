@@ -137,7 +137,7 @@ namespace sl
             return color;
         }
 
-        bool renderObject(ObjectData i, bool showOnlyOK)
+        public static bool renderObject(ObjectData i, bool showOnlyOK)
         {
             if (showOnlyOK)
                 return (i.objectTrackingState == sl.OBJECT_TRACKING_STATE.OK);

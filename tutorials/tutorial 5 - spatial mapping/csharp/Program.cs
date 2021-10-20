@@ -19,25 +19,41 @@ namespace sl
             if (err != ERROR_CODE.SUCCESS)
                 Environment.Exit(-1);
 
-            SensorsData sensors_data = new SensorsData();
-            ulong last_imu_timestamp = 0;
+            // Configure spatial mapping parameters
+            SpatialMappingParameters mappingParams = new SpatialMappingParameters();
+            mappingParams.resolutionMeter = SpatialMappingParameters.get(MAPPING_RESOLUTION.LOW);
+            mappingParams.rangeMeter = SpatialMappingParameters.get(MAPPING_RANGE.FAR);
+            mappingParams.saveTexture = false;
+
+            //Enable tracking and mapping
+            PositionalTrackingParameters trackingParams = new PositionalTrackingParameters();
+            zed.EnablePositionalTracking(ref trackingParams);
+            zed.EnableSpatialMapping(ref mappingParams);
 
             RuntimeParameters runtimeParameters = new RuntimeParameters();
-            while (zed.Grab(ref runtimeParameters) == ERROR_CODE.SUCCESS)
+
+            int i = 0;
+            Mesh mesh = new Mesh();
+
+            // Grab 500 frames and stop
+            while (i < 500)
             {
-                zed.GetSensorsData(ref sensors_data, TIME_REFERENCE.CURRENT);
-                if (sensors_data.imu.timestamp > last_imu_timestamp)
+                if (zed.Grab(ref runtimeParameters) == ERROR_CODE.SUCCESS)
                 {
-                    // Show Sensors Data
-                    Console.WriteLine("IMU Orientation : " + sensors_data.imu.fusedOrientation);
-                    Console.WriteLine("Angular Velocity : " + sensors_data.imu.angularVelocity);
-                    Console.WriteLine("Magnetometer Magnetic field : " + sensors_data.magnetometer.magneticField);
-                    Console.WriteLine("Barometer Atmospheric pressure : " + sensors_data.barometer.pressure);
-                    last_imu_timestamp = sensors_data.imu.timestamp;
-                    // Wait for the [ENTER] key to be pressed
-                    Console.ReadLine();
+                    SPATIAL_MAPPING_STATE state = zed.GetSpatialMappingState();
+                    Console.WriteLine("Images captures: " + i + " /500 || Mapping state: " + state);
+                    i++;
                 }
             }
+            // Retrieve the spatial map
+            Console.WriteLine("Extracting mesh...");
+            zed.ExtractWholeSpatialMap();
+            // Filter the mesh
+            Console.WriteLine("Filtering mesh...");
+            zed.FilterMesh(MESH_FILTER.LOW, ref mesh); // not available for fused point cloud
+                                                       // Apply the texture
+            Console.WriteLine("Saving mesh...");
+            zed.SaveMesh("mesh.obj", MESH_FILE_FORMAT.OBJ);
             zed.Close();
         }
     }

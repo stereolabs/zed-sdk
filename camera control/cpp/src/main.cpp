@@ -92,6 +92,11 @@ static void onMouse(int event, int x, int y, int, void*)
 
 int main(int argc, char **argv) {
     // Create a ZED Camera object
+
+    std::cout<<" Reboot CAMERA "<<std::endl;
+    sl::ERROR_CODE errcode= sl::Camera::reboot(0);
+    sl::sleep_ms(3000);
+    std::cout<<" Reboot CAMERA --> "<<errcode<<std::endl;
     Camera zed;
     
     sl::InitParameters init_parameters;
@@ -109,7 +114,7 @@ int main(int argc, char **argv) {
     }
     
     cv::String win_name = "Camera Control";
-    cv::namedWindow(win_name);
+    cv::namedWindow(win_name, cv::WINDOW_NORMAL);
     cv::setMouseCallback(win_name, onMouse);
 
     // Print camera information

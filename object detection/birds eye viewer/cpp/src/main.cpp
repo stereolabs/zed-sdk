@@ -76,6 +76,7 @@ int main(int argc, char **argv) {
     init_parameters.depth_mode = isJetson ? DEPTH_MODE::PERFORMANCE : DEPTH_MODE::ULTRA;
     init_parameters.depth_maximum_distance = 10.0f * 1000.0f;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
+	
     parseArgs(argc, argv, init_parameters);
 
     // Open the camera

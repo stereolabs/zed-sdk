@@ -21,7 +21,7 @@ inline sl::float2 getImagePosition(std::vector<sl::uint2> &bounding_box_image, s
     return position;
 }
 
-void render_2D(cv::Mat &left, sl::float2 img_scale, std::vector<sl::ObjectData> &objects, bool isTrackingON);
+void render_2D(cv::Mat &left, sl::float2 img_scale, std::vector<sl::ObjectData> &objects, bool isTrackingON, sl::BODY_FORMAT body_format);
 
 inline cv::Mat slMat2cvMat(sl::Mat& input) {
     // Mapping between MAT_TYPE and CV_TYPE

@@ -62,9 +62,10 @@ if __name__ == "__main__":
     zed.enable_positional_tracking(positional_tracking_parameters)
     
     obj_param = sl.ObjectDetectionParameters()
-    obj_param.enable_body_fitting = True         # Smooth skeleton move
-    obj_param.enable_tracking = True             # Track people across images flow
+    obj_param.enable_body_fitting = True            # Smooth skeleton move
+    obj_param.enable_tracking = True                # Track people across images flow
     obj_param.detection_model = sl.DETECTION_MODEL.HUMAN_BODY_FAST 
+    obj_param.body_format = sl.BODY_FORMAT.POSE_18  # Choose the BODY_FORMAT you wish to use
 
     # Enable Object Detection module
     zed.enable_object_detection(obj_param)
@@ -82,7 +83,7 @@ if __name__ == "__main__":
 
     # Create OpenGL viewer
     viewer = gl.GLViewer()
-    viewer.init(camera_info.calibration_parameters.left_cam, obj_param.enable_tracking)
+    viewer.init(camera_info.calibration_parameters.left_cam, obj_param.enable_tracking,obj_param.body_format)
 
     # Create ZED objects filled in the main loop
     bodies = sl.Objects()
@@ -100,7 +101,7 @@ if __name__ == "__main__":
             viewer.update_view(image, bodies) 
             # Update OCV view
             image_left_ocv = image.get_data()
-            cv_viewer.render_2D(image_left_ocv,image_scale,bodies.object_list, obj_param.enable_tracking)
+            cv_viewer.render_2D(image_left_ocv,image_scale,bodies.object_list, obj_param.enable_tracking, obj_param.body_format)
             cv2.imshow("ZED | 2D View", image_left_ocv)
             cv2.waitKey(10)
 

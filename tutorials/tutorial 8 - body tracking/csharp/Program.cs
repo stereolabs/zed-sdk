@@ -21,14 +21,22 @@ namespace sl
             // Open the camera
             ERROR_CODE err = zedCamera.Open(ref init_params);
             if (err != ERROR_CODE.SUCCESS)
+            {
+                Console.WriteLine("ERROR in Open. Exiting...");
                 Environment.Exit(-1);
+            }
+
 
             // Enable positional tracking
             PositionalTrackingParameters trackingParams = new PositionalTrackingParameters();
             // If you want to have object tracking you need to enable positional tracking first
             err = zedCamera.EnablePositionalTracking(ref trackingParams);
             if (err != ERROR_CODE.SUCCESS)
+            {
+                Console.WriteLine("ERROR in Enable Tracking. Exiting...");
                 Environment.Exit(-1);
+            }
+
 
             // Enable Object Detection
             object_detection_parameters = new ObjectDetectionParameters();
@@ -38,9 +46,14 @@ namespace sl
             object_detection_parameters.enableObjectTracking = true;
             // run detection for every Camera grab
             object_detection_parameters.imageSync = true;
+            object_detection_parameters.bodyFormat = BODY_FORMAT.POSE_18;
             err = zedCamera.EnableObjectDetection(ref object_detection_parameters);
             if (err != ERROR_CODE.SUCCESS)
+            {
+                Console.WriteLine("ERROR in Enable OD. Exiting...");
                 Environment.Exit(-1);
+            }
+
 
             // Create Runtime parameters
             RuntimeParameters runtimeParameters = new RuntimeParameters();
@@ -59,7 +72,7 @@ namespace sl
                 {
                     // Retrieve Objects from Object detection
                     zedCamera.RetrieveObjects(ref objects, ref obj_runtime_parameters);
-                    
+
                     if (Convert.ToBoolean(objects.isNew))
                     {
                         Console.WriteLine(objects.numObject + " Person(s) detected");
@@ -83,15 +96,15 @@ namespace sl
                             Console.WriteLine(" Keypoints 2D");
                             // The body part meaning can be obtained by casting the index into a BODY_PARTS
                             // to get the BODY_PARTS index the getIdx function is available
-                            for (int i = 0; i < firstObject.keypoints2D.Length; i++)
+                            for (int i = 0; i < (int)sl.BODY_PARTS.LAST; i++)
                             {
                                 var kp = firstObject.keypoints2D[i];
-                                Console.WriteLine("     " + (sl.BODY_PARTS)i + " " + kp.X + ", " + kp.Y);
+                                Console.WriteLine("     " + (sl.BODY_PART)i + " " + kp.X + ", " + kp.Y);
                             }
 
                             // The BODY_PARTS can be link as bones, using sl::BODY_BONES which gives the BODY_PARTS pair for each
                             Console.WriteLine(" Keypoints 3D ");
-                            for (int i = 0; i < firstObject.keypoints.Length; i++)
+                            for (int i = 0; i < (int)sl.BODY_PARTS_POSE_18.LAST; i++)
                             {
                                 var kp = firstObject.keypoints[i];
                                 Console.WriteLine("     " + (sl.BODY_PARTS)i + " " + kp.X + ", " + kp.Y + ", " + kp.Z);
@@ -101,7 +114,7 @@ namespace sl
                             Console.WriteLine("Press 'Enter' to continue...");
                             Console.ReadLine();
                         }
-                    }             
+                    }
                 }
             }
 

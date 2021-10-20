@@ -130,7 +130,14 @@ namespace sl
 
                 nativeWindow.Create((int)(zedCamera.ImageWidth * 0.05f), (int)(zedCamera.ImageHeight * 0.05f), 1200, 700, NativeWindowStyle.Resizeable);
                 nativeWindow.Show();
-                nativeWindow.Run();
+                try
+                {
+                    nativeWindow.Run();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Mouse wheel is broken in the current OPENGL .NET VERSION. Please do not use it.");
+                }
             }
         }
 

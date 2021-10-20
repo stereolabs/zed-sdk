@@ -125,7 +125,7 @@ bool GLViewer::isAvailable() {
 
 void CloseFunc(void) { if (currentInstance_) currentInstance_->exit(); }
 
-void GLViewer::init(int argc, char **argv, sl::CameraParameters &param, bool isTrackingON) {
+void GLViewer::init(int argc, char **argv, sl::CameraParameters &param, bool isTrackingON, sl::BODY_FORMAT body_format) {
 
 	glutInit(&argc, argv);
 	int wnd_w = glutGet(GLUT_SCREEN_WIDTH);
@@ -169,6 +169,7 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters &param, bool isT
 
 	floor_plane_set = false;
 	isTrackingON_ = isTrackingON;
+	body_format_ = body_format;
 	// Set background color (black)
 	bckgrnd_clr = sl::float4(0.2f, 0.19f, 0.2f, 1.0f);
 
@@ -268,32 +269,50 @@ void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs
 			// draw skeletons
 			auto clr_id = generateColorID(objs[i].id);
 			if (objs[i].keypoint.size()) {
-				for (auto& limb : SKELETON_BONES) {
-					sl::float3 kp_1 = objs[i].keypoint[getIdx(limb.first)];
-					sl::float3 kp_2 = objs[i].keypoint[getIdx(limb.second)];
-					float norm_1 = kp_1.norm();
-					float norm_2 = kp_2.norm();
+				if (body_format_ == sl::BODY_FORMAT::POSE_18) {
+					for (auto& limb : SKELETON_BONES) {
+						sl::float3 kp_1 = objs[i].keypoint[getIdx(limb.first)];
+						sl::float3 kp_2 = objs[i].keypoint[getIdx(limb.second)];
+						float norm_1 = kp_1.norm();
+						float norm_2 = kp_2.norm();
+						// draw cylinder between two keypoints
+						if (std::isfinite(norm_1) && std::isfinite(norm_2)) {
+							skeletons.addCylinder(kp_1, kp_2, clr_id);
+						}
+					}
+					// Create bone between spine and neck (not existing in sl::BODY_BONES)
+					sl::float3 spine = (objs[i].keypoint[getIdx(sl::BODY_PARTS::LEFT_HIP)] + objs[i].keypoint[getIdx(sl::BODY_PARTS::RIGHT_HIP)]) / 2;  // Create new KP (spine for rendering)
+					sl::float3 neck = objs[i].keypoint[getIdx(sl::BODY_PARTS::NECK)];
+					float norm_1 = spine.norm();
+					float norm_2 = neck.norm();
 					// draw cylinder between two keypoints
 					if (std::isfinite(norm_1) && std::isfinite(norm_2)) {
-						skeletons.addCylinder(kp_1, kp_2, clr_id);
+						skeletons.addCylinder(spine, neck, clr_id);
+					}
+
+					for (int j = 0; j < static_cast<int>(sl::BODY_PARTS::LAST); j++) {
+						sl::float3 kp = objs[i].keypoint[j];
+						if (std::isfinite(kp.norm()))skeletons.addSphere(kp, clr_id);
+					}
+					// Add Sphere at the Spine position
+					if (std::isfinite(spine.norm()))skeletons.addSphere(spine, clr_id);
+				}
+				else if (body_format_ == sl::BODY_FORMAT::POSE_34) {
+					for (auto& limb : sl::BODY_BONES_POSE_34) {
+						sl::float3 kp_1 = objs[i].keypoint[getIdx(limb.first)];
+						sl::float3 kp_2 = objs[i].keypoint[getIdx(limb.second)];
+						float norm_1 = kp_1.norm();
+						float norm_2 = kp_2.norm();
+						// draw cylinder between two keypoints
+						if (std::isfinite(norm_1) && std::isfinite(norm_2)) {
+							skeletons.addCylinder(kp_1, kp_2, clr_id);
+						}
+					}
+					for (int j = 0; j < static_cast<int>(sl::BODY_PARTS_POSE_34::LAST); j++) {
+						sl::float3 kp = objs[i].keypoint[j];
+						if (std::isfinite(kp.norm()))skeletons.addSphere(kp, clr_id);
 					}
 				}
-				// Create bone between spine and neck (not existing in sl::BODY_BONES)
-				sl::float3 spine = (objs[i].keypoint[getIdx(sl::BODY_PARTS::LEFT_HIP)] + objs[i].keypoint[getIdx(sl::BODY_PARTS::RIGHT_HIP)]) / 2;  // Create new KP (spine for rendering)
-				sl::float3 neck = objs[i].keypoint[getIdx(sl::BODY_PARTS::NECK)];
-				float norm_1 = spine.norm();
-				float norm_2 = neck.norm();
-				// draw cylinder between two keypoints
-				if (std::isfinite(norm_1) && std::isfinite(norm_2)) {
-					skeletons.addCylinder(spine, neck, clr_id);
-				}
-
-				for (int j = 0; j < static_cast<int>(sl::BODY_PARTS::LAST); j++) {
-					sl::float3 kp = objs[i].keypoint[j];
-					if (std::isfinite(kp.norm()))skeletons.addSphere(kp, clr_id);
-				}
-				// Add Sphere at the Spine position
-				if (std::isfinite(spine.norm()))skeletons.addSphere(spine, clr_id);
 			}
 		}
 	}

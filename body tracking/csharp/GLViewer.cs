@@ -36,7 +36,7 @@ namespace sl
         }
 
 
-        public void init(CameraParameters param, bool showOnlyOk)
+        public void init(CameraParameters param, bool showOnlyOk, sl.BODY_FORMAT body_format)
         {
             Gl.Enable(EnableCap.FramebufferSrgb);
 
@@ -52,6 +52,7 @@ namespace sl
             camera_ = new CameraGL(new Vector3(0, 0, 0), new Vector3(0, 0, -1f), Vector3.UnitY);
 
             showOnlyOK_ = showOnlyOk;
+            body_format_ = body_format;
 
             pointCloud.initialize(param.resolution);
 
@@ -111,45 +112,76 @@ namespace sl
 
                     if (keypoints.Length > 0)
                     {
-                        foreach (var limb in BODY_BONES)
+                        if (body_format_ == BODY_FORMAT.POSE_18)
                         {
-                            Vector3 kp_1 = keypoints[getIdx(limb.Item1)];
-                            Vector3 kp_2 = keypoints[getIdx(limb.Item2)];
-
-                            float norm_1 = kp_1.Length();
-                            float norm_2 = kp_2.Length();
-
-                            if (!float.IsNaN(norm_1) && norm_1 > 0 && !float.IsNaN(norm_2) && norm_2 > 0)
+                            foreach (var limb in SKELETON_BONES)
                             {
-                                skeleton.addCylinder(new float3(kp_1.X, kp_1.Y, kp_1.Z), new float3(kp_2.X, kp_2.Y, kp_2.Z), clr_id);
+                                Vector3 kp_1 = keypoints[getIdx(limb.Item1)];
+                                Vector3 kp_2 = keypoints[getIdx(limb.Item2)];
+
+                                float norm_1 = kp_1.Length();
+                                float norm_2 = kp_2.Length();
+
+                                if (!float.IsNaN(norm_1) && norm_1 > 0 && !float.IsNaN(norm_2) && norm_2 > 0)
+                                {
+                                    skeleton.addCylinder(new float3(kp_1.X, kp_1.Y, kp_1.Z), new float3(kp_2.X, kp_2.Y, kp_2.Z), clr_id);
+                                }
+                            }
+
+                            Vector3 spine = (obj.keypoints[getIdx(sl.BODY_PARTS.LEFT_HIP)] + obj.keypoints[getIdx(sl.BODY_PARTS.RIGHT_HIP)]) / 2;
+                            Vector3 neck = obj.keypoints[getIdx(sl.BODY_PARTS.NECK)];
+                            float norm_spine = spine.Length();
+                            float norm_neck = neck.Length();
+
+                            if (!float.IsNaN(norm_spine) && norm_spine > 0 && !float.IsNaN(norm_neck) && norm_neck > 0)
+                            {
+                                skeleton.addCylinder(new float3(spine.X, spine.Y, spine.Z), new float3(neck.X, neck.Y, neck.Z), clr_id);
+                            }
+
+                            for (int i = 0; i < (int)BODY_PARTS.LAST; i++)
+                            {
+                                Vector3 kp = keypoints[i];
+                                float norm = kp.Length();
+                                if (!float.IsNaN(norm) && norm > 0)
+                                {
+                                    skeleton.addSphere(sphere, new float3(kp.X, kp.Y, kp.Z), clr_id);
+                                }
+                            }
+
+                            if (!float.IsNaN(norm_spine) && norm_spine > 0)
+                            {
+                                skeleton.addSphere(sphere, new float3(spine.X, spine.Y, spine.Z), clr_id);
                             }
                         }
-
-                        Vector3 spine = (obj.keypoints[getIdx(sl.BODY_PARTS.LEFT_HIP)] + obj.keypoints[getIdx(sl.BODY_PARTS.RIGHT_HIP)]) / 2;
-                        Vector3 neck = obj.keypoints[getIdx(sl.BODY_PARTS.NECK)];
-                        float norm_spine = spine.Length();
-                        float norm_neck = neck.Length();
-
-                        if (!float.IsNaN(norm_spine) && norm_spine > 0 && !float.IsNaN(norm_neck) && norm_neck > 0)
+                        else if (body_format_ == BODY_FORMAT.POSE_34)
                         {
-                            skeleton.addCylinder(new float3(spine.X, spine.Y, spine.Z), new float3(neck.X, neck.Y, neck.Z), clr_id);
-                        }
-
-                        for (int i = 0; i < (int)BODY_PARTS.LAST; i++)
-                        {
-                            Vector3 kp = keypoints[i];
-                            float norm = kp.Length();
-                            if (!float.IsNaN(norm) && norm > 0)
+                            foreach (var limb in BODY_BONES_POSE_34)
                             {
-                                skeleton.addSphere(sphere, new float3(kp.X, kp.Y, kp.Z), clr_id);
-                            }
-                        }
+                                Vector3 kp_1 = keypoints[getIdx(limb.Item1)];
+                                Vector3 kp_2 = keypoints[getIdx(limb.Item2)];
 
-                        if (!float.IsNaN(norm_spine) && norm_spine > 0)
-                        {
-                            skeleton.addSphere(sphere, new float3(spine.X, spine.Y, spine.Z), clr_id);
+                                float norm_1 = kp_1.Length();
+                                float norm_2 = kp_2.Length();
+
+                                if (!float.IsNaN(norm_1) && norm_1 > 0 && !float.IsNaN(norm_2) && norm_2 > 0)
+                                {
+                                    skeleton.addCylinder(new float3(kp_1.X, kp_1.Y, kp_1.Z), new float3(kp_2.X, kp_2.Y, kp_2.Z), clr_id);
+                                }
+                            }
+
+                            for (int i = 0; i < keypoints.Length; i++)
+                            {
+                                Vector3 kp = keypoints[i];
+                                float norm = kp.Length();
+                               
+                                if (!float.IsNaN(norm) && norm > 0)
+                                {
+                                    skeleton.addSphere(sphere, new float3(kp.X, kp.Y, kp.Z), clr_id);
+                                }
+                            }
                         }
                     }
+
                 }
             }
         }
@@ -363,25 +395,69 @@ namespace sl
             return (int)(part);
         }
 
-        public Tuple<BODY_PARTS, BODY_PARTS>[] BODY_BONES =
+        int getIdx(BODY_PARTS_POSE_34 part)
         {
-            Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.NOSE, BODY_PARTS.NECK),
-            Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.NECK, BODY_PARTS.RIGHT_SHOULDER),
-            Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_SHOULDER, BODY_PARTS.RIGHT_ELBOW),
-            Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_ELBOW, BODY_PARTS.RIGHT_WRIST),
-            Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.NECK, BODY_PARTS.LEFT_SHOULDER),
-            Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_SHOULDER, BODY_PARTS.LEFT_ELBOW),
-            Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_ELBOW, BODY_PARTS.LEFT_WRIST),
-            Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_HIP, BODY_PARTS.RIGHT_KNEE),
-            Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_KNEE, BODY_PARTS.RIGHT_ANKLE),
-            Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_HIP, BODY_PARTS.LEFT_KNEE),
-            Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_KNEE, BODY_PARTS.LEFT_ANKLE),
-            Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_SHOULDER, BODY_PARTS.LEFT_SHOULDER),
-            Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_HIP, BODY_PARTS.LEFT_HIP),
-            Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.NOSE, BODY_PARTS.RIGHT_EYE),
-            Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_EYE, BODY_PARTS.RIGHT_EAR),
-            Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.NOSE, BODY_PARTS.LEFT_EYE),
-            Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_EYE, BODY_PARTS.LEFT_EAR)
+            return (int)(part);
+        }
+
+        private static readonly Tuple<sl.BODY_PARTS, sl.BODY_PARTS>[] SKELETON_BONES =
+        {
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.NOSE, BODY_PARTS.NECK),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.NECK, BODY_PARTS.RIGHT_SHOULDER),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_SHOULDER, BODY_PARTS.RIGHT_ELBOW),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_ELBOW, BODY_PARTS.RIGHT_WRIST),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.NECK, BODY_PARTS.LEFT_SHOULDER),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_SHOULDER, BODY_PARTS.LEFT_ELBOW),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_ELBOW, BODY_PARTS.LEFT_WRIST),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_HIP, BODY_PARTS.RIGHT_KNEE),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_KNEE, BODY_PARTS.RIGHT_ANKLE),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_HIP, BODY_PARTS.LEFT_KNEE),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_KNEE, BODY_PARTS.LEFT_ANKLE),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_SHOULDER, BODY_PARTS.LEFT_SHOULDER),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_HIP, BODY_PARTS.LEFT_HIP),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.NOSE, BODY_PARTS.RIGHT_EYE),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.RIGHT_EYE, BODY_PARTS.RIGHT_EAR),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.NOSE, BODY_PARTS.LEFT_EYE),
+        Tuple.Create<BODY_PARTS, BODY_PARTS>(BODY_PARTS.LEFT_EYE, BODY_PARTS.LEFT_EAR)
+        };
+
+        private static readonly Tuple<sl.BODY_PARTS_POSE_34, sl.BODY_PARTS_POSE_34>[] BODY_BONES_POSE_34 =
+    {
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.PELVIS, BODY_PARTS_POSE_34.NAVAL_SPINE),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.NAVAL_SPINE, BODY_PARTS_POSE_34.CHEST_SPINE),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.CHEST_SPINE, BODY_PARTS_POSE_34.LEFT_CLAVICLE),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.LEFT_CLAVICLE, BODY_PARTS_POSE_34.LEFT_SHOULDER),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.LEFT_SHOULDER, BODY_PARTS_POSE_34.LEFT_ELBOW),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.LEFT_ELBOW, BODY_PARTS_POSE_34.LEFT_WRIST),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.LEFT_WRIST, BODY_PARTS_POSE_34.LEFT_HAND),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.LEFT_HAND, BODY_PARTS_POSE_34.LEFT_HANDTIP),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.LEFT_WRIST, BODY_PARTS_POSE_34.LEFT_THUMB),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.CHEST_SPINE, BODY_PARTS_POSE_34.RIGHT_CLAVICLE),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.RIGHT_CLAVICLE, BODY_PARTS_POSE_34.RIGHT_SHOULDER),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.RIGHT_SHOULDER, BODY_PARTS_POSE_34.RIGHT_ELBOW),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.RIGHT_ELBOW, BODY_PARTS_POSE_34.RIGHT_WRIST),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.RIGHT_WRIST, BODY_PARTS_POSE_34.RIGHT_HAND),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.RIGHT_HAND, BODY_PARTS_POSE_34.RIGHT_HANDTIP),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.RIGHT_WRIST, BODY_PARTS_POSE_34.RIGHT_THUMB),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.PELVIS, BODY_PARTS_POSE_34.LEFT_HIP),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.LEFT_HIP, BODY_PARTS_POSE_34.LEFT_KNEE),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.LEFT_KNEE, BODY_PARTS_POSE_34.LEFT_ANKLE),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.LEFT_ANKLE, BODY_PARTS_POSE_34.LEFT_FOOT),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.PELVIS, BODY_PARTS_POSE_34.RIGHT_HIP),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.RIGHT_HIP, BODY_PARTS_POSE_34.RIGHT_KNEE),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.RIGHT_KNEE, BODY_PARTS_POSE_34.RIGHT_ANKLE),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.RIGHT_ANKLE, BODY_PARTS_POSE_34.RIGHT_FOOT),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.CHEST_SPINE, BODY_PARTS_POSE_34.NECK),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.NECK, BODY_PARTS_POSE_34.HEAD),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.HEAD, BODY_PARTS_POSE_34.NOSE),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.NOSE, BODY_PARTS_POSE_34.LEFT_EYE),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.LEFT_EYE, BODY_PARTS_POSE_34.LEFT_EAR),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.NOSE, BODY_PARTS_POSE_34.RIGHT_EYE),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.RIGHT_EYE, BODY_PARTS_POSE_34.RIGHT_EAR),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.LEFT_ANKLE, BODY_PARTS_POSE_34.LEFT_HEEL),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.RIGHT_ANKLE, BODY_PARTS_POSE_34.RIGHT_HEEL),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.LEFT_HEEL, BODY_PARTS_POSE_34.LEFT_FOOT),
+        Tuple.Create<BODY_PARTS_POSE_34, BODY_PARTS_POSE_34>(BODY_PARTS_POSE_34.RIGHT_HEEL, BODY_PARTS_POSE_34.RIGHT_FOOT)
         };
 
         public void exit()
@@ -404,6 +480,7 @@ namespace sl
 
         bool available;
         bool showOnlyOK_ = false;
+        sl.BODY_FORMAT body_format_;
         Matrix4x4 projection_;
         Matrix4x4 cam_pose;
 

@@ -267,11 +267,12 @@ class Simple3DObject:
             glDisableVertexAttribArray(1)
 
 class Skeleton:
-    def __init__(self):
+    def __init__(self, _body_format = sl.BODY_FORMAT.POSE_18):
         self.clr = [0,0,0,1]
         self.kps = []
         self.joints = Simple3DObject(False)
         self.Z = 1
+        self.body_format = _body_format
 
     def set(self, obj):
         self.joints.set_drawing_type(GL_LINES)
@@ -279,28 +280,47 @@ class Skeleton:
         self.Z = abs(obj.position[2])
         # Draw skeletons
         if obj.keypoint.size > 0:
-            # Bones
-            # Definition of SKELETON_BONES in cv_viewer.utils.py, which slightly differs from BODY_BONES
-            for bone in SKELETON_BONES:
-                kp_1 = obj.keypoint[bone[0].value]
-                kp_2 = obj.keypoint[bone[1].value]
-                if math.isfinite(kp_1[0]) and math.isfinite(kp_2[0]):
-                    self.joints.add_line(kp_1, kp_2)
-            
-            for part in range(len(sl.BODY_PARTS)-1):    # -1 to avoid LAST
-                kp = obj.keypoint[part]
-                norm = np.linalg.norm(kp)
-                if math.isfinite(norm):
-                    self.kps.append(kp)
-            
-            # Create backbone (not defined in sl.BODY_BONES)
-            spine = (obj.keypoint[sl.BODY_PARTS.LEFT_HIP.value] + obj.keypoint[sl.BODY_PARTS.RIGHT_HIP.value]) / 2
-            neck = obj.keypoint[sl.BODY_PARTS.NECK.value]
-            self.joints.add_line(spine, neck)
+            # POSE_18 -> 18 keypoints
+            if self.body_format == sl.BODY_FORMAT.POSE_18:
+                # Bones
+                # Definition of SKELETON_BONES in cv_viewer.utils.py, which slightly differs from BODY_BONES           
+                for bone in SKELETON_BONES:
+                    kp_1 = obj.keypoint[bone[0].value]
+                    kp_2 = obj.keypoint[bone[1].value]
+                    if math.isfinite(kp_1[0]) and math.isfinite(kp_2[0]):
+                        self.joints.add_line(kp_1, kp_2)
 
-            # Spine base joint
-            if math.isfinite(np.linalg.norm(spine)):
-                self.kps.append(spine)
+                for part in range(len(sl.BODY_PARTS)-1):    # -1 to avoid LAST
+                    kp = obj.keypoint[part]
+                    norm = np.linalg.norm(kp)
+                    if math.isfinite(norm):
+                        self.kps.append(kp)
+
+                # Create backbone (not defined in sl.BODY_BONES)
+                spine = (obj.keypoint[sl.BODY_PARTS.LEFT_HIP.value] + obj.keypoint[sl.BODY_PARTS.RIGHT_HIP.value]) / 2
+                neck = obj.keypoint[sl.BODY_PARTS.NECK.value]
+                self.joints.add_line(spine, neck)
+
+                # Spine base joint
+                if math.isfinite(np.linalg.norm(spine)):
+                    self.kps.append(spine)
+            
+            # POSE_34 -> 34 keypoints
+            elif self.body_format == sl.BODY_FORMAT.POSE_34:
+                for bone in sl.BODY_BONES_POSE_34:
+                    kp_1 = obj.keypoint[bone[0].value]
+                    kp_2 = obj.keypoint[bone[1].value]
+                    if math.isfinite(kp_1[0]) and math.isfinite(kp_2[0]):
+                        self.joints.add_line(kp_1, kp_2)
+
+                for part in range(len(sl.BODY_PARTS_POSE_34)-1):
+                    kp = obj.keypoint[part]
+                    norm = np.linalg.norm(kp)
+                    if math.isfinite(norm):
+                        self.kps.append(kp)
+
+                
+
 
     def push_to_GPU(self):
         self.joints.push_to_GPU()
@@ -424,8 +444,9 @@ class GLViewer:
         self.basic_sphere = Simple3DObject(True)
         # Show tracked objects only
         self.is_tracking_on = False
+        self.body_format = sl.BODY_FORMAT.POSE_18
 
-    def init(self, _params, _is_tracking_on): 
+    def init(self, _params, _is_tracking_on, _body_format): 
         glutInit()
         wnd_w = glutGet(GLUT_SCREEN_WIDTH)
         wnd_h = glutGet(GLUT_SCREEN_HEIGHT)
@@ -480,6 +501,7 @@ class GLViewer:
         glutCloseFunc(self.close_func)
 
         self.available = True
+        self.body_format = _body_format
 
     def set_floor_plane_equation(self, _eq):
         self.floor_plane_set = True
@@ -534,7 +556,7 @@ class GLViewer:
         # Only show tracked objects
         for obj in _objs.object_list:
             if self.render_object(obj):
-                current_sk = Skeleton()
+                current_sk = Skeleton(self.body_format)
                 current_sk.set(obj)
                 self.bodies.append(current_sk)
         self.mutex.release()

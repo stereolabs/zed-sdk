@@ -11,7 +11,7 @@ This sample shows how to detect and track objects in space.
  - Build for [Linux/Jetson](https://www.stereolabs.com/docs/app-development/cpp/linux/)
 
 ## Run the program
-*NOTE: A [ZED 2](https://store.stereolabs.com/products/zed-2) is required to use this module.*
+*NOTE: The ZED v1 is not compatible with this module*
 - Navigate to the build directory and launch the executable
 - Or open a terminal in the build directory and run the sample :
 

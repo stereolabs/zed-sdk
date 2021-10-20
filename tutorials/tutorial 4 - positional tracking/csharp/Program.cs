@@ -40,9 +40,10 @@ namespace sl
                     zedCamera.GetPosition(ref pose,REFERENCE_FRAME.WORLD);
 
                     // Display the translation and timestamp each 10 frames
-                    if (i%10==0)
-                    Console.WriteLine("Translation : " + pose.translation + ", Rotation : " + pose.rotation + ", Timestamp : " + pose.timestamp);
-
+                    if (i % 10 == 0)
+                    {
+                        Console.WriteLine("Translation : " + pose.translation + ",\n Rotation : " + pose.rotation + ",\n Timestamp : " + pose.timestamp);
+                    }
                     i++;
                 }
             }

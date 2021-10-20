@@ -95,7 +95,7 @@ namespace sl
 
             spatialMappingParameters = new SpatialMappingParameters();
             spatialMappingParameters.resolutionMeter = SpatialMappingParameters.get(MAPPING_RESOLUTION.MEDIUM);
-            spatialMappingParameters.saveTexture = false;
+            spatialMappingParameters.saveTexture = true;
             if (CREATE_MESH)    spatialMappingParameters.map_type = SPATIAL_MAP_TYPE.MESH;
             else   spatialMappingParameters.map_type = SPATIAL_MAP_TYPE.FUSED_POINT_CLOUD;
 
@@ -162,7 +162,14 @@ namespace sl
 
                 nativeWindow.Create((int)(zedCamera.ImageWidth * 0.05f), (int)(zedCamera.ImageHeight * 0.05f), (uint)width, (uint)height, NativeWindowStyle.Resizeable);
                 nativeWindow.Show();
-                nativeWindow.Run();
+				try
+				{
+					nativeWindow.Run();
+				}
+				catch (Exception e)
+				{
+					Console.WriteLine("Mouse wheel is broken in the current OPENGL .NET VERSION. Please do not use it.");
+				}
             }
         }
 

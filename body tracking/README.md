@@ -10,4 +10,4 @@
 ![](body_tracking.jpg)
 
 
->*NOTE: A [ZED 2](https://store.stereolabs.com/products/zed-2) is required to use this module.*
+>*NOTE: The ZED v1 is not compatible with this module*

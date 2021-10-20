@@ -7,7 +7,7 @@ This sample shows how to detect and track human bodies in space.
  - Check the [Documentation](https://www.stereolabs.com/docs/)
  
 ## Run the program
-*NOTE: A [ZED 2](https://store.stereolabs.com/products/zed-2) is required to use this module.*
+*NOTE: The ZED v1 is not compatible with this module*
 
       python "body_tracking.py"
 

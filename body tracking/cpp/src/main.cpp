@@ -53,6 +53,7 @@ int main(int argc, char **argv) {
     // On Jetson the object detection combined with an heavy depth mode could reduce the frame rate too much
     init_parameters.depth_mode = isJetson ? DEPTH_MODE::PERFORMANCE : DEPTH_MODE::ULTRA;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
+
     parseArgs(argc, argv, init_parameters);
 
     // Open the camera
@@ -66,7 +67,7 @@ int main(int argc, char **argv) {
     // Enable Positional tracking (mandatory for object detection)
     PositionalTrackingParameters positional_tracking_parameters;
     //If the camera is static, uncomment the following line to have better performances and boxes sticked to the ground.
-    //positional_tracking_parameters.set_as_static = true;
+
     returned_state = zed.enablePositionalTracking(positional_tracking_parameters);
     if (returned_state != ERROR_CODE::SUCCESS) {
         print("enable Positional Tracking", returned_state, "\nExit program.");
@@ -78,8 +79,8 @@ int main(int argc, char **argv) {
     ObjectDetectionParameters obj_det_params;
     obj_det_params.enable_tracking = true; // track people across images flow
     obj_det_params.enable_body_fitting = false; // smooth skeletons moves
+	obj_det_params.body_format = sl::BODY_FORMAT::POSE_34;
     obj_det_params.detection_model = isJetson ? DETECTION_MODEL::HUMAN_BODY_FAST : DETECTION_MODEL::HUMAN_BODY_ACCURATE;
-
     returned_state = zed.enableObjectDetection(obj_det_params);
     if (returned_state != ERROR_CODE::SUCCESS) {
         print("enable Object Detection", returned_state, "\nExit program.");
@@ -102,7 +103,7 @@ int main(int argc, char **argv) {
 	Mat point_cloud(pc_resolution, MAT_TYPE::F32_C4, MEM::GPU);
 	// Create OpenGL Viewer
 	GLViewer viewer;
-	viewer.init(argc, argv, camera_parameters, obj_det_params.enable_tracking);
+	viewer.init(argc, argv, camera_parameters, obj_det_params.enable_tracking, obj_det_params.body_format);
 
 	Pose cam_pose;
 	cam_pose.pose_data.setIdentity();
@@ -151,7 +152,7 @@ int main(int argc, char **argv) {
 			if (is_playback && zed.getSVOPosition() == zed.getSVONumberOfFrames()) {
 				quit = true;
 			}
-			render_2D(image_left_ocv, img_scale, bodies.object_list, obj_det_params.enable_tracking);
+			render_2D(image_left_ocv, img_scale, bodies.object_list, obj_det_params.enable_tracking, obj_det_params.body_format);
 			cv::imshow(window_name, image_left_ocv);
 			key = cv::waitKey(10);
         }

@@ -45,6 +45,23 @@ FILE(GLOB_RECURSE HDR_FILES include/*.h*)
 add_executable(${PROJECT_NAME} ${HDR_FILES} ${SRC_FILES})
 add_definitions(-std=c++14)
 
+## DEBUG/ SANITIZER options
+IF(NOT WIN32)
+    add_definitions(-Werror=return-type)
+    IF (BUILD_WITH_SANITIZER)
+    message("!! Building with address sanitizer and -g !!")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address -Wall -Wextra -g")
+    set (CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=address -Wall -Wextra -g")
+    add_definitions(-g -fsanitize=address -fno-omit-frame-pointer -static-libasan -Wall -Wextra)
+    ENDIF()
+
+    IF (BUILD_WITH_DEBUGINFOS)
+    message("!! Building with -g !!")
+    add_definitions(-g)
+    ENDIF()
+ENDIF()
+
+
 if (LINK_SHARED_ZED)
     SET(ZED_LIBS ${ZED_LIBRARIES} ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_DEP_LIBRARIES_ZED})
 else()

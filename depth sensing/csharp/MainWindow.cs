@@ -64,10 +64,9 @@ namespace sl
             if (err != ERROR_CODE.SUCCESS)
                 Environment.Exit(-1);
 
-            // Enable trackin
-            Quaternion quat = Quaternion.Identity;
-            Vector3 vec = Vector3.Zero;
-            zedCamera.EnablePositionalTracking(ref quat, ref vec);
+            // Enable tracking
+            PositionalTrackingParameters trackingParams = new PositionalTrackingParameters();
+            zedCamera.EnablePositionalTracking(ref trackingParams);
 
             runtimeParameters = new RuntimeParameters();
 
@@ -129,7 +128,14 @@ namespace sl
 
                 nativeWindow.Create((int)(zedCamera.ImageWidth * 0.05f), (int)(zedCamera.ImageHeight * 0.05f), 1200, 700, NativeWindowStyle.Resizeable);
                 nativeWindow.Show();
-                nativeWindow.Run();
+                try
+                {
+                    nativeWindow.Run();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Mouse wheel is broken in the current OPENGL .NET VERSION. Please do not use it.");
+                }
             }
         }
 

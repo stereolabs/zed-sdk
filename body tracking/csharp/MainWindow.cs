@@ -25,11 +25,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Numerics;
 using System.Net;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using OpenGL;
 using OpenGL.CoreUI;
@@ -43,6 +40,7 @@ namespace sl
         Resolution displayRes;
         GLViewer viewer;
         Camera zedCamera;
+        ObjectDetectionParameters obj_det_params;
         ObjectDetectionRuntimeParameters obj_runtime_parameters;
         RuntimeParameters runtimeParameters;
         sl.Mat pointCloud;
@@ -72,11 +70,15 @@ namespace sl
             ERROR_CODE err = zedCamera.Open(ref init_params);
 
             if (err != ERROR_CODE.SUCCESS)
-                Environment.Exit(-1);
-
-            if (!(zedCamera.CameraModel == sl.MODEL.ZED2 || zedCamera.CameraModel == sl.MODEL.ZED2i))
             {
-                Console.WriteLine(" ERROR : Use ZED2/ZED2i Camera only");
+                Console.WriteLine("ERROR while opening the camera. Exiting...");
+                Environment.Exit(-1);
+            }
+
+
+            if (zedCamera.CameraModel == MODEL.ZED)
+            {
+                Console.WriteLine(" ERROR : not compatible camera model");
                 return;
             }
 
@@ -87,13 +89,14 @@ namespace sl
             runtimeParameters = new RuntimeParameters();
 
             // Enable the Objects detection module
-            ObjectDetectionParameters obj_det_params = new ObjectDetectionParameters();
+            obj_det_params = new ObjectDetectionParameters();
             obj_det_params.enableObjectTracking = true; // the object detection will track objects across multiple images, instead of an image-by-image basis
             isTrackingON = obj_det_params.enableObjectTracking;
             obj_det_params.enable2DMask = false;
             obj_det_params.enableBodyFitting = true; // smooth skeletons moves
             obj_det_params.imageSync = true; // the object detection is synchronized to the image
             obj_det_params.detectionModel = sl.DETECTION_MODEL.HUMAN_BODY_ACCURATE;
+            obj_det_params.bodyFormat = sl.BODY_FORMAT.POSE_34;
 
             zedCamera.EnableObjectDetection(ref obj_det_params);
 
@@ -170,7 +173,14 @@ namespace sl
 
                 nativeWindow.Create((int)(zedCamera.ImageWidth * 0.05f), (int)(zedCamera.ImageHeight * 0.05f), 1200, 700, NativeWindowStyle.Resizeable);
                 nativeWindow.Show();
-                nativeWindow.Run();
+                try
+                {
+                    nativeWindow.Run();
+                }
+                catch(Exception e)
+                {
+                    Console.WriteLine("Mouse wheel is broken in the current OPENGL .NET VERSION. Please do not use it.");
+                }
             }
         }
 
@@ -201,7 +211,7 @@ namespace sl
             Gl.Enable(EnableCap.LineSmooth);
             Gl.Hint(HintTarget.LineSmoothHint, HintMode.Nicest);
 
-            viewer.init(zedCamera.GetCalibrationParameters().leftCam, isTrackingON);
+            viewer.init(zedCamera.GetCalibrationParameters().leftCam, isTrackingON, obj_det_params.bodyFormat);
         }
 
         // Render loop
@@ -224,7 +234,7 @@ namespace sl
                     // Retrieve Objects
                     zedCamera.RetrieveObjects(ref objects, ref obj_runtime_parameters);
 
-                    TrackingViewer.render_2D(ref imageLeftOcv, imgScale, ref objects, isTrackingON);
+                    TrackingViewer.render_2D(ref imageLeftOcv, imgScale, ref objects, isTrackingON, obj_det_params.bodyFormat);
 
                     //Update GL View
                     viewer.update(pointCloud, objects, camPose);

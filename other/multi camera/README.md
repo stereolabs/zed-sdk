@@ -27,4 +27,4 @@ This sample shows how to use multiple ZED cameras in a single application.
   - 3 ZEDs in HD720 @ 15fps
   - 4 ZEDs in VGA @ 30fps
 - To use multiple ZED at full speed on a single computer, we recommend adding USB3.0 PCIe expansion cards.
-- You can also use multiple GPUs to load-balance computations (use [`param.sdk_gpu_id`](https://www.stereolabs.com/docs/api/structsl_1_1InitParameters.html#ab85c9adecd2c9c29a1b255889be1eeb4) to select a GPU for a ZED) and improve performance.
+- You can also use multiple GPUs to load-balance computations (use `param.device` to select a GPU for a ZED) and improve performance.
