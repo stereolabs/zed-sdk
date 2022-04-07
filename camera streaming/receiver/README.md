@@ -4,4 +4,4 @@
 
 ### Features
  - Connects to a network ZED device.
- - Uses SDK to compute point cloud and displays it with OpenGL.
+ - Uses SDK to retrieve the RGB image and control the image properties.
