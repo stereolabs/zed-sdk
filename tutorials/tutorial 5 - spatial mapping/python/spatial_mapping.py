@@ -40,7 +40,7 @@ def main():
     # Enable positional tracking with default parameters.
     # Positional tracking needs to be enabled before using spatial mapping
     py_transform = sl.Transform()
-    tracking_parameters = sl.PositionalTrackingParameters(init_pos=py_transform)
+    tracking_parameters = sl.PositionalTrackingParameters(_init_pos=py_transform)
     err = zed.enable_positional_tracking(tracking_parameters)
     if err != sl.ERROR_CODE.SUCCESS:
         exit(1)
