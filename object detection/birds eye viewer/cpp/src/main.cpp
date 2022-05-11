@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2021, STEREOLABS.
+// Copyright (c) 2022, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -71,12 +71,12 @@ int main(int argc, char **argv) {
     Camera zed;
     InitParameters init_parameters;
     init_parameters.camera_resolution = RESOLUTION::HD1080;
-    init_parameters.sdk_verbose = true;
+    init_parameters.sdk_verbose = 1;
     // On Jetson (Nano, TX1/2) the object detection combined with an heavy depth mode could reduce the frame rate too much
     init_parameters.depth_mode = isJetson ? DEPTH_MODE::PERFORMANCE : DEPTH_MODE::ULTRA;
     init_parameters.depth_maximum_distance = 10.0f * 1000.0f;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
-	
+
     parseArgs(argc, argv, init_parameters);
 
     // Open the camera
@@ -123,7 +123,6 @@ int main(int argc, char **argv) {
     detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::VEHICLE] = detection_confidence;
 
     // Detection output
-    Objects objects;
     bool quit = false;
 
 #if ENABLE_GUI
@@ -166,6 +165,7 @@ int main(int argc, char **argv) {
 
     Pose cam_w_pose;
     cam_w_pose.pose_data.setIdentity();
+    Objects objects;
 
     bool gl_viewer_available=true;
     while (
@@ -183,7 +183,7 @@ int main(int argc, char **argv) {
 
         returned_state = zed.retrieveObjects(objects, detection_parameters_rt);
 
-        if ((returned_state == ERROR_CODE::SUCCESS) && objects.is_new) {            
+        if ((returned_state == ERROR_CODE::SUCCESS) && objects.is_new) {
 #if ENABLE_GUI
             zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, pc_resolution);
             zed.getPosition(cam_w_pose, REFERENCE_FRAME::WORLD);
@@ -205,8 +205,8 @@ int main(int argc, char **argv) {
 #endif
 
             if (update_render_view) {
-            image_render_left.copyTo(image_left_ocv);
-            render_2D(image_left_ocv, img_scale, objects.object_list, true, detection_parameters.enable_tracking);
+                image_render_left.copyTo(image_left_ocv);
+                render_2D(image_left_ocv, img_scale, objects.object_list, true, detection_parameters.enable_tracking);
             }
 
             if (update_3d_view)

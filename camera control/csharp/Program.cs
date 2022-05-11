@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2021, STEREOLABS.
+// Copyright (c) 2022, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -49,7 +49,6 @@ class Program
 
         InitParameters initParameters = new InitParameters()
         {
-            sdkVerbose = true,
             resolution = RESOLUTION.HD720,
             depthMode = DEPTH_MODE.NONE
         };

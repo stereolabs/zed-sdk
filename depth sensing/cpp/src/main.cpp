@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2021, STEREOLABS.
+// Copyright (c) 2022, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -40,8 +40,9 @@ int main(int argc, char **argv) {
     Camera zed;
     // Set configuration parameters for the ZED
     InitParameters init_parameters;
-    init_parameters.depth_mode = DEPTH_MODE::ULTRA;
+    init_parameters.depth_mode = DEPTH_MODE::NEURAL;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
+    //init_parameters.sdk_verbose = 6;
     parseArgs(argc, argv, init_parameters);
 
     // Open the camera
@@ -122,6 +123,3 @@ void parseArgs(int argc, char **argv, sl::InitParameters& param) {
         // Default
     }
 }
-
-
-

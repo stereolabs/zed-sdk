@@ -1,6 +1,6 @@
 ﻿///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2021, STEREOLABS.
+// Copyright (c) 2022, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -67,7 +67,6 @@ namespace sl
             init_params.coordinateUnits = UNIT.METER;
             init_params.coordinateSystem = COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP;
             init_params.depthMaximumDistance = 15f;
-            init_params.sdkVerbose = true;
 
             parseArgs(args, ref init_params);
             // Open the camera
@@ -76,12 +75,6 @@ namespace sl
 
             if (err != ERROR_CODE.SUCCESS)
                 Environment.Exit(-1);
-
-            if (zedCamera.CameraModel != sl.MODEL.ZED2)
-            {
-                Console.WriteLine(" ERROR : Use ZED2 Camera only");
-                return;
-            }
 
             tracking_state = POSITIONAL_TRACKING_STATE.OFF;
             mapping_state = SPATIAL_MAPPING_STATE.NOT_ENABLED;

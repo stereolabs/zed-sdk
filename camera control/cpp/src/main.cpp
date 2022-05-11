@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2021, STEREOLABS.
+// Copyright (c) 2022, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -91,20 +91,15 @@ static void onMouse(int event, int x, int y, int, void*)
 }
 
 int main(int argc, char **argv) {
-    // Create a ZED Camera object
-
-    std::cout<<" Reboot CAMERA "<<std::endl;
-    sl::ERROR_CODE errcode= sl::Camera::reboot(0);
-    sl::sleep_ms(3000);
-    std::cout<<" Reboot CAMERA --> "<<errcode<<std::endl;
-    Camera zed;
     
+    // Create a ZED Camera object
+    Camera zed;
+
     sl::InitParameters init_parameters;
     init_parameters.sdk_verbose = true;
     init_parameters.camera_resolution= sl::RESOLUTION::HD720;
     init_parameters.depth_mode = sl::DEPTH_MODE::NONE; // no depth computation required here
     parseArgs(argc,argv, init_parameters);
-
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);

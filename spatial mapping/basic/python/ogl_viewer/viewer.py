@@ -12,7 +12,7 @@ import pyzed.sl as sl
 
 M_PI = 3.1415926
 
-MESH_VERTEX_SHADER ="""
+MESH_VERTEX_SHADER = """
 #version 330 core
 layout(location = 0) in vec3 in_Vertex;
 uniform mat4 u_mvpMatrix;
@@ -21,6 +21,18 @@ out vec3 b_color;
 void main() {
     b_color = u_color;
     gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);
+}
+"""
+
+FPC_VERTEX_SHADER = """
+#version 330 core
+layout(location = 0) in vec4 in_Vertex;
+uniform mat4 u_mvpMatrix;
+uniform vec3 u_color;
+out vec3 b_color;
+void main() {
+   b_color = u_color;
+   gl_Position = u_mvpMatrix * vec4(in_Vertex.xyz, 1);
 }
 """
 
@@ -207,7 +219,7 @@ class GLViewer:
         self.tracking_state = sl.POSITIONAL_TRACKING_STATE.OFF
         self.mapping_state = sl.SPATIAL_MAPPING_STATE.NOT_ENABLED
 
-    def init(self, _params, _mesh): 
+    def init(self, _params, _mesh, _create_mesh): 
         glutInit()
         wnd_w = glutGet(GLUT_SCREEN_WIDTH)
         wnd_h = glutGet(GLUT_SCREEN_HEIGHT)
@@ -233,12 +245,13 @@ class GLViewer:
         # Initialize image renderer
         self.image_handler.initialize(_params.image_size)
 
-        # Init mesh (TODO fused point cloud)
-        self.init_mesh(_mesh)
+        self.init_mesh(_mesh, _create_mesh)
 
         # Compile and create the shader 
         if(self.draw_mesh):
             self.shader_image = Shader(MESH_VERTEX_SHADER, FRAGMENT_SHADER)
+        else:
+            self.shader_image = Shader(FPC_VERTEX_SHADER, FRAGMENT_SHADER)
 
         self.shader_MVP = glGetUniformLocation(self.shader_image.get_program_id(), "u_mvpMatrix")
         self.shader_color_loc = glGetUniformLocation(self.shader_image.get_program_id(), "u_color")
@@ -267,8 +280,8 @@ class GLViewer:
         # Ready to start
         self.chunks_pushed = True
 
-    def init_mesh(self, _mesh):
-        self.draw_mesh = True
+    def init_mesh(self, _mesh, _create_mesh):
+        self.draw_mesh = _create_mesh
         self.mesh = _mesh
 
     def set_render_camera_projection(self, _params):
@@ -357,24 +370,26 @@ class GLViewer:
             glutSwapBuffers()
             glutPostRedisplay()
 
+    # Update both Mesh and FPC
     def update(self):
         if self.new_chunks:
             if self.ask_clear:
                 self.sub_maps = []
                 self.ask_clear = False
             
-            nb_c = 0
-            if self.draw_mesh:
-                nb_c = len(self.mesh.chunks)
+            nb_c = len(self.mesh.chunks)
 
             if nb_c > len(self.sub_maps): 
                 for n in range(len(self.sub_maps),nb_c):
                     self.sub_maps.append(SubMapObj())
             
-            if self.draw_mesh:
-                for m in range(len(self.sub_maps)):
-                    if (m < nb_c) and self.mesh.chunks[m].has_been_updated:
-                        self.sub_maps[m].update(self.mesh.chunks[m])
+            # For both Mesh and FPC
+            for m in range(len(self.sub_maps)):
+                if (m < nb_c) and self.mesh.chunks[m].has_been_updated:
+                    if self.draw_mesh:
+                        self.sub_maps[m].update_mesh(self.mesh.chunks[m])
+                    else:
+                        self.sub_maps[m].update_fpc(self.mesh.chunks[m])
                         
             self.new_chunks = False
             self.chunks_pushed = True
@@ -399,7 +414,7 @@ class GLViewer:
                 glUniform3fv(self.shader_color_loc, 1, (GLfloat * len(self.vertices_color))(*self.vertices_color))
         
                 for m in range(len(self.sub_maps)):
-                    self.sub_maps[m].draw()
+                    self.sub_maps[m].draw(self.draw_mesh)
 
                 glUseProgram(0)
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
@@ -440,10 +455,26 @@ class SubMapObj:
     def __init__(self):
         self.current_fc = 0
         self.vboID = None
+        self.index = []         # For FPC only
         self.vert = []
         self.tri = []
 
-    def update(self, _chunk): 
+    def update_mesh(self, _chunk): 
+        if(self.vboID is None):
+            self.vboID = glGenBuffers(2)
+
+        if len(_chunk.vertices):
+            self.vert = _chunk.vertices.flatten()      # transform _chunk.vertices into 1D array 
+            glBindBuffer(GL_ARRAY_BUFFER, self.vboID[0])
+            glBufferData(GL_ARRAY_BUFFER, len(self.vert) * self.vert.itemsize, (GLfloat * len(self.vert))(*self.vert), GL_DYNAMIC_DRAW)
+        
+        if len(_chunk.triangles):
+            self.tri = _chunk.triangles.flatten()      # transform _chunk.triangles into 1D array 
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vboID[1])
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(self.tri) * self.tri.itemsize , (GLuint * len(self.tri))(*self.tri), GL_DYNAMIC_DRAW)
+            self.current_fc = len(self.tri)
+
+    def update_fpc(self, _chunk): 
         if(self.vboID is None):
             self.vboID = glGenBuffers(2)
 
@@ -452,19 +483,27 @@ class SubMapObj:
             glBindBuffer(GL_ARRAY_BUFFER, self.vboID[0])
             glBufferData(GL_ARRAY_BUFFER, len(self.vert) * self.vert.itemsize, (GLfloat * len(self.vert))(*self.vert), GL_DYNAMIC_DRAW)
 
-        if len(_chunk.triangles):
-            self.tri = _chunk.triangles.flatten()      # transform _chunk.triangles into 1D array 
+            for i in range(len(_chunk.vertices)):
+                self.index.append(i)
+            
+            index_np = np.array(self.index)
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vboID[1])
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(self.tri) * self.tri.itemsize , (GLuint * len(self.tri))(*self.tri), GL_DYNAMIC_DRAW)
-            self.current_fc = len(self.tri)
-    
-    def draw(self): 
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, len(index_np) * index_np.itemsize, (GLuint * len(index_np))(*index_np), GL_DYNAMIC_DRAW)
+            self.current_fc = len(index_np)
+
+    def draw(self, _draw_mesh): 
         if self.current_fc:
             glEnableVertexAttribArray(0)
             glBindBuffer(GL_ARRAY_BUFFER, self.vboID[0])
-            glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,None)
+            if _draw_mesh == True:
+                glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,None)
+            else:
+                glVertexAttribPointer(0,4,GL_FLOAT,GL_FALSE,0,None)
 
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vboID[1])
-            glDrawElements(GL_TRIANGLES, self.current_fc, GL_UNSIGNED_INT, None)      
-            
+            if len(self.index) > 0:
+                glDrawElements(GL_POINTS, self.current_fc, GL_UNSIGNED_INT, None)      
+            else:
+                glDrawElements(GL_TRIANGLES, self.current_fc, GL_UNSIGNED_INT, None)      
+
             glDisableVertexAttribArray(0)

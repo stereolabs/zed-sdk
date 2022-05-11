@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 PROJECT(SamplesAndTutos)
 
 OPTION(INSTALL_SAMPLES "Once build, deploy samples into bin" ON)
@@ -9,6 +9,8 @@ if(${BUILD_CPP})
 else()
     SET(TYPE "csharp")
 endif()
+
+SET(CMAKE_BUILD_TYPE "Release")
 
 SET(SAMPLE_LIST "")
 add_subdirectory("camera control/${TYPE}")

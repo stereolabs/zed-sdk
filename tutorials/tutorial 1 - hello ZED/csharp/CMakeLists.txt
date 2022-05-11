@@ -2,6 +2,7 @@ cmake_minimum_required( VERSION 3.8.0 )
 
 project(Hello_ZED CSharp)
 
+
 add_executable(${PROJECT_NAME}
 	Program.cs
 	App.config
@@ -28,9 +29,5 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DOTNET_REFERENCES
 
 set(CMAKE_SUPPRESS_REGENERATION true)
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_PACKAGE_REFERENCES 
-	"Stereolabs.zed_3.6.0"
-<<<<<<< HEAD
+	"Stereolabs.zed_3.7.*"
 )
-=======
-)
->>>>>>> release_3.6

@@ -1,5 +1,8 @@
-cmake_minimum_required(VERSION 2.4)
+cmake_minimum_required(VERSION 3.5)
 PROJECT(yolov5_zed)
+
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(LINK_SHARED_ZED "Link with the ZED SDK shared executable" ON)
 
@@ -7,18 +10,13 @@ if (NOT LINK_SHARED_ZED AND MSVC)
     message(FATAL_ERROR "LINK_SHARED_ZED OFF : ZED SDK static libraries not available on Windows")
 endif()
 
-if(COMMAND cmake_policy)
-	cmake_policy(SET CMP0003 OLD)
-	cmake_policy(SET CMP0004 OLD)
-	cmake_policy(SET CMP0015 OLD)
-endif(COMMAND cmake_policy)
-
-if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
-SET(CMAKE_BUILD_TYPE "RelWithDebInfo")
-endif()
-
-SET(EXECUTABLE_OUTPUT_PATH ".")
 SET(SPECIAL_OS_LIBS "")
+
+option(ENABLE_INT8_CALIBRATOR "Enable int8 calibrator class for quantification calibration, requires opencv dnn" OFF)
+
+IF (ENABLE_INT8_CALIBRATOR)
+    ADD_DEFINITIONS(-DENABLE_INT8_CALIBRATOR)
+ENDIF()
 
 find_package(ZED 3 REQUIRED)
 find_package(OpenCV REQUIRED)
@@ -55,9 +53,8 @@ link_directories(/usr/lib/x86_64-linux-gnu/)
 FILE(GLOB_RECURSE SRC_FILES src/*.c*)
 FILE(GLOB_RECURSE HDR_FILES include/*.h*)
 
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -std=c++11)
 cuda_add_executable(${PROJECT_NAME} ${HDR_FILES} ${SRC_FILES})
-add_definitions(-std=c++14 -g -O3 -D_MWAITXINTRIN_H_INCLUDED -Wno-deprecated-declarations)
+add_definitions(-O3 -D_MWAITXINTRIN_H_INCLUDED -Wno-deprecated-declarations)
 
 if (LINK_SHARED_ZED)
     SET(ZED_LIBS ${ZED_LIBRARIES} ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY})
@@ -74,8 +71,7 @@ target_link_libraries(${PROJECT_NAME}
                         ${OPENGL_LIBRARIES}
                         ${GLUT_LIBRARY}
                         ${GLEW_LIBRARIES}
-                        ${OpenCV_LIBRARIES}
-                        ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY})
+                        ${OpenCV_LIBRARIES})
 
 if(INSTALL_SAMPLES)
     LIST(APPEND SAMPLE_LIST ${PROJECT_NAME})
