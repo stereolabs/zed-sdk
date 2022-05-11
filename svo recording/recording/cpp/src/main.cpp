@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2021, STEREOLABS.
+// Copyright (c) 2022, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 
     // Enable recording with the filename specified in argument
     String path_output(argv[1]);
-    returned_state = zed.enableRecording(RecordingParameters(path_output, SVO_COMPRESSION_MODE::H264));
+    returned_state = zed.enableRecording(RecordingParameters(path_output, SVO_COMPRESSION_MODE::H264_LOSSLESS));
     if (returned_state != ERROR_CODE::SUCCESS) {
         print("Recording ZED : ", returned_state);
         zed.close();

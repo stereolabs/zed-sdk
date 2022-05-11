@@ -11,11 +11,11 @@ inline cv::Point2f cvt(T pt, sl::float2 scale) {
 void render_2D(cv::Mat &left_display, sl::float2 img_scale, std::vector<sl::ObjectData> &objects, bool render_mask, bool isTrackingON) {
     cv::Mat overlay = left_display.clone();
     cv::Rect roi_render(0, 0, left_display.size().width, left_display.size().height);
+    const int line_thickness = 2;
 
-    // render skeleton joints and bones
-    for (auto i = objects.rbegin(); i != objects.rend(); ++i) {
-        sl::ObjectData& obj = (*i);
-        if(renderObject(obj, isTrackingON)) {
+    // render skeleton joints and bones if available
+    for (auto& obj : objects) {
+        if (renderObject(obj, isTrackingON)) {
             if (obj.keypoint_2d.size()) {
                 cv::Scalar color = generateColorID_u(obj.id);
                 // skeleton joints
@@ -30,22 +30,18 @@ void render_2D(cv::Mat &left_display, sl::float2 img_scale, std::vector<sl::Obje
                     auto kp_b = cvt(obj.keypoint_2d[getIdx(parts.second)], img_scale);
                     if (roi_render.contains(kp_a) && roi_render.contains(kp_b))
                         cv::line(left_display, kp_a, kp_b, color, 2);
-                }          
+                }
             }
         }
     }
 
-	cv::Mat mask(left_display.rows, left_display.cols, CV_8UC1);
-
-    const int line_thickness = 2;
-
-    for (auto i = objects.rbegin(); i != objects.rend(); ++i) {
-        sl::ObjectData& obj = (*i);
-        if(renderObject(obj, isTrackingON)) {
+    // render bounding boxes and mask if available
+    for (auto& obj : objects) {
+        if (renderObject(obj, isTrackingON)) {
             cv::Scalar base_color = generateColorID_u(obj.id);
 
-          // Display Image scaled bounding box 2D
-            if (obj.bounding_box_2d.size()<4)
+            // Display Image scaled bounding box 2D
+            if (obj.bounding_box_2d.empty())
                 continue;
 
             cv::Point top_left_corner = cvt(obj.bounding_box_2d[0], img_scale);
@@ -55,38 +51,36 @@ void render_2D(cv::Mat &left_display, sl::float2 img_scale, std::vector<sl::Obje
 
             // Creation of the 2 horizontal lines
             cv::line(left_display, top_left_corner, top_right_corner, base_color, line_thickness);
-            cv::line(left_display, bottom_left_corner, bottom_right_corner, base_color, line_thickness);         
+            cv::line(left_display, bottom_left_corner, bottom_right_corner, base_color, line_thickness);
             // Creation of two vertical lines
             drawVerticalLine(left_display, bottom_left_corner, top_left_corner, base_color, line_thickness);
             drawVerticalLine(left_display, bottom_right_corner, top_right_corner, base_color, line_thickness);
 
-
             // scaled ROI
             cv::Rect roi(top_left_corner, bottom_right_corner);
-			// Use isInit() to check if mask is available
-            if (render_mask && obj.mask.isInit()) {
+            // Use isInit() to check if mask is available
+            if (obj.mask.isInit()) {
                 // Here, obj.mask is the object segmentation mask inside the object bbox, computed on the native resolution
                 // The resize is needed to get the mask on the display resolution
-				cv::resize(slMat2cvMat(obj.mask), mask(roi), roi.size());
-				overlay(roi).setTo(base_color, mask(roi));
-            } else
+                cv::Mat tmp_mask;
+                cv::resize(slMat2cvMat(obj.mask), tmp_mask, roi.size());
+                overlay(roi).setTo(base_color, tmp_mask);
+            }
+            else 
                 overlay(roi).setTo(base_color);            
 
             auto position_image = getImagePosition(obj.bounding_box_2d, img_scale);
-            putText(left_display,  toString(obj.label).get(), cv::Point2d(position_image.x - 20, position_image.y - 12),
-                        cv::FONT_HERSHEY_COMPLEX_SMALL, 0.5, cv::Scalar(255, 255, 255, 255), 1 );
+            putText(left_display, toString(obj.label).get(), cv::Point2d(position_image.x - 20, position_image.y - 12),
+                cv::FONT_HERSHEY_COMPLEX_SMALL, 0.5, cv::Scalar(255, 255, 255, 255), 1);
 
             if (std::isfinite(obj.position.z)) {
                 char text[64];
                 sprintf(text, "%2.1fM", abs(obj.position.z / 1000.0f));
                 putText(left_display, text, cv::Point2d(position_image.x - 20, position_image.y),
-                        cv::FONT_HERSHEY_COMPLEX_SMALL, 0.5, cv::Scalar(255, 255, 255, 255), 1 );
+                    cv::FONT_HERSHEY_COMPLEX_SMALL, 0.5, cv::Scalar(255, 255, 255, 255), 1);
             }
-
-        }
-
+        }        
     }
-
 
     // Here, overlay is as the left image, but with opaque masks on each detected objects
     cv::addWeighted(left_display, 0.7, overlay, 0.3, 0.0, left_display);

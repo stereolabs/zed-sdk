@@ -1,6 +1,6 @@
 ########################################################################
 #
-# Copyright (c) 2021, STEREOLABS.
+# Copyright (c) 2022, STEREOLABS.
 #
 # All rights reserved.
 #
@@ -29,6 +29,9 @@ import time
 import pyzed.sl as sl
 import ogl_viewer.viewer as gl
 
+# Set this variable to 'True' for a Mesh viewer
+# or to 'False' for a Point Cloud viewer
+CREATE_MESH = False
 
 def main():
     print("Running Spatial Mapping sample ... Press 'q' to quit")
@@ -58,12 +61,15 @@ def main():
     # Get camera parameters
     camera_parameters = zed.get_camera_information().camera_configuration.calibration_parameters.left_cam
 
-    pymesh = sl.Mesh()        # Current incremental mesh
-    image = sl.Mat()          # Left image from camera
-    pose = sl.Pose()          # Camera pose tracking data
+    if CREATE_MESH:
+        pymesh = sl.Mesh()              # Current incremental mesh
+    else:
+        pymesh = sl.FusedPointCloud()   # Current incremental FusedPointCloud
+    image = sl.Mat()                    # Left image from camera
+    pose = sl.Pose()                    # Camera pose tracking data
 
     viewer = gl.GLViewer()
-    viewer.init(camera_parameters, pymesh)
+    viewer.init(camera_parameters, pymesh, CREATE_MESH)
 
     spatial_mapping_parameters = sl.SpatialMappingParameters()
     tracking_state = sl.POSITIONAL_TRACKING_STATE.OFF
@@ -112,10 +118,13 @@ def main():
                     spatial_mapping_parameters.resolution_meter = sl.SpatialMappingParameters().get_resolution_preset(sl.MAPPING_RESOLUTION.MEDIUM)
                     spatial_mapping_parameters.use_chunk_only = True
                     spatial_mapping_parameters.save_texture = False         # Set to True to apply texture over the created mesh
-                    spatial_mapping_parameters.map_type = sl.SPATIAL_MAP_TYPE.MESH
+                    if CREATE_MESH:
+                        spatial_mapping_parameters.map_type = sl.SPATIAL_MAP_TYPE.MESH
+                    else:
+                        spatial_mapping_parameters.map_type = sl.SPATIAL_MAP_TYPE.FUSED_POINT_CLOUD
 
                     # Enable spatial mapping
-                    zed.enable_spatial_mapping()
+                    zed.enable_spatial_mapping(spatial_mapping_parameters)
 
                     # Clear previous mesh data
                     pymesh.clear()
@@ -129,16 +138,17 @@ def main():
                     # Extract whole mesh
                     zed.extract_whole_spatial_map(pymesh)
 
-                    filter_params = sl.MeshFilterParameters()
-                    filter_params.set(sl.MESH_FILTER.MEDIUM) 
-                    # Filter the extracted mesh
-                    pymesh.filter(filter_params, True)
-                    viewer.clear_current_mesh()
+                    if CREATE_MESH:
+                        filter_params = sl.MeshFilterParameters()
+                        filter_params.set(sl.MESH_FILTER.MEDIUM) 
+                        # Filter the extracted mesh
+                        pymesh.filter(filter_params, True)
+                        viewer.clear_current_mesh()
 
-                    # If textures have been saved during spatial mapping, apply them to the mesh
-                    if(spatial_mapping_parameters.save_texture):
-                        print("Save texture set to : {}".format(spatial_mapping_parameters.save_texture))
-                        pymesh.apply_texture(sl.MESH_TEXTURE_FORMAT.RGBA)
+                        # If textures have been saved during spatial mapping, apply them to the mesh
+                        if(spatial_mapping_parameters.save_texture):
+                            print("Save texture set to : {}".format(spatial_mapping_parameters.save_texture))
+                            pymesh.apply_texture(sl.MESH_TEXTURE_FORMAT.RGBA)
 
                     # Save mesh as an obj file
                     filepath = "mesh_gen.obj"

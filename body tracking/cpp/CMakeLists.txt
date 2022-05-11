@@ -1,5 +1,9 @@
-cmake_minimum_required(VERSION 2.4)
+cmake_minimum_required(VERSION 3.5)
 PROJECT(ZED_Body_Tracking_Viewer)
+
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+SET(CMAKE_BUILD_TYPE "Release")
 
 option(LINK_SHARED_ZED "Link with the ZED SDK shared executable" ON)
 
@@ -7,26 +11,13 @@ if (NOT LINK_SHARED_ZED AND MSVC)
     message(FATAL_ERROR "LINK_SHARED_ZED OFF : ZED SDK static libraries not available on Windows")
 endif()
 
-if(COMMAND cmake_policy)
-        cmake_policy(SET CMP0003 OLD)
-        cmake_policy(SET CMP0004 OLD)
-        cmake_policy(SET CMP0015 OLD)
-endif(COMMAND cmake_policy)
-
-SET(EXECUTABLE_OUTPUT_PATH ".")
-SET(SPECIAL_OS_LIBS "")
-
 find_package(ZED 3 REQUIRED)
+find_package(CUDA ${ZED_CUDA_VERSION} REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(GLUT REQUIRED)
 find_package(GLEW REQUIRED)
+SET(OpenGL_GL_PREFERENCE GLVND)
 find_package(OpenGL REQUIRED)
-find_package(CUDA REQUIRED)
-
-IF(NOT WIN32)
-    SET(SPECIAL_OS_LIBS "pthread" "X11")
-    add_definitions(-Wno-write-strings)
-ENDIF()
 
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${ZED_INCLUDE_DIRS})
@@ -46,7 +37,6 @@ FILE(GLOB_RECURSE SRC_FILES src/*.c*)
 FILE(GLOB_RECURSE HDR_FILES include/*.h*)
 
 add_executable(${PROJECT_NAME} ${HDR_FILES} ${SRC_FILES})
-add_definitions(-std=c++14)
 
 if (LINK_SHARED_ZED)
     SET(ZED_LIBS ${ZED_LIBRARIES} ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_DEP_LIBRARIES_ZED})
@@ -55,12 +45,12 @@ else()
 endif()
 
 target_link_libraries(${PROJECT_NAME}
-                        ${SPECIAL_OS_LIBS}
-                        ${ZED_LIBS}
-                        ${OPENGL_LIBRARIES}
-                        ${GLUT_LIBRARY}
-                        ${OpenCV_LIBRARIES}
-                        ${GLEW_LIBRARIES})
+                    ${ZED_LIBS}
+                    ${OPENGL_LIBRARIES}
+                    ${GLUT_LIBRARY}
+                    ${OpenCV_LIBRARIES}
+                    ${GLEW_LIBRARIES}
+)
 
 if(INSTALL_SAMPLES)
     LIST(APPEND SAMPLE_LIST ${PROJECT_NAME})

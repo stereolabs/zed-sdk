@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2021, STEREOLABS.
+// Copyright (c) 2022, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -57,7 +57,6 @@ namespace sl
             init_params.depthMode = DEPTH_MODE.ULTRA;
             init_params.coordinateUnits = UNIT.METER;
             init_params.coordinateSystem = COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP;
-            init_params.sdkVerbose = true;
 
             parseArgs(args, ref init_params);
             // Open the camera
@@ -198,6 +197,7 @@ namespace sl
 
         private void close()
         {
+            zedCamera.SaveAreaMap("toto.area");
             zedCamera.DisablePositionalTracking();
             zedCamera.Close();
             viewer.exit();

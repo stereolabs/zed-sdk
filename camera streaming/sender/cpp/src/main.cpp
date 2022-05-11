@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2021, STEREOLABS.
+// Copyright (c) 2022, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
     InitParameters init_parameters;
     init_parameters.camera_resolution = sl::RESOLUTION::HD720;
     init_parameters.depth_mode = DEPTH_MODE::NONE;
-    init_parameters.sdk_verbose = true;
+    init_parameters.sdk_verbose = 1;
     int res_arg = parseArgs(argc, argv, init_parameters);
 
     // Open the camera

@@ -15,7 +15,7 @@ namespace sl
             InitParameters init_params = new InitParameters();
             init_params.resolution = RESOLUTION.HD720;
             init_params.coordinateUnits = UNIT.METER;
-            init_params.sdkVerbose = true;
+            init_params.sdkVerbose = 1;
 
             Camera zedCamera = new Camera(0);
             // Open the camera
@@ -99,12 +99,12 @@ namespace sl
                             for (int i = 0; i < (int)sl.BODY_PARTS.LAST; i++)
                             {
                                 var kp = firstObject.keypoints2D[i];
-                                Console.WriteLine("     " + (sl.BODY_PART)i + " " + kp.X + ", " + kp.Y);
+                                Console.WriteLine("     " + (sl.BODY_PARTS)i + " " + kp.X + ", " + kp.Y);
                             }
 
                             // The BODY_PARTS can be link as bones, using sl::BODY_BONES which gives the BODY_PARTS pair for each
                             Console.WriteLine(" Keypoints 3D ");
-                            for (int i = 0; i < (int)sl.BODY_PARTS_POSE_18.LAST; i++)
+                            for (int i = 0; i < (int)sl.BODY_PARTS.LAST; i++)
                             {
                                 var kp = firstObject.keypoints[i];
                                 Console.WriteLine("     " + (sl.BODY_PARTS)i + " " + kp.X + ", " + kp.Y + ", " + kp.Z);
