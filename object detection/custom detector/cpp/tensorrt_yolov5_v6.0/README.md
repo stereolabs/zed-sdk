@@ -30,7 +30,7 @@ This sample is a fork from [wang-xinyu/tensorrtx](https://github.com/wang-xinyu/
 
 ### 1. (Optional for first run) Generate .wts from pytorch with .pt
 
-**This file has already been generated and can be downloaded [here](https://download.stereolabs.com/sample_custom_objects/yolov5s.wts.zip)** (and needs to be unzipped) to run the sample. 
+**This file has already been generated and can be downloaded [here](https://download.stereolabs.com/sample_custom_objects/yolov5s_v6.0.wts.zip)** (and needs to be unzipped) to run the sample. 
 
 This procedure can be applied to other models (such as `l` or `m` variants) or custom dataset trained model.
 
@@ -42,7 +42,7 @@ git clone -b v6.0 https://github.com/ultralytics/yolov5.git
 wget https://github.com/ultralytics/yolov5/releases/download/v6.0/yolov5s.pt
 cp gen_wts.py {ultralytics}/yolov5
 cd {ultralytics}/yolov5
-python gen_wts.py yolov5s.pt
+python gen_wts.py -w yolov5s.pt
 # a file 'yolov5s.wts' will be generated.
 ```
 
