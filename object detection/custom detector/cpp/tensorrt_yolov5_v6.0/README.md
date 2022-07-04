@@ -70,9 +70,9 @@ TensorRT apply heavy optimisation by processing the network structure itself and
 ### 4. Running the sample with the engine generated
 
 ```sh
-./yolov5 -d [.engine] [optional svo filepath]  // deserialize and run inference
+./yolov5 -d [.engine] [zed camera id / optional svo filepath]  // deserialize and run inference
 # For example yolov5s
-./yolov5 -d yolov5s.engine
+./yolov5 -d yolov5s.engine 0  # 0  for zed camera id 0
 # With an SVO file
 ./yolov5 -d yolov5.engine ./foo.svo
 ```
