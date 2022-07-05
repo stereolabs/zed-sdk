@@ -67,9 +67,11 @@ TensorRT apply heavy optimisation by processing the network structure itself and
 
 # For example yolov5s
 ./yolov5_zed -s yolov5s.wts yolov5s.engine s
+# a file 'yolov5s.engine' will be generated.
 
 # For example Custom model with depth_multiple=0.17, width_multiple=0.25 in yolov5.yaml
-./yolov5_zed -s yolov5_custom.wts yolov5.engine c 0.17 0.25
+./yolov5_zed -s yolov5_custom.wts yolov5_custom.engine c 0.17 0.25
+# a file 'yolov5_custom.engine' will be generated.
 ```
 
 ### 4. Running the sample with the engine generated
