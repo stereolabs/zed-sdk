@@ -18,8 +18,8 @@ This sample is a fork from [wang-xinyu/tensorrtx](https://github.com/wang-xinyu/
 ## Config
 
 - Choose the model n/s/m/l/x/n6/s6/m6/l6/x6 from command line arguments.
-- Input shape defined in yololayer.h
-- Number of classes defined in yololayer.h, **DO NOT FORGET TO ADAPT THIS, If using your own model**
+- Input shape defined in yololayer.h  **DO NOT FORGET TO CHANGE INPUT HEIGHT AND WIDTH, IF USING CUSTOM MODEL**
+- Number of classes defined in yololayer.h, **DO NOT FORGET TO ADAPT THIS, IF USING CUSTOM MODEL**
 - FP16/FP32 can be selected by the macro in yolov5.cpp, FP16 is faster if the GPU support it (all jetsons or GeForce RTX cards), 
 - GPU id can be selected by the macro in yolov5.cpp
 - NMS thresh in yolov5.cpp
