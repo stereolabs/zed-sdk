@@ -63,23 +63,23 @@ If a custom model is used, let's say trained on another dataset than COCO, with 
 TensorRT apply heavy optimisation by processing the network structure itself and benchmarking all the available implementation of each inference function to take the fastest. The result in the inference engine. This process can take a few minutes so we usually want to generate it the first time than saving it for later reload. This step should be done at each model or weight change, but only once.
 
 ```sh
-./yolov5 -s [.wts] [.engine] [n/s/m/l/x/n6/s6/m6/l6/x6 or c/c6 gd gw]  // serialize model to plan file
+./yolov5_zed -s [.wts] [.engine] [n/s/m/l/x/n6/s6/m6/l6/x6 or c/c6 gd gw]  // serialize model to plan file
 
 # For example yolov5s
-./yolov5 -s yolov5s.wts yolov5s.engine s
+./yolov5_zed -s yolov5s.wts yolov5s.engine s
 
 # For example Custom model with depth_multiple=0.17, width_multiple=0.25 in yolov5.yaml
-./yolov5 -s yolov5_custom.wts yolov5.engine c 0.17 0.25
+./yolov5_zed -s yolov5_custom.wts yolov5.engine c 0.17 0.25
 ```
 
 ### 4. Running the sample with the engine generated
 
 ```sh
-./yolov5 -d [.engine] [zed camera id / optional svo filepath]  // deserialize and run inference
+./yolov5_zed -d [.engine] [zed camera id / optional svo filepath]  // deserialize and run inference
 
 # For example yolov5s
-./yolov5 -d yolov5s.engine 0      # 0  for zed camera id 0
+./yolov5_zed -d yolov5s.engine 0      # 0  for zed camera id 0
 
 # With an SVO file
-./yolov5 -d yolov5.engine ./foo.svo
+./yolov5_zed -d yolov5.engine ./foo.svo
 ```
