@@ -38,10 +38,13 @@ The goal is to export the PyTorch model `.pt` into a easily readable weight file
 
 ```sh
 git clone -b v6.0 https://github.com/ultralytics/yolov5.git
+
 # Download the pretrained weight file
 wget https://github.com/ultralytics/yolov5/releases/download/v6.0/yolov5s.pt
 cp gen_wts.py {ultralytics}/yolov5
 cd {ultralytics}/yolov5
+
+# convert .pt to .wts using gen_wts.py file
 python gen_wts.py -w yolov5s.pt
 # a file 'yolov5s.wts' will be generated.
 ```
@@ -49,7 +52,7 @@ python gen_wts.py -w yolov5s.pt
 
 ### 2. Build the sample
 
-If a custom model is used, let's say trained on another dataset than COCO, with a different number of classes, `CLASS_NUM` in yololayer.h must be updated accordingly.
+If a custom model is used, let's say trained on another dataset than COCO, with a different number of classes, `CLASS_NUM` , `INPUT_H` and `INPUT_W` in yololayer.h must be updated accordingly.
 
  - Build for [Windows](https://www.stereolabs.com/docs/app-development/cpp/windows/)
  - Build for [Linux/Jetson](https://www.stereolabs.com/docs/app-development/cpp/linux/)
@@ -61,8 +64,10 @@ TensorRT apply heavy optimisation by processing the network structure itself and
 
 ```sh
 ./yolov5 -s [.wts] [.engine] [n/s/m/l/x/n6/s6/m6/l6/x6 or c/c6 gd gw]  // serialize model to plan file
+
 # For example yolov5s
 ./yolov5 -s yolov5s.wts yolov5s.engine s
+
 # For example Custom model with depth_multiple=0.17, width_multiple=0.25 in yolov5.yaml
 ./yolov5 -s yolov5_custom.wts yolov5.engine c 0.17 0.25
 ```
@@ -71,8 +76,10 @@ TensorRT apply heavy optimisation by processing the network structure itself and
 
 ```sh
 ./yolov5 -d [.engine] [zed camera id / optional svo filepath]  // deserialize and run inference
+
 # For example yolov5s
-./yolov5 -d yolov5s.engine 0  # 0  for zed camera id 0
+./yolov5 -d yolov5s.engine 0      # 0  for zed camera id 0
+
 # With an SVO file
 ./yolov5 -d yolov5.engine ./foo.svo
 ```
