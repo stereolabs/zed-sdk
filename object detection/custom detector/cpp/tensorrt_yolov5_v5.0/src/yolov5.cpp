@@ -335,7 +335,7 @@ int main(int argc, char** argv) {
     if (!parse_args(argc, argv, wts_name, engine_name, is_p6, gd, gw)) {
         std::cerr << "arguments not right!" << std::endl;
         std::cerr << "./yolov5 -s [.wts] [.engine] [s/m/l/x/s6/m6/l6/x6 or c/c6 gd gw]  // serialize model to plan file" << std::endl;
-        std::cerr << "./yolov5 -d [.engine] ZED_input_option  // deserialize plan file and run inference" << std::endl;
+        std::cerr << "./yolov5 -d [.engine] [zed camera id / optional svo filepath]  // deserialize plan file and run inference" << std::endl;
         return -1;
     }
 

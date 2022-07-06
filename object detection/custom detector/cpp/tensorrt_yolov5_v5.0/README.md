@@ -18,8 +18,8 @@ This sample is a fork from [wang-xinyu/tensorrtx](https://github.com/wang-xinyu/
 ## Config
 
 - Choose the model s/m/l/x/s6/m6/l6/x6 from command line arguments.
-- Input shape defined in yololayer.h
-- Number of classes defined in yololayer.h, **DO NOT FORGET TO ADAPT THIS, If using your own model**
+- Input shape defined in yololayer.h    **DO NOT FORGET TO CHANGE INPUT HEIGHT AND WIDTH, IF USING CUSTOM MODEL**
+- Number of classes defined in yololayer.h, **DO NOT FORGET TO ADAPT THIS, IF USING CUSTOM MODEL**
 - FP16/FP32 can be selected by the macro in yolov5.cpp, FP16 is faster if the GPU support it (all jetsons or GeForce RTX cards), 
 - GPU id can be selected by the macro in yolov5.cpp
 - NMS thresh in yolov5.cpp
@@ -38,18 +38,20 @@ The goal is to export the PyTorch model `.pt` into a easily readable weight file
 
 ```sh
 git clone -b v5.0 https://github.com/ultralytics/yolov5.git
+
 # Download the pretrained weight file
 wget https://github.com/ultralytics/yolov5/releases/download/v5.0/yolov5s.pt
 cp gen_wts.py {ultralytics}/yolov5
 cd {ultralytics}/yolov5
-python gen_wts.py yolov5s.pt
+
+python gen_wts.py -w yolov5s.pt
 # a file 'yolov5s.wts' will be generated.
 ```
 
 
 ### 2. Build the sample
 
-If a custom model is used, let's say trained on another dataset than COCO, with a different number of classes, `CLASS_NUM` in yololayer.h must be updated accordingly.
+If a custom model is used, let's say trained on another dataset than COCO, with a different number of classes, `CLASS_NUM` , `INPUT_H` and `INPUT_W`  in yololayer.h must be updated accordingly.
 
  - Build for [Windows](https://www.stereolabs.com/docs/app-development/cpp/windows/)
  - Build for [Linux/Jetson](https://www.stereolabs.com/docs/app-development/cpp/linux/)
@@ -60,19 +62,25 @@ If a custom model is used, let's say trained on another dataset than COCO, with 
 TensorRT apply heavy optimisation by processing the network structure itself and benchmarking all the available implementation of each inference function to take the fastest. The result in the inference engine. This process can take a few minutes so we usually want to generate it the first time than saving it for later reload. This step should be done at each model or weight change, but only once.
 
 ```sh
-./yolov5 -s [.wts] [.engine] [s/m/l/x/s6/m6/l6/x6 or c/c6 gd gw]  // serialize model to plan file
+./yolov5_zed -s [.wts] [.engine] [s/m/l/x/s6/m6/l6/x6 or c/c6 gd gw]  // serialize model to plan file
+
 # For example yolov5s
-./yolov5 -s yolov5s.wts yolov5s.engine s
+./yolov5_zed -s yolov5s.wts yolov5s.engine s
+# a file 'yolov5s.engine' will be generated.
+
 # For example Custom model with depth_multiple=0.17, width_multiple=0.25 in yolov5.yaml
-./yolov5 -s yolov5_custom.wts yolov5.engine c 0.17 0.25
+./yolov5_zed -s yolov5_custom.wts yolov5_custom.engine c 0.17 0.25
+# a file 'yolov5_custom.engine' will be generated.
 ```
 
 ### 4. Running the sample with the engine generated
 
 ```sh
-./yolov5 -d [.engine] [optional svo filepath]  // deserialize and run inference
+./yolov5_zed -d [.engine] [zed camera id / optional svo filepath]    // deserialize and run inference
+
 # For example yolov5s
-./yolov5 -d yolov5s.engine
+./yolov5_zed -d yolov5s.engine 0      # 0  for zed camera id 0
+
 # With an SVO file
-./yolov5 -d yolov5.engine ./foo.svo
+./yolov5_zed -d yolov5.engine ./foo.svo
 ```
