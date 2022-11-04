@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
 	init_param.enable_image_enhancement = true;
 	init_param.svo_real_time_mode = true;
 	init_param.depth_mode = SL_DEPTH_MODE_PERFORMANCE;
-	init_param.depth_stabilization = true;
+	init_param.depth_stabilization = 1;
 	init_param.depth_maximum_distance = 40;
 	init_param.depth_minimum_distance = -1;
 	init_param.coordinate_unit = SL_UNIT_METER;

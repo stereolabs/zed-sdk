@@ -40,9 +40,9 @@ int main(int argc, char **argv) {
     Camera zed;
     // Set configuration parameters for the ZED
     InitParameters init_parameters;
-    init_parameters.depth_mode = DEPTH_MODE::NEURAL;
+    init_parameters.depth_mode = DEPTH_MODE::ULTRA;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
-    //init_parameters.sdk_verbose = 6;
+    init_parameters.sdk_verbose = 1;
     parseArgs(argc, argv, init_parameters);
 
     // Open the camera
@@ -53,11 +53,12 @@ int main(int argc, char **argv) {
     }
 
     auto camera_config = zed.getCameraInformation().camera_configuration;
+    auto stream = zed.getCUDAStream();
 
     // Point cloud viewer
     GLViewer viewer;
     // Initialize point cloud viewer 
-    GLenum errgl = viewer.init(argc, argv, camera_config.calibration_parameters.left_cam);
+    GLenum errgl = viewer.init(argc, argv, camera_config.calibration_parameters.left_cam, stream);
     if (errgl != GLEW_OK) {
         print("Error OpenGL: " + std::string((char*)glewGetErrorString(errgl)));
         return EXIT_FAILURE;
@@ -69,7 +70,7 @@ int main(int argc, char **argv) {
     runParameters.texture_confidence_threshold = 100;
 
     // Allocation of 4 channels of float on GPU
-    Mat point_cloud(camera_config.resolution, MAT_TYPE::F32_C4, MEM::GPU);
+    Mat point_cloud(camera_config.resolution, MAT_TYPE::F32_C4, sl::MEM::GPU);
 
     // Main Loop
     while (viewer.isAvailable()) {        

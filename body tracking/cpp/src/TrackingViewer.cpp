@@ -21,7 +21,7 @@ void render_2D(cv::Mat &left_display, sl::float2 img_scale, std::vector<sl::Obje
                 cv::Scalar color = generateColorID_u(obj.id);
 				if (body_format == sl::BODY_FORMAT::POSE_18) {
 					// skeleton bones
-					for (const auto& parts : SKELETON_BONES) {
+					for (const auto& parts : sl::BODY_BONES) {
 						auto kp_a = cvt(obj.keypoint_2d[getIdx(parts.first)], img_scale);
 						auto kp_b = cvt(obj.keypoint_2d[getIdx(parts.second)], img_scale);
 						if (roi_render.contains(kp_a) && roi_render.contains(kp_b))

@@ -19,7 +19,7 @@ find_package(GLUT REQUIRED)
 find_package(GLEW REQUIRED)
 
 include_directories(${ZED_INCLUDE_DIRS})
-include_directories(${GLUT_INCLUDE_PATH})
+include_directories(${GLUT_INCLUDE_DIR})
 include_directories(${GLEW_INCLUDE_DIRS})
 include_directories(${OPENGL_INCLUDE_DIRS})
 include_directories(${CUDA_INCLUDE_DIRS})

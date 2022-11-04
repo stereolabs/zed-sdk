@@ -132,7 +132,6 @@ int main(int argc, char **argv) {
     // Set configuration parameters for the ZED
     InitParameters init_parameters;
     init_parameters.depth_mode = DEPTH_MODE::NONE;
-    init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
     init_parameters.sdk_verbose = true;
 
     string stream_params;

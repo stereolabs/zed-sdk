@@ -22,7 +22,7 @@ find_package(OpenGL REQUIRED)
 include_directories(${ZED_INCLUDE_DIRS})
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${GLEW_INCLUDE_DIRS})
-include_directories(${GLUT_INCLUDE_PATH})
+include_directories(${GLUT_INCLUDE_DIR})
 include_directories(${CUDA_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 

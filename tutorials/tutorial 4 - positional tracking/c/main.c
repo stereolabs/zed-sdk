@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
 	init_param.enable_image_enhancement = true;
 	init_param.svo_real_time_mode = true;
 	init_param.depth_mode = SL_DEPTH_MODE_PERFORMANCE;
-	init_param.depth_stabilization = true;
+	init_param.depth_stabilization = 1;
 	init_param.depth_maximum_distance = 40;
 	init_param.depth_minimum_distance = -1;
 	init_param.coordinate_unit = SL_UNIT_METER;
@@ -63,6 +63,7 @@ int main(int argc, char **argv) {
 	tracking_param.enable_area_memory = true;
 	tracking_param.enable_imu_fusion = true;
 	tracking_param.enable_pose_smothing = false;
+	tracking_param.depth_min_range = -1;
 
 	struct SL_Vector3  position;
 	position = (struct SL_Vector3) { .x = 0, .y = 0, .z = 0 };
@@ -86,6 +87,7 @@ int main(int argc, char **argv) {
 	rt_param.reference_frame = SL_REFERENCE_FRAME_CAMERA;
 	rt_param.sensing_mode = SL_SENSING_MODE_STANDARD;
 	rt_param.texture_confidence_threshold = 100;
+	rt_param.remove_saturated_areas = true;
 
 	int width = sl_get_width(camera_id);
 	int height = sl_get_height(camera_id);
