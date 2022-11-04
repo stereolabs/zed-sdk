@@ -18,6 +18,8 @@ If you need help or more informations check our [Support](https://support.stereo
 
 * **Camera Control** - This sample shows how to adjust the ZED camera parameters.
 
+* **Camera ROI** - This sample shows how to use Region of Interest to control Gain, Exposure, and White Balance zones, or to set a zone of the image to focus for ZED SDK processing.
+
 * **Camera Streaming** - This sample shows how to stream and receive on local network the ZED's video feed.
 
 * **Depth Sensing** - This sample shows how to capture a 3D point cloud and display with OpenGL. It also shows how to save depth data in different formats.
