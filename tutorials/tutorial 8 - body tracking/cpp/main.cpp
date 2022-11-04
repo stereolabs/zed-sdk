@@ -34,67 +34,6 @@
 using namespace std;
 using namespace sl;
 
-std::string printBodyParts(BODY_PARTS part) {
-    std::string out;
-    switch (part) {
-        case BODY_PARTS::NOSE:
-            out = "Nose";
-            break;
-        case BODY_PARTS::NECK:
-            out = "Neck";
-            break;
-        case BODY_PARTS::RIGHT_SHOULDER:
-            out = "R Shoulder";
-            break;
-        case BODY_PARTS::RIGHT_ELBOW:
-            out = "R Elbow";
-            break;
-        case BODY_PARTS::RIGHT_WRIST:
-            out = "R Wrist";
-            break;
-        case BODY_PARTS::LEFT_SHOULDER:
-            out = "L Shoulder";
-            break;
-        case BODY_PARTS::LEFT_ELBOW:
-            out = "L Elbow";
-            break;
-        case BODY_PARTS::LEFT_WRIST:
-            out = "L Wrist";
-            break;
-        case BODY_PARTS::RIGHT_HIP:
-            out = "R Hip";
-            break;
-        case BODY_PARTS::RIGHT_KNEE:
-            out = "R Knee";
-            break;
-        case BODY_PARTS::RIGHT_ANKLE:
-            out = "R Ankle";
-            break;
-        case BODY_PARTS::LEFT_HIP:
-            out = "L Hip";
-            break;
-        case BODY_PARTS::LEFT_KNEE:
-            out = "L Knee";
-            break;
-        case BODY_PARTS::LEFT_ANKLE:
-            out = "L Ankle";
-            break;
-        case BODY_PARTS::RIGHT_EYE:
-            out = "R Eye";
-            break;
-        case BODY_PARTS::LEFT_EYE:
-            out = "L Eye";
-            break;
-        case BODY_PARTS::RIGHT_EAR:
-            out = "R Ear";
-            break;
-        case BODY_PARTS::LEFT_EAR:
-            out = "L Ear";
-            break;
-    }
-    return out;
-}
-
 int main(int argc, char** argv) {
     // Create ZED objects
     Camera zed;
@@ -171,14 +110,14 @@ int main(int argc, char** argv) {
                     // to get the BODY_PARTS index the getIdx function is available
                     for (int i = 0; i < first_object.keypoint_2d.size(); i++) {
                         auto &kp = first_object.keypoint_2d[i];
-                        cout << "    " << printBodyParts((BODY_PARTS) i) << " " << kp.x << ", " << kp.y << "\n";
+                        cout << "    " << ((BODY_PARTS) i) << " " << kp.x << ", " << kp.y << "\n";
                     }
 
                     // The BODY_PARTS can be link as bones, using sl::BODY_BONES which gives the BODY_PARTS pair for each
                     cout << " Keypoints 3D \n";
                     for (int i = 0; i < first_object.keypoint.size(); i++) {
                         auto &kp = first_object.keypoint[i];
-                        cout << "    " << printBodyParts((BODY_PARTS) i) << " " << kp.x << ", " << kp.y << ", " << kp.z << "\n";
+                        cout << "    " << ((BODY_PARTS) i) << " " << kp.x << ", " << kp.y << ", " << kp.z << "\n";
                     }
 
                     cout << "\nPress 'Enter' to continue...\n";

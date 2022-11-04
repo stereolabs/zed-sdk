@@ -171,7 +171,7 @@ public:
 
     // Initialize Opengl and Cuda buffers
     // Warning: must be called in the Opengl thread
-    void initialize(sl::Resolution res);
+    void initialize(sl::Resolution res, CUstream strm);
     // Push a new point cloud
     // Warning: can be called from any thread but the mutex "mutexData" must be locked
     void pushNewPC(sl::Mat &matXYZRGBA);
@@ -194,6 +194,7 @@ private:
     float* xyzrgbaMappedBuf_;
     GLuint bufferGLID_;
     cudaGraphicsResource* bufferCudaID_;
+    CUstream strm;
 };
 
 // This class manages input events, window and Opengl rendering pipeline
@@ -203,7 +204,7 @@ public:
     ~GLViewer();
     bool isAvailable();
 
-    GLenum init(int argc, char **argv, sl::CameraParameters param);
+    GLenum init(int argc, char **argv, sl::CameraParameters param, CUstream strm);
     void updatePointCloud(sl::Mat &matXYZRGBA);
 
     void exit();

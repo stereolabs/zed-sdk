@@ -270,7 +270,7 @@ void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs
 			auto clr_id = generateColorID(objs[i].id);
 			if (objs[i].keypoint.size()) {
 				if (body_format_ == sl::BODY_FORMAT::POSE_18) {
-					for (auto& limb : SKELETON_BONES) {
+					for (auto& limb : sl::BODY_BONES) {
 						sl::float3 kp_1 = objs[i].keypoint[getIdx(limb.first)];
 						sl::float3 kp_2 = objs[i].keypoint[getIdx(limb.second)];
 						float norm_1 = kp_1.norm();

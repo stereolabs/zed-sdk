@@ -105,7 +105,7 @@ Simple3DObject createFrustum(sl::CameraParameters param) {
 
 void CloseFunc(void) { if(currentInstance_)  currentInstance_->exit();}
 
-GLenum GLViewer::init(int argc, char **argv, sl::CameraParameters param) {
+GLenum GLViewer::init(int argc, char **argv, sl::CameraParameters param, CUstream strm_) {
 
     glutInit(&argc, argv);
     int wnd_w = glutGet(GLUT_SCREEN_WIDTH);
@@ -123,7 +123,7 @@ GLenum GLViewer::init(int argc, char **argv, sl::CameraParameters param) {
     glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
     glEnable(GL_DEPTH_TEST);
 
-    pointCloud_.initialize(param.image_size);
+    pointCloud_.initialize(param.image_size, strm_);
 
     // Compile and create the shader
     shader_ = Shader(VERTEX_SHADER, FRAGMENT_SHADER);
@@ -532,11 +532,12 @@ void PointCloud::close() {
     }
 }
 
-void PointCloud::initialize(sl::Resolution res) {
+void PointCloud::initialize(sl::Resolution res, CUstream strm_) {
     glGenBuffers(1, &bufferGLID_);
     glBindBuffer(GL_ARRAY_BUFFER, bufferGLID_);
     glBufferData(GL_ARRAY_BUFFER, res.area() * 4 * sizeof(float), 0, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+    strm = strm_;
     
     checkError(cudaGraphicsGLRegisterBuffer(&bufferCudaID_, bufferGLID_, cudaGraphicsRegisterFlagsNone));
 
@@ -551,14 +552,14 @@ void PointCloud::initialize(sl::Resolution res) {
 
 void PointCloud::pushNewPC(sl::Mat &matXYZRGBA) {
     if (matGPU_.isInit()) {
-        matGPU_.setFrom(matXYZRGBA, sl::COPY_TYPE::GPU_GPU);
+        matGPU_.setFrom(matXYZRGBA, sl::COPY_TYPE::GPU_GPU, strm);
         hasNewPCL_ = true;
     }
 }
 
 void PointCloud::update() {
     if (hasNewPCL_ && matGPU_.isInit()) {
-        checkError(cudaMemcpy(xyzrgbaMappedBuf_, matGPU_.getPtr<sl::float4>(sl::MEM::GPU), numBytes_, cudaMemcpyDeviceToDevice));
+        checkError(cudaMemcpyAsync(xyzrgbaMappedBuf_, matGPU_.getPtr<sl::float4>(sl::MEM::GPU), numBytes_, cudaMemcpyDeviceToDevice, strm));
         hasNewPCL_ = false;
     }
 }

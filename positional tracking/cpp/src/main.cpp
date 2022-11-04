@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
 #if IMU_ONLY
     SensorsData sensors_data;
 #endif
-    
+
     while (viewer.isAvailable()) {
         if (zed.grab() == ERROR_CODE::SUCCESS) {
             // Get the position of the camera in a fixed reference frame (the World Frame)
@@ -151,4 +151,3 @@ void parseArgs(int argc, char **argv, sl::InitParameters& param) {
         // Default
     }
 }
-
