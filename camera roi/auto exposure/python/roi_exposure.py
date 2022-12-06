@@ -24,44 +24,18 @@
 """
 
 import cv2
+import numpy as np
 import pyzed.sl as sl
 
 camera_settings = sl.VIDEO_SETTINGS.BRIGHTNESS
 str_camera_settings = "BRIGHTNESS"
 step_camera_settings = 1
 
+cam = sl.Camera()
 
-def main():
-    print("Running...")
-    init = sl.InitParameters()
-    cam = sl.Camera()
-    if not cam.is_opened():
-        print("Opening ZED Camera...")
-    status = cam.open(init)
-    if status != sl.ERROR_CODE.SUCCESS:
-        print(repr(status))
-        exit()
-
-    runtime = sl.RuntimeParameters()
-    mat = sl.Mat()
-
-    print_camera_information(cam)
-    print_help()
-
-    key = ''
-    while key != 113:  # for 'q' key
-        err = cam.grab(runtime)
-        if err == sl.ERROR_CODE.SUCCESS:
-            cam.retrieve_image(mat, sl.VIEW.LEFT)
-            cv2.imshow("ZED", mat.get_data())
-            key = cv2.waitKey(5)
-            settings(key, cam, runtime, mat)
-        else:
-            key = cv2.waitKey(5)
-    cv2.destroyAllWindows()
-
-    cam.close()
-    print("\nFINISH")
+drawing = False
+selection_rect = sl.Rect(0,0,0,0)
+origin_rect = (-1, -1)
 
 
 def print_camera_information(cam):
@@ -73,102 +47,88 @@ def print_camera_information(cam):
 
 def print_help():
     print("Help for camera setting controls")
-    print("  Increase camera settings value:     +")
-    print("  Decrease camera settings value:     -")
-    print("  Switch camera settings:             s")
-    print("  Reset all parameters:               r")
-    print("  Record a video:                     z")
+    print("  Reset exposure ROI to full image:   r")
     print("  Quit:                               q\n")
 
 
-def settings(key, cam, runtime, mat):
-    if key == 115:  # for 's' key
-        switch_camera_settings()
-    elif key == 43:  # for '+' key
-        current_value = cam.get_camera_settings(camera_settings)
-        cam.set_camera_settings(camera_settings, current_value + step_camera_settings)
-        print(str_camera_settings + ": " + str(current_value + step_camera_settings))
-    elif key == 45:  # for '-' key
-        current_value = cam.get_camera_settings(camera_settings)
-        if current_value >= 1:
-            cam.set_camera_settings(camera_settings, current_value - step_camera_settings)
-            print(str_camera_settings + ": " + str(current_value - step_camera_settings))
-    elif key == 114:  # for 'r' key
-        cam.set_camera_settings(sl.VIDEO_SETTINGS.BRIGHTNESS, -1)
-        cam.set_camera_settings(sl.VIDEO_SETTINGS.CONTRAST, -1)
-        cam.set_camera_settings(sl.VIDEO_SETTINGS.HUE, -1)
-        cam.set_camera_settings(sl.VIDEO_SETTINGS.SATURATION, -1)
-        cam.set_camera_settings(sl.VIDEO_SETTINGS.SHARPNESS, -1)
-        cam.set_camera_settings(sl.VIDEO_SETTINGS.GAIN, -1)
-        cam.set_camera_settings(sl.VIDEO_SETTINGS.EXPOSURE, -1)
-        cam.set_camera_settings(sl.VIDEO_SETTINGS.WHITEBALANCE_TEMPERATURE, -1)
-        print("Camera settings: reset")
-    elif key == 122:  # for 'z' key
-        record(cam, runtime, mat)
+# mouse callback function
+def draw_rect(event,x,y,flags,param):
+    global drawing, selection_rect, origin_rect
+
+    if event == cv2.EVENT_LBUTTONDOWN:
+        drawing = True
+        origin_rect = (x, y)
+    elif event == cv2.EVENT_LBUTTONUP:
+        drawing = False
+        cam.set_camera_settings_roi(sl.VIDEO_SETTINGS.AEC_AGC_ROI, selection_rect, sl.SIDE.BOTH)
+
+    if drawing:
+        selection_rect.x = min(x, origin_rect[0])
+        selection_rect.y = min(y, origin_rect[1])
+        selection_rect.width = abs(x - origin_rect[0]) + 1
+        selection_rect.height = abs(y - origin_rect[1]) + 1
 
 
-def switch_camera_settings():
-    global camera_settings
-    global str_camera_settings
-    if camera_settings == sl.VIDEO_SETTINGS.BRIGHTNESS:
-        camera_settings = sl.VIDEO_SETTINGS.CONTRAST
-        str_camera_settings = "Contrast"
-        print("Camera settings: CONTRAST")
-    elif camera_settings == sl.VIDEO_SETTINGS.CONTRAST:
-        camera_settings = sl.VIDEO_SETTINGS.HUE
-        str_camera_settings = "Hue"
-        print("Camera settings: HUE")
-    elif camera_settings == sl.VIDEO_SETTINGS.HUE:
-        camera_settings = sl.VIDEO_SETTINGS.SATURATION
-        str_camera_settings = "Saturation"
-        print("Camera settings: SATURATION")
-    elif camera_settings == sl.VIDEO_SETTINGS.SATURATION:
-        camera_settings = sl.VIDEO_SETTINGS.SHARPNESS
-        str_camera_settings = "Sharpness"
-        print("Camera settings: Sharpness")
-    elif camera_settings == sl.VIDEO_SETTINGS.SHARPNESS:
-        camera_settings = sl.VIDEO_SETTINGS.GAIN
-        str_camera_settings = "Gain"
-        print("Camera settings: GAIN")
-    elif camera_settings == sl.VIDEO_SETTINGS.GAIN:
-        camera_settings = sl.VIDEO_SETTINGS.EXPOSURE
-        str_camera_settings = "Exposure"
-        print("Camera settings: EXPOSURE")
-    elif camera_settings == sl.VIDEO_SETTINGS.EXPOSURE:
-        camera_settings = sl.VIDEO_SETTINGS.WHITEBALANCE_TEMPERATURE
-        str_camera_settings = "White Balance"
-        print("Camera settings: WHITEBALANCE")
-    elif camera_settings == sl.VIDEO_SETTINGS.WHITEBALANCE_TEMPERATURE:
-        camera_settings = sl.VIDEO_SETTINGS.BRIGHTNESS
-        str_camera_settings = "Brightness"
-        print("Camera settings: BRIGHTNESS")
+def main():
+    global drawing, selection_rect, cam
+    #create camera object
+    print("Running...")
+    init = sl.InitParameters()
+    # init.camera_resolution=sl.resolution.HD2K
+
+    #open the camera
+    if not cam.is_opened():
+        print("Opening ZED Camera...")
+    status = cam.open(init)
+    if status != sl.ERROR_CODE.SUCCESS:
+        print(repr(status))
+        exit()
+
+    runtime = sl.RuntimeParameters()
+    mat = sl.Mat()
 
 
-def record(cam, runtime, mat):
-    vid = sl.ERROR_CODE.FAILURE
-    out = False
-    while vid != sl.ERROR_CODE.SUCCESS and not out:
-        filepath = input("Enter filepath name: ")
-        record_param = sl.RecordingParameters(filepath)
-        vid = cam.enable_recording(record_param)
-        print(repr(vid))
-        if vid == sl.ERROR_CODE.SUCCESS:
-            print("Recording started...")
-            out = True
-            print("Hit spacebar to stop recording: ")
-            key = False
-            while key != 32:  # for spacebar
-                err = cam.grab(runtime)
-                if err == sl.ERROR_CODE.SUCCESS:
-                    cam.retrieve_image(mat)
-                    cv2.imshow("ZED", mat.get_data())
-                    key = cv2.waitKey(5)
+    #create mouse callback
+    win_name = "ROI Exposure"
+    cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
+    cv2.setMouseCallback(win_name, draw_rect)
+
+    print_camera_information(cam)
+    print_help()
+
+    #capute new images until 'q' is pressed
+    key = ''
+    while key != 113:  # for 'q' key
+        #Check that a new image is successfully acquired
+        err = cam.grab(runtime)
+        if err == sl.ERROR_CODE.SUCCESS:
+            #retrieve the left image
+            cam.retrieve_image(mat, sl.VIEW.LEFT)
+            cvImage = mat.get_data()
+
+            #Check that selection rectangle is valid and draw it on the image
+            
+            if (not selection_rect.is_empty() ):# and selection_rect.is_contained(sl.resolution(mat.cols, mat.rows))):
+                cv2.rectangle(cvImage,(selection_rect.x,selection_rect.y,selection_rect.width, selection_rect.height),(220, 180, 20), 2)
+            cv2.imshow(win_name, cvImage)
         else:
-            print("Help: you must enter the filepath + filename + SVO extension.")
-            print("Recording not started.")
-    cam.disable_recording()
-    print("Recording finished.")
+            print("Error during capture : ", err)
+            break
+        
+        #Change camera settings with keyboard 
+        key = cv2.waitKey(10)
+        if key == 114:  # for 'r' key
+            drawing = False
+            selection_rect = sl.Rect(0,0,0,0)
+            print("reset AEC_AGC_ROI to full res")
+            cam.set_camera_settings_roi(sl.VIDEO_SETTINGS.AEC_AGC_ROI, selection_rect, reset=True)
+
+
     cv2.destroyAllWindows()
+
+    cam.close()
+    print("\nFINISH")
+
 
 if __name__ == "__main__":
     main()
