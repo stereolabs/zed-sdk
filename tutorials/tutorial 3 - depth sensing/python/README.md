@@ -40,20 +40,18 @@ Retrieving the depth map is as simple as retrieving an image:
 * We create a Mat to store the depth map.
 * We call retrieve_measure() to get the depth map.
 
-```
+```python
 # Capture 50 images and depth, then stop
 i = 0
 image = sl.Mat()
 depth = sl.Mat()
-while (i < 50) :
+while i < 50 :
     # Grab an image
-    if (zed.grab() == sl.ERROR_CODE.SUCCESS) :
+    if zed.grab() == sl.ERROR_CODE.SUCCESS :
         # A new image is available if grab() returns SUCCESS
         zed.retrieve_image(image, sl.VIEW.LEFT) # Get the left image
         zed.retrieve_measure(depth, sl.MEASURE.DEPTH) # Retrieve depth Mat. Depth is aligned on the left image
         i = i + 1
-    }
-}
 ```
 
 
@@ -73,7 +71,7 @@ printf("Distance to Camera at (", x, y, "): ", distance, "mm")
 
 Once 50 frames have been grabbed, we close the camera.
 
-```
+```python
 # Close the camera
 zed.close()
 ```
