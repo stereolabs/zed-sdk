@@ -73,7 +73,7 @@ In the console window, you should now see the serial number of the camera (also 
 
 To close the camera properly, use zed.close() and exit the program.
 
-```
+```python
 # Close the camera
 zed.close()
 return 0
