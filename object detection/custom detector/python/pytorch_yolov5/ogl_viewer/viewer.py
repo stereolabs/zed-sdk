@@ -399,7 +399,7 @@ class GLViewer:
         glutInitWindowSize(wnd_w, wnd_h)
         glutInitWindowPosition(int(wnd_w * 0.05), int(wnd_h * 0.05))
 
-        glutInitDisplayMode(GLUT_DOUBLE | GLUT_SRGB | GLUT_DEPTH)
+        glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)
         glutCreateWindow("ZED Object Detection")
         glViewport(0, 0, wnd_w, wnd_h)
 
