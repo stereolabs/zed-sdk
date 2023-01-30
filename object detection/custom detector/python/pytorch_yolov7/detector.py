@@ -9,11 +9,11 @@ import cv2
 import pyzed.sl as sl
 import torch.backends.cudnn as cudnn
 
-sys.path.insert(0, './yolov5')
+sys.path.insert(0, './yolov7')
 from models.experimental import attempt_load
 from utils.general import check_img_size, non_max_suppression, scale_coords, xyxy2xywh
 from utils.torch_utils import select_device
-from utils.augmentations import letterbox
+from models.common import letterbox
 
 from threading import Lock, Thread
 from time import sleep
