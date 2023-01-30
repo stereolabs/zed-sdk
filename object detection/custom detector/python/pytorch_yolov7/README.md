@@ -9,20 +9,20 @@ This sample shows how to detect custom objects using the official Pytorch implem
 
 ## Setting up
 
- - Clone Yolov5 into the current folder
+ - Clone Yolov7 into the current folder
 
 ```sh
-git clone https://github.com/ultralytics/yolov5
+git clone https://github.com/WongKinYiu/yolov7
 # Install the dependencies if needed
-cd yolov5
+cd yolov7
 pip install -r requirements.txt
 ```
 
-- Download a model file (or prepare your own) https://github.com/ultralytics/yolov5/releases
+- Download a model file (or prepare your own) https://github.com/WongKinYiu/yolov7/releases/tag/v0.1
 
 ```
 # Downloading by commmand line
-wget https://github.com/ultralytics/yolov5/releases/download/v6.0/yolov5m.pt
+wget https://github.com/WongKinYiu/yolov7/releases/download/v0.1/yolov7.pt
 ```
 
 ## Run the program
@@ -30,7 +30,7 @@ wget https://github.com/ultralytics/yolov5/releases/download/v6.0/yolov5m.pt
 *NOTE: The ZED v1 is not compatible with this module*
 
 ```
-python detector.py --weights yolov5m.pt # [--img_size 512 --conf_thres 0.1 --svo path/to/file.svo]
+python detector.py --weights yolov7.pt # [--img_size 512 --conf_thres 0.1 --svo path/to/file.svo]
 ```
 
 ### Features
@@ -41,7 +41,7 @@ python detector.py --weights yolov5m.pt # [--img_size 512 --conf_thres 0.1 --svo
 
 ## Training your own model
 
-This sample can use any model trained with YOLOv5, including custom trained one. For a getting started on how to trained a model on a custom dataset with YOLOv5, see here https://docs.ultralytics.com/tutorials/train-custom-datasets/
+This sample can use any model trained with YOLOv7, including custom trained one. For a getting started on how to trained a model on a custom dataset with YOLOv7, see here example notebook https://colab.research.google.com/drive/1X9A8odmK4k6l26NDviiT6dd6TgR-piOa 
 
 ## Support
 
