@@ -15,13 +15,13 @@ The ZED SDK Geotracking Playback sample demonstrates how to fuse pre-recorded GN
 
 Before using this sample, ensure that you have the following dependencies installed on your system:
 - ZED SDK: download and install from the official Stereolabs website (https://www.stereolabs.com/developers/release/).
-- ZEDub edge-cli: required for displaying the computed trajectory on a real-world map.
+- ZEDHub edge-cli: required for displaying the computed trajectory on a real-world map.
 
 ### Installation and Usage
 
 To use the ZED SDK Geotracking Playback sample, follow these steps:
 1. Download and install the ZED SDK on your system from the official Stereolabs website (https://www.stereolabs.com/developers/release/).
-2. Install the ZEDub edge-cli from the ZEDHub website.
+2. Install the ZEDHub edge-cli from the ZEDHub website.
 3. Open a terminal and navigate to the zed-geotracking-playback sample directory.
 4. Compile it.
 5. Run the zed-geotracking-playback executable, passing the path to the SVO file as the first input argument of the command line and the path to gnss file as second argument.
