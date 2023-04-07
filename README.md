@@ -93,8 +93,6 @@ This repository contains ready-to-use and samples to start using the ZED SDK wit
 
 * [**Recording**](/recording) - This sample shows how to **record** and **playback** video files in SVO format. SVO files let you use all the ZED SDK features without having a ZED connected.
 
-* **Other** - Other general samples that demonstrate the use of the ZED SDK.
-
 ## Supported platforms
 
 Here is the list of all supported operating systems for the latest version of the ZED SDK. Please find the [recommended specifications](https://www.stereolabs.com/docs/installation/specifications/) to make sure your configuration is compatible with the ZED SDK.
