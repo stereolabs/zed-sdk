@@ -8,5 +8,5 @@
 - Map on ZedHub with fused path on it
 
 ### Dependencies:
-- ZEDub edge-cli 
+- ZEDHub edge-cli 
 - lib gpsd for using GPS 
