@@ -14,7 +14,7 @@ This sample demonstrates how to use geotracking to achieve global scale localiza
 ### Dependencies
 
 Before using this sample, ensure that you have the following dependencies installed on your system:
-- ZEDub edge-cli: required for displaying the computed trajectory on a real-world map.
+- ZEDHub edge-cli: required for displaying the computed trajectory on a real-world map.
 - libgps-dev: required to use an external GNSS sensor.
 
 ### Installation and Usage
