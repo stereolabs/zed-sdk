@@ -213,7 +213,7 @@ class Simple3DObject:
         self.indices.append(len(self.indices))
 
     def add_vertical_faces(self, _pts, _clr):
-        # For each face, we need to add 4 quads (the first 2 indexes are always the top points of the quad)
+    	# For each face, we need to add 4 quads (the first 2 indexes are always the top points of the quad)
         quads = [[0, 3, 7, 4]       # Front face
                 , [3, 2, 6, 7]      # Right face
                 , [2, 1, 5, 6]      # Back face
@@ -506,25 +506,17 @@ class GLViewer:
 
                     self.create_bbox_rendering(bounding_box, color_id)
 
-                    keypoints = _objs.object_list[i].keypoint
-                    if len(keypoints):
-                        for limb in sl.BODY_BONES:
-                            kp_1 = keypoints[limb[0].value]
-                            kp_2 = keypoints[limb[1].value]
-                            if (np.isfinite(kp_1[0]) and np.isfinite(kp_2[0])):
-                                self.skeletons.add_line(kp_1, kp_2, color_id)
-
         self.mutex.release()
         
     def create_bbox_rendering(self, _bbox, _bbox_clr):
         # First create top and bottom full edges
-        self.BBox_edges.add_full_edges(_bbox, _bbox_clr)
-        # Add faded vertical edges
-        self.BBox_edges.add_vertical_edges(_bbox, _bbox_clr)
-        # Add faces
-        self.BBox_faces.add_vertical_faces(_bbox, _bbox_clr)
-        # Add top face
-        self.BBox_faces.add_top_face(_bbox, _bbox_clr)
+	    self.BBox_edges.add_full_edges(_bbox, _bbox_clr)
+	    # Add faded vertical edges
+	    self.BBox_edges.add_vertical_edges(_bbox, _bbox_clr)
+	    # Add faces
+	    self.BBox_faces.add_vertical_faces(_bbox, _bbox_clr)
+	    # Add top face
+	    self.BBox_faces.add_top_face(_bbox, _bbox_clr)
 
     def idle(self):
         if self.available:

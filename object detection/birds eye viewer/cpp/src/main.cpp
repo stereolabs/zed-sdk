@@ -70,17 +70,15 @@ int main(int argc, char **argv) {
     // Create ZED objects
     Camera zed;
     InitParameters init_parameters;
-    init_parameters.camera_resolution = RESOLUTION::HD1080;
-    init_parameters.sdk_verbose = 1;
-    // On Jetson (Nano, TX1/2) the object detection combined with an heavy depth mode could reduce the frame rate too much
-    init_parameters.depth_mode = isJetson ? DEPTH_MODE::PERFORMANCE : DEPTH_MODE::ULTRA;
+    init_parameters.depth_mode = DEPTH_MODE::ULTRA;
     init_parameters.depth_maximum_distance = 10.0f * 1000.0f;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
+    init_parameters.sdk_verbose = 1;
 
     parseArgs(argc, argv, init_parameters);
 
     // Open the camera
-    auto returned_state  = zed.open(init_parameters);
+    auto returned_state = zed.open(init_parameters);
     if (returned_state != ERROR_CODE::SUCCESS) {
         print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
@@ -96,12 +94,12 @@ int main(int argc, char **argv) {
     // Define the Objects detection module parameters
     ObjectDetectionParameters detection_parameters;
     detection_parameters.enable_tracking = true;
-    detection_parameters.enable_mask_output = false; // designed to give person pixel mask
-    detection_parameters.detection_model = isJetson ? DETECTION_MODEL::MULTI_CLASS_BOX : DETECTION_MODEL::MULTI_CLASS_BOX_ACCURATE;
+    detection_parameters.enable_segmentation = false; // designed to give person pixel mask
+    detection_parameters.detection_model = isJetson ? OBJECT_DETECTION_MODEL::MULTI_CLASS_BOX_FAST : OBJECT_DETECTION_MODEL::MULTI_CLASS_BOX_ACCURATE;;
 #if USE_BATCHING
     detection_parameters.batch_parameters.enable = true;
-    detection_parameters.batch_parameters.latency= 2.f;
-    BatchSystemHandler batchHandler(detection_parameters.batch_parameters.latency*2);
+    detection_parameters.batch_parameters.latency = 2.f;
+    BatchSystemHandler batchHandler(detection_parameters.batch_parameters.latency * 2);
 #else
     detection_parameters.batch_parameters.enable = false;
 #endif
@@ -127,22 +125,25 @@ int main(int argc, char **argv) {
 
 #if ENABLE_GUI
 
-    Resolution display_resolution(min((int)camera_config.resolution.width, 1280) , min((int)camera_config.resolution.height, 720));
+    float image_aspect_ratio = camera_config.resolution.width / (1.f * camera_config.resolution.height);
+    int requested_low_res_w = min(1280, (int)camera_config.resolution.width);
+    sl::Resolution display_resolution(requested_low_res_w, requested_low_res_w / image_aspect_ratio);
+
     Resolution tracks_resolution(400, display_resolution.height);
     // create a global image to store both image and tracks view
-    cv::Mat global_image(display_resolution.height, display_resolution.width + tracks_resolution.width, CV_8UC4,1);
+    cv::Mat global_image(display_resolution.height, display_resolution.width + tracks_resolution.width, CV_8UC4, 1);
     // retrieve ref on image part
     auto image_left_ocv = global_image(cv::Rect(0, 0, display_resolution.width, display_resolution.height));
     // retrieve ref on tracks view part
     auto image_track_ocv = global_image(cv::Rect(display_resolution.width, 0, tracks_resolution.width, tracks_resolution.height));
     // init an sl::Mat from the ocv image ref (which is in fact the memory of global_image)
-    cv::Mat image_render_left = cv::Mat(display_resolution.height,display_resolution.width,CV_8UC4,1);
+    cv::Mat image_render_left = cv::Mat(display_resolution.height, display_resolution.width, CV_8UC4, 1);
     Mat image_left(display_resolution, MAT_TYPE::U8_C4, image_render_left.data, image_render_left.step);
-    sl::float2 img_scale(display_resolution.width / (float)camera_config.resolution.width, display_resolution.height / (float)camera_config.resolution.height);
+    sl::float2 img_scale(display_resolution.width / (float) camera_config.resolution.width, display_resolution.height / (float) camera_config.resolution.height);
 
 
     // 2D tracks
-    TrackingViewer track_view_generator(tracks_resolution, camera_config.fps, init_parameters.depth_maximum_distance,3);
+    TrackingViewer track_view_generator(tracks_resolution, camera_config.fps, init_parameters.depth_maximum_distance, 3);
     track_view_generator.setCameraCalibration(camera_config.calibration_parameters);
 
     string window_name = "ZED| 2D View and Birds view";
@@ -150,7 +151,8 @@ int main(int argc, char **argv) {
     cv::createTrackbar("Confidence", window_name, &detection_confidence, 100);
 
     char key = ' ';
-    Resolution pc_resolution(min((int)camera_config.resolution.width, 720) , min((int)camera_config.resolution.height, 404));
+    requested_low_res_w = min(720, (int)camera_config.resolution.width);
+    sl::Resolution pc_resolution(requested_low_res_w, requested_low_res_w / image_aspect_ratio);
     auto camera_parameters = zed.getCameraInformation(pc_resolution).camera_configuration.calibration_parameters.left_cam;
     Mat point_cloud(pc_resolution, MAT_TYPE::F32_C4, MEM::GPU);
     GLViewer viewer;
@@ -167,7 +169,7 @@ int main(int argc, char **argv) {
     cam_w_pose.pose_data.setIdentity();
     Objects objects;
 
-    bool gl_viewer_available=true;
+    bool gl_viewer_available = true;
     while (
 #if ENABLE_GUI
             gl_viewer_available &&
@@ -175,7 +177,7 @@ int main(int argc, char **argv) {
             !quit && zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS) {
 
         // update confidence threshold based on TrackBar
-        if(detection_parameters_rt.object_class_filter.empty())
+        if (detection_parameters_rt.object_class_filter.empty())
             detection_parameters_rt.detection_confidence_threshold = detection_confidence;
         else // if using class filter, set confidence for each class
             for (auto& it : detection_parameters_rt.object_class_filter)
@@ -200,8 +202,8 @@ int main(int argc, char **argv) {
             batchHandler.push(cam_c_pose, cam_w_pose, image_left, point_cloud, objectsBatch);
             batchHandler.pop(cam_c_pose, cam_w_pose, image_left, point_cloud, objects);
             update_tracking_view = objects.is_new;
-            update_render_view = WITH_IMAGE_RETENTION?objects.is_new:true;
-            update_3d_view = WITH_IMAGE_RETENTION?objects.is_new:true;
+            update_render_view = WITH_IMAGE_RETENTION ? objects.is_new : true;
+            update_3d_view = WITH_IMAGE_RETENTION ? objects.is_new : true;
 #endif
 
             if (update_render_view) {
@@ -271,7 +273,6 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 
-
 void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     cout << "[Sample] ";
     if (err_code != ERROR_CODE::SUCCESS)
@@ -307,12 +308,18 @@ void parseArgs(int argc, char **argv, InitParameters& param) {
         } else if (arg.find("HD2K") != string::npos) {
             param.camera_resolution = RESOLUTION::HD2K;
             cout << "[Sample] Using Camera in resolution HD2K" << endl;
+        } else if (arg.find("HD1200") != string::npos) {
+            param.camera_resolution = RESOLUTION::HD1200;
+            cout << "[Sample] Using Camera in resolution HD1200" << endl;
         } else if (arg.find("HD1080") != string::npos) {
             param.camera_resolution = RESOLUTION::HD1080;
             cout << "[Sample] Using Camera in resolution HD1080" << endl;
         } else if (arg.find("HD720") != string::npos) {
             param.camera_resolution = RESOLUTION::HD720;
             cout << "[Sample] Using Camera in resolution HD720" << endl;
+        } else if (arg.find("SVGA") != string::npos) {
+            param.camera_resolution = RESOLUTION::SVGA;
+            cout << "[Sample] Using Camera in resolution SVGA" << endl;
         } else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;

@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
 
     // Set configuration parameters
     InitParameters init_parameters;
-    init_parameters.depth_mode = DEPTH_MODE::PERFORMANCE; // Use PERFORMANCE depth mode
+    init_parameters.depth_mode = DEPTH_MODE::ULTRA; // Use ULTRA depth mode
     init_parameters.coordinate_units = UNIT::MILLIMETER; // Use millimeter units (for depth measurements)
 
     // Open the camera
@@ -41,17 +41,13 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    // Set runtime parameters after opening the camera
-    RuntimeParameters runtime_parameters;
-    runtime_parameters.sensing_mode = SENSING_MODE::STANDARD; // Use STANDARD sensing mode
-
     // Capture 50 images and depth, then stop
     int i = 0;
     sl::Mat image, depth, point_cloud;
 
     while (i < 50) {
         // A new image is available if grab() returns ERROR_CODE::SUCCESS
-        if (zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS) {
+        if (zed.grab() == ERROR_CODE::SUCCESS) {
             // Retrieve left image
             zed.retrieveImage(image, VIEW::LEFT);
             // Retrieve depth map. Depth is aligned on the left image

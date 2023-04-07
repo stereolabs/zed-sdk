@@ -39,63 +39,63 @@ def main():
     if err != sl.ERROR_CODE.SUCCESS:
         exit(1)
 
-    obj_param = sl.ObjectDetectionParameters()
+    body_params = sl.BodyTrackingParameters()
     # Different model can be chosen, optimizing the runtime or the accuracy
-    obj_param.detection_model = sl.DETECTION_MODEL.HUMAN_BODY_FAST
-    obj_param.enable_tracking = True
-    obj_param.image_sync = True
-    obj_param.enable_mask_output = False
+    body_params.detection_model = sl.BODY_TRACKING_MODEL.HUMAN_BODY_FAST
+    body_params.enable_tracking = True
+    body_params.image_sync = True
+    body_params.enable_segmentation = False
     # Optimize the person joints position, requires more computations
-    obj_param.enable_body_fitting = True
+    body_params.enable_body_fitting = True
 
     camera_infos = zed.get_camera_information()
-    if obj_param.enable_tracking:
+    if body_params.enable_tracking:
         positional_tracking_param = sl.PositionalTrackingParameters()
         # positional_tracking_param.set_as_static = True
         positional_tracking_param.set_floor_as_origin = True
         zed.enable_positional_tracking(positional_tracking_param)
 
-    print("Object Detection: Loading Module...")
+    print("Body tracking: Loading Module...")
 
-    err = zed.enable_object_detection(obj_param)
+    err = zed.enable_body_tracking(body_params)
     if err != sl.ERROR_CODE.SUCCESS:
         print(repr(err))
         zed.close()
         exit(1)
 
-    objects = sl.Objects()
-    obj_runtime_param = sl.ObjectDetectionRuntimeParameters()
+    bodies = sl.Bodies()
+    body_runtime_param = sl.BodyTrackingRuntimeParameters()
     # For outdoor scene or long range, the confidence should be lowered to avoid missing detections (~20-30)
     # For indoor scene or closer range, a higher confidence limits the risk of false positives and increase the precision (~50+)
-    obj_runtime_param.detection_confidence_threshold = 40
+    body_runtime_param.detection_confidence_threshold = 40
 
     while zed.grab() == sl.ERROR_CODE.SUCCESS:
-        err = zed.retrieve_objects(objects, obj_runtime_param)
-        if objects.is_new:
-            obj_array = objects.object_list
-            print(str(len(obj_array)) + " Person(s) detected\n")
-            if len(obj_array) > 0:
-                first_object = obj_array[0]
+        err = zed.retrieve_bodies(bodies, body_runtime_param)
+        if bodies.is_new:
+            body_array = bodies.body_list
+            print(str(len(body_array)) + " Person(s) detected\n")
+            if len(body_array) > 0:
+                first_body = body_array[0]
                 print("First Person attributes:")
-                print(" Confidence (" + str(int(first_object.confidence)) + "/100)")
-                if obj_param.enable_tracking:
-                    print(" Tracking ID: " + str(int(first_object.id)) + " tracking state: " + repr(
-                        first_object.tracking_state) + " / " + repr(first_object.action_state))
-                position = first_object.position
-                velocity = first_object.velocity
-                dimensions = first_object.dimensions
+                print(" Confidence (" + str(int(first_body.confidence)) + "/100)")
+                if body_params.enable_tracking:
+                    print(" Tracking ID: " + str(int(first_body.id)) + " tracking state: " + repr(
+                        first_body.tracking_state) + " / " + repr(first_body.action_state))
+                position = first_body.position
+                velocity = first_body.velocity
+                dimensions = first_body.dimensions
                 print(" 3D position: [{0},{1},{2}]\n Velocity: [{3},{4},{5}]\n 3D dimentions: [{6},{7},{8}]".format(
                     position[0], position[1], position[2], velocity[0], velocity[1], velocity[2], dimensions[0],
                     dimensions[1], dimensions[2]))
-                if first_object.mask.is_init():
+                if first_body.mask.is_init():
                     print(" 2D mask available")
 
                 print(" Keypoint 2D ")
-                keypoint_2d = first_object.keypoint_2d
+                keypoint_2d = first_body.keypoint_2d
                 for it in keypoint_2d:
                     print("    " + str(it))
                 print("\n Keypoint 3D ")
-                keypoint = first_object.keypoint
+                keypoint = first_body.keypoint
                 for it in keypoint:
                     print("    " + str(it))
 

@@ -224,24 +224,26 @@ void updateCameraSettings(char key, sl::Camera &zed) {
             break;
 
             // Switch to the next camera parameter
-        case 's':
+            case 's':
             switchCameraSettings();
-            current_value = zed.getCameraSettings(camera_settings_);
+            zed.getCameraSettings(camera_settings_,current_value);
             break;
 
             // Increase camera settings value ('+' key)
-        case '+':
-            current_value = zed.getCameraSettings(camera_settings_);
+            case '+':
+            zed.getCameraSettings(camera_settings_,current_value);
             zed.setCameraSettings(camera_settings_, current_value + step_camera_setting);
-            print(str_camera_settings + ": " + to_string(zed.getCameraSettings(camera_settings_)));
+            zed.getCameraSettings(camera_settings_,current_value);
+            print(str_camera_settings+": "+std::to_string(current_value));
             break;
 
             // Decrease camera settings value ('-' key)
-        case '-':
-            current_value = zed.getCameraSettings(camera_settings_);
+            case '-':
+            zed.getCameraSettings(camera_settings_,current_value);
             current_value = current_value > 0 ? current_value - step_camera_setting : 0; // take care of the 'default' value parameter:  VIDEO_SETTINGS_VALUE_AUTO
             zed.setCameraSettings(camera_settings_, current_value);
-            print(str_camera_settings + ": " + to_string(zed.getCameraSettings(camera_settings_)));
+            zed.getCameraSettings(camera_settings_,current_value);
+            print(str_camera_settings+": "+std::to_string(current_value));
             break;
 
             //switch LED On :

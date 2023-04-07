@@ -41,7 +41,7 @@ def main():
     obj_param = sl.ObjectDetectionParameters()
     obj_param.enable_tracking=True
     obj_param.image_sync=True
-    obj_param.enable_mask_output=True
+    obj_param.enable_segmentation=True
 
     camera_infos = zed.get_camera_information()
     if obj_param.enable_tracking :

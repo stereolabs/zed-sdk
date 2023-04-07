@@ -65,9 +65,9 @@ def main():
 
 
 def print_camera_information(cam):
-    print("Resolution: {0}, {1}.".format(round(cam.get_camera_information().camera_resolution.width, 2), cam.get_camera_information().camera_resolution.height))
-    print("Camera FPS: {0}.".format(cam.get_camera_information().camera_fps))
-    print("Firmware: {0}.".format(cam.get_camera_information().camera_firmware_version))
+    print("Resolution: {0}, {1}.".format(round(cam.get_camera_information().camera_configuration.resolution.width, 2), cam.get_camera_information().camera_configuration.resolution.height))
+    print("Camera FPS: {0}.".format(cam.get_camera_information().camera_configuration.fps))
+    print("Firmware: {0}.".format(cam.get_camera_information().camera_configuration.firmware_version))
     print("Serial number: {0}.\n".format(cam.get_camera_information().serial_number))
 
 
@@ -85,11 +85,11 @@ def settings(key, cam, runtime, mat):
     if key == 115:  # for 's' key
         switch_camera_settings()
     elif key == 43:  # for '+' key
-        current_value = cam.get_camera_settings(camera_settings)
+        current_value = cam.get_camera_settings(camera_settings)[1]
         cam.set_camera_settings(camera_settings, current_value + step_camera_settings)
         print(str_camera_settings + ": " + str(current_value + step_camera_settings))
     elif key == 45:  # for '-' key
-        current_value = cam.get_camera_settings(camera_settings)
+        current_value = cam.get_camera_settings(camera_settings)[1]
         if current_value >= 1:
             cam.set_camera_settings(camera_settings, current_value - step_camera_settings)
             print(str_camera_settings + ": " + str(current_value - step_camera_settings))

@@ -79,7 +79,7 @@ while (i < 50) :
 
 Now that we have captured 50 images, we can close the camera and exit the program.
 
-```python
+```
 # Close the camera
 zed.close()
 return 0

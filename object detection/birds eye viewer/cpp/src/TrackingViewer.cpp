@@ -14,6 +14,7 @@ void render_2D(cv::Mat &left_display, sl::float2 img_scale, std::vector<sl::Obje
     const int line_thickness = 2;
 
     // render skeleton joints and bones if available
+#if 0
     for (auto& obj : objects) {
         if (renderObject(obj, isTrackingON)) {
             if (obj.keypoint_2d.size()) {
@@ -34,6 +35,7 @@ void render_2D(cv::Mat &left_display, sl::float2 img_scale, std::vector<sl::Obje
             }
         }
     }
+#endif
 
     // render bounding boxes and mask if available
     for (auto& obj : objects) {
