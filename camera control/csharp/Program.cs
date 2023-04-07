@@ -183,7 +183,7 @@ class Program
             camera_settings_ = (VIDEO_SETTINGS)((int)camera_settings_ + 1);
 
         // select the right step
-        step_camera_setting = (camera_settings_ == VIDEO_SETTINGS.WHITEBALANCE) ? 100 : 1;
+        step_camera_setting = (camera_settings_ == VIDEO_SETTINGS.WHITEBALANCE_TEMPERATURE) ? 100 : 1;
 
         // get the name of the selected SETTING
         str_camera_settings = camera_settings_.ToString();

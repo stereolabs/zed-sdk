@@ -91,13 +91,13 @@ static void onMouse(int event, int x, int y, int, void*)
 }
 
 int main(int argc, char **argv) {
-    
+
     // Create a ZED Camera object
     Camera zed;
 
     sl::InitParameters init_parameters;
     init_parameters.sdk_verbose = true;
-    init_parameters.camera_resolution= sl::RESOLUTION::HD720;
+    init_parameters.camera_resolution= sl::RESOLUTION::AUTO;
     init_parameters.depth_mode = sl::DEPTH_MODE::NONE; // no depth computation required here
     parseArgs(argc,argv, init_parameters);
 
@@ -114,11 +114,12 @@ int main(int argc, char **argv) {
 
     // Print camera information
     auto camera_info = zed.getCameraInformation();
+    auto camera_conf = camera_info.camera_configuration;
     cout << endl;
     cout <<"ZED Model                 : "<<camera_info.camera_model << endl;
     cout <<"ZED Serial Number         : "<< camera_info.serial_number << endl;
-    cout <<"ZED Camera Firmware       : "<< camera_info.camera_configuration.firmware_version <<"/"<<camera_info.sensors_configuration.firmware_version<< endl;
-    cout <<"ZED Camera Resolution     : "<< camera_info.camera_configuration.resolution.width << "x" << camera_info.camera_configuration.resolution.height << endl;
+    cout <<"ZED Camera Firmware       : "<< camera_conf.firmware_version <<"/"<<camera_info.sensors_configuration.firmware_version<< endl;
+    cout <<"ZED Camera Resolution     : "<< camera_conf.resolution.width << "x" << camera_conf.resolution.height << endl;
     cout <<"ZED Camera FPS            : "<< zed.getInitParameters().camera_fps << endl;
     
     // Print help in console
@@ -175,22 +176,24 @@ void updateCameraSettings(char key, sl::Camera &zed) {
         // Switch to the next camera parameter
         case 's':
         switchCameraSettings();
-        current_value = zed.getCameraSettings(camera_settings_);
+        zed.getCameraSettings(camera_settings_,current_value);
         break;
 
         // Increase camera settings value ('+' key)
         case '+':
-		current_value = zed.getCameraSettings(camera_settings_);
-		zed.setCameraSettings(camera_settings_, current_value + step_camera_setting);
-        print(str_camera_settings+": "+to_string(zed.getCameraSettings(camera_settings_)));
+        zed.getCameraSettings(camera_settings_,current_value);
+        zed.setCameraSettings(camera_settings_, current_value + step_camera_setting);
+        zed.getCameraSettings(camera_settings_,current_value);
+        print(str_camera_settings+": "+std::to_string(current_value));
         break;
 
         // Decrease camera settings value ('-' key)
         case '-':
-		current_value = zed.getCameraSettings(camera_settings_);
+        zed.getCameraSettings(camera_settings_,current_value);
         current_value = current_value > 0 ? current_value - step_camera_setting : 0; // take care of the 'default' value parameter:  VIDEO_SETTINGS_VALUE_AUTO
         zed.setCameraSettings(camera_settings_, current_value);
-        print(str_camera_settings+": "+to_string(zed.getCameraSettings(camera_settings_)));
+        zed.getCameraSettings(camera_settings_,current_value);
+        print(str_camera_settings+": "+std::to_string(current_value));
         break;
 
         //switch LED On :
@@ -228,7 +231,7 @@ void switchCameraSettings() {
     camera_settings_ = static_cast<VIDEO_SETTINGS>((int)camera_settings_ + 1);
 
     // reset to 1st setting
-    if (camera_settings_ == VIDEO_SETTINGS::LED_STATUS)
+    if (camera_settings_ == VIDEO_SETTINGS::DENOISING)
         camera_settings_ = VIDEO_SETTINGS::BRIGHTNESS;
 
     // increment if AEC_AGC_ROI since it using the overloaded function
@@ -294,18 +297,24 @@ void parseArgs(int argc, char **argv,sl::InitParameters& param)
             param.input.setFromStream(sl::String(argv[1]));
             cout<<"[Sample] Using Stream input, IP : "<<argv[1]<<endl;
         }
-        else if (arg.find("HD2K")!=string::npos) {
-            param.camera_resolution = sl::RESOLUTION::HD2K;
-            cout<<"[Sample] Using Camera in resolution HD2K"<<endl;
-        } else if (arg.find("HD1080")!=string::npos) {
-            param.camera_resolution = sl::RESOLUTION::HD1080;
-            cout<<"[Sample] Using Camera in resolution HD1080"<<endl;
-        } else if (arg.find("HD720")!=string::npos) {
-            param.camera_resolution = sl::RESOLUTION::HD720;
-            cout<<"[Sample] Using Camera in resolution HD720"<<endl;
-        } else if (arg.find("VGA")!=string::npos) {
-            param.camera_resolution = sl::RESOLUTION::VGA;
-            cout<<"[Sample] Using Camera in resolution VGA"<<endl;
+        else if (arg.find("HD2K") != string::npos) {
+            param.camera_resolution = RESOLUTION::HD2K;
+            cout << "[Sample] Using Camera in resolution HD2K" << endl;
+        }else if (arg.find("HD1200") != string::npos) {
+            param.camera_resolution = RESOLUTION::HD1200;
+            cout << "[Sample] Using Camera in resolution HD1200" << endl;
+        } else if (arg.find("HD1080") != string::npos) {
+            param.camera_resolution = RESOLUTION::HD1080;
+            cout << "[Sample] Using Camera in resolution HD1080" << endl;
+        } else if (arg.find("HD720") != string::npos) {
+            param.camera_resolution = RESOLUTION::HD720;
+            cout << "[Sample] Using Camera in resolution HD720" << endl;
+        }else if (arg.find("SVGA") != string::npos) {
+            param.camera_resolution = RESOLUTION::SVGA;
+            cout << "[Sample] Using Camera in resolution SVGA" << endl;
+        }else if (arg.find("VGA") != string::npos) {
+            param.camera_resolution = RESOLUTION::VGA;
+            cout << "[Sample] Using Camera in resolution VGA" << endl;
         }
     } else {
         // Default

@@ -7,7 +7,7 @@ namespace sl
 {
     class Program
     {
-        static ObjectDetectionParameters object_detection_parameters;
+        static BodyTrackingParameters body_tracking_parameters;
 
         static void Main(string[] args)
         {
@@ -29,7 +29,7 @@ namespace sl
 
             // Enable positional tracking
             PositionalTrackingParameters trackingParams = new PositionalTrackingParameters();
-            // If you want to have object tracking you need to enable positional tracking first
+            // If you want to have body tracking you need to enable positional tracking first
             err = zedCamera.EnablePositionalTracking(ref trackingParams);
             if (err != ERROR_CODE.SUCCESS)
             {
@@ -38,19 +38,21 @@ namespace sl
             }
 
 
-            // Enable Object Detection
-            object_detection_parameters = new ObjectDetectionParameters();
+            // Enable Body Tracking
+            body_tracking_parameters = new BodyTrackingParameters();
             // Different model can be chosen, optimizing the runtime or the accuracy
-            object_detection_parameters.detectionModel = sl.DETECTION_MODEL.HUMAN_BODY_FAST;
+            body_tracking_parameters.detectionModel = sl.BODY_TRACKING_MODEL.HUMAN_BODY_FAST;
+            // Choose the appropriate body format for your application
+            // (38 to have simplified hands, 70 for detailed hands, but more resource-heavy.)
+            body_tracking_parameters.bodyFormat = sl.BODY_FORMAT.POSE_38;
             // track detects object across time and space
-            object_detection_parameters.enableObjectTracking = true;
+            body_tracking_parameters.enableObjectTracking = true;
             // run detection for every Camera grab
-            object_detection_parameters.imageSync = true;
-            object_detection_parameters.bodyFormat = BODY_FORMAT.POSE_18;
-            err = zedCamera.EnableObjectDetection(ref object_detection_parameters);
+            body_tracking_parameters.imageSync = true;
+            err = zedCamera.EnableBodyTracking(ref body_tracking_parameters);
             if (err != ERROR_CODE.SUCCESS)
             {
-                Console.WriteLine("ERROR in Enable OD. Exiting...");
+                Console.WriteLine("ERROR in EnableBodyTracking. Exiting...");
                 Environment.Exit(-1);
             }
 
@@ -58,11 +60,11 @@ namespace sl
             // Create Runtime parameters
             RuntimeParameters runtimeParameters = new RuntimeParameters();
 
-            // Create Object Detection frame handle (contains all the objects data)
-            sl.Objects objects = new sl.Objects();
-            // Create object detection runtime parameters (confidence, ...)
-            ObjectDetectionRuntimeParameters obj_runtime_parameters = new ObjectDetectionRuntimeParameters();
-            obj_runtime_parameters.detectionConfidenceThreshold = 40;
+            // Create Body Tracking frame handle (contains all the objects data)
+            sl.Bodies bodies = new sl.Bodies();
+            // Create Body Tracking runtime parameters (confidence, ...)
+            BodyTrackingRuntimeParameters bt_runtime_parameters = new BodyTrackingRuntimeParameters();
+            bt_runtime_parameters.detectionConfidenceThreshold = 40;
 
 
             int nbDetection = 0;
@@ -70,46 +72,47 @@ namespace sl
             {
                 if (zedCamera.Grab(ref runtimeParameters) == ERROR_CODE.SUCCESS)
                 {
-                    // Retrieve Objects from Object detection
-                    zedCamera.RetrieveObjects(ref objects, ref obj_runtime_parameters);
+                    // Retrieve Objects from Body Tracking
+                    zedCamera.RetrieveBodies(ref bodies, ref bt_runtime_parameters);
 
-                    if (Convert.ToBoolean(objects.isNew))
+                    if (Convert.ToBoolean(bodies.isNew))
                     {
-                        Console.WriteLine(objects.numObject + " Person(s) detected");
+                        Console.WriteLine(bodies.nbBodies + " Person(s) detected");
                         Console.WriteLine();
-                        if (objects.numObject > 0)
+                        if (bodies.nbBodies > 0)
                         {
-                            sl.ObjectData firstObject = objects.objectData[0];
+                            sl.BodyData firstBody = bodies.bodiesList[0];
 
                             Console.WriteLine("First Person attributes :");
-                            Console.WriteLine(" Confidence (" + firstObject.confidence);
+                            Console.WriteLine(" Confidence (" + firstBody.confidence);
 
-                            if (object_detection_parameters.enableObjectTracking)
+                            if (body_tracking_parameters.enableObjectTracking)
                             {
-                                Console.WriteLine(" Tracking ID: " + firstObject.id + " tracking state: " + firstObject.objectTrackingState +
-                                    " / " + firstObject.actionState);
+                                Console.WriteLine(" Tracking ID: " + firstBody.id + " tracking state: " + firstBody.trackingState +
+                                    " / " + firstBody.actionState);
                             }
 
-                            Console.WriteLine(" 3D Position: " + firstObject.position +
-                                              " Velocity: " + firstObject.velocity);
+                            Console.WriteLine(" 3D Position: " + firstBody.position +
+                                              " Velocity: " + firstBody.velocity);
 
                             Console.WriteLine(" Keypoints 2D");
                             // The body part meaning can be obtained by casting the index into a BODY_PARTS
                             // to get the BODY_PARTS index the getIdx function is available
-                            for (int i = 0; i < (int)sl.BODY_PARTS.LAST; i++)
+                            for (int i = 0; i < (int)sl.BODY_38_PARTS.LAST; i++)
                             {
-                                var kp = firstObject.keypoints2D[i];
-                                Console.WriteLine("     " + (sl.BODY_PARTS)i + " " + kp.X + ", " + kp.Y);
+                                var kp = firstBody.keypoints2D[i];
+                                Console.WriteLine("     " + (sl.BODY_38_PARTS)i + " " + kp.X + ", " + kp.Y);
                             }
 
                             // The BODY_PARTS can be link as bones, using sl::BODY_BONES which gives the BODY_PARTS pair for each
                             Console.WriteLine(" Keypoints 3D ");
-                            for (int i = 0; i < (int)sl.BODY_PARTS.LAST; i++)
+                            for (int i = 0; i < (int)sl.BODY_38_PARTS.LAST; i++)
                             {
-                                var kp = firstObject.keypoints[i];
-                                Console.WriteLine("     " + (sl.BODY_PARTS)i + " " + kp.X + ", " + kp.Y + ", " + kp.Z);
+                                var kp = firstBody.keypoints[i];
+                                Console.WriteLine("     " + (sl.BODY_38_PARTS)i + " " + kp.X + ", " + kp.Y + ", " + kp.Z);
                             }
 
+                            nbDetection++;
                             Console.WriteLine();
                             Console.WriteLine("Press 'Enter' to continue...");
                             Console.ReadLine();
@@ -118,8 +121,8 @@ namespace sl
                 }
             }
 
-            // Disable object detection, positional tracking and close the camera
-            zedCamera.DisableObjectDetection();
+            // Disable Body Tracking, positional tracking and close the camera
+            zedCamera.DisableBodyTracking();
             zedCamera.DisablePositionalTracking("");
             zedCamera.Close();
         }

@@ -1,0 +1,27 @@
+#ifndef  __SENDER_RUNNER_HDR__
+#define __SENDER_RUNNER_HDR__
+
+#include <sl/Camera.hpp>
+#include <sl/Fusion.hpp>
+
+#include <thread>
+
+class ClientPublisher{
+
+public:
+    ClientPublisher();
+    ~ClientPublisher();
+
+    bool open(sl::InputType);
+    void start();
+    void stop();
+
+private:
+    sl::Camera zed;
+    sl::InitParameters init_parameters;
+    void work();
+    std::thread runner;
+    bool running;
+};
+
+#endif // ! __SENDER_RUNNER_HDR__

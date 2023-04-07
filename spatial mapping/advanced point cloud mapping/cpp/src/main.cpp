@@ -40,10 +40,11 @@ void parse_args(int argc, char **argv,InitParameters& param);
 void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, std::string msg_suffix = "");
 
 int main(int argc, char **argv) {
+
     Camera zed;
     // Set configuration parameters for the ZED
     InitParameters init_parameters;
-    init_parameters.depth_mode = DEPTH_MODE::ULTRA;    
+    init_parameters.depth_mode = DEPTH_MODE::ULTRA;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed    
     parse_args(argc, argv, init_parameters);
 
@@ -101,7 +102,9 @@ int main(int argc, char **argv) {
     auto resolution = camera_infos.camera_configuration.resolution;
 
     // Define display resolution and check that it fit at least the image resolution
-    Resolution display_resolution(min((int)resolution.width, 720), min((int)resolution.height, 404));
+    float image_aspect_ratio = resolution.width / (1.f * resolution.height);
+    int requested_low_res_w = min(1280, (int)resolution.width);
+    sl::Resolution display_resolution(requested_low_res_w, requested_low_res_w / image_aspect_ratio);
 
     // Create a Mat to contain the left image and its opencv ref
     Mat image_zed(display_resolution, MAT_TYPE::U8_C4);
@@ -171,18 +174,24 @@ void parse_args(int argc, char **argv,InitParameters& param)
             param.input.setFromStream(String(argv[1]));
             cout<<"[Sample] Using Stream input, IP : "<<argv[1]<<endl;
         }
-        else if (arg.find("HD2K")!=string::npos) {
+        else if (arg.find("HD2K") != string::npos) {
             param.camera_resolution = RESOLUTION::HD2K;
-            cout<<"[Sample] Using Camera in resolution HD2K"<<endl;
-        } else if (arg.find("HD1080")!=string::npos) {
+            cout << "[Sample] Using Camera in resolution HD2K" << endl;
+        }else if (arg.find("HD1200") != string::npos) {
+            param.camera_resolution = RESOLUTION::HD1200;
+            cout << "[Sample] Using Camera in resolution HD1200" << endl;
+        } else if (arg.find("HD1080") != string::npos) {
             param.camera_resolution = RESOLUTION::HD1080;
-            cout<<"[Sample] Using Camera in resolution HD1080"<<endl;
-        } else if (arg.find("HD720")!=string::npos) {
+            cout << "[Sample] Using Camera in resolution HD1080" << endl;
+        } else if (arg.find("HD720") != string::npos) {
             param.camera_resolution = RESOLUTION::HD720;
-            cout<<"[Sample] Using Camera in resolution HD720"<<endl;
-        } else if (arg.find("VGA")!=string::npos) {
+            cout << "[Sample] Using Camera in resolution HD720" << endl;
+        }else if (arg.find("SVGA") != string::npos) {
+            param.camera_resolution = RESOLUTION::SVGA;
+            cout << "[Sample] Using Camera in resolution SVGA" << endl;
+        }else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = RESOLUTION::VGA;
-            cout<<"[Sample] Using Camera in resolution VGA"<<endl;
+            cout << "[Sample] Using Camera in resolution VGA" << endl;
         }
     } else {
         // Default

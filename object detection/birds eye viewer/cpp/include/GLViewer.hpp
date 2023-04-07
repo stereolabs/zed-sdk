@@ -296,7 +296,6 @@ private:
     std::vector<ObjectClassName> objectsName;
     Simple3DObject BBox_edges;
     Simple3DObject BBox_faces;
-    Simple3DObject skeletons;
     Simple3DObject floor_grid;
 };
 

@@ -35,7 +35,6 @@ namespace sl
 
             // To avoid Nan Values, set to FILL to remove holes.
             RuntimeParameters runtimeParameters = new RuntimeParameters();
-            runtimeParameters.sensingMode = SENSING_MODE.FILL;
             while (i < 1000)
             {
                 if (zedCamera.Grab(ref runtimeParameters) == ERROR_CODE.SUCCESS)

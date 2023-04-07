@@ -80,10 +80,9 @@ namespace sl
             ObjectDetectionParameters obj_det_params = new ObjectDetectionParameters();
             obj_det_params.enableObjectTracking = true; // the object detection will track objects across multiple images, instead of an image-by-image basis
             isTrackingON = obj_det_params.enableObjectTracking;
-            obj_det_params.enable2DMask = false;
-            obj_det_params.enableBodyFitting = true; // smooth skeletons moves
+            obj_det_params.enableSegmentation = false;
             obj_det_params.imageSync = true; // the object detection is synchronized to the image
-            obj_det_params.detectionModel = sl.DETECTION_MODEL.MULTI_CLASS_BOX_ACCURATE;
+            obj_det_params.detectionModel = sl.OBJECT_DETECTION_MODEL.MULTI_CLASS_BOX_ACCURATE;
 
             zedCamera.EnableObjectDetection(ref obj_det_params);
 

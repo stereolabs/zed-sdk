@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
 
     // Set configuration parameters
     InitParameters init_parameters;
-    init_parameters.camera_resolution = RESOLUTION::HD1080; // Use HD1080 video mode
+    init_parameters.camera_resolution = RESOLUTION::AUTO; // Use HD720 opr HD1200 video mode, depending on camera type.
     init_parameters.camera_fps = 30; // Set fps at 30
 
     // Open the camera

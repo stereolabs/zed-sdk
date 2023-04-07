@@ -37,16 +37,16 @@ M_PI = 3.1415926
 GRID_SIZE = 15.0
 
 CLASS_COLORS = np.array([
-    [44, 117, 255]          # People
-    , [255, 0, 255]         # Vehicle
-    , [0, 0, 255]
+	[44, 117, 255]          # People
+	, [255, 0, 255]         # Vehicle
+	, [0, 0, 255]
     , [0, 255, 255]
     , [0, 255, 0]
     , [255, 255, 255]]
     , np.float32)
 
 ID_COLORS = np.array([
-    [0.231, 0.909, 0.69]
+	[0.231, 0.909, 0.69]
     , [0.098, 0.686, 0.816]
     , [0.412, 0.4, 0.804]
     , [1, 0.725, 0]
@@ -253,7 +253,7 @@ class Simple3DObject:
         self.indices.append(len(self.indices))
 
     def add_vertical_faces(self, _pts, _clr):
-        # For each face, we need to add 4 quads (the first 2 indexes are always the top points of the quad)
+    	# For each face, we need to add 4 quads (the first 2 indexes are always the top points of the quad)
         quads = [[0, 3, 7, 4]       # Front face
                 , [3, 2, 6, 7]      # Right face
                 , [2, 1, 5, 6]      # Back face
@@ -396,8 +396,8 @@ IMAGE_VERTEX_SHADER = """
 layout(location = 0) in vec3 vert;
 out vec2 UV;
 void main() {
-    UV = (vert.xy+vec2(1,1))/2;
-    gl_Position = vec4(vert, 1);
+   UV = (vert.xy+vec2(1,1))/2;
+	gl_Position = vec4(vert, 1);
 }
 """
 
@@ -618,13 +618,13 @@ class GLViewer:
 
     def create_bbox_rendering(self, _bbox, _bbox_clr):
         # First create top and bottom full edges
-        self.BBox_edges.add_full_edges(_bbox, _bbox_clr)
-        # Add faded vertical edges
-        self.BBox_edges.add_vertical_edges(_bbox, _bbox_clr)
-        # Add faces
-        self.BBox_faces.add_vertical_faces(_bbox, _bbox_clr)
-        # Add top face
-        self.BBox_faces.add_top_face(_bbox, _bbox_clr)
+	    self.BBox_edges.add_full_edges(_bbox, _bbox_clr)
+	    # Add faded vertical edges
+	    self.BBox_edges.add_vertical_edges(_bbox, _bbox_clr)
+	    # Add faces
+	    self.BBox_faces.add_vertical_faces(_bbox, _bbox_clr)
+	    # Add top face
+	    self.BBox_faces.add_top_face(_bbox, _bbox_clr)
 
     def create_id_rendering(self, _center, _clr, _id):
         tmp = ObjectClassName()

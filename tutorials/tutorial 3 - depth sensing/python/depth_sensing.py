@@ -40,10 +40,8 @@ def main():
 
     # Create and set RuntimeParameters after opening the camera
     runtime_parameters = sl.RuntimeParameters()
-    runtime_parameters.sensing_mode = sl.SENSING_MODE.STANDARD  # Use STANDARD sensing mode
-    # Setting the depth confidence parameters
     runtime_parameters.confidence_threshold = 100
-    runtime_parameters.textureness_confidence_threshold = 100
+    runtime_parameters.texture_confidence_threshold = 100
 
     # Capture 150 images and depth, then stop
     i = 0

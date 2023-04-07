@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
 	init_param.resolution = SL_RESOLUTION_HD1080;
 	init_param.input_type = SL_INPUT_TYPE_USB;
 	init_param.camera_device_id = camera_id;
-	init_param.camera_image_flip = SL_FLIP_MODE_AUTO; 
+	init_param.camera_image_flip = SL_FLIP_MODE_AUTO;
 	init_param.camera_disable_self_calib = false;
 	init_param.enable_image_enhancement = true;
 	init_param.svo_real_time_mode = true;
@@ -49,9 +49,11 @@ int main(int argc, char **argv) {
 	init_param.sdk_verbose = false;
 	init_param.sensors_required = false;
 	init_param.enable_right_side_measure = false;
+	init_param.open_timeout_sec = 5.0f;
+	init_param.async_grab_camera_recovery = false;
 
-    // Open the camera
-	int state = sl_open_camera(camera_id, &init_param, "", "", 0, "", "", "");
+	// Open the camera
+	int state = sl_open_camera(camera_id, &init_param, 0, "", "", 0, "", "", "");
 	
     if (state != 0) {
 		printf("Error Open \n");
@@ -74,6 +76,7 @@ int main(int argc, char **argv) {
 	tracking_param.initial_world_rotation = rotation;
 	tracking_param.set_as_static = false;
 	tracking_param.set_floor_as_origin = false;
+	tracking_param.set_gravity_as_origin = true;
 
 	state = sl_enable_positional_tracking(camera_id, &tracking_param, "");
 	if (state != 0) {
@@ -83,9 +86,8 @@ int main(int argc, char **argv) {
 
 	struct SL_RuntimeParameters rt_param;
 	rt_param.enable_depth = true;
-	rt_param.confidence_threshold = 100;
+	rt_param.confidence_threshold = 95;
 	rt_param.reference_frame = SL_REFERENCE_FRAME_CAMERA;
-	rt_param.sensing_mode = SL_SENSING_MODE_STANDARD;
 	rt_param.texture_confidence_threshold = 100;
 	rt_param.remove_saturated_areas = true;
 
@@ -120,7 +122,7 @@ int main(int argc, char **argv) {
 
 			if (zed_has_imu) {
 
-				struct SL_SensorData sensor_data;
+				struct SL_SensorsData sensor_data;
 				sl_get_sensors_data(camera_id, &sensor_data, SL_TIME_REFERENCE_IMAGE);
 
 				struct SL_Quaternion imu_orientation = sensor_data.imu.orientation;

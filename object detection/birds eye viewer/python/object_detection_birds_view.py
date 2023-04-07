@@ -85,7 +85,7 @@ if __name__ == "__main__":
         batch_parameters.enable = False
     obj_param = sl.ObjectDetectionParameters(batch_trajectories_parameters=batch_parameters)
         
-    obj_param.detection_model = sl.DETECTION_MODEL.MULTI_CLASS_BOX
+    obj_param.detection_model = sl.OBJECT_DETECTION_MODEL.MULTI_CLASS_BOX_FAST
     # Defines if the object detection will track objects across images flow.
     obj_param.enable_tracking = True
     zed.enable_object_detection(obj_param)
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     camera_infos = zed.get_camera_information()
     # Create OpenGL viewer
     viewer = gl.GLViewer()
-    point_cloud_res = sl.Resolution(min(camera_infos.camera_resolution.width, 720), min(camera_infos.camera_resolution.height, 404)) 
+    point_cloud_res = sl.Resolution(min(camera_infos.camera_configuration.resolution.width, 720), min(camera_infos.camera_configuration.resolution.height, 404)) 
     point_cloud_render = sl.Mat()
     viewer.init(camera_infos.camera_model, point_cloud_res, obj_param.enable_tracking)
     
@@ -116,15 +116,15 @@ if __name__ == "__main__":
     image_left = sl.Mat()
 
     # Utilities for 2D display
-    display_resolution = sl.Resolution(min(camera_infos.camera_resolution.width, 1280), min(camera_infos.camera_resolution.height, 720))
-    image_scale = [display_resolution.width / camera_infos.camera_resolution.width
-                 , display_resolution.height / camera_infos.camera_resolution.height]
+    display_resolution = sl.Resolution(min(camera_infos.camera_configuration.resolution.width, 1280), min(camera_infos.camera_configuration.resolution.height, 720))
+    image_scale = [display_resolution.width / camera_infos.camera_configuration.resolution.width
+                 , display_resolution.height / camera_infos.camera_configuration.resolution.height]
     image_left_ocv = np.full((display_resolution.height, display_resolution.width, 4), [245, 239, 239,255], np.uint8)
 
     # Utilities for tracks view
     camera_config = zed.get_camera_information().camera_configuration
     tracks_resolution = sl.Resolution(400, display_resolution.height)
-    track_view_generator = cv_viewer.TrackingViewer(tracks_resolution, camera_config.camera_fps, init_params.depth_maximum_distance)
+    track_view_generator = cv_viewer.TrackingViewer(tracks_resolution, camera_config.fps, init_params.depth_maximum_distance)
     track_view_generator.set_camera_calibration(camera_config.calibration_parameters)
     image_track_ocv = np.zeros((tracks_resolution.height, tracks_resolution.width, 4), np.uint8)
 
