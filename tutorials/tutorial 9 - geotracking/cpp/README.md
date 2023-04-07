@@ -8,4 +8,4 @@
 - Map on ZedHub with fused path on it
 
 ### Dependency:
-- ZEDub edge-cli 
+- ZEDHub edge-cli 
