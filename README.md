@@ -93,7 +93,7 @@ This repository contains ready-to-use and samples to start using the ZED SDK wit
 
 * [**Recording**](/recording) - This sample shows how to **record** and **playback** video files in SVO format. SVO files let you use all the ZED SDK features without having a ZED connected.
 
-* [**Other**](/other) - Other general samples that demonstrate the use of the ZED SDK.
+* **Other** - Other general samples that demonstrate the use of the ZED SDK.
 
 ## Supported platforms
 
