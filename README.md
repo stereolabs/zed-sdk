@@ -24,10 +24,10 @@
 </p>
 
 <p align="center">
-  <a href="https://www.stereolabs.com/developers/release"><img src="https://img.shields.io/github/v/release/stereolabs/zed-examples?color=%2300aeec&label=ZED%20SDK" alt="SDK Version"></a>
+  <a href="https://www.stereolabs.com/developers/release"><img src="https://img.shields.io/github/v/release/stereolabs/zed-sdk?color=%2300aeec&label=ZED%20SDK" alt="SDK Version"></a>
   <a href="https://community.stereolabs.com/"><img src="https://img.shields.io/discourse/posts?server=https%3A%2F%2Fcommunity.stereolabs.com%2F" alt="ZED Discourse"></a>
   <a href="https://hub.docker.com/u/stereolabs"><img src="https://img.shields.io/docker/pulls/stereolabs/zed" alt="Docker Pulls"></a>
-  <a href="https://github.com/stereolabs/zed-examples/stargazers"><img src="https://img.shields.io/github/stars/stereolabs/zed-examples?style=social" alt="Github Stars"></a>
+  <a href="https://github.com/stereolabs/zed-examples/stargazers"><img src="https://img.shields.io/github/stars/stereolabs/zed-sdk?style=social" alt="Github Stars"></a>
 </p>
 
 ---
