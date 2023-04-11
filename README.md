@@ -1,6 +1,6 @@
 <h1 align="center">
-  <a href="http://www.stereolabs.com/docs"><img src="https://user-images.githubusercontent.com/32394882/228559403-1da06352-9bac-4279-a5b4-e68bafcb2b1c.jpg" alt="Stereolabs"></a>
-  <br>
+  <!--- Stereolabs Banner --->
+  <!--- a href="http://www.stereolabs.com/docs"><img src="https://user-images.githubusercontent.com/32394882/228559403-1da06352-9bac-4279-a5b4-e68bafcb2b1c.jpg" alt="Stereolabs"></a --->
   ZED SDK
   <br>
 </h1>
