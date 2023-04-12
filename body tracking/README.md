@@ -1,37 +1,19 @@
-# ZED SDK Body Tracking Samples
+# Body Tracking Samples
 
-This repository contains samples demonstrating how to use the ZED stereoscopic camera's body tracking features using the ZED SDK. The samples show how to fuse the data from several cameras, export the data in JSON format, and how to integrate the SDK with external tools like Unity and Unreal.
+This repository contains samples demonstrating how to use the [ZED](https://www.stereolabs.com/store/) camera's **Body Tracking** features using the ZED SDK. You can find additional information on the Body Tracking module in our [Documentation](https://www.stereolabs.com/docs/body-tracking/) and [API Reference](https://www.stereolabs.com/docs/api/group__Body__group.html).
 
-## Requirements
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/32394882/230631989-24dd2b58-2c85-451b-a4ed-558d74d1b922.gif" />
+</p>
 
-    ZED Camera
-    ZED SDK
-    CUDA 10.2 or later
-    Python 3.6 or later (for Python samples)
-    C++11 or later (for C++ samples)
-    Unity or Unreal Engine (for integration samples)
+## Overview
 
-## Installation
+This section contains the following code samples:
 
-    Install the ZED SDK following the instructions on the official website.
-    Clone this repository to your local machine.
-    For Python samples, install the required Python packages by running pip install -r requirements.txt in the root directory of the repository.
-    Build the C++ samples using the CMake build system. Refer to the individual sample README files for build instructions.
+- [Body Tracking](/body%20tracking/): This sample shows how to use the Body Tracking module, using a single camera and a simple 3D display.
 
-## Samples
-### Overview
-This samples demonstrates how to build simple body tracking app. It provide :
-- Single camera body tracking
-- Whole hand **fingertracking**
-- A simple 3D display
+- [Tracking Data Export](/export/): This sample shows how to export **human body tracking data** into a JSON format. You can adapt the code to fit your needs.
 
-### Fusion
-This sample demonstrate how to fuse the Body tracking data from several camera to track an entire space with a much higher quality. That can be done on one single machine, or on a network.
-The camera must be calibrated first with ZED 360.
-If your camera are distributed over a local network, you'll need to use ZED Hub. [Subscribe for free.](https://hub.stereolabs.com)
+- [Integrations](/integrations) This folder contains links to other repositories that provide Body Tracking **integration examples** and tutorials with Unreal Engine 5, Unity, and Livelink.
 
-### Export
-This sample shows you how to export the data into a JSON format. you can adapt the code to fit your needs.
-
-### Integrations
-This folder contains links to other repositories that provide Body Tracking integrations examples and tutorials with Unreal, Unity, Livelink.
+- [Multi Camera Fusion](/multi-camera): This sample demonstrates how to use the ZED SDK **Fusion API** to track people in an entire space, with data from multiple cameras which produces higher quality results than using a single camera. The sample goes through the full process of setting up your cameras, calibrating your system with ZED360, fusing and visualizing the data.

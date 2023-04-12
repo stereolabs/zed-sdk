@@ -14,14 +14,14 @@ This sample demonstrates how to use geotracking to achieve global scale localiza
 ### Dependencies
 
 Before using this sample, ensure that you have the following dependencies installed on your system:
-- ZEDHub edge-cli: required for displaying the computed trajectory on a real-world map.
+- ZEDub edge-cli: required for displaying the computed trajectory on a real-world map.
 - libgps-dev: required to use an external GNSS sensor.
 
 ### Installation and Usage
 
 To use the ZED SDK Geotracking sample, follow these steps:
 1. Download and install the ZED SDK on your system from the official Stereolabs website.
-2. Install the ZEDHub edge-cli from the ZEDHub website and the libgps-dev dependency using your operating system's package manager.
+2. Install the ZEDub edge-cli from the ZEDHub website and the libgps-dev dependency using your operating system's package manager.
 3. Connect your ZED camera and GNSS sensor to your computer.
 4. Open a terminal and navigate to the zed-geotracking sample directory.
 5. Compile the sample.
