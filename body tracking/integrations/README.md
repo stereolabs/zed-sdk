@@ -7,7 +7,7 @@ Each integration is available in its own repository, containing samples and tuto
 ## Integrations Github Repositories
 
 |   Integration   	|  Description  |
-| :------:	| :------:	|
+| :------:	| ------	|
 |  [Unity](https://github.com/stereolabs/zed-unity)	        |   Seamless integration of body tracking capabilities into Unity projects for animation and interactive experiences    |
 |  [Unity with Livelink](https://github.com/stereolabs/zed-unity-livelink)	        |   Real-time streaming of body tracking data directly into Unity for animation and interactive experiences	    |
 |  [Unreal Engine 5](https://github.com/stereolabs/zed-UE5)	        |   Incorporate ZED SDK real-time human body tracking data into Unreal Engine 5 seamlessly	    |
