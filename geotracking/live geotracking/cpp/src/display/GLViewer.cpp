@@ -256,13 +256,19 @@ void GLViewer::draw() {
     glUseProgram(0);
 }
 
-void GLViewer::updateData(sl::Transform zed_rt, std::string str_t, std::string str_r, sl::POSITIONAL_TRACKING_STATE state) {
+void GLViewer::updateData(sl::Transform zed_rt, sl::POSITIONAL_TRACKING_STATE state) {
     mtx.lock();
     vecPath.push_back(zed_rt.getTranslation());
     zedModel.setRT(zed_rt);
     updateZEDposition = true;
-    txtT = str_t;
-    txtR = str_r;
+    
+    std::stringstream ss;
+    ss << zed_rt.getTranslation();
+    txtT = ss.str();
+    ss.clear();
+    ss << zed_rt.getEulerAngles();
+    txtR = ss.str();
+    
     trackState = state;
     mtx.unlock();
 }

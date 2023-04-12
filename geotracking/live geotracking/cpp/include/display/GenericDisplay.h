@@ -36,11 +36,9 @@ public:
      * @brief Update the OpenGL view with last pose data
      * 
      * @param zed_rt last pose data
-     * @param str_t std::string that represents current translations
-     * @param str_r std::string that represents current rotations
      * @param state current tracking state
      */
-    void updatePoseData(sl::Transform zed_rt, std::string str_t, std::string str_r, sl::POSITIONAL_TRACKING_STATE state);
+    void updatePoseData(sl::Transform zed_rt, sl::POSITIONAL_TRACKING_STATE state);
     /**
      * @brief Display current fused pose either in KML file or in ZEDHub depending compilation options
      * 

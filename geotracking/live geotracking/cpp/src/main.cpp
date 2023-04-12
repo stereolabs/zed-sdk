@@ -97,17 +97,10 @@ int main(int argc, char **argv)
             sl::Pose fused_position;
             // Get position into the ZED CAMERA coordinate system:
             sl::POSITIONAL_TRACKING_STATE current_state = fusion.getPosition(fused_position);
-            if (current_state == sl::POSITIONAL_TRACKING_STATE::OK)
-            {
-                std::stringstream ss;
-                ss << fused_position.pose_data.getTranslation();
-                std::string translation_message = ss.str();
-                ss.clear();
-                ss << fused_position.pose_data.getEulerAngles();
-                std::string rotation_message = ss.str();
-                // Display it on OpenGL:
-                viewer.updatePoseData(fused_position.pose_data, translation_message, rotation_message, current_state);
-            }
+         
+            // Display it on OpenGL:
+            viewer.updatePoseData(fused_position.pose_data, current_state);
+            
             // Get position into the GNSS coordinate system - this needs a initialization between CAMERA 
             // and GNSS. When the initialization is finish the getGeoPose will return sl::POSITIONAL_TRACKING_STATE::OK
             sl::GeoPose current_geopose;

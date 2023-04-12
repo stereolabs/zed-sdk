@@ -157,7 +157,7 @@ public:
     void exit();
     bool isAvailable();
     void init(int argc, char **argv);
-    void updateData(sl::Transform zed_rt, std::string str_t, std::string str_r, sl::POSITIONAL_TRACKING_STATE state);
+    void updateData(sl::Transform zed_rt, sl::POSITIONAL_TRACKING_STATE state);
 
 private:
     // Rendering loop method called each frame by glutDisplayFunc

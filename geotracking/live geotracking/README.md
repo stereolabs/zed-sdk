@@ -1,33 +1,29 @@
-# ZED SDK - Live Geotracking for Global Scale Localization on Real-World Map
+# Live Geotracking Sample
 
 ## Overview
 
-This sample demonstrates how to use geotracking to achieve global scale localization on a real-world map using the ZED camera. The ZED SDK Geotracking sample fuses visual odometry from the ZED SDK with external GNSS data in real-time, making it a valuable resource for applications such as autonomous robotics and drone navigation.
+This sample demonstrates how to use the ZED SDK Geotracking module to achieve **global scale localization** on a real-world map using the ZED camera. The ZED SDK Live Geotracking sample fuses visual odometry from the ZED SDK with external GNSS data in real-time, making it a valuable resource for applications such as autonomous robotics and drone navigation.
 
-### Features
+## Features
 
 - Displays the camera's path in an OpenGL window in 3D
 - Displays path data, including translation and rotation
-- Displays the fused path on a map on ZedHub
+- Displays the fused path on a map on ZED Hub
 - Exports KML files for the fused trajectory and raw GNSS data
 
-### Dependencies
+## Dependencies
 
 Before using this sample, ensure that you have the following dependencies installed on your system:
-- ZEDub edge-cli: required for displaying the computed trajectory on a real-world map.
+- ZED Hub Edge Agent: to be able to display the computed trajectory on a real-world map, connect your device to [ZED Hub](https://hub.stereolabs.com/). Detailed tutorials can be found [here](https://www.stereolabs.com/docs/cloud/overview/setup-device/).
 - libgps-dev: required to use an external GNSS sensor.
 
-### Installation and Usage
+## Installation and Usage
 
 To use the ZED SDK Geotracking sample, follow these steps:
-1. Download and install the ZED SDK on your system from the official Stereolabs website.
-2. Install the ZEDub edge-cli from the ZEDHub website and the libgps-dev dependency using your operating system's package manager.
+1. Download and install the ZED SDK on your system from the official [Stereolabs website](https://www.stereolabs.com/developers/release/).
+2. Install Edge Agent from [ZED Hub](https://hub.stereolabs.com/) and the libgps-dev dependency using your operating system's package manager.
 3. Connect your ZED camera and GNSS sensor to your computer.
 4. Open a terminal and navigate to the zed-geotracking sample directory.
 5. Compile the sample.
 6. Run the zed-geotracking executable.
-7. The sample will display the camera's path and path data in a 3D window. The fused path will be displayed on a map on ZedHub, and KML files will be generated for the fused trajectory and raw GNSS data.
-
-### Support and Resources
-
-If you have any questions or encounter any issues while using the ZED SDK, please visit the official Stereolabs support forums. Here, you can find helpful resources such as tutorials, documentation, and a community of developers to assist you in troubleshooting any problems you may encounter.
+7. The sample will display the camera's path and path data in a 3D window. The fused path will be displayed on ZED Hub's maps page, and KML files will be generated for the fused trajectory and raw GNSS data.
