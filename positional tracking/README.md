@@ -1,6 +1,6 @@
 # Positional tracking
 
-These samples show how to use ZED SDK for performing positional tracking
+These samples show how to use ZED SDK for performing positional tracking. You can find additional information on the Positional Tracking module in our [Documentation](https://www.stereolabs.com/docs/positional-tracking/) and [API Reference](https://www.stereolabs.com/docs/api/group__PositionalTracking__group.html).
 
 <p align="center">
   <img src="https://user-images.githubusercontent.com/32394882/229093429-a445e8ae-7109-4995-bc1d-6a27a61bdb60.gif">

@@ -1,6 +1,6 @@
 # Depth Sensing Samples
 
-This repository contains samples demonstrating how to use the [ZED]("https://www.stereolabs.com/store/") camera's **Depth Sensing features** using the ZED SDK.
+This repository contains samples demonstrating how to use the [ZED]("https://www.stereolabs.com/store/") camera's **Depth Sensing features** using the ZED SDK. You can find additional information on the Depth Sensing module in our [Documentation](https://www.stereolabs.com/docs/depth-sensing/) and [API Reference](https://www.stereolabs.com/docs/api/group__Depth__group.html).
 
 <p align="center">
 <img src="https://user-images.githubusercontent.com/32394882/230639409-356b8dfa-df66-4bc2-84d8-a25fd0229779.gif" />

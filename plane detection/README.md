@@ -1,6 +1,6 @@
 # Plane Detection Samples
 
-These samples show how to use ZED SDK for **plane detection**.
+These samples show how to use ZED SDK for **plane detection**. You can find additional information on the Plane Detection features in our [Documentation](https://www.stereolabs.com/docs/spatial-mapping/plane-detection/).
 
 <p align="center">
   <img src="https://user-images.githubusercontent.com/32394882/229093072-d9d70e92-07d5-46cb-bde7-21f7c66fd6a1.gif">

@@ -1,6 +1,6 @@
 # Object Detection
 
-These samples show how to use ZED SDK for performing object detection
+These samples show how to use ZED SDK for performing object detection. You can find additional information on the Object Detection module in our [Documentation](https://www.stereolabs.com/docs/object-detection/) and [API Reference](https://www.stereolabs.com/docs/api/group__Object__group.html).
 
 <p align="center">
   <img src="https://user-images.githubusercontent.com/32394882/230630901-9d53502a-f3f9-45b6-bf57-027148bb18ad.gif" />
