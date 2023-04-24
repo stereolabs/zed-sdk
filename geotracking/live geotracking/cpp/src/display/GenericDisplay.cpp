@@ -34,9 +34,9 @@ void GenericDisplay::init(int argc, char **argv)
 #endif
 }
 
-void GenericDisplay::updatePoseData(sl::Transform zed_rt, std::string str_t, std::string str_r, sl::POSITIONAL_TRACKING_STATE state)
+void GenericDisplay::updatePoseData(sl::Transform zed_rt, sl::POSITIONAL_TRACKING_STATE state)
 {
-    opengl_viewer.updateData(zed_rt, str_t, str_r, state);
+    opengl_viewer.updateData(zed_rt, state);
 }
 
 bool GenericDisplay::isAvailable(){

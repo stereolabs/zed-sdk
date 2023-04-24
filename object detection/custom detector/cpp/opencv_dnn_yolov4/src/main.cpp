@@ -71,7 +71,6 @@ int main(int argc, char** argv) {
     /// Opening the ZED camera before the model deserialization to avoid cuda context issue
     sl::Camera zed;
     sl::InitParameters init_parameters;
-    init_parameters.camera_resolution = sl::RESOLUTION::HD1080;
     init_parameters.depth_mode = sl::DEPTH_MODE::ULTRA;
     init_parameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
 
@@ -91,7 +90,7 @@ int main(int argc, char** argv) {
     sl::ObjectDetectionParameters detection_parameters;
     detection_parameters.enable_tracking = true;
     // Let's define the model as custom box object to specify that the inference is done externally
-    detection_parameters.detection_model = sl::DETECTION_MODEL::CUSTOM_BOX_OBJECTS;
+    detection_parameters.detection_model = sl::OBJECT_DETECTION_MODEL::CUSTOM_BOX_OBJECTS;
     returned_state = zed.enableObjectDetection(detection_parameters);
     if (returned_state != sl::ERROR_CODE::SUCCESS) {
         print("enableObjectDetection", returned_state, "\nExit program.");
