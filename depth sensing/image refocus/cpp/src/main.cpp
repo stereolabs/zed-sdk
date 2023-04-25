@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2022, STEREOLABS.
+// Copyright (c) 2023, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -140,10 +140,9 @@ int main(int argc, char **argv) {
     glewInit();
     
     InitParameters init_parameters;
-    init_parameters.depth_mode = DEPTH_MODE::ULTRA;
-    init_parameters.camera_resolution = RESOLUTION::AUTO;
+    init_parameters.depth_mode = DEPTH_MODE::NEURAL;
     init_parameters.coordinate_units = UNIT::MILLIMETER;
-    init_parameters.depth_minimum_distance = 400.0f;
+    init_parameters.depth_minimum_distance = 100.;
 
     // Open the camera
     ERROR_CODE zed_open_state = zed.open(init_parameters);

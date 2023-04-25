@@ -50,6 +50,25 @@ link_directories(${GLUT_LIBRARY_DIRS})
 link_directories(${OpenGL_LIBRARY_DIRS})
 link_directories(${CUDA_LIBRARY_DIRS})
 
+option(BUILD_WITH_SANITIZER "Build with sanitizer" OFF)
+IF(NOT WIN32)
+
+	add_definitions(-Werror=return-type)
+	IF (BUILD_WITH_SANITIZER)
+	message("!! Building with address sanitizer and -g !!")
+	set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -static-libasan -fsanitize=address")
+	set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -static-libasan -fsanitize=address")
+	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -static-libasan -fsanitize=address -Wall -Wextra -g")
+	set (CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fno-omit-frame-pointer -static-libasan -fsanitize=address -Wall -Wextra -g")
+	add_definitions(-g -fsanitize=address -fno-omit-frame-pointer -static-libasan -Wall -Wextra)
+	ENDIF()
+
+	IF (BUILD_WITH_DEBUGINFOS)
+	message("!! Building with -g !!")
+	add_definitions(-g)
+	ENDIF()
+ENDIF()
+
 
 FILE(GLOB_RECURSE SRC_FILES src/*.c*)
 FILE(GLOB_RECURSE HDR_FILES include/*.h*)
@@ -57,13 +76,13 @@ FILE(GLOB_RECURSE HDR_FILES include/*.h*)
 add_executable(${PROJECT_NAME} ${HDR_FILES} ${SRC_FILES})
 
 if(SL_IOT_FOUND)
-    set(LIBS sl_iot ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIBRARIES})
+    set(LIBS sl_iot util ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIBRARIES})
 else()
     set(LIBS ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIBRARIES})
 endif()
 
 if(GPS_FOUND)
-    list(APPEND LIBS, ${GPS_LIBRARIES})
+    list(APPEND LIBS ${GPS_LIBRARIES})
 endif()
 
 target_link_libraries(${PROJECT_NAME} ${LIBS} ${SPECIAL_OS_LIBS})

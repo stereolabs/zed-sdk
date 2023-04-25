@@ -37,7 +37,7 @@ using json = nlohmann::json;
  *
  * @return sl::GNSSData
  */
-sl::GNSSData getNextGNSSData(std::string gnss_file_path);
+bool getNextGNSSData(std::string gnss_file_path, uint64_t current_timestamp, sl::GNSSData & out);
 
 int main(int argc, char **argv)
 {
@@ -49,6 +49,7 @@ int main(int argc, char **argv)
     // Open the camera
     sl::Camera zed;
     sl::InitParameters init_params;
+    init_params.sdk_verbose = 1;
     init_params.input.setFromSVOFile(argv[1]);
     sl::ERROR_CODE camera_open_error = zed.open(init_params);
     if (camera_open_error != sl::ERROR_CODE::SUCCESS)
@@ -66,7 +67,9 @@ int main(int argc, char **argv)
 
     // Create Fusion object:
     sl::Fusion fusion;
-    sl::FUSION_ERROR_CODE fusion_init_code = fusion.init();
+    sl::InitFusionParameters init_fusion_param;
+    init_fusion_param.coordinate_units = sl::UNIT::METER;
+    sl::FUSION_ERROR_CODE fusion_init_code = fusion.init(init_fusion_param);
     if (fusion_init_code != sl::FUSION_ERROR_CODE::SUCCESS)
     {
         std::cerr << "[Fusion][ERROR] Failed to initialize fusion, error: " << fusion_init_code << std::endl;
@@ -92,21 +95,27 @@ int main(int argc, char **argv)
     GenericDisplay viewer;
     viewer.init(argc, argv);
     std::cout << "Start grabbing data ... the geo-tracking will be displayed in ZEDHub map section" << std::endl;
+    sl::Pose zed_pose;
     while (viewer.isAvailable())
     {
         // Grab camera:
         if (zed.grab() == sl::ERROR_CODE::SUCCESS)
         {
-            sl::Pose zed_pose;
             // You can still use the classical getPosition for your application, just not that the position returned by this method
             // is the position without any GNSS/cameras fusion
             zed.getPosition(zed_pose, sl::REFERENCE_FRAME::WORLD);
         }
 
         // Get GNSS data:
-        sl::GNSSData input_gnss = getNextGNSSData(argv[2]);
-        // Publish GNSS data to Fusion
-        fusion.ingestGNSSData(input_gnss);
+        sl::GNSSData input_gnss;
+        if(getNextGNSSData(argv[2], zed_pose.timestamp.getNanoseconds(), input_gnss)){
+            // Publish GNSS data to Fusion
+            auto ingest_error = fusion.ingestGNSSData(input_gnss);
+            if(ingest_error != sl::FUSION_ERROR_CODE::SUCCESS){
+                std::cout << "Ingest error occurred when ingesting GNSSData: " << ingest_error << std::endl;
+            }
+        }   
+        
             
         // Process data and compute positions:
         if (fusion.process() == sl::FUSION_ERROR_CODE::SUCCESS)
@@ -162,7 +171,7 @@ json readGNSSJsonFile(std::string gnss_file_path)
     return out;
 }
 
-sl::GNSSData getNextGNSSData(std::string gnss_file_path)
+bool getNextGNSSData(std::string gnss_file_path, uint64_t current_timestamp, sl::GNSSData & out)
 {
     static json gnss_data;
     static unsigned current_gnss_idx = 0;
@@ -171,6 +180,28 @@ sl::GNSSData getNextGNSSData(std::string gnss_file_path)
     if (current_gnss_idx < gnss_data["GNSS"].size())
     {
         json current_gnss_data_json = gnss_data["GNSS"][current_gnss_idx];
+        // Check inputs:
+        if(current_gnss_data_json["coordinates"].is_null())
+            return false;
+        if(current_gnss_data_json["coordinates"]["latitude"].is_null())
+            return false;
+        if(current_gnss_data_json["coordinates"]["longitude"].is_null())
+            return false;
+        if(current_gnss_data_json["coordinates"]["altitude"].is_null())
+            return false;
+        if(current_gnss_data_json["coordinates"]["longitude_std"].is_null())
+            return false;
+        if(current_gnss_data_json["coordinates"]["latitude_std"].is_null())
+            return false;
+        if(current_gnss_data_json["coordinates"]["altitude_std"].is_null())
+            return false;
+        if(current_gnss_data_json["ts"].is_null())
+            return false;
+        for (unsigned i = 0; i < 9; i++)
+            if(current_gnss_data_json["position_covariance"][i].is_null())
+                return false;
+
+
         sl::GNSSData current_gnss_data;
         // Fill out coordinates:
         current_gnss_data.setCoordinates(current_gnss_data_json["coordinates"]["latitude"].get<float>(), current_gnss_data_json["coordinates"]["longitude"].get<float>(), current_gnss_data_json["coordinates"]["altitude"].get<float>(), false);
@@ -186,13 +217,16 @@ sl::GNSSData getNextGNSSData(std::string gnss_file_path)
         // Fill out timestamp:
         current_gnss_data.ts.setNanoseconds(current_gnss_data_json["ts"].get<uint64_t>());
 
+        // Verify that the current GNSS data and camera timestamp are within a reasonable time offset of each other to ensure accurate alignment of spatial and visual data:
+        int64_t current_zed_timestamp = current_timestamp;
+        sl::Timestamp timestamp_difference(abs(current_zed_timestamp - (int64_t)current_gnss_data_json["ts"].get<uint64_t>()));
+        if(timestamp_difference.getSeconds() > 10)
+            return false;
+
+
         current_gnss_idx++;
-        return current_gnss_data;
+        out =  current_gnss_data;
+        return true;
     }
-    else
-    {
-        sl::GNSSData out;
-        out.ts = sl::Timestamp(0);
-        return out;
-    }
+    return false;
 }

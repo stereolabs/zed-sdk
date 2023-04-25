@@ -16,8 +16,10 @@ GPSDReader::~GPSDReader()
 }
 void GPSDReader::initialize()
 {
+    std::cout << "initialize " << std::endl;
     grab_gnss_data = std::thread(&GPSDReader::grabGNSSData, this);
 #ifdef GPSD_FOUND
+    std::cout << "Create new object" << std::endl;
     gnss_getter.reset(new gpsmm("localhost", DEFAULT_GPSD_PORT));
     if (gnss_getter->stream(WATCH_ENABLE | WATCH_JSON) == nullptr)
     {
@@ -41,6 +43,9 @@ void GPSDReader::initialize()
         if (gpsd_data->fix.mode >= MODE_2D)
             received_fix = true;
     }
+    is_initialized_mtx.lock();
+    is_initialized = true;
+    is_initialized_mtx.unlock();
     std::cout << "Fix found !!!" << std::endl;
 #else
     std::cerr << "[library not found] GPSD library was not found ... please install it before using this sample" << std::endl;
@@ -101,6 +106,15 @@ sl::ERROR_CODE GPSDReader::grab(sl::GNSSData & current_data){
 }
 
 void GPSDReader::grabGNSSData(){
+    while(1){
+        is_initialized_mtx.lock();
+        if(is_initialized){
+            is_initialized_mtx.unlock();
+            break;
+        }
+        is_initialized_mtx.unlock();
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
     while (continue_to_grab)
     {
         #ifdef GPSD_FOUND

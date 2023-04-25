@@ -40,7 +40,7 @@ set(CMAKE_SUPPRESS_REGENERATION true)
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_PACKAGE_REFERENCES 
 	"OpenGL.Net_0.8.4"
 	"OpenGL.Net.CoreUI_0.8.4"
-	"Stereolabs.zed_3.7.*"
+	"Stereolabs.zed_4.*"
 )
 
  

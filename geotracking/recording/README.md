@@ -1,4 +1,4 @@
-# ZED SDK - Geotracking Data Recording Sample
+# Geotracking Data Recording Sample
 
 ## Overview 
 The Geotracking Data Recording sample demonstrates how to record data for geotracking localization on real-world maps using the ZED camera. The sample generates data in the form of an SVO file, which contains camera data, and a JSON file, which contains pre-recorded GNSS data for use in the playback sample. This sample is a useful resource for developers working on autonomous driving, robotics, and drone navigation applications.
@@ -27,8 +27,3 @@ To use the Geotracking Data Recording sample, follow these steps:
 5. Compile the sample.
 6. Run the Geotracking Data Recording executable.
 7. The sample will display the camera's path and path data in a 3D window. KML files will be generated for displaying the raw GNSS data and fused position on a real-world map like google maps after capture. Additionally, an SVO file corresponding to camera data and a JSON file corresponding to recorded GNSS data will be generated.
-
-## Support and Resources
-
-If you have any questions or encounter any issues while using the ZED SDK, please visit the official Stereolabs support forums. Here, you can find helpful resources such as tutorials, documentation, and a community of developers to assist you in troubleshooting any problems you may encounter.
-

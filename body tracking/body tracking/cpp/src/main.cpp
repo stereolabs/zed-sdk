@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2022, STEREOLABS.
+// Copyright (c) 2023, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -77,9 +77,9 @@ int main(int argc, char **argv) {
 
     // Enable the Body tracking module
     BodyTrackingParameters body_tracker_params;
-    body_tracker_params.enable_tracking = false; // track people across images flow
+    body_tracker_params.enable_tracking = true; // track people across images flow
     body_tracker_params.enable_body_fitting = false; // smooth skeletons moves
-    body_tracker_params.body_format = sl::BODY_FORMAT::BODY_38;
+    body_tracker_params.body_format = sl::BODY_FORMAT::BODY_18;
     body_tracker_params.detection_model = isJetson ? BODY_TRACKING_MODEL::HUMAN_BODY_FAST : BODY_TRACKING_MODEL::HUMAN_BODY_ACCURATE;
     //body_tracker_params.allow_reduced_precision_inference = true;
 

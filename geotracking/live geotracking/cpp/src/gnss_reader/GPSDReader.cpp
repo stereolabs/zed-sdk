@@ -42,6 +42,9 @@ void GPSDReader::initialize()
             received_fix = true;
     }
     std::cout << "Fix found !!!" << std::endl;
+    is_initialized_mtx.lock();
+    is_initialized = true;
+    is_initialized_mtx.unlock();
 #else
     std::cerr << "[library not found] GPSD library was not found ... please install it before using this sample" << std::endl;
 #endif
@@ -101,6 +104,15 @@ sl::ERROR_CODE GPSDReader::grab(sl::GNSSData & current_data){
 }
 
 void GPSDReader::grabGNSSData(){
+    while(1){
+        is_initialized_mtx.lock();
+        if(is_initialized){
+            is_initialized_mtx.unlock();
+            break;
+        }
+        is_initialized_mtx.unlock();
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
     while (continue_to_grab)
     {
         #ifdef GPSD_FOUND
