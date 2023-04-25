@@ -36,17 +36,45 @@
 
 ## Overview
 
-Depth Sensing | Object Detection | Body Tracking |
-:------------: |  :----------: | :-------------:  |
-[![Depth Sensing](https://user-images.githubusercontent.com/32394882/230639409-356b8dfa-df66-4bc2-84d8-a25fd0229779.gif)](https://www.stereolabs.com/docs/depth-sensing)  | [![Object Detection](https://user-images.githubusercontent.com/32394882/230630901-9d53502a-f3f9-45b6-bf57-027148bb18ad.gif)](https://www.stereolabs.com/docs/object-detection)  | [![Body Tracking](https://user-images.githubusercontent.com/32394882/230631989-24dd2b58-2c85-451b-a4ed-558d74d1b922.gif)](https://www.stereolabs.com/docs/body-tracking)  |
-
-Positional Tracking | Geo Tracking | Spatial Mapping |
-:------------: |  :----------: | :-------------:  |
-[![Positional Tracking](https://user-images.githubusercontent.com/32394882/229093429-a445e8ae-7109-4995-bc1d-6a27a61bdb60.gif)](https://www.stereolabs.com/docs/positional-tracking/) | [![GeoTracking](https://user-images.githubusercontent.com/32394882/230602944-ed61e6dd-e485-4911-8a4c-d6c9e4fab0fd.gif)](/geotracking) | [![Spatial Mapping](https://user-images.githubusercontent.com/32394882/229099549-63ca7832-b7a2-42eb-9971-c1635d205b0c.gif)](https://www.stereolabs.com/docs/spatial-mapping) |
-
-Camera Control | Plane Detection | Multi Camera Fusion |
-:------------: |  :----------: | :-------------:  |
-[![Camera Control](https://user-images.githubusercontent.com/32394882/230602616-6b57c351-09c4-4aba-bdec-842afcc3b2ea.gif)](https://www.stereolabs.com/docs/video/camera-controls/) | [![Plane Detection](https://user-images.githubusercontent.com/32394882/229093072-d9d70e92-07d5-46cb-bde7-21f7c66fd6a1.gif)](https://www.stereolabs.com/docs/spatial-mapping/plane-detection/)  | [![Multi Camera Fusion](https://user-images.githubusercontent.com/32394882/228791106-a5f971d8-8d6f-483b-9f87-7f0f0025b8be.gif)](/fusion) |
+<table>
+  <tbody>
+    <tr>
+      <td align="center"><b>Depth Sensing</b></td>
+      <td align="center"><b>Object Detection</b></td>
+      <td align="center"><b>Body Tracking</b></td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="center"><a href="https://www.stereolabs.com/docs/depth-sensing"><img alt="Depth Sensing" src="https://user-images.githubusercontent.com/32394882/230639409-356b8dfa-df66-4bc2-84d8-a25fd0229779.gif"></a></td>
+      <td align="center"><a href="https://www.stereolabs.com/docs/object-detection"><img alt="Object Detection" src="https://user-images.githubusercontent.com/32394882/230630901-9d53502a-f3f9-45b6-bf57-027148bb18ad.gif"></a></td>
+      <td align="center"><a href="https://www.stereolabs.com/docs/body-tracking"><img alt="Body Tracking" src="https://user-images.githubusercontent.com/32394882/230631989-24dd2b58-2c85-451b-a4ed-558d74d1b922.gif"></a></td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="center"><b>Positional Tracking</b></td>
+      <td align="center"><b>Geo Tracking</b></td>
+      <td align="center"><b>Spatial Mapping</b></td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="center"><a href="https://www.stereolabs.com/docs/positional-tracking/"><img alt="Positional Tracking" src="https://user-images.githubusercontent.com/32394882/229093429-a445e8ae-7109-4995-bc1d-6a27a61bdb60.gif"></a></td>
+      <td align="center"><a href="/geotracking"><img alt="GeoTracking" src="https://user-images.githubusercontent.com/32394882/230602944-ed61e6dd-e485-4911-8a4c-d6c9e4fab0fd.gif"></a></td>
+      <td align="center"><a href="https://www.stereolabs.com/docs/spatial-mapping"><img alt="Spatial Mapping" src="https://user-images.githubusercontent.com/32394882/229099549-63ca7832-b7a2-42eb-9971-c1635d205b0c.gif"></a></td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="center"><b>Camera Control</b></td>
+      <td align="center"><b>Plane Detection</b></td>
+      <td align="center"><b>Multi Camera Fusion</b></td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="center"><a href="https://www.stereolabs.com/docs/video/camera-controls/"><img alt="Camera Control" src="https://user-images.githubusercontent.com/32394882/230602616-6b57c351-09c4-4aba-bdec-842afcc3b2ea.gif"></a></td>
+      <td align="center"><a href="https://www.stereolabs.com/docs/spatial-mapping/plane-detection/"><img alt="Plane Detection" src="https://user-images.githubusercontent.com/32394882/229093072-d9d70e92-07d5-46cb-bde7-21f7c66fd6a1.gif"></a></td>
+      <td align="center"><a href="/fusion"><img alt="Multi Camera Fusion" src="https://user-images.githubusercontent.com/32394882/228791106-a5f971d8-8d6f-483b-9f87-7f0f0025b8be.gif"></a></td>
+    </tr>
+  <tbody>
+</table>
 
 
 ## Why ZED?
@@ -98,7 +126,7 @@ This repository contains ready-to-use and samples to start using the ZED SDK wit
 Here is the list of all supported operating systems for the latest version of the ZED SDK. Please find the [recommended specifications](https://www.stereolabs.com/docs/installation/specifications/) to make sure your configuration is compatible with the ZED SDK.
 
 | Ubuntu LTS | Windows | Jetson |
-| -------- | ------------------------- | ----------------- |
+| :------: | :-----------------------: | :---------------: |
 | <div align="center"><a href="https://www.stereolabs.com/docs/installation/linux"><img src="https://user-images.githubusercontent.com/32394882/230619268-bdf66472-8bf5-41e7-9efa-ca3698ff271a.png" width="40%" alt="" /></a></div>  | <div align="center"><a href="https://www.stereolabs.com/docs/installation/windows"><img  src="https://user-images.githubusercontent.com/32394882/230619282-fe2f84fb-2130-4164-a193-db2893b58272.png" width="40%" alt="" /></a></div> | <div align="center"><a href="https://www.stereolabs.com/docs/installation/jetson/"><img src="https://user-images.githubusercontent.com/32394882/230619273-feeee52b-209b-48da-b990-06630cabe323.png" width="40%" alt="" /></a></div>
 
 The ZED SDK requires the use of an **NVIDIA GPU** with a **Compute Capability > 5**.
@@ -111,20 +139,48 @@ If you are not familiar with the corresponding versions between NVIDIA JetPack S
 The ZED SDK can be easily integrated into projects using the following programming languages:
 
 | C++ | Python | C# | C |
-| -------- | ------------------------- | ----------------- | -------- | 
+| :------: | :-----------------------: | :---------------: | :------: | 
 | <div align="center"><a href="https://www.stereolabs.com/docs/api"><img src="https://user-images.githubusercontent.com/32394882/229499695-c71857a2-eded-4171-8185-4e522d5b6c71.png" width="50%" alt="" /></a></div>  | <div align="center"><a href="https://www.stereolabs.com/docs/api/python/"><img src="https://user-images.githubusercontent.com/32394882/229499718-c66c3649-d139-48e5-8523-65b23a120440.png" width="50%" alt="" /></a></div> | <div align="center"><a href="https://www.stereolabs.com/docs/api/csharp"><img src="https://user-images.githubusercontent.com/32394882/229499667-5e4c4d72-1140-4eda-b206-d9f95c93c15c.png" width="50%" alt="" /></a></div> | <div align="center"><a href="https://www.stereolabs.com/docs/api/c/"><img src="https://user-images.githubusercontent.com/32394882/229499672-9b5308a2-3294-4818-84c5-07f84834a6d9.png" width="50%" alt="" /></a></div>
 
 <br />
 
 Thanks to its comprehensive API, ZED cameras can be interfaced with **multiple third-party libraries** and environments.
 
-| Unity | Unreal Engine 5 | OpenCV | ROS | ROS 2
-| -------- | ------------------------- | ----------------- | ----- | ----- |
-| <div align="center"><a href="https://www.stereolabs.com/docs/unity/"><img src="https://user-images.githubusercontent.com/32394882/229497186-d77d9d1f-5eb8-420a-851e-3513d982d78d.png" width="70%" alt="" /></a></div>  | <div align="center"><a href="https://www.stereolabs.com/docs/ue5/"><img  src="https://user-images.githubusercontent.com/32394882/229497196-19fb4d4c-423d-4ae3-abba-b26ca384e7e4.png" width="70%" alt="" /></a></div> | <div align="center"><a href="https://www.stereolabs.com/docs/opencv/"><img src="https://user-images.githubusercontent.com/32394882/229497204-09a267bd-cbcf-4d3f-b9a2-f95349b4b7a9.png" width="70%" alt="" /></a></div> | <div align="center"><a href="https://www.stereolabs.com/docs/ros/"><img src="https://user-images.githubusercontent.com/32394882/229475890-452f2cc0-1a9a-4b2a-87ad-cacc44a7435e.png" width="70%" alt="" /></a></div> | <div align="center"><a href="https://www.stereolabs.com/docs/ros2/"><img src="https://user-images.githubusercontent.com/32394882/230614232-ce7a208e-7cf0-47a2-9c6f-5203e6034a5d.png" width="70%" alt="" /></a></div>
-
-| Pytorch | YOLO | Matlab | Isaac SIM | Touch Designer |  
-| -------- | ------------------------- | ----------------- | ----- | ----- |
-| <div align="center"><a href="https://www.stereolabs.com/docs/pytorch"><img src="https://user-images.githubusercontent.com/32394882/229475918-1add790d-b10e-4529-a1d7-097f015a481f.png" width="70%" alt="" /></a></div>  | <div align="center"><a href="https://www.stereolabs.com/docs/yolo/"><img src="https://user-images.githubusercontent.com/32394882/230623781-3c87a5c9-b6af-4f93-bcc7-5ec381acf5d7.png" width="70%" alt="" /></a></div> | <div align="center"><a href="https://www.stereolabs.com/docs/matlab/"><img src="https://user-images.githubusercontent.com/32394882/229472074-4747f789-4ce6-4aef-b4f7-eab3bb77ab52.png" width="70%" alt="" /></a></div> | <div align="center"><a href="https://www.stereolabs.com/"><img src="https://user-images.githubusercontent.com/32394882/229472012-fe8d4458-219b-4825-8e87-9a3e9bc55e62.png" width="70%" alt="" /></a></div> | <div align="center"><a href="https://derivative.ca/UserGuide/ZED"><img src="https://user-images.githubusercontent.com/32394882/230623653-630e7bd2-1300-47ad-8133-39543470b2b1.png" width="70%" alt="" /></a></div>
+<table>
+  <tbody>
+    <tr>
+      <td align="center"><b>Unity</b></td>
+      <td align="center"><b>Unreal Engine 5</b></td>
+      <td align="center"><b>OpenCV</b></td>
+      <td align="center"><b>ROS</b></td>
+      <td align="center"><b>ROS 2</b></td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="center"><a href="https://www.stereolabs.com/docs/unity/"><img src="https://user-images.githubusercontent.com/32394882/229497186-d77d9d1f-5eb8-420a-851e-3513d982d78d.png" width="70%" alt="Unity" /></a></td>
+      <td align="center"><a href="https://www.stereolabs.com/docs/ue5/"><img  src="https://user-images.githubusercontent.com/32394882/229497196-19fb4d4c-423d-4ae3-abba-b26ca384e7e4.png" width="70%" alt="Unreal Engine 5" /></a></td>
+      <td align="center"><a href="https://www.stereolabs.com/docs/opencv/"><img src="https://user-images.githubusercontent.com/32394882/229497204-09a267bd-cbcf-4d3f-b9a2-f95349b4b7a9.png" width="70%" alt="OpenCV" /></a></td>
+      <td align="center"><a href="https://www.stereolabs.com/docs/ros/"><img src="https://user-images.githubusercontent.com/32394882/229475890-452f2cc0-1a9a-4b2a-87ad-cacc44a7435e.png" width="70%" alt="ROS" /></a></td>
+      <td align="center"><a href="https://www.stereolabs.com/docs/ros2/"><img src="https://user-images.githubusercontent.com/32394882/230614232-ce7a208e-7cf0-47a2-9c6f-5203e6034a5d.png" width="70%" alt="ROS 2" /></a></td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="center"><b>Pytorch</b></td>
+      <td align="center"><b>YOLO</b></td>
+      <td align="center"><b>Matlab</b></td>
+      <td align="center"><b>Isaac SIM</b></td>
+      <td align="center"><b>Touch Designer</b></td>
+    </tr>
+    <tr></tr>
+    <tr>
+      <td align="center"><a href="https://www.stereolabs.com/docs/pytorch"><img src="https://user-images.githubusercontent.com/32394882/229475918-1add790d-b10e-4529-a1d7-097f015a481f.png" width="70%" alt="Pytorch" /></a></td>
+      <td align="center"><a href="https://www.stereolabs.com/docs/yolo/"><img src="https://user-images.githubusercontent.com/32394882/230623781-3c87a5c9-b6af-4f93-bcc7-5ec381acf5d7.png" width="70%" alt="YOLO" /></a></td>
+      <td align="center"><a href="https://www.stereolabs.com/docs/matlab/"><img src="https://user-images.githubusercontent.com/32394882/229472074-4747f789-4ce6-4aef-b4f7-eab3bb77ab52.png" width="70%" alt="Matlab" /></a></td>
+      <td align="center"><a href="https://developer.nvidia.com/isaac-sim"><img src="https://user-images.githubusercontent.com/32394882/229472012-fe8d4458-219b-4825-8e87-9a3e9bc55e62.png" width="70%" alt="Isaac SIM" /></a></td>
+      <td align="center"><a href="https://derivative.ca/UserGuide/ZED"><img src="https://user-images.githubusercontent.com/32394882/230623653-630e7bd2-1300-47ad-8133-39543470b2b1.png" width="70%" alt="Touch Designer" /></a></td>
+    </tr>
+  </tbody>
+</table>
 
 
 ## ZED Hub
