@@ -32,9 +32,7 @@ if __name__ == "__main__":
 
     # Create a InitParameters object and set configuration parameters
     init_params = sl.InitParameters()
-    init_params.camera_resolution = sl.RESOLUTION.HD1080  # Use HD1080 video mode    
     init_params.coordinate_units = sl.UNIT.METER
-    init_params.camera_fps = 30                          # Set fps at 30
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
 
     # If applicable, use the SVO given as parameter
@@ -44,8 +42,6 @@ if __name__ == "__main__":
         print("Using SVO file: {0}".format(filepath))
         init_params.set_from_svo_file(filepath)
 
-    # Set runtime parameters
-    runtime_parameters = sl.RuntimeParameters()
 
     # Open the camera
     err = zed.open(init_params)
@@ -57,6 +53,8 @@ if __name__ == "__main__":
     # Defines if the object detection will track objects across images flow.
     obj_param.enable_tracking = True       # if True, enable positional tracking
 
+    obj_param.detection_model = sl.OBJECT_DETECTION_MODEL.MULTI_CLASS_BOX_MEDIUM
+
     if obj_param.enable_tracking:
         zed.enable_positional_tracking()
         
@@ -65,7 +63,7 @@ if __name__ == "__main__":
     camera_info = zed.get_camera_information()
     # Create OpenGL viewer
     viewer = gl.GLViewer()
-    viewer.init(camera_info.calibration_parameters.left_cam, obj_param.enable_tracking)
+    viewer.init(camera_info.camera_configuration.calibration_parameters.left_cam, obj_param.enable_tracking)
 
     # Configure object detection runtime parameters
     obj_runtime_param = sl.ObjectDetectionRuntimeParameters()
@@ -76,6 +74,9 @@ if __name__ == "__main__":
     objects = sl.Objects()
     image = sl.Mat()
 
+    # Set runtime parameters
+    runtime_parameters = sl.RuntimeParameters()
+    
     while viewer.is_available():
         # Grab an image, a RuntimeParameters object must be given to grab()
         if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:

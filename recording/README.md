@@ -7,7 +7,6 @@ These samples show how to use ZED SDK for recording and playback SVO files. SVO 
 
 This section contains the following code samples:
 
-- [SVO Recording](./recording/): Shows how to **record** a svo to be played later with the ZED SDK.
-- [SVO Playback](./playback/): Shows how to **read** a recorded '.svo' file and how it can be controlled.
-- [SVO Export](./export/): Contains a list of samples that allow you to **export** ZED SDK data in different common file formats.
-
+- [Recording](./recording/): Shows how to **record** a svo to be played later with the ZED SDK.
+- [Playback](./playback/): Shows how to **read** a recorded '.svo' file and how it can be controlled.
+- [Export](./export/): Contains a list of samples that allow you to **export** ZED SDK data in different common file formats.

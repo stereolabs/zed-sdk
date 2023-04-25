@@ -36,6 +36,8 @@ protected:
     std::thread grab_gnss_data;
     bool continue_to_grab = true;
     bool new_data=false;
+    bool is_initialized = false;
+    std::mutex is_initialized_mtx;
     sl::GNSSData current_gnss_data;
 #ifdef GPSD_FOUND
     std::unique_ptr<gpsmm> gnss_getter;    

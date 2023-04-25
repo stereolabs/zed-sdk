@@ -293,6 +293,23 @@ void GLViewer::addSKeleton(sl::BodyData &obj, Simple3DObject &simpleObj, sl::flo
     }
 }
 
+void GLViewer::addSKeleton(sl::BodyData& obj, Simple3DObject& simpleObj, sl::float4 clr_id, bool raw) {
+    switch (obj.keypoint.size()) {
+    case 18:
+        addSKeleton(obj, simpleObj, clr_id, raw, sl::BODY_FORMAT::BODY_18);
+        break;
+    case 34:
+        addSKeleton(obj, simpleObj, clr_id, raw, sl::BODY_FORMAT::BODY_34);
+        break;
+    case 38:
+        addSKeleton(obj, simpleObj, clr_id, raw, sl::BODY_FORMAT::BODY_38);
+        break;
+    case 70:
+        addSKeleton(obj, simpleObj, clr_id, raw, sl::BODY_FORMAT::BODY_70);
+        break;
+    }
+}
+
 void GLViewer::updateBodies(sl::Bodies &bodies, std::map<sl::CameraIdentifier, sl::Bodies>& singldata, sl::FusionMetrics& metrics) {
     mtx.lock();
 
@@ -324,7 +341,7 @@ void GLViewer::updateBodies(sl::Bodies &bodies, std::map<sl::CameraIdentifier, s
 
             for (auto& sk : it.second.body_list) {
                 if(renderBody(sk, it.second.is_tracked))
-                    addSKeleton(sk, sk_r, clr_id, true, bodies.body_format);
+                    addSKeleton(sk, sk_r, clr_id, true);
             }
         }
             

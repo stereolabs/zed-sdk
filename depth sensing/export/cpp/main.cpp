@@ -18,34 +18,39 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-/************************************************************************************************
- ** This sample shows how to stream remotely the video of a ZED camera. Any application using   **
- ** the ZED SDK can receive and process this stream. See Camera Streaming/Receiver example.     **
- *************************************************************************************************/
+/**********************************************************************
+ ** This sample demonstrates how to export both Image and Depth data **
+    from the ZED SKD into standard PNG files                         **
+ *********************************************************************/
 
 // ZED includes
 #include <sl/Camera.hpp>
 
-// Sample includes
-#include "utils.hpp"
+// Opencv header
+#include <opencv2/opencv.hpp>
 
-// Using namespace
-using namespace sl;
+// useful header to create directory
+#ifdef WIN32
+#include <windows.h>
+#else
+#include <sys/types.h>
+#include <sys/stat.h>
+#endif
+
+// Using std and sl namespaces
 using namespace std;
+using namespace sl;
 
-void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
-int parseArgs(int argc, char **argv, sl::InitParameters& param);
+void parseArgs(int argc, char **argv, sl::InitParameters& param);
+void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix);
+void createDirectory(string);
 
 int main(int argc, char **argv) {
-    // Create a ZED camera
     Camera zed;
-
     // Set configuration parameters for the ZED
     InitParameters init_parameters;
-    init_parameters.camera_resolution = sl::RESOLUTION::AUTO;
-    init_parameters.depth_mode = DEPTH_MODE::NONE;
-    init_parameters.sdk_verbose = 1;
-    int res_arg = parseArgs(argc, argv, init_parameters);
+    init_parameters.depth_mode = DEPTH_MODE::ULTRA;    
+    parseArgs(argc, argv, init_parameters);
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
@@ -54,50 +59,54 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    StreamingParameters stream_params;
-    if (argc == 2 && res_arg == 1) stream_params.port = atoi(argv[1]);
-    if (argc > 2) stream_params.port = atoi(argv[2]);
+    // create a custom resolution to save ZED data
+    auto camera_config = zed.getCameraInformation().camera_configuration;
+    float image_aspect_ratio = camera_config.resolution.width / (1.f * camera_config.resolution.height);
+    int requested_low_res_w = min(720, (int)camera_config.resolution.width);
+    sl::Resolution res(requested_low_res_w, requested_low_res_w / image_aspect_ratio);
+    
+    // get the camera serial number
+    int serial_number = zed.getCameraInformation().serial_number;
 
-    returned_state = zed.enableStreaming(stream_params);
-    if (returned_state != ERROR_CODE::SUCCESS) {
-        print("Streaming initialization error: ", returned_state);
-        return EXIT_FAILURE;
-    }
+    // create directory to save the data
+    string directory_name("ZED_"+to_string(serial_number));
+    createDirectory(directory_name);
+    string image_directory_name(directory_name+"/IMAGE");
+    createDirectory(image_directory_name);
+    string depth_directory_name(directory_name+"/DEPTH");
+    createDirectory(depth_directory_name);
 
-    print("Streaming on port " + to_string(stream_params.port));
+    Mat image, depth_map;
+    // Main Loop 
+    while (1) {        
+        // Check that a new image is successfully acquired
+        if (zed.grab() == ERROR_CODE::SUCCESS) {
 
-    SetCtrlHandler();
+            // retrieve current Image
+            zed.retrieveImage(image, VIEW::LEFT, MEM::CPU, res);
 
-    while (!exit_app) {
-        if (zed.grab() != ERROR_CODE::SUCCESS)
-            sleep_ms(1);
-    }
+            // save the image in PNG with the image timestamp as name
+            auto timestamp = image.timestamp.getMilliseconds();
+            image.write((image_directory_name+"/"+to_string(timestamp)+".png").c_str());
 
-    // disable Streaming
-    zed.disableStreaming();
+            // retrieve current depth map directly in 16bits (millimeter to be saved as png)
+            zed.retrieveMeasure(depth_map, MEASURE::DEPTH_U16_MM, MEM::CPU, res);
+            depth_map.write((depth_directory_name+"/"+to_string(timestamp)+".png").c_str());
 
-    // close the Camera
+            // display the current image
+            cv::imshow("Image", cv::Mat((int) image.getHeight(), (int) image.getWidth(), CV_8UC4, image.getPtr<sl::uchar1>(sl::MEM::CPU)));
+            auto k = cv::waitKey(20);
+            if(k=='q') break;
+        }
+    }    
+
+    // close the ZED
     zed.close();
+
     return EXIT_SUCCESS;
 }
 
-void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
-    cout << "[Sample]";
-    if (err_code != ERROR_CODE::SUCCESS)
-        cout << "[Error] ";
-    else
-        cout << " ";
-    cout << msg_prefix << " ";
-    if (err_code != ERROR_CODE::SUCCESS) {
-        cout << " | " << toString(err_code) << " : ";
-        cout << toVerbose(err_code);
-    }
-    if (!msg_suffix.empty())
-        cout << " " << msg_suffix;
-    cout << endl;
-}
-
-int parseArgs(int argc, char **argv, sl::InitParameters& param) {
+void parseArgs(int argc, char **argv, sl::InitParameters& param) {
     if (argc > 1 && string(argv[1]).find(".svo") != string::npos) {
         // SVO input mode
         param.input.setFromSVOFile(argv[1]);
@@ -114,7 +123,7 @@ int parseArgs(int argc, char **argv, sl::InitParameters& param) {
             // Stream input mode - IP only
             param.input.setFromStream(sl::String(argv[1]));
             cout << "[Sample] Using Stream input, IP : " << argv[1] << endl;
-        } else if (arg.find("HD2K") != string::npos) {
+        }else if (arg.find("HD2K") != string::npos) {
             param.camera_resolution = RESOLUTION::HD2K;
             cout << "[Sample] Using Camera in resolution HD2K" << endl;
         }else if (arg.find("HD1200") != string::npos) {
@@ -132,12 +141,32 @@ int parseArgs(int argc, char **argv, sl::InitParameters& param) {
         }else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;
-        } else
-            return 1;
+        }
     } else {
         // Default
-        return 1;
     }
-    return 0;
 }
 
+void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
+    cout <<"[Sample]";
+    if (err_code != ERROR_CODE::SUCCESS)
+        cout << "[Error] ";
+    else
+        cout<<" ";
+    cout << msg_prefix << " ";
+    if (err_code != ERROR_CODE::SUCCESS) {
+        cout << " | " << toString(err_code) << " : ";
+        cout << toVerbose(err_code);
+    }
+    if (!msg_suffix.empty())
+        cout << " " << msg_suffix;
+    cout << endl;
+}
+
+void createDirectory(std::string name) {
+#ifdef _WIN32
+    CreateDirectory(name.c_str(), NULL);
+#else
+    mkdir(name.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#endif
+}

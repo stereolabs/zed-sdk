@@ -1,11 +1,12 @@
 ﻿#ifndef __VIEWER_INCLUDE__
 #define __VIEWER_INCLUDE__
 
-
+#include <vector>
+#include <mutex>
+#include <map>
+#include <deque>
+#include <vector>
 #include <sl/Camera.hpp>
-#include <sl/Fusion.hpp>
-
-#include "global.hpp"
 
 #include <GL/glew.h>
 #include <GL/freeglut.h>
@@ -20,9 +21,106 @@
 #define MOUSE_R_SENSITIVITY 0.03f
 #define MOUSE_UZ_SENSITIVITY 0.75f
 #define MOUSE_DZ_SENSITIVITY 1.25f
-#define MOUSE_T_SENSITIVITY 0.05f
+#define MOUSE_T_SENSITIVITY 50.f
 #define KEY_T_SENSITIVITY 0.1f
 
+using namespace sl;
+
+const std::vector<std::pair<BODY_38_PARTS, BODY_38_PARTS>> BODY_BONES_FAST_RENDER
+{
+    {
+        BODY_38_PARTS::PELVIS, BODY_38_PARTS::SPINE_1
+    },
+    {
+        BODY_38_PARTS::SPINE_1, BODY_38_PARTS::SPINE_2
+    },
+    {
+        BODY_38_PARTS::SPINE_2, BODY_38_PARTS::SPINE_3
+    },
+    {
+        BODY_38_PARTS::SPINE_3, BODY_38_PARTS::NECK
+    },
+    // Face
+    {
+        BODY_38_PARTS::NECK, BODY_38_PARTS::NOSE
+    },
+    {
+        BODY_38_PARTS::NOSE, BODY_38_PARTS::LEFT_EYE
+    },
+    {
+        BODY_38_PARTS::LEFT_EYE, BODY_38_PARTS::LEFT_EAR
+    },
+    {
+        BODY_38_PARTS::NOSE, BODY_38_PARTS::RIGHT_EYE
+    },
+    {
+        BODY_38_PARTS::RIGHT_EYE, BODY_38_PARTS::RIGHT_EAR
+    },
+    // Left arm
+    {
+        BODY_38_PARTS::SPINE_3, BODY_38_PARTS::LEFT_CLAVICLE
+    },
+    {
+        BODY_38_PARTS::LEFT_CLAVICLE, BODY_38_PARTS::LEFT_SHOULDER
+    },
+    {
+        BODY_38_PARTS::LEFT_SHOULDER, BODY_38_PARTS::LEFT_ELBOW
+    },
+    {
+        BODY_38_PARTS::LEFT_ELBOW, BODY_38_PARTS::LEFT_WRIST
+    },
+    // Right arm
+    {
+        BODY_38_PARTS::SPINE_3, BODY_38_PARTS::RIGHT_CLAVICLE
+    },
+    {
+        BODY_38_PARTS::RIGHT_CLAVICLE, BODY_38_PARTS::RIGHT_SHOULDER
+    },
+    {
+        BODY_38_PARTS::RIGHT_SHOULDER, BODY_38_PARTS::RIGHT_ELBOW
+    },
+    {
+        BODY_38_PARTS::RIGHT_ELBOW, BODY_38_PARTS::RIGHT_WRIST
+    },
+    // Left leg
+    {
+        BODY_38_PARTS::PELVIS, BODY_38_PARTS::LEFT_HIP
+    },
+    {
+        BODY_38_PARTS::LEFT_HIP, BODY_38_PARTS::LEFT_KNEE
+    },
+    {
+        BODY_38_PARTS::LEFT_KNEE, BODY_38_PARTS::LEFT_ANKLE
+    },
+    {
+        BODY_38_PARTS::LEFT_ANKLE, BODY_38_PARTS::LEFT_HEEL
+    },
+    {
+        BODY_38_PARTS::LEFT_ANKLE, BODY_38_PARTS::LEFT_BIG_TOE
+    },
+    {
+        BODY_38_PARTS::LEFT_ANKLE, BODY_38_PARTS::LEFT_SMALL_TOE
+    },
+    // Right leg
+    {
+        BODY_38_PARTS::PELVIS, BODY_38_PARTS::RIGHT_HIP
+    },
+    {
+        BODY_38_PARTS::RIGHT_HIP, BODY_38_PARTS::RIGHT_KNEE
+    },
+    {
+        BODY_38_PARTS::RIGHT_KNEE, BODY_38_PARTS::RIGHT_ANKLE
+    },
+    {
+        BODY_38_PARTS::RIGHT_ANKLE, BODY_38_PARTS::RIGHT_HEEL
+    },
+    {
+        BODY_38_PARTS::RIGHT_ANKLE, BODY_38_PARTS::RIGHT_BIG_TOE
+    },
+    {
+        BODY_38_PARTS::RIGHT_ANKLE, BODY_38_PARTS::RIGHT_SMALL_TOE
+    },
+};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -64,9 +162,8 @@ public:
     void addBoundingBox(std::vector<sl::float3> bbox, sl::float4 base_clr);
     void addPoint(sl::float3 pt, sl::float4 clr);
     void addLine(sl::float3 p1, sl::float3 p2, sl::float3 clr);
-    void addCylinder(sl::float3 startPosition, sl::float3 endPosition, sl::float4 clr, const float m_radius = 0.025f);
-    void addSphere(sl::float3 position, sl::float4 clr);
-    void addFace(sl::float3 p1, sl::float3 p2, sl::float3 p3, sl::float3 clr);
+    void addCylinder(sl::float3 startPosition, sl::float3 endPosition, sl::float4 clr);
+    void addSphere(sl::float3 position, sl::float4 clr, float radius = 0.01f * 1000.0f * 2);
     void pushToGPU();
     void clear();
 
@@ -111,28 +208,6 @@ private:
     sl::Translation position_;
     sl::Orientation rotation_;
 };
-
-class MeshObject {
-private:
-    int current_fc;
-    bool need_update;
-
-    GLuint vboID_[3];
-    GLuint vaoID_;
-    std::vector<sl::float3> vert, clr;
-    std::vector<sl::uint4> faces;
-
-public:
-
-    MeshObject();
-    ~MeshObject();
-
-    void addMesh(std::vector<sl::float3>& vertices, std::vector<sl::uint4>& triangles, std::vector<sl::float3>& colors);
-
-    void pushToGPU();
-    void draw(bool mesh_fill);
-};
-
 
 class CameraGL {
 public:
@@ -203,65 +278,6 @@ private:
     float zfar_;
 };
 
-class PointCloud {
-public:
-    PointCloud();
-    ~PointCloud();
-
-    // Initialize Opengl and Cuda buffers
-    // Warning: must be called in the Opengl thread
-    void initialize(sl::Resolution res);
-    // Push a new point cloud
-    // Warning: can be called from any thread but the mutex "mutexData" must be locked
-    void pushNewPC(sl::Mat &matXYZRGBA);
-    // Update the Opengl buffer
-    // Warning: must be called in the Opengl thread
-    void update();
-    // Draw the point cloud
-    // Warning: must be called in the Opengl thread
-    void draw(const sl::Transform& vp);
-    // Close (disable update)
-    void close();
-
-private:
-    sl::Mat matGPU_;
-    bool hasNewPCL_ = false;
-    ShaderData shader;
-    size_t numBytes_;
-    float* xyzrgbaMappedBuf_;
-    GLuint bufferGLID_;
-    cudaGraphicsResource* bufferCudaID_;
-};
-
-class ImageHandler {
-public:
-    ImageHandler();
-    ~ImageHandler();
-
-    // Initialize Opengl and Cuda buffers
-    bool initialize(sl::Resolution res);
-    // Push a new Image + Z buffer and transform into a point cloud
-    void pushNewImage(sl::Mat &image);
-    // Draw the Image
-    void draw();
-    // Close (disable update)
-    void close();
-
-private:
-    GLuint texID;
-    GLuint imageTex;
-    cudaGraphicsResource* cuda_gl_ressource; //cuda GL resource
-    Shader shader;
-    GLuint quad_vb;
-};
-
-struct ObjectClassName {
-    sl::float3 position;
-    std::string name_lineA;
-    std::string name_lineB;
-    sl::float4 color;
-};
-
 // This class manages input events, window and Opengl rendering pipeline
 
 class GLViewer {
@@ -270,23 +286,19 @@ public:
     ~GLViewer();
     bool isAvailable();
     void init(int argc, char **argv);
+    void updateData(Bodies &);
+    void exit();
 
-    void updateBodies(sl::Bodies &objs,std::map<sl::CameraIdentifier, sl::Bodies>& singldata, sl::FusionMetrics& metrics);
-    unsigned char getKey() {
-        auto ret_v = lastPressedKey;
-        lastPressedKey = ' ';
-        return ret_v;
+    void restart() {
+        available = true;
+        clearInputs();
     }
 
-    void exit();
 private:
     void render();
     void update();
     void draw();
     void clearInputs();
-    void setRenderCameraProjection(sl::CameraParameters params, float znear, float zfar);
-
-    void printText();
 
     // Glut functions callbacks
     static void drawCallback();
@@ -297,10 +309,7 @@ private:
     static void keyReleasedCallback(unsigned char c, int x, int y);
     static void idle();
 
-    void addSKeleton(sl::BodyData &, Simple3DObject &, sl::float4 clr_id, bool raw, sl::BODY_FORMAT format);
-
     bool available;
-    bool drawBbox = false;
 
     enum MOUSE_BUTTON {
         LEFT = 0,
@@ -316,8 +325,6 @@ private:
         FREE = 'f'
     };
 
-    unsigned char lastPressedKey;
-
     bool mouseButton_[3];
     int mouseWheelPosition_;
     int mouseCurrentPosition_[2];
@@ -330,18 +337,12 @@ private:
     ShaderData shaderLine;
     ShaderData shaderSK;
 
-    sl::Transform projection_;
     sl::float3 bckgrnd_clr;
 
-    std::vector<ObjectClassName> fusionStats;
-
     CameraGL camera_;
+
     Simple3DObject skeletons;
-    std::map<int,Simple3DObject> skeletons_raw;
     Simple3DObject floor_grid;
-
-    bool show_raw = true;
-
 };
 
 #endif /* __VIEWER_INCLUDE__ */

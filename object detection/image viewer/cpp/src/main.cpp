@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2022, STEREOLABS.
+// Copyright (c) 2023, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -19,7 +19,7 @@
 ///////////////////////////////////////////////////////////////////////////
 
 /*****************************************************************************************
- ** This sample demonstrates how to detect objects and retrieve their 3D position **
+ ** This sample demonstrates how to detect objects and retrieve their 3D position       **
  **         with the ZED SDK and display the result in an OpenGL window.                **
  *****************************************************************************************/
 
@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
 
     // Enable Positional tracking (mandatory for object detection)
     PositionalTrackingParameters positional_tracking_parameters;
-    //If the camera is static, uncomment the following line to have better performances and boxes sticked to the ground.
+    //If the camera is static, uncomment the following line to have better performances.
     //positional_tracking_parameters.set_as_static = true;
     returned_state = zed.enablePositionalTracking(positional_tracking_parameters);
     if (returned_state != ERROR_CODE::SUCCESS) {
@@ -103,18 +103,17 @@ int main(int argc, char **argv) {
     Mat image;
 
     // Main Loop
-    bool need_floor_plane = positional_tracking_parameters.set_as_static;
     while (viewer.isAvailable()) {
         // Grab images
         if (zed.grab() == ERROR_CODE::SUCCESS) {
 
-            // Retrieve left image
+            // Retrieve left image for display
             zed.retrieveImage(image, VIEW::LEFT, MEM::GPU);
 
-            // Retrieve Detected Human Bodies
+            // Retrieve Detected Objects
             zed.retrieveObjects(objects, objectTracker_parameters_rt);
 
-            //Update GL View
+            //Update rendering, image with detected object overlay
             viewer.updateView(image, objects);
         }
     }

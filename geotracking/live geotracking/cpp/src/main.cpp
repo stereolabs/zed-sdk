@@ -34,7 +34,9 @@ int main(int argc, char **argv)
 {
     // Open the camera
     sl::Camera zed;
-    sl::ERROR_CODE camera_open_error = zed.open();
+    sl::InitParameters init_params;
+    init_params.sdk_verbose = 1;
+    sl::ERROR_CODE camera_open_error = zed.open(init_params);
     if (camera_open_error != sl::ERROR_CODE::SUCCESS)
     {
         std::cerr << "[ZED][ERROR] Can't open ZED camera" << std::endl;
@@ -49,7 +51,9 @@ int main(int argc, char **argv)
     }
     // Create Fusion object:
     sl::Fusion fusion;
-    sl::FUSION_ERROR_CODE fusion_init_code = fusion.init();
+    sl::InitFusionParameters init_fusion_param;
+    init_fusion_param.coordinate_units = sl::UNIT::METER;
+    sl::FUSION_ERROR_CODE fusion_init_code = fusion.init(init_fusion_param);
     if (fusion_init_code != sl::FUSION_ERROR_CODE::SUCCESS)
     {
         std::cerr << "[Fusion][ERROR] Failed to initialize fusion, error: " << fusion_init_code << std::endl;
@@ -89,7 +93,10 @@ int main(int argc, char **argv)
         if (gnss_reader.grab(input_gnss) == sl::ERROR_CODE::SUCCESS)
         {
             // Publish GNSS data to Fusion
-            fusion.ingestGNSSData(input_gnss);
+            auto ingest_error = fusion.ingestGNSSData(input_gnss);
+            if(ingest_error != sl::FUSION_ERROR_CODE::SUCCESS){
+                std::cout << "Ingest error occurred when ingesting GNSSData: " << ingest_error << std::endl;
+            }
         }
         // Process data and compute positions:
         if (fusion.process() == sl::FUSION_ERROR_CODE::SUCCESS)

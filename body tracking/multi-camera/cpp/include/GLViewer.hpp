@@ -296,6 +296,7 @@ private:
     static void idle();
 
     void addSKeleton(sl::BodyData &, Simple3DObject &, sl::float4 clr_id, bool raw, sl::BODY_FORMAT format);
+    void addSKeleton(sl::BodyData &, Simple3DObject &, sl::float4 clr_id, bool raw);
 
     bool available;
     bool drawBbox = false;
