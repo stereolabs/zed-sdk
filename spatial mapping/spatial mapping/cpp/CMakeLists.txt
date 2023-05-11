@@ -48,7 +48,7 @@ endif()
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} 
                         ${ZED_LIBS} 
                         ${OPENGL_LIBRARIES}
-                        ${GLUT_LIBRARY}
+                        ${GLUT_LIBRARIES}
                         ${OpenCV_LIBRARIES}
                         ${GLEW_LIBRARIES})
 
