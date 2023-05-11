@@ -45,7 +45,7 @@ endif()
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} 
                         ${ZED_LIBS} 
                         ${OPENGL_LIBRARIES}
-                        ${GLUT_LIBRARIES}
+                        ${GLUT_LIBRARY}
                         ${GLEW_LIBRARIES})
 
 if(INSTALL_SAMPLES)
