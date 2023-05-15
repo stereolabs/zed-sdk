@@ -48,7 +48,7 @@ TARGET_LINK_LIBRARIES(${PROJECT_NAME}
                         ${ZED_LIBS} 
                         ${OpenCV_LIBRARIES}
                         ${OPENGL_LIBRARIES}
-                        ${GLUT_LIBRARY}
+                        ${GLUT_LIBRARIES}
                         ${GLEW_LIBRARIES})
 
 if(INSTALL_SAMPLES)

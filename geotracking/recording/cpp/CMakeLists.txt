@@ -57,7 +57,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/gnss_reader)
 
 # Add execuable and link
 ADD_EXECUTABLE(${PROJECT_NAME} src/main.cpp src/display/GLViewer.cpp src/display/GenericDisplay.cpp src/gnss_reader/GPSDReader.cpp src/exporter/KMLExporter.cpp src/exporter/GNSSSaver.cpp src/exporter/TimestampUtils.cpp)
-set(LIBS ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARY} ${GLEW_LIBRARIES} pthread util)
+set(LIBS ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${GLEW_LIBRARIES} pthread util)
 if(GPS_FOUND)
     list(APPEND LIBS ${GPS_LIBRARIES})
 endif()
