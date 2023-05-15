@@ -95,7 +95,8 @@ int main(int argc, char **argv) {
     ObjectDetectionParameters detection_parameters;
     detection_parameters.enable_tracking = true;
     detection_parameters.enable_segmentation = false; // designed to give person pixel mask
-    detection_parameters.detection_model = isJetson ? OBJECT_DETECTION_MODEL::MULTI_CLASS_BOX_FAST : OBJECT_DETECTION_MODEL::MULTI_CLASS_BOX_ACCURATE;;
+    detection_parameters.detection_model = isJetson ? OBJECT_DETECTION_MODEL::MULTI_CLASS_BOX_FAST : OBJECT_DETECTION_MODEL::MULTI_CLASS_BOX_ACCURATE;
+
 #if USE_BATCHING
     detection_parameters.batch_parameters.enable = true;
     detection_parameters.batch_parameters.latency = 2.f;

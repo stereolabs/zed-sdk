@@ -63,7 +63,7 @@ target_link_libraries(${PROJECT_NAME}
                         ${SPECIAL_OS_LIBS}
                         ${ZED_LIBS}
                         ${OPENGL_LIBRARIES}
-                        ${GLUT_LIBRARY}
+                        ${GLUT_LIBRARIES}
                         ${GLEW_LIBRARIES}
                         ${OpenCV_LIBRARIES})
 

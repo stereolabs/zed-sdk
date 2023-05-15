@@ -54,10 +54,11 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -static-libasan
 set (CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fno-omit-frame-pointer -static-libasan -fsanitize=address -Wall -Wextra -g")
 ENDIF()
 
+
 target_link_libraries(${PROJECT_NAME}
                     ${ZED_LIBS}
                     ${OPENGL_LIBRARIES}
-                    ${GLUT_LIBRARY}
+                    ${GLUT_LIBRARIES}
                     ${OpenCV_LIBRARIES}
                     ${GLEW_LIBRARIES}
 )
