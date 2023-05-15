@@ -28,7 +28,6 @@ def main():
 
     # Create a InitParameters object and set configuration parameters
     init_params = sl.InitParameters()
-    init_params.camera_resolution = sl.RESOLUTION.HD720  # Use HD720 video mode
     init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE
     init_params.coordinate_units = sl.UNIT.METER
     init_params.sdk_verbose = True
@@ -40,14 +39,12 @@ def main():
 
     obj_param = sl.ObjectDetectionParameters()
     obj_param.enable_tracking=True
-    obj_param.image_sync=True
     obj_param.enable_segmentation=True
+    obj_param.detection_model = sl.OBJECT_DETECTION_MODEL.MULTI_CLASS_BOX_MEDIUM
 
-    camera_infos = zed.get_camera_information()
     if obj_param.enable_tracking :
         positional_tracking_param = sl.PositionalTrackingParameters()
         #positional_tracking_param.set_as_static = True
-        positional_tracking_param.set_floor_as_origin = True
         zed.enable_positional_tracking(positional_tracking_param)
 
     print("Object Detection: Loading Module...")
@@ -62,9 +59,12 @@ def main():
     obj_runtime_param = sl.ObjectDetectionRuntimeParameters()
     obj_runtime_param.detection_confidence_threshold = 40
 
-    while zed.grab() == sl.ERROR_CODE.SUCCESS:
-        err = zed.retrieve_objects(objects, obj_runtime_param)
+    iter = 0
+    while iter < 200:
+        zed.grab()
+        zed.retrieve_objects(objects, obj_runtime_param)
         if objects.is_new :
+            iter = iter +1
             obj_array = objects.object_list
             print(str(len(obj_array))+" Object(s) detected\n")
             if len(obj_array) > 0 :

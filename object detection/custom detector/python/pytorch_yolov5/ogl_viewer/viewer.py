@@ -388,7 +388,6 @@ class GLViewer:
         self.zedModel = Simple3DObject(True)
         self.BBox_faces = Simple3DObject(False, 3, 4)
         self.BBox_edges = Simple3DObject(False, 3, 4)
-        self.skeletons = Simple3DObject(False, 3, 4)
         self.point_cloud = Simple3DObject(False, 4)
         self.is_tracking_on = False  # Show tracked objects only
 
@@ -490,7 +489,6 @@ class GLViewer:
 
         self.BBox_edges.set_drawing_type(GL_LINES)
         self.BBox_faces.set_drawing_type(GL_QUADS)
-        self.skeletons.set_drawing_type(GL_LINES)
 
         # Register GLUT callback functions
         glutDisplayFunc(self.draw_callback)
@@ -521,7 +519,6 @@ class GLViewer:
 
         # Clear frame objects
         self.BBox_edges.clear()
-        self.skeletons.clear()
         self.BBox_faces.clear()
 
         for i in range(len(_objs.object_list)):
@@ -529,16 +526,7 @@ class GLViewer:
                 bounding_box = np.array(_objs.object_list[i].bounding_box)
                 if bounding_box.any():
                     color_id = generate_color_id(_objs.object_list[i].id)
-
                     self.create_bbox_rendering(bounding_box, color_id)
-
-                    keypoints = _objs.object_list[i].keypoint
-                    if len(keypoints):
-                        for limb in sl.BODY_BONES:
-                            kp_1 = keypoints[limb[0].value]
-                            kp_2 = keypoints[limb[1].value]
-                            if (np.isfinite(kp_1[0]) and np.isfinite(kp_2[0])):
-                                self.skeletons.add_line(kp_1, kp_2, color_id)
 
         self.mutex.release()
 
@@ -639,7 +627,6 @@ class GLViewer:
 
         self.BBox_edges.push_to_GPU()
         self.BBox_faces.push_to_GPU()
-        self.skeletons.push_to_GPU()
 
         self.camera.update()
 
@@ -657,9 +644,7 @@ class GLViewer:
 
         glUseProgram(self.shader_image.get_program_id())
         glUniformMatrix4fv(self.shader_image_MVP, 1, GL_TRUE, (GLfloat * len(vpMatrix))(*vpMatrix))
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
         glLineWidth(4.)
-        self.skeletons.draw()
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
         self.zedModel.draw()
         self.BBox_faces.draw()

@@ -86,7 +86,7 @@ int main(int argc, char **argv)
             sl::Pose zed_pose;
             // You can still use the classical getPosition for your application, just not that the position returned by this method
             // is the position without any GNSS/cameras fusion
-            zed.getPosition(zed_pose, sl::REFERENCE_FRAME::WORLD);
+            zed.getPosition(zed_pose, sl::REFERENCE_FRAME::CAMERA);
         }
         // Get GNSS data:
         sl::GNSSData input_gnss;

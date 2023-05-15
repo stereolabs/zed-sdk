@@ -126,8 +126,7 @@ def torch_thread(weights, img_size, conf_thres=0.2, iou_thres=0.45):
 def main():
     global image_net, exit_signal, run_signal, detections
 
-    capture_thread = Thread(target=torch_thread,
-                            kwargs={'weights': opt.weights, 'img_size': opt.img_size, "conf_thres": opt.conf_thres})
+    capture_thread = Thread(target=torch_thread, kwargs={'weights': opt.weights, 'img_size': opt.img_size, "conf_thres": opt.conf_thres})
     capture_thread.start()
 
     print("Initializing Camera...")
@@ -140,7 +139,6 @@ def main():
 
     # Create a InitParameters object and set configuration parameters
     init_params = sl.InitParameters(input_t=input_type, svo_real_time_mode=True)
-    init_params.camera_resolution = sl.RESOLUTION.HD720
     init_params.coordinate_units = sl.UNIT.METER
     init_params.depth_mode = sl.DEPTH_MODE.ULTRA  # QUALITY
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
@@ -163,7 +161,7 @@ def main():
     zed.enable_positional_tracking(positional_tracking_parameters)
 
     obj_param = sl.ObjectDetectionParameters()
-    obj_param.detection_model = sl.DETECTION_MODEL.CUSTOM_BOX_OBJECTS
+    obj_param.detection_model = sl.OBJECT_DETECTION_MODEL.CUSTOM_BOX_OBJECTS
     obj_param.enable_tracking = True
     zed.enable_object_detection(obj_param)
 
@@ -172,25 +170,23 @@ def main():
 
     # Display
     camera_infos = zed.get_camera_information()
+    camera_res = camera_infos.camera_configuration.resolution
     # Create OpenGL viewer
     viewer = gl.GLViewer()
-    point_cloud_res = sl.Resolution(min(camera_infos.camera_resolution.width, 720),
-                                    min(camera_infos.camera_resolution.height, 404))
+    point_cloud_res = sl.Resolution(min(camera_res.width, 720), min(camera_res.height, 404))
     point_cloud_render = sl.Mat()
     viewer.init(camera_infos.camera_model, point_cloud_res, obj_param.enable_tracking)
     point_cloud = sl.Mat(point_cloud_res.width, point_cloud_res.height, sl.MAT_TYPE.F32_C4, sl.MEM.CPU)
     image_left = sl.Mat()
     # Utilities for 2D display
-    display_resolution = sl.Resolution(min(camera_infos.camera_resolution.width, 1280),
-                                       min(camera_infos.camera_resolution.height, 720))
-    image_scale = [display_resolution.width / camera_infos.camera_resolution.width, display_resolution.height / camera_infos.camera_resolution.height]
+    display_resolution = sl.Resolution(min(camera_res.width, 1280), min(camera_res.height, 720))
+    image_scale = [display_resolution.width / camera_res.width, display_resolution.height / camera_res.height]
     image_left_ocv = np.full((display_resolution.height, display_resolution.width, 4), [245, 239, 239, 255], np.uint8)
 
     # Utilities for tracks view
-    camera_config = zed.get_camera_information().camera_configuration
+    camera_config = camera_infos.camera_configuration
     tracks_resolution = sl.Resolution(400, display_resolution.height)
-    track_view_generator = cv_viewer.TrackingViewer(tracks_resolution, camera_config.camera_fps,
-                                                    init_params.depth_maximum_distance)
+    track_view_generator = cv_viewer.TrackingViewer(tracks_resolution, camera_config.fps, init_params.depth_maximum_distance)
     track_view_generator.set_camera_calibration(camera_config.calibration_parameters)
     image_track_ocv = np.zeros((tracks_resolution.height, tracks_resolution.width, 4), np.uint8)
     # Camera pose

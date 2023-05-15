@@ -21,7 +21,6 @@
 
 /******************************************************************************************************************
  ** This sample demonstrates how to use two ZEDs with the ZED SDK, each grab are in a separate thread             **
- ** This sample has been tested with 3 ZEDs in HD720@30fps resolution. Linux only.                                **
  *******************************************************************************************************************/
 
 #include <sl/Camera.hpp>
@@ -56,8 +55,7 @@ int main(int argc, char** argv) {
     vector<Camera> zeds(nb_detected_zed);
     // try to open every detected cameras
     for (int z = 0; z < nb_detected_zed; z++) {
-        init_parameters.input.setFromCameraID(z, sl::BUS_TYPE::GMSL);
-        init_parameters.camera_resolution= sl::RESOLUTION::HD1200;
+        init_parameters.input.setFromSerialNumber(devList[z].serial_number);
         init_parameters.camera_fps = 30;
         ERROR_CODE err = zeds[z].open(init_parameters);
         if (err == ERROR_CODE::SUCCESS) {
@@ -76,6 +74,7 @@ int main(int argc, char** argv) {
     vector<string> wnd_names(nb_detected_zed); // display windows names
     vector<Timestamp> images_ts(nb_detected_zed); // images timestamps
 
+    bool zed_open = false;
     for (int z = 0; z < nb_detected_zed; z++)
         if (zeds[z].isOpened()) {
             // create an image to store Left+Depth image
@@ -85,7 +84,13 @@ int main(int argc, char** argv) {
             // create windows for display
             wnd_names[z] = "ZED ID: " + to_string(z);
             cv::namedWindow(wnd_names[z]);
+            zed_open = true;
         }
+
+    if(!zed_open) {        
+        cout << "No ZED opened, exit program" << endl;
+        return EXIT_FAILURE;
+    }
 
     vector<Timestamp> last_ts(nb_detected_zed, 0); // use to detect new images
 
@@ -94,12 +99,10 @@ int main(int argc, char** argv) {
     while (key != 27) {
         // Resize and show images
         for (int z = 0; z < nb_detected_zed; z++) {
-            //if (images_ts[z] > last_ts[z]) { // if the current timestamp is newer it is a new image
+            if (images_ts[z] > last_ts[z]) { // if the current timestamp is newer it is a new image
                 cv::imshow(wnd_names[z], images_lr[z]);
                 last_ts[z] = images_ts[z];
-            /*}
-            else
-                std::cout<<" TS issue : "<<images_ts[z]<<" ; "<<last_ts[z]<<std::endl;*/
+            }
         }
 
         key = cv::waitKey(10);
@@ -107,11 +110,16 @@ int main(int argc, char** argv) {
 
     // stop all running threads
     run = false;
+    sl::sleep_ms(100);
 
     // Wait for every thread to be stopped
     for (int z = 0; z < nb_detected_zed; z++)
         if (zeds[z].isOpened()) 
             thread_pool[z].join();
+
+    for (int z = 0; z < nb_detected_zed; z++)
+        if (zeds[z].isOpened()) 
+            zeds[z].close();
 
     return EXIT_SUCCESS;
 }
@@ -132,7 +140,5 @@ void zed_acquisition(Camera& zed, cv::Mat& image_low_res, bool& run, Timestamp& 
             cv::Mat(h_low_res, w_low_res, CV_8UC4, zed_image.getPtr<sl::uchar1>(MEM::CPU)).copyTo(image_low_res(cv::Rect(w_low_res, 0, w_low_res, h_low_res)));
             ts = zed.getTimestamp(TIME_REFERENCE::IMAGE);
         }
-        sleep_ms(2);
     }
-    zed.close();
 }

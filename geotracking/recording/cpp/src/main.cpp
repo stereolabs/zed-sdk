@@ -117,7 +117,9 @@ int main(int argc, char **argv)
         sl::GNSSData input_gnss;
         if (gnss_reader.grab(input_gnss) == sl::ERROR_CODE::SUCCESS)
         {
-            // Publish GNSS data to Fusion
+            sl::GNSSData input_gnss = gnss_async.get();
+            // We force GNSS data to have the current timestamp for synchronizing it with camera data
+            // input_gnss.ts = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE);
             auto ingest_error = fusion.ingestGNSSData(input_gnss);
             if(ingest_error != sl::FUSION_ERROR_CODE::SUCCESS){
                 std::cout << "Ingest error occurred when ingesting GNSSData: " << ingest_error << std::endl;
