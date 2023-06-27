@@ -78,8 +78,8 @@ int main(int argc, char **argv) {
     // Enable the Body tracking module
     BodyTrackingParameters body_tracker_params;
     body_tracker_params.enable_tracking = true; // track people across images flow
-    body_tracker_params.enable_body_fitting = false; // smooth skeletons moves
-    body_tracker_params.body_format = sl::BODY_FORMAT::BODY_18;
+    body_tracker_params.enable_body_fitting = true; // smooth skeletons moves
+    body_tracker_params.body_format = sl::BODY_FORMAT::BODY_38;
     body_tracker_params.detection_model = isJetson ? BODY_TRACKING_MODEL::HUMAN_BODY_FAST : BODY_TRACKING_MODEL::HUMAN_BODY_ACCURATE;
     //body_tracker_params.allow_reduced_precision_inference = true;
 
@@ -111,8 +111,7 @@ int main(int argc, char **argv) {
 
     // Configure object detection runtime parameters
     BodyTrackingRuntimeParameters body_tracker_parameters_rt;
-    body_tracker_parameters_rt.detection_confidence_threshold = 20;
-
+    body_tracker_parameters_rt.detection_confidence_threshold = 40;
     // Create ZED Bodies filled in the main loop
     Bodies bodies;
 
@@ -123,7 +122,8 @@ int main(int argc, char **argv) {
     char key = ' ';
     while (!quit) {
         // Grab images
-        if (zed.grab() == ERROR_CODE::SUCCESS) {
+        auto err = zed.grab();
+        if (err == ERROR_CODE::SUCCESS) {
             // Retrieve Detected Human Bodies
             zed.retrieveBodies(bodies, body_tracker_parameters_rt);
 
@@ -146,7 +146,12 @@ int main(int argc, char **argv) {
                 else key_wait = 10;
             }
             if (!viewer.isAvailable()) quit = true;
-        } else
+        } 
+        else if (err == sl::ERROR_CODE::END_OF_SVOFILE_REACHED)
+        {
+            zed.setSVOPosition(0);
+        }
+        else
             quit = true;
     }
 

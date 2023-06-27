@@ -80,7 +80,6 @@ int main(int argc, char **argv) {
      while (key != 'q') {
         returned_state = zed.grab();
         if (returned_state == ERROR_CODE::SUCCESS) {
-
             // Get the side by side image
             zed.retrieveImage(svo_image, VIEW::SIDE_BY_SIDE, MEM::CPU, low_resolution);
             int svo_position = zed.getSVOPosition();

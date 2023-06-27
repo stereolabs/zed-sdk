@@ -108,6 +108,15 @@ int main(int argc, char **argv) {
     GLViewer viewer;
     viewer.init(argc, argv);
 
+    std::cout << "Viewer Shortcuts\n" <<
+        "\t- 'r': swicth on/off for raw skeleton display\n" <<
+        "\t- 'p': swicth on/off for live point cloud display\n" <<
+        "\t- 'c': swicth on/off point cloud display with flat color\n" << std::endl;
+
+    for (auto& it : clients) 
+        if (it.isRunning())
+            viewer.setupNewCamera(it.getSerial(), it.getViewRef(), it.getPointCloufRef(), it.getStream());    
+
     // fusion outputs
     sl::Bodies fused_bodies;
     std::map<sl::CameraIdentifier, sl::Bodies> camera_raw_data;
@@ -120,8 +129,12 @@ int main(int argc, char **argv) {
             // Retrieve fused body
             fusion.retrieveBodies(fused_bodies, body_tracking_runtime_parameters);
             // for debug, you can retrieve the data send by each camera
-            for (auto& id : cameras)
+            for (auto& id : cameras) {
                 fusion.retrieveBodies(camera_raw_data[id], body_tracking_runtime_parameters, id);
+                sl::Pose pose;
+                fusion.getPosition(pose, sl::REFERENCE_FRAME::WORLD, id, sl::POSITION_TYPE::RAW);
+                viewer.setCameraPose(id.sn, pose.pose_data);
+            }
             // get metrics about the fusion process for monitoring purposes
             fusion.getProcessMetrics(metrics);
         }

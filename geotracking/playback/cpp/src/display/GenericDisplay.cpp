@@ -1,4 +1,5 @@
 #include "display/GenericDisplay.h"
+#include "exporter/KMLExporter.h"
 
 #ifdef COMPILE_WITH_ZEDHUB
 #include <sl_iot/HubClient.hpp>
@@ -17,6 +18,8 @@ GenericDisplay::~GenericDisplay()
         std::cout << "[ZedHub][ERROR] Terminate with error " << exit_sl_iot_status << std::endl;
         exit(EXIT_FAILURE);
     }
+#else 
+    closeAllKMLWriter();
 #endif
 }
 
@@ -62,5 +65,6 @@ void GenericDisplay::updateGeoPoseData(sl::GeoPose geo_pose, sl::Timestamp curre
         already_display_warning_message = true;
         std::cerr << "ZEDHub was not found ... the computed Geopose will be saved as KML file" << std::endl;
     }
+    saveKMLData("output.kml", geo_pose);
 #endif
 }

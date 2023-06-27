@@ -111,7 +111,7 @@ int main(int argc, char **argv)
             // Get position into the GNSS coordinate system - this needs a initialization between CAMERA 
             // and GNSS. When the initialization is finish the getGeoPose will return sl::POSITIONAL_TRACKING_STATE::OK
             sl::GeoPose current_geopose;
-            sl::POSITIONAL_TRACKING_STATE current_geopose_satus = fusion.getGeoPose(current_geopose);
+            auto current_geopose_satus = fusion.getGeoPose(current_geopose);
             if (current_geopose_satus == sl::POSITIONAL_TRACKING_STATE::OK)
             {
                 // Display it on ZED Hub:

@@ -1,22 +1,34 @@
 cmake_minimum_required(VERSION 3.5)
-PROJECT(ZED_Body_Tracking_Viewer)
+PROJECT(yolo_onnx_zed)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(LINK_SHARED_ZED "Link with the ZED SDK shared executable" ON)
-option(BUILD_WITH_SANITIZER "Build with -g and address sanitizer check" OFF)
+
 if (NOT LINK_SHARED_ZED AND MSVC)
     message(FATAL_ERROR "LINK_SHARED_ZED OFF : ZED SDK static libraries not available on Windows")
 endif()
 
-find_package(ZED 3 REQUIRED)
-find_package(CUDA ${ZED_CUDA_VERSION} REQUIRED)
+SET(SPECIAL_OS_LIBS "")
+
+option(ENABLE_INT8_CALIBRATOR "Enable int8 calibrator class for quantification calibration, requires opencv dnn" OFF)
+
+IF (ENABLE_INT8_CALIBRATOR)
+    ADD_DEFINITIONS(-DENABLE_INT8_CALIBRATOR)
+ENDIF()
+
+find_package(ZED 4 REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(GLUT REQUIRED)
 find_package(GLEW REQUIRED)
-SET(OpenGL_GL_PREFERENCE GLVND)
 find_package(OpenGL REQUIRED)
+find_package(CUDA REQUIRED)
+
+IF(NOT WIN32)
+     SET(SPECIAL_OS_LIBS "pthread" "X11")
+    add_definitions(-Wno-write-strings)
+ENDIF()
 
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${ZED_INCLUDE_DIRS})
@@ -31,35 +43,35 @@ link_directories(${GLUT_LIBRARY_DIRS})
 link_directories(${OpenGL_LIBRARY_DIRS})
 link_directories(${CUDA_LIBRARY_DIRS})
 link_directories(${OpenCV_LIBRARY_DIRS})
+# cuda
+include_directories(/usr/local/cuda/include)
+link_directories(/usr/local/cuda/lib64)
+# tensorrt
+include_directories(/usr/include/x86_64-linux-gnu/)
+link_directories(/usr/lib/x86_64-linux-gnu/)
 
 FILE(GLOB_RECURSE SRC_FILES src/*.c*)
 FILE(GLOB_RECURSE HDR_FILES include/*.h*)
 
-add_executable(${PROJECT_NAME} ${HDR_FILES} ${SRC_FILES})
+cuda_add_executable(${PROJECT_NAME} ${HDR_FILES} ${SRC_FILES})
+add_definitions(-O3 -D_MWAITXINTRIN_H_INCLUDED -Wno-deprecated-declarations)
 
 if (LINK_SHARED_ZED)
-    SET(ZED_LIBS ${ZED_LIBRARIES} ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_DEP_LIBRARIES_ZED})
+    SET(ZED_LIBS ${ZED_LIBRARIES} ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY})
 else()
     SET(ZED_LIBS ${ZED_STATIC_LIBRARIES} ${CUDA_CUDA_LIBRARY} ${CUDA_LIBRARY})
 endif()
 
-IF (BUILD_WITH_SANITIZER)
-message("!! Building with address sanitizer and -g !!")
-add_definitions(-g)
-set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -static-libasan -fsanitize=address")
-set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -static-libasan -fsanitize=address")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -static-libasan -fsanitize=address -Wall -Wextra -g")
-set (CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fno-omit-frame-pointer -static-libasan -fsanitize=address -Wall -Wextra -g")
-ENDIF()
-
+SET(TRT_LIBS nvinfer nvonnxparser)
 
 target_link_libraries(${PROJECT_NAME}
-                    ${ZED_LIBS}
-                    ${OPENGL_LIBRARIES}
-                    ${GLUT_LIBRARIES}
-                    ${OpenCV_LIBRARIES}
-                    ${GLEW_LIBRARIES}
-)
+                        ${TRT_LIBS}
+                        ${SPECIAL_OS_LIBS}
+                        ${ZED_LIBS}
+                        ${OPENGL_LIBRARIES}
+                        ${GLUT_LIBRARIES}
+                        ${GLEW_LIBRARIES}
+                        ${OpenCV_LIBRARIES})
 
 if(INSTALL_SAMPLES)
     LIST(APPEND SAMPLE_LIST ${PROJECT_NAME})

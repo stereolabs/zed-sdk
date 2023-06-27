@@ -19,12 +19,17 @@
 
 #define SAFE_DELETE( res ) if( res!=NULL )  { delete res; res = NULL; }
 
+#if 0
 #define MOUSE_R_SENSITIVITY 0.005f
 #define MOUSE_WHEEL_SENSITIVITY 0.065f
 #define MOUSE_T_SENSITIVITY 0.01f
 #define KEY_T_SENSITIVITY 0.01f
-
-
+#else
+#define MOUSE_R_SENSITIVITY 0.05f
+#define MOUSE_WHEEL_SENSITIVITY 0.65f
+#define MOUSE_T_SENSITIVITY 0.1f
+#define KEY_T_SENSITIVITY 0.1f
+#endif
 
 //// UTILS //////
 using namespace std;

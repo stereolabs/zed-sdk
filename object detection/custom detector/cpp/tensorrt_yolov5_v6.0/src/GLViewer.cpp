@@ -232,6 +232,7 @@ void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs
                 }
 
                 //Display sekeleton if available
+                #if 0
                 auto clr_bones = generateColorID_f(objs[i].id);
                 auto keypoints = objs[i].keypoint;
                 if (keypoints.size() > 0) {
@@ -242,6 +243,7 @@ void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs
                             skeletons.addLine(kp_1, kp_2, clr_bones);
                     }
                 }
+                #endif
                 createBboxRendering(bb_, clr_id);
             }
         }

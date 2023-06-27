@@ -33,9 +33,21 @@
 using namespace sl;
 
 void runner(sl::Camera& zed, bool& exit, int id) {
-	auto cam_infos = zed.getCameraInformation().camera_configuration;
-	int fps = cam_infos.fps;
-	std::cout << "ZED[" << id << "]" << " Start recording "<< cam_infos.resolution.width<<"@"<< fps <<"\n";
+
+	RecordingParameters rec_p;
+	rec_p.compression_mode = SVO_COMPRESSION_MODE::H264;
+
+	auto cam_infos = zed.getCameraInformation();
+	auto SN = cam_infos.serial_number;
+	std::string svo_name("SVO_SN" + std::to_string(SN) + ".svo");
+	// Enable recording with the filename specified in argument
+	rec_p.video_filename = String(svo_name.c_str());
+	auto err = zed.enableRecording(rec_p);
+	if (err != ERROR_CODE::SUCCESS)
+		std::cout << "ZED [" << id << "] can not record, " << err << std::endl;
+
+	int fps = cam_infos.camera_configuration.fps;
+	std::cout << "ZED[" << id << "]" << " Start recording "<< cam_infos.camera_configuration.resolution.width<<"@"<< fps <<"\n";
 	
     int frames_recorded = 0;
 	int nb_grabbed = 0;
@@ -54,6 +66,8 @@ void runner(sl::Camera& zed, bool& exit, int id) {
 			}
 		}
     }
+
+	zed.disableRecording();
 	auto stop = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count();
 	int nb_frame_theoric = (duration / 1000.f) * fps;
@@ -80,25 +94,13 @@ int main(int argc, char **argv) {
     std::vector<std::thread> pool(NB_ZED);
     std::cout << "Try to open " << NB_ZED << " ZEDs\n";
 
-	RecordingParameters rec_p;
-	rec_p.compression_mode = SVO_COMPRESSION_MODE::H264;
-
     for (int z = 0; z < NB_ZED; z++) {
 		initParameters.input.setFromCameraID(z);
 
         // Open the camera
         ERROR_CODE err = zeds[z].open(initParameters);
         if (err != ERROR_CODE::SUCCESS)
-            std::cout <<"ZED ["<<z<<"] can not be opened, "<< err<< std::endl;
-		else {
-			auto SN = zeds[z].getCameraInformation().serial_number;
-			std::string svo_name("SVO_SN" + std::to_string(SN) + ".svo");
-			// Enable recording with the filename specified in argument
-			rec_p.video_filename = String(svo_name.c_str());            
-            auto err = zeds[z].enableRecording(rec_p);
-            if (err != ERROR_CODE::SUCCESS)
-                std::cout << "ZED [" << z << "] can not record, " << err << std::endl;			
-		}
+            std::cout <<"ZED ["<<z<<"] can not be opened, "<< err<< std::endl;		
     }
 
     // Start recording SVO, stop with Ctrl-C command
@@ -114,11 +116,8 @@ int main(int argc, char **argv) {
    
     for (int z = 0; z < NB_ZED; z++)
         if (zeds[z].isOpened())
-            pool[z].join();
-
-	for (int z = 0; z < NB_ZED; z++) 
-		if (zeds[z].isOpened()) 
-			zeds[z].disableRecording();
+			if(pool[z].joinable())
+				pool[z].join();
 
 	for (int z = 0; z < NB_ZED; z++)
 		zeds[z].close();
