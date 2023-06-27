@@ -77,6 +77,7 @@ int main() {
 	tracking_param.set_as_static = false;
 	tracking_param.set_floor_as_origin = false;
 	tracking_param.set_gravity_as_origin = true;
+	tracking_param.mode = SL_POSITIONAL_TRACKING_MODE_STANDARD;
 
 	state = sl_enable_positional_tracking(camera_id, &tracking_param, "");
 	if (state != 0) {
@@ -92,12 +93,13 @@ int main() {
 	mapping_param.save_texture = true;
 	mapping_param.use_chunk_only = true;
 	mapping_param.reverse_vertex_order = false;
+	mapping_param.stability_counter = 0;
 
 	sl_enable_spatial_mapping(camera_id, &mapping_param);
 
 	struct SL_RuntimeParameters rt_param;
 	rt_param.enable_depth = true;
-	rt_param.confidence_threshold = 95;
+	rt_param.confidence_threshold = 100;
 	rt_param.reference_frame = SL_REFERENCE_FRAME_CAMERA;
 	rt_param.texture_confidence_threshold = 100;
 	rt_param.remove_saturated_areas = true;

@@ -257,8 +257,8 @@ void APIToModel(unsigned int maxBatchSize, IHostMemory** modelStream, bool& is_p
 
     // Close everything down
     engine->destroy();
-    builder->destroy();
     config->destroy();
+    builder->destroy();
 }
 
 void doInference(IExecutionContext& context, cudaStream_t& stream, void **buffers, float* input, float* output, int batchSize) {

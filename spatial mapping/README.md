@@ -10,6 +10,5 @@ These samples provide a comprehensive overview of how to leverage the ZED SDK fo
 
 This section contains the following code samples:
 
-- [Basic Spatial Mapping Sample](./spatial%20mapping/): A full presentation of the spatial mapping module, which can create Meshes or Fused Point Clouds, all parameters are exposed. Mesh is overlaid to the current image.
+- [Spatial Mapping Sample](./spatial%20mapping/): A full presentation of the spatial mapping module, which can create Meshes or Fused Point Clouds, all parameters are exposed. 
 
-- [Advanced point cloud mapping](./advanced%20point%20cloud%20mapping/) Perform only Fused Point Cloud mapping, displays the current result in a 3D OpenGL window.

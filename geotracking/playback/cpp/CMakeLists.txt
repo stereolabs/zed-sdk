@@ -11,6 +11,7 @@ find_package(GLUT REQUIRED)
 find_package(GLEW REQUIRED)
 SET(OpenGL_GL_PREFERENCE GLVND)
 find_package(OpenGL REQUIRED)
+find_package(OpenCV REQUIRED)
 
 # ZEDHub - if found
 find_package(SL_IOT)
@@ -32,12 +33,14 @@ include_directories(${CUDA_INCLUDE_DIRS})
 include_directories(${GLEW_INCLUDE_DIRS})
 include_directories(${GLUT_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${OpenCV_INCLUDE_DIRS})
 
 link_directories(${ZED_LIBRARY_DIR})
 link_directories(${GLEW_LIBRARY_DIRS})
 link_directories(${GLUT_LIBRARY_DIRS})
 link_directories(${OpenGL_LIBRARY_DIRS})
 link_directories(${CUDA_LIBRARY_DIRS})
+link_directories(${OpenCV_LIBRARY_DIRS})
 
 
 option(BUILD_WITH_SANITIZER "Build with sanitizer" OFF)

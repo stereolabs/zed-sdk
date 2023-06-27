@@ -27,11 +27,11 @@
 #include <future>
 #include <sl/Camera.hpp>
 #include <sl/Fusion.hpp>
-#include "GenericDisplay.h"
-#include "IGNSSReader.h"
-#include "GPSDReader.hpp"
-#include "KMLExporter.h"
-#include "GNSSSaver.h"
+#include "display/GenericDisplay.h"
+#include "gnss_reader/IGNSSReader.h"
+#include "gnss_reader/GPSDReader.hpp"
+#include "exporter/KMLExporter.h"
+#include "exporter/GNSSSaver.h"
 
 
 int main(int argc, char **argv)
@@ -117,7 +117,6 @@ int main(int argc, char **argv)
         sl::GNSSData input_gnss;
         if (gnss_reader.grab(input_gnss) == sl::ERROR_CODE::SUCCESS)
         {
-            sl::GNSSData input_gnss = gnss_async.get();
             // We force GNSS data to have the current timestamp for synchronizing it with camera data
             // input_gnss.ts = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE);
             auto ingest_error = fusion.ingestGNSSData(input_gnss);
@@ -149,7 +148,7 @@ int main(int argc, char **argv)
             // Get position into the GNSS coordinate system - this needs a initialization between CAMERA 
             // and GNSS. When the initialization is finish the getGeoPose will return sl::POSITIONAL_TRACKING_STATE::OK
             sl::GeoPose current_geopose;
-            sl::POSITIONAL_TRACKING_STATE current_geopose_satus = fusion.getGeoPose(current_geopose);
+            auto current_geopose_satus = fusion.getGeoPose(current_geopose);
             if (current_geopose_satus == sl::POSITIONAL_TRACKING_STATE::OK)
             {
                 // Display it on ZED Hub:

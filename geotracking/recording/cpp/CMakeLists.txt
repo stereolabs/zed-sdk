@@ -5,16 +5,15 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_BUILD_TYPE "Release")
 
-# Find external package
-# OpenGL
+
+find_package(ZED 4 REQUIRED)
+find_package(CUDA REQUIRED)
+
 find_package(GLUT REQUIRED)
 find_package(GLEW REQUIRED)
 SET(OpenGL_GL_PREFERENCE GLVND)
 find_package(OpenGL REQUIRED)
-# ZED
-find_package(ZED 4 REQUIRED)
-find_package(CUDA REQUIRED)
-# GPSD - If found
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 find_package(GPS)
 if(GPS_FOUND)
@@ -41,24 +40,27 @@ IF(NOT WIN32)
 	message("!! Building with -g !!")
 	add_definitions(-g)
 	ENDIF()
+	set(SPECIAL_OS_LIBS pthread util)
 ENDIF()
-
 
 # Include external lib header:
 include_directories(${ZED_INCLUDE_DIRS})
 include_directories(${CUDA_INCLUDE_DIRS})
-include_directories(${CUDA_INCLUDE_DIRS})
-
-# Include project headers:
+include_directories(${GLEW_INCLUDE_DIRS})
+include_directories(${GLUT_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/display)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/exporter)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/gnss_reader)
+
+
+FILE(GLOB_RECURSE SRC_FILES src/*.cpp)
+FILE(GLOB_RECURSE HDR_FILES include/*.hpp)
 
 # Add execuable and link
-ADD_EXECUTABLE(${PROJECT_NAME} src/main.cpp src/display/GLViewer.cpp src/display/GenericDisplay.cpp src/gnss_reader/GPSDReader.cpp src/exporter/KMLExporter.cpp src/exporter/GNSSSaver.cpp src/exporter/TimestampUtils.cpp)
-set(LIBS ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${GLEW_LIBRARIES} pthread util)
+ADD_EXECUTABLE(${PROJECT_NAME} ${HDR_FILES} ${SRC_FILES})
+
+set(LIBS ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${GLEW_LIBRARIES})
+
 if(GPS_FOUND)
     list(APPEND LIBS ${GPS_LIBRARIES})
 endif()
+
 target_link_libraries(${PROJECT_NAME} ${LIBS} ${SPECIAL_OS_LIBS})
