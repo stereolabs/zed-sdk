@@ -44,7 +44,7 @@ namespace sl
             body_tracking_parameters.detectionModel = sl.BODY_TRACKING_MODEL.HUMAN_BODY_FAST;
             // Choose the appropriate body format for your application
             // (38 to have simplified hands, 70 for detailed hands, but more resource-heavy.)
-            body_tracking_parameters.bodyFormat = sl.BODY_FORMAT.POSE_38;
+            body_tracking_parameters.bodyFormat = sl.BODY_FORMAT.BODY_38;
             // track detects object across time and space
             body_tracking_parameters.enableObjectTracking = true;
             // run detection for every Camera grab

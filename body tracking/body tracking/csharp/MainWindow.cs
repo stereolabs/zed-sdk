@@ -96,7 +96,7 @@ namespace sl
             bt_params.enableBodyFitting = true; // smooth skeletons moves
             bt_params.imageSync = true; // the body tracking is synchronized to the image
             bt_params.detectionModel = sl.BODY_TRACKING_MODEL.HUMAN_BODY_ACCURATE;
-            bt_params.bodyFormat = sl.BODY_FORMAT.POSE_38;
+            bt_params.bodyFormat = sl.BODY_FORMAT.BODY_38;
 
             zedCamera.EnableBodyTracking(ref bt_params);
 

@@ -112,9 +112,9 @@ namespace sl
 
                     if (keypoints.Length > 0)
                     {
-                        if (body_format_ == BODY_FORMAT.POSE_38)
+                        if (body_format_ == BODY_FORMAT.BODY_38)
                         {
-                            foreach (var limb in SKELETON_BONES_POSE_38)
+                            foreach (var limb in SKELETON_BONES_BODY_38)
                             {
                                 Vector3 kp_1 = keypoints[getIdx(limb.Item1)];
                                 Vector3 kp_2 = keypoints[getIdx(limb.Item2)];
@@ -138,35 +138,7 @@ namespace sl
                                 }
                             }
                         }
-                        else if (body_format_ == BODY_FORMAT.POSE_70)
-                        {
-                            foreach (var limb in BODY_BONES_POSE_70)
-                            {
-                                Vector3 kp_1 = keypoints[getIdx(limb.Item1)];
-                                Vector3 kp_2 = keypoints[getIdx(limb.Item2)];
-
-                                float norm_1 = kp_1.Length();
-                                float norm_2 = kp_2.Length();
-
-                                if (!float.IsNaN(norm_1) && norm_1 > 0 && !float.IsNaN(norm_2) && norm_2 > 0)
-                                {
-                                    skeleton.addCylinder(new float3(kp_1.X, kp_1.Y, kp_1.Z), new float3(kp_2.X, kp_2.Y, kp_2.Z), clr_id);
-                                }
-                            }
-
-                            for (int i = 0; i < keypoints.Length; i++)
-                            {
-                                Vector3 kp = keypoints[i];
-                                float norm = kp.Length();
-
-                                if (!float.IsNaN(norm) && norm > 0)
-                                {
-                                    skeleton.addSphere(sphere, new float3(kp.X, kp.Y, kp.Z), clr_id);
-                                }
-                            }
-                        }
                     }
-
                 }
             }
         }
@@ -380,12 +352,7 @@ namespace sl
             return (int)(part);
         }
 
-        int getIdx(BODY_70_PARTS part)
-        {
-            return (int)(part);
-        }
-
-        private static readonly Tuple<sl.BODY_38_PARTS, sl.BODY_38_PARTS>[] SKELETON_BONES_POSE_38 =
+        public static readonly Tuple<sl.BODY_38_PARTS, sl.BODY_38_PARTS>[] SKELETON_BONES_BODY_38 =
         {
             Tuple.Create<BODY_38_PARTS, BODY_38_PARTS>(BODY_38_PARTS.PELVIS, BODY_38_PARTS.SPINE_1),
             Tuple.Create<BODY_38_PARTS, BODY_38_PARTS>(BODY_38_PARTS.SPINE_1, BODY_38_PARTS.SPINE_2),
@@ -426,76 +393,6 @@ namespace sl
             Tuple.Create<BODY_38_PARTS, BODY_38_PARTS>(BODY_38_PARTS.RIGHT_ANKLE, BODY_38_PARTS.RIGHT_SMALL_TOE)
         };
 
-        private static readonly Tuple<sl.BODY_70_PARTS, sl.BODY_70_PARTS>[] BODY_BONES_POSE_70 =
-        {
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.PELVIS, BODY_70_PARTS.SPINE_1),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.SPINE_1, BODY_70_PARTS.SPINE_2),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.SPINE_2, BODY_70_PARTS.SPINE_3),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.SPINE_3, BODY_70_PARTS.NECK),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.PELVIS, BODY_70_PARTS.LEFT_HIP),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.PELVIS, BODY_70_PARTS.RIGHT_HIP),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.NECK, BODY_70_PARTS.NOSE),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.NECK, BODY_70_PARTS.LEFT_CLAVICLE),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_CLAVICLE, BODY_70_PARTS.LEFT_SHOULDER),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.NECK, BODY_70_PARTS.RIGHT_CLAVICLE),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_CLAVICLE, BODY_70_PARTS.RIGHT_SHOULDER),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.NOSE, BODY_70_PARTS.LEFT_EYE),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_EYE, BODY_70_PARTS.LEFT_EAR),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.NOSE, BODY_70_PARTS.RIGHT_EYE),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_EYE, BODY_70_PARTS.RIGHT_EAR),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_SHOULDER, BODY_70_PARTS.LEFT_ELBOW),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_ELBOW, BODY_70_PARTS.LEFT_WRIST),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_WRIST, BODY_70_PARTS.LEFT_HAND_THUMB_1),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_HAND_THUMB_1, BODY_70_PARTS.LEFT_HAND_THUMB_2),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_HAND_THUMB_2, BODY_70_PARTS.LEFT_HAND_THUMB_3),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_HAND_THUMB_3, BODY_70_PARTS.LEFT_HAND_THUMB_4),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_WRIST, BODY_70_PARTS.LEFT_HAND_INDEX_1),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_HAND_INDEX_1, BODY_70_PARTS.LEFT_HAND_INDEX_2),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_HAND_INDEX_2, BODY_70_PARTS.LEFT_HAND_INDEX_3),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_HAND_INDEX_3, BODY_70_PARTS.LEFT_HAND_INDEX_4),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_WRIST, BODY_70_PARTS.LEFT_HAND_MIDDLE_1),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_HAND_MIDDLE_1, BODY_70_PARTS.LEFT_HAND_MIDDLE_2),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_HAND_MIDDLE_2, BODY_70_PARTS.LEFT_HAND_MIDDLE_3),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_HAND_MIDDLE_3, BODY_70_PARTS.LEFT_HAND_MIDDLE_4),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_WRIST, BODY_70_PARTS.LEFT_HAND_RING_1),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_HAND_RING_1, BODY_70_PARTS.LEFT_HAND_RING_2),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_HAND_RING_2, BODY_70_PARTS.LEFT_HAND_RING_3),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_HAND_RING_3, BODY_70_PARTS.LEFT_HAND_RING_4),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_WRIST, BODY_70_PARTS.LEFT_HAND_PINKY_1),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_HAND_PINKY_1, BODY_70_PARTS.LEFT_HAND_PINKY_2),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_HAND_PINKY_2, BODY_70_PARTS.LEFT_HAND_PINKY_3),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_HAND_PINKY_3, BODY_70_PARTS.LEFT_HAND_PINKY_4),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_SHOULDER, BODY_70_PARTS.RIGHT_ELBOW),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_ELBOW, BODY_70_PARTS.RIGHT_WRIST),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_WRIST, BODY_70_PARTS.RIGHT_HAND_THUMB_1),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_HAND_THUMB_1, BODY_70_PARTS.RIGHT_HAND_THUMB_2),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_HAND_THUMB_2, BODY_70_PARTS.RIGHT_HAND_THUMB_3),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_HAND_THUMB_3, BODY_70_PARTS.RIGHT_HAND_THUMB_4),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_WRIST, BODY_70_PARTS.RIGHT_HAND_INDEX_1),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_HAND_INDEX_1, BODY_70_PARTS.RIGHT_HAND_INDEX_2),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_HAND_INDEX_2, BODY_70_PARTS.RIGHT_HAND_INDEX_3),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_HAND_INDEX_3, BODY_70_PARTS.RIGHT_HAND_INDEX_4),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_WRIST, BODY_70_PARTS.RIGHT_HAND_MIDDLE_1),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_HAND_MIDDLE_1, BODY_70_PARTS.RIGHT_HAND_MIDDLE_2),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_HAND_MIDDLE_2, BODY_70_PARTS.RIGHT_HAND_MIDDLE_3),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_HAND_MIDDLE_3, BODY_70_PARTS.RIGHT_HAND_MIDDLE_4),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_WRIST, BODY_70_PARTS.RIGHT_HAND_RING_1),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_HAND_RING_1, BODY_70_PARTS.RIGHT_HAND_RING_2),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_HAND_RING_2, BODY_70_PARTS.RIGHT_HAND_RING_3),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_HAND_RING_3, BODY_70_PARTS.RIGHT_HAND_RING_4),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_WRIST, BODY_70_PARTS.RIGHT_HAND_PINKY_1),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_HAND_PINKY_1, BODY_70_PARTS.RIGHT_HAND_PINKY_2),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_HAND_PINKY_2, BODY_70_PARTS.RIGHT_HAND_PINKY_3),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_HAND_PINKY_3, BODY_70_PARTS.RIGHT_HAND_PINKY_4),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_HIP, BODY_70_PARTS.LEFT_KNEE),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_ANKLE, BODY_70_PARTS.LEFT_HEEL),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_ANKLE, BODY_70_PARTS.LEFT_BIG_TOE),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.LEFT_ANKLE, BODY_70_PARTS.LEFT_SMALL_TOE),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_HIP, BODY_70_PARTS.RIGHT_KNEE),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_ANKLE, BODY_70_PARTS.RIGHT_HEEL),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_ANKLE, BODY_70_PARTS.RIGHT_BIG_TOE),
-            Tuple.Create<BODY_70_PARTS, BODY_70_PARTS>(BODY_70_PARTS.RIGHT_ANKLE, BODY_70_PARTS.RIGHT_SMALL_TOE)
-        };
 
         public void exit()
         {

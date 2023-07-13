@@ -52,7 +52,5 @@ def render_2D(left_display, img_scale, objects, is_tracking_on, body_format):
                     render_sk(left_display, img_scale, obj, color, sl.BODY_34_BONES)
                 elif body_format == sl.BODY_FORMAT.BODY_38:
                     render_sk(left_display, img_scale, obj, color, sl.BODY_38_BONES) 
-                elif body_format == sl.BODY_FORMAT.BODY_70:
-                    render_sk(left_display, img_scale, obj, color, sl.BODY_70_BONES) 
 
     cv2.addWeighted(left_display, 0.9, overlay, 0.1, 0.0, left_display)

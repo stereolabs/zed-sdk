@@ -18,179 +18,173 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-/*************************************************************************
- ** This sample shows how to capture a real-time 3D reconstruction      **
- ** of the scene using the Spatial Mapping API. The resulting mesh      **
- ** is displayed as a wireframe on top of the left image using OpenGL.  **
- ** Spatial Mapping can be started and stopped with the space bar key   **
- *************************************************************************/
+/**********************************************************************************
+ ** This sample demonstrates how to capture a live 3D reconstruction of a scene  **
+ ** as a fused point cloud and display the result in an OpenGL window.           **
+ **********************************************************************************/
 
- // ZED includes
+// ZED includes
 #include <sl/Camera.hpp>
 
- // Sample includes
+// Sample includes
 #include "GLViewer.hpp"
 
- // Using std and sl namespaces
+#include <opencv2/opencv.hpp>
+
+// Using std and sl namespaces
 using namespace std;
 using namespace sl;
 
-// set to 0 to create a Fused Point Cloud
-#define CREATE_MESH 1
+#define BUILD_MESH 1
 
-void parseArgs(int argc, char **argv,sl::InitParameters& param);
+void parse_args(int argc, char **argv,InitParameters& param);
 
-int main(int argc, char** argv) {
+void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, std::string msg_suffix = "");
+
+int main(int argc, char **argv) {
 
     Camera zed;
-    // Setup configuration parameters for the ZED    
+    // Set configuration parameters for the ZED
     InitParameters init_parameters;
+    init_parameters.depth_mode = DEPTH_MODE::NEURAL;
     init_parameters.coordinate_units = UNIT::METER;
-    init_parameters.depth_mode = sl::DEPTH_MODE::ULTRA;
-    init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL coordinates system
-    parseArgs(argc,argv, init_parameters);
+    init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed    
+    init_parameters.depth_maximum_distance = 8.;
+    parse_args(argc, argv, init_parameters);
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
-        print("Camera Open", returned_state, "Exit program.");
-        return EXIT_FAILURE;
-    }
 
-#if CREATE_MESH
-    Mesh map; // Current incremental mesh
-#else
-    FusedPointCloud map; // Current incremental fused point cloud
-#endif
-
-    CameraParameters camera_parameters = zed.getCameraInformation().camera_configuration.calibration_parameters.left_cam;
-
-    GLViewer viewer;
-    bool error_viewer = viewer.init(argc, argv, camera_parameters, &map);
-
-    if(error_viewer) {
-        viewer.exit();
+    if (returned_state != ERROR_CODE::SUCCESS) {// Quit if an error occurred
+        print("Open Camera", returned_state, "\nExit program.");
         zed.close();
         return EXIT_FAILURE;
     }
 
-    Mat image; // Current left image
-    Pose pose; // Camera pose tracking data
+    /* Print shortcuts*/
+    std::cout<<"Shortcuts\n";
+    std::cout<<"\t- 'l' to enable/disable current live point cloud display\n";
+    std::cout<<"\t- 'w' to switch mesh display from faces to triangles\n";
+    std::cout<<"\t- 'd' to switch background color from dark to light\n";
 
-    SpatialMappingParameters spatial_mapping_parameters;
+    auto camera_infos = zed.getCameraInformation();
+
+    // Setup and start positional tracking
+    Pose pose;
     POSITIONAL_TRACKING_STATE tracking_state = POSITIONAL_TRACKING_STATE::OFF;
-    SPATIAL_MAPPING_STATE mapping_state = SPATIAL_MAPPING_STATE::NOT_ENABLED;
-    bool mapping_activated = false; // Indicates if spatial mapping is running or not
-    chrono::high_resolution_clock::time_point ts_last; // Timestamp of the last mesh request
-    
-    // Enable positional tracking before starting spatial mapping
-    returned_state = zed.enablePositionalTracking();
-    if(returned_state != ERROR_CODE::SUCCESS) {
+    PositionalTrackingParameters positional_tracking_parameters;
+    positional_tracking_parameters.enable_area_memory = false;
+    positional_tracking_parameters.set_floor_as_origin = true;
+    returned_state = zed.enablePositionalTracking(positional_tracking_parameters);
+    if (returned_state != ERROR_CODE::SUCCESS) {
         print("Enabling positional tracking failed: ", returned_state);
         zed.close();
         return EXIT_FAILURE;
     }
-    std::cout << "Press on 'Space' for enable / disable spatial mapping " << std::endl;
-    std::cout << "Disable the spacial mapping after enabled it will output a .obj mesh file " << std::endl;
 
-    while(viewer.isAvailable()) {
-        if(zed.grab() == ERROR_CODE::SUCCESS) {
-            // Retrieve image in GPU memory
-            zed.retrieveImage(image, VIEW::LEFT, MEM::GPU);
-            // Update pose data (used for projection of the mesh over the current image)
-            tracking_state = zed.getPosition(pose);
-
-            if(mapping_activated) {
-                mapping_state = zed.getSpatialMappingState();
-                // Compute elapsed time since the last call of Camera::requestSpatialMapAsync()
-                auto duration = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - ts_last).count();
-                // Ask for a mesh update if 500ms elapsed since last request
-                if((duration > 500) && viewer.chunksUpdated()) {
-                    zed.requestSpatialMapAsync();
-                    ts_last = chrono::high_resolution_clock::now();
-                }
-
-                if(zed.getSpatialMapRequestStatusAsync() == ERROR_CODE::SUCCESS) {
-                    zed.retrieveSpatialMapAsync(map);
-                    viewer.updateChunks();                   
-                }
-            }
-
-            bool change_state = viewer.updateImageAndState(image, pose.pose_data, tracking_state, mapping_state);
-
-            if(change_state) {
-                if(!mapping_activated) {
-                    Transform init_pose;
-                    zed.resetPositionalTracking(init_pose);
-
-                    // Configure Spatial Mapping parameters
-					spatial_mapping_parameters.resolution_meter = SpatialMappingParameters::get(SpatialMappingParameters::MAPPING_RESOLUTION::LOW);
-                    spatial_mapping_parameters.use_chunk_only = true;
-                    spatial_mapping_parameters.save_texture = false;
-#if CREATE_MESH
-					spatial_mapping_parameters.map_type = SpatialMappingParameters::SPATIAL_MAP_TYPE::MESH;
+    // Set spatial mapping parameters
+    SpatialMappingParameters spatial_mapping_parameters;
+    // Request a Point Cloud
+#if BUILD_MESH
+    spatial_mapping_parameters.map_type = SpatialMappingParameters::SPATIAL_MAP_TYPE::MESH;
+    Mesh map;
 #else
-					spatial_mapping_parameters.map_type = SpatialMappingParameters::SPATIAL_MAP_TYPE::FUSED_POINT_CLOUD;
-#endif					
-                    // Enable spatial mapping
-                    try {
-                        zed.enableSpatialMapping(spatial_mapping_parameters);
-                        print("Spatial Mapping will output a " + string(toString(spatial_mapping_parameters.map_type).c_str()));
-                    } catch(string e) {
-                        print("Error enable Spatial Mapping "+ e);
-                    }
-
-                    // Clear previous Mesh data
-                    map.clear();
-                    viewer.clearCurrentMesh();
-
-                    // Start a timer, we retrieve the mesh every XXms.
-                    ts_last = chrono::high_resolution_clock::now();
-
-                    mapping_activated = true;
-                } else {
-                    // Extract the whole mesh
-                    zed.extractWholeSpatialMap(map);
-#if CREATE_MESH
-                    MeshFilterParameters filter_params;
-                    filter_params.set(MeshFilterParameters::MESH_FILTER::MEDIUM);
-                    // Filter the extracted mesh
-                    map.filter(filter_params, true);
-					viewer.clearCurrentMesh();
-
-                    // If textures have been saved during spatial mapping, apply them to the mesh
-                    if(spatial_mapping_parameters.save_texture)
-                        map.applyTexture(MESH_TEXTURE_FORMAT::RGB);
+    spatial_mapping_parameters.map_type = SpatialMappingParameters::SPATIAL_MAP_TYPE::FUSED_POINT_CLOUD;
+    FusedPointCloud map;
 #endif
-                    // Save mesh as an OBJ file
-                    string saveName = getDir() + "mesh_gen.obj";
-                    bool error_save = map.save(saveName.c_str());
-                    if(error_save)
-                        print("Mesh saved under: " +saveName);
-					else
-                        print("Failed to save the mesh under: " +saveName);
+    // Set mapping range, it will set the resolution accordingly (a higher range, a lower resolution)
+    spatial_mapping_parameters.set(SpatialMappingParameters::MAPPING_RANGE::MEDIUM);
+    spatial_mapping_parameters.set(SpatialMappingParameters::MAPPING_RESOLUTION::MEDIUM);
+    // Request partial updates only (only the lastest updated chunks need to be re-draw)
+    spatial_mapping_parameters.use_chunk_only = true;
+    // Stability counter defines how many times a stable 3D points should be seen before it is integrated into the spatial mapping
+    spatial_mapping_parameters.stability_counter = 4;
+    
 
-                    mapping_state = SPATIAL_MAPPING_STATE::NOT_ENABLED;
-                    mapping_activated = false;
+    // Timestamp of the last fused point cloud requested
+    chrono::high_resolution_clock::time_point ts_last; 
+
+    // Setup runtime parameters
+    RuntimeParameters runtime_parameters;
+    // Use low depth confidence avoid introducing noise in the constructed model
+    runtime_parameters.confidence_threshold = 50;
+
+    auto resolution = camera_infos.camera_configuration.resolution;
+
+    // Define display resolution and check that it fit at least the image resolution
+    float image_aspect_ratio = resolution.width / (1.f * resolution.height);
+    int requested_low_res_w = min(720, (int)resolution.width);
+    sl::Resolution display_resolution(requested_low_res_w, requested_low_res_w / image_aspect_ratio);
+
+    Mat image(display_resolution, MAT_TYPE::U8_C4, sl::MEM::GPU);
+    Mat point_cloud(display_resolution, MAT_TYPE::F32_C4, sl::MEM::GPU);
+    
+    // Point cloud viewer
+    GLViewer viewer;
+
+    viewer.init(argc, argv, image, point_cloud, zed.getCUDAStream());
+ 
+    bool request_new_mesh = true;
+
+    bool wait_for_mapping = true;
+
+    // Start the main loop
+    while (viewer.isAvailable()) {
+        // Grab a new image
+        if (zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS) {
+            // Retrieve the left image
+            zed.retrieveImage(image, VIEW::LEFT, MEM::GPU, display_resolution);
+            zed.retrieveMeasure(point_cloud, MEASURE::XYZBGRA, MEM::GPU, display_resolution);
+            // Retrieve the camera pose data
+            tracking_state = zed.getPosition(pose);
+            viewer.updateCameraPose(pose.pose_data, tracking_state);
+
+            if (tracking_state == POSITIONAL_TRACKING_STATE::OK) {
+                if(wait_for_mapping){
+                    zed.enableSpatialMapping(spatial_mapping_parameters);
+                    wait_for_mapping = false;
+                }else{
+                    if(request_new_mesh){
+                        auto duration = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - ts_last).count();                    
+                        // Ask for a fused point cloud update if 500ms have elapsed since last request
+                        if(duration > 100) {
+                            // Ask for a point cloud refresh
+                            zed.requestSpatialMapAsync();
+                            request_new_mesh = false;
+                        }
+                    }
+                    
+                    // If the point cloud is ready to be retrieved
+                    if(zed.getSpatialMapRequestStatusAsync() == ERROR_CODE::SUCCESS && !request_new_mesh) {
+                        zed.retrieveSpatialMapAsync(map);
+                        viewer.updateMap(map);
+                        request_new_mesh = true;
+                        ts_last = chrono::high_resolution_clock::now();
+                    }
                 }
             }
         }
     }
 
-    image.free();
-    map.clear();
+    // Save generated point cloud
+    //map.save("MyFusedPointCloud");
 
-    zed.disableSpatialMapping();
-    zed.disablePositionalTracking();
+    // Free allocated memory before closing the camera
+    image.free();
+    point_cloud.free();
+    // Close the ZED
     zed.close();
-    return EXIT_SUCCESS;
+
+    return 0;
 }
 
-void parseArgs(int argc, char **argv,sl::InitParameters& param)
+void parse_args(int argc, char **argv,InitParameters& param)
 {
     if (argc > 1 && string(argv[1]).find(".svo")!=string::npos) {
         // SVO input mode
         param.input.setFromSVOFile(argv[1]);
+        param.svo_real_time_mode=true;
+
         cout<<"[Sample] Using SVO File input: "<<argv[1]<<endl;
     } else if (argc > 1 && string(argv[1]).find(".svo")==string::npos) {
         string arg = string(argv[1]);
@@ -198,12 +192,12 @@ void parseArgs(int argc, char **argv,sl::InitParameters& param)
         if (sscanf(arg.c_str(),"%u.%u.%u.%u:%d", &a, &b, &c, &d,&port) == 5) {
             // Stream input mode - IP + port
             string ip_adress = to_string(a)+"."+to_string(b)+"."+to_string(c)+"."+to_string(d);
-            param.input.setFromStream(sl::String(ip_adress.c_str()),port);
+            param.input.setFromStream(String(ip_adress.c_str()),port);
             cout<<"[Sample] Using Stream input, IP : "<<ip_adress<<", port : "<<port<<endl;
         }
         else  if (sscanf(arg.c_str(),"%u.%u.%u.%u", &a, &b, &c, &d) == 4) {
             // Stream input mode - IP only
-            param.input.setFromStream(sl::String(argv[1]));
+            param.input.setFromStream(String(argv[1]));
             cout<<"[Sample] Using Stream input, IP : "<<argv[1]<<endl;
         }
         else if (arg.find("HD2K") != string::npos) {
@@ -228,4 +222,20 @@ void parseArgs(int argc, char **argv,sl::InitParameters& param)
     } else {
         // Default
     }
+}
+
+void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suffix) {
+    cout <<"[Sample]";
+    if (err_code != sl::ERROR_CODE::SUCCESS)
+        cout << "[Error] ";
+    else
+        cout<<" ";
+    cout << msg_prefix << " ";
+    if (err_code != sl::ERROR_CODE::SUCCESS) {
+        cout << " | " << toString(err_code) << " : ";
+        cout << toVerbose(err_code);
+    }
+    if (!msg_suffix.empty())
+        cout << " " << msg_suffix;
+    cout << endl;
 }
