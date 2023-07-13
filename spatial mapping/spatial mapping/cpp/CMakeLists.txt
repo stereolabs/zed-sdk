@@ -11,31 +11,30 @@ if (NOT LINK_SHARED_ZED AND MSVC)
     message(FATAL_ERROR "LINK_SHARED_ZED OFF : ZED SDK static libraries not available on Windows")
 endif()
 
-find_package(ZED 3 REQUIRED)
+find_package(ZED 4 REQUIRED)
 find_package(CUDA ${ZED_CUDA_VERSION} REQUIRED)
+find_package(OpenCV REQUIRED)
 find_package(GLUT REQUIRED)
 find_package(GLEW REQUIRED)
-find_package(OpenCV REQUIRED)
-
 SET(OpenGL_GL_PREFERENCE GLVND)
 find_package(OpenGL REQUIRED)
 
 include_directories(${ZED_INCLUDE_DIRS})
-include_directories(${GLUT_INCLUDE_DIR})
+include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${GLEW_INCLUDE_DIRS})
-include_directories(${OPENGL_INCLUDE_DIRS})
+include_directories(${GLUT_INCLUDE_DIR})
 include_directories(${CUDA_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${OpenCV_INCLUDE_DIRS})
-link_directories(${ZED_LIBRARY_DIR})
-link_directories(${CUDA_LIBRARY_DIRS})
-link_directories(${GLUT_LIBRARY_DIRS})
-link_directories(${GLEW_LIBRARY_DIRS})
-link_directories(${OpenGL_LIBRARY_DIRS})
-link_directories(${OpenCV_LIBRARY_DIRS})
 
-FILE(GLOB_RECURSE SRC_FILES src/*)
-FILE(GLOB_RECURSE HDR_FILES include/*)
+link_directories(${ZED_LIBRARY_DIR})
+link_directories(${OpenCV_LIBRARY_DIRS})
+link_directories(${GLEW_LIBRARY_DIRS})
+link_directories(${GLUT_LIBRARY_DIRS})
+link_directories(${OpenGL_LIBRARY_DIRS})
+link_directories(${CUDA_LIBRARY_DIRS})
+
+FILE(GLOB_RECURSE SRC_FILES src/*.cpp)
+FILE(GLOB_RECURSE HDR_FILES include/*.hpp)
 
 ADD_EXECUTABLE(${PROJECT_NAME} ${HDR_FILES} ${SRC_FILES})
 
@@ -47,9 +46,9 @@ endif()
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} 
                         ${ZED_LIBS} 
+                        ${OpenCV_LIBRARIES}
                         ${OPENGL_LIBRARIES}
                         ${GLUT_LIBRARIES}
-                        ${OpenCV_LIBRARIES}
                         ${GLEW_LIBRARIES})
 
 if(INSTALL_SAMPLES)

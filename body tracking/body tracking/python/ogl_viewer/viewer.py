@@ -298,8 +298,6 @@ class Skeleton:
                 self.createSk(obj, sl.BODY_34_PARTS, sl.BODY_34_BONES)
             elif self.body_format == sl.BODY_FORMAT.BODY_38:
                 self.createSk(obj, sl.BODY_38_PARTS, sl.BODY_38_BONES)
-            elif self.body_format == sl.BODY_FORMAT.BODY_70:
-                self.createSk(obj, sl.BODY_70_PARTS, sl.BODY_70_BONES)
 
     def push_to_GPU(self):
         self.joints.push_to_GPU()

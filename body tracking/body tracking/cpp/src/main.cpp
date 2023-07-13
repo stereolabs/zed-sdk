@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
     BodyTrackingParameters body_tracker_params;
     body_tracker_params.enable_tracking = true; // track people across images flow
     body_tracker_params.enable_body_fitting = true; // smooth skeletons moves
-    body_tracker_params.body_format = sl::BODY_FORMAT::BODY_38;
+    body_tracker_params.body_format = sl::BODY_FORMAT::BODY_34;
     body_tracker_params.detection_model = isJetson ? BODY_TRACKING_MODEL::HUMAN_BODY_FAST : BODY_TRACKING_MODEL::HUMAN_BODY_ACCURATE;
     //body_tracker_params.allow_reduced_precision_inference = true;
 

@@ -44,7 +44,6 @@ void createSKPrimitive(sl::BodyData& body, const std::vector<std::pair<T, T>>&ma
 }
 
 
-
 void render_2D(cv::Mat &left_display, sl::float2 img_scale, std::vector<sl::BodyData> &bodies, bool isTrackingON, bool fastRender) {
     cv::Mat overlay = left_display.clone();
     cv::Rect roi_render(0, 0, left_display.size().width, left_display.size().height);
@@ -69,8 +68,6 @@ void render_2D(cv::Mat &left_display, sl::float2 img_scale, std::vector<sl::Body
                         createSKPrimitive(it, BODY_34_BONES, img_scale, left_display, roi_render, color);
                     else if (it.keypoint_2d.size() == 38)
                         createSKPrimitive(it, BODY_38_BONES, img_scale, left_display, roi_render, color);
-                    else //if (it.keypoint_2d.size() == 70)
-                        createSKPrimitive(it, BODY_70_BONES, img_scale, left_display, roi_render, color);
                 }
             }
         }

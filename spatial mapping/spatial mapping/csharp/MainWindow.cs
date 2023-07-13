@@ -74,7 +74,10 @@ namespace sl
             ERROR_CODE err = zedCamera.Open(ref init_params);
 
             if (err != ERROR_CODE.SUCCESS)
+            {
+                Console.WriteLine("Error while opening camera "  + err.ToString() + " exitin...");  
                 Environment.Exit(-1);
+            }
 
             tracking_state = POSITIONAL_TRACKING_STATE.OFF;
             mapping_state = SPATIAL_MAPPING_STATE.NOT_ENABLED;
@@ -82,12 +85,21 @@ namespace sl
 
             // Enable tracking
             PositionalTrackingParameters positionalTrackingParameters = new PositionalTrackingParameters();
-            zedCamera.EnablePositionalTracking(ref positionalTrackingParameters);
+            err = zedCamera.EnablePositionalTracking(ref positionalTrackingParameters);
+
+            if (err != ERROR_CODE.SUCCESS)
+            {
+                Console.WriteLine("Error while enabling tracking " + err.ToString() + " exitin...");
+                Environment.Exit(-1);
+            }
 
             runtimeParameters = new RuntimeParameters();
 
             spatialMappingParameters = new SpatialMappingParameters();
             spatialMappingParameters.resolutionMeter = SpatialMappingParameters.get(MAPPING_RESOLUTION.MEDIUM);
+            spatialMappingParameters.rangeMeter = SpatialMappingParameters.get(MAPPING_RANGE.MEDIUM);
+            spatialMappingParameters.reverseVertexOrder = false;
+            spatialMappingParameters.maxMemoryUsage = 4096;
             spatialMappingParameters.saveTexture = true;
             if (CREATE_MESH)    spatialMappingParameters.map_type = SPATIAL_MAP_TYPE.MESH;
             else   spatialMappingParameters.map_type = SPATIAL_MAP_TYPE.FUSED_POINT_CLOUD;
@@ -199,7 +211,7 @@ namespace sl
                     err = zedCamera.RetrieveImage(zedMat, sl.VIEW.LEFT, sl.MEM.CPU);
                     // Update pose data (used for projection of the mesh over the current image)
                     tracking_state = zedCamera.GetPosition(ref cam_pose);
-
+                    
                     if (mapping_activated)
                     {
                         mapping_state = zedCamera.GetSpatialMappingState();
@@ -213,10 +225,13 @@ namespace sl
                             if (CREATE_MESH)
                             {
                                 //Retrieves data for mesh visualization only (vertices + triangles);
-                                zedCamera.RetrieveChunks(ref mesh);
+                                err = zedCamera.RetrieveChunks(ref mesh);
 
-                                var chunks = new List<Chunk>(mesh.chunks.Values);
-                                viewer.updateData(chunks);
+                                if (err == ERROR_CODE.SUCCESS)
+                                {
+                                    var chunks = new List<Chunk>(mesh.chunks.Values);
+                                    viewer.updateData(chunks);
+                                }
                             }
 
                             /// MAP_TYPE == FUSED_POINT_CLOUD
@@ -237,7 +252,13 @@ namespace sl
                             Quaternion quat = Quaternion.Identity; Vector3 vec = Vector3.Zero;
                             zedCamera.ResetPositionalTracking(quat, vec);                       
 
-                            zedCamera.EnableSpatialMapping(ref spatialMappingParameters);
+                            err = zedCamera.EnableSpatialMapping(ref spatialMappingParameters);
+
+                            if (err != ERROR_CODE.SUCCESS)
+                            {
+                                Console.WriteLine("Error while enabling mapping" + err.ToString() + " exitin...");
+                                Environment.Exit(-1);
+                            }
 
                             Console.WriteLine("Hit SPACE BAR to stop spatial mapping...");
                             // Clear previous Mesh data

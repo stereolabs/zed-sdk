@@ -325,9 +325,7 @@ class Skeleton:
             self.createSk(obj, sl.BODY_34_PARTS, sl.BODY_34_BONES)
         elif kpt_size == 38*3:
             self.createSk(obj, sl.BODY_38_PARTS, sl.BODY_38_BONES)
-        elif kpt_size == 70*3:
-            self.createSk(obj, sl.BODY_70_PARTS, sl.BODY_70_BONES)
-
+    
     def push_to_GPU(self):
         self.joints.push_to_GPU()
 
