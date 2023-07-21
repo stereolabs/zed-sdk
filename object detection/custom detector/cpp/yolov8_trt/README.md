@@ -32,29 +32,32 @@ Currently, we support yolov8
 1. generate .wts from pytorch with .pt, or download .wts from model zoo
 
 ```
-// download https://github.com/ultralytics/assets/releases/yolov8n.pt
-cp {tensorrtx}/yolov8/gen_wts.py {ultralytics}/ultralytics
-cd {ultralytics}/ultralytics
+// install ultralytics for yolov8
+pip install ultralytics
+
+```
+
+2. build --> tensorrtx/yolov8 and run
+
+```
+cd ~/zed-sdk/object detection/custom detector/cpp/yolov8_trt/
+// download yolov8s.
+wget https://github.com/ultralytics/assets/releases/yolov8s.pt
 python gen_wts.py
-// a file 'yolov8n.wts' will be generated.
-```
-
-2. build tensorrtx/yolov8 and run
-
-```
-cd {tensorrtx}/yolov8/
 // update kNumClass in config.h if your model is trained on custom dataset
 mkdir build
 cd build
-cp {ultralytics}/ultralytics/yolov8.wts {tensorrtx}/yolov8/build
+cp ~/zed-sdk/object detection/custom detector/cpp/yolov8_trt/yolov8s.wts ~/zed-sdk/object detection/custom detector/cpp/yolov8_trt/build
 cmake ..
 make
-sudo ./yolov8 -s [.wts] [.engine] [n/s/m/l/x]  // serialize model to plan file
-sudo ./yolov8 -d [.engine] [image folder]  [c/g] // deserialize and run inference, the images in [image folder] will be processed.
+./yolov8_trt -s [.wts] [.engine] [n/s/m/l/x]  // serialize model to plan file
+./yolov8_trt -d [.engine] [image folder]  [c/g] // deserialize and run inference, the images in [image folder] will be processed.
 // For example yolov8
-sudo ./yolov8 -s yolov8n.wts yolov8.engine n
-sudo ./yolov8 -d yolov8n.engine ../images c //cpu postprocess
-sudo ./yolov8 -d yolov8n.engine ../images g //gpu postprocess
+<!-- connect your ZED2 camera and run the fommowing command -->
+./yolov8_trt -s yolov8s.wts yolov8s.engine s // for serialize model to plan file
+
+./yolov8_trt -d yolov8s.engine ./ c //deserialize and run inference in cpu.
+./yolov8_trt -d yolov8n.engine ./ g //deserialize and run inference in gpu.
 
 ```
 3. check the images generated, as follows. _zidane.jpg and _bus.jpg
