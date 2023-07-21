@@ -53,7 +53,7 @@ make
 ./yolov8_trt -s [.wts] [.engine] [n/s/m/l/x]  // serialize model to plan file
 ./yolov8_trt -d [.engine] [image folder]  [c/g] // deserialize and run inference, the images in [image folder] will be processed.
 // For example yolov8
-<!-- connect your ZED2 camera and run the fommowing command -->
+<!-- Connect your ZED2 camera and then run the following command. -->
 ./yolov8_trt -s yolov8s.wts yolov8s.engine s // for serialize model to plan file
 
 ./yolov8_trt -d yolov8s.engine ./ c //deserialize and run inference in cpu.
