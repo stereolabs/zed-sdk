@@ -1,0 +1,16 @@
+# Ignore everything
+/*
+/*/
+
+# But not these files & folders...
+!.gitignore
+!/src
+!/include
+!/plugin
+!/main.cpp
+!/main_fun.cpp
+!/gen_wts.py
+!/yolov8_trt.py
+!/README.md
+!/CMakeLists.txt
+!/package.xml
