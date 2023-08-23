@@ -28,69 +28,61 @@ import sys
 import time
 import pyzed.sl as sl
 import ogl_viewer.viewer as gl
+import argparse
 
-# Set this variable to 'True' for a Mesh viewer
-# or to 'False' for a Point Cloud viewer
-CREATE_MESH = False
 
 def main():
-    print("Running Spatial Mapping sample ... Press 'q' to quit")
-
-    # Create a Camera object
+    init = sl.InitParameters()
+    init.depth_mode = sl.DEPTH_MODE.NEURAL
+    init.coordinate_units = sl.UNIT.METER
+    init.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP # OpenGL's coordinate system is right_handed    
+    init.depth_maximum_distance = 8.
+    parse_args(init)
     zed = sl.Camera()
-
-    # Create a InitParameters object and set configuration parameters
-    init_params = sl.InitParameters()
-    init_params.camera_resolution = sl.RESOLUTION.HD720  # Use HD720 video mode
-    init_params.coordinate_units = sl.UNIT.METER         # Set coordinate units
-    init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP  # OpenGL coordinates
-
-    # If applicable, use the SVO given as parameter
-    # Otherwise use ZED live stream
-    if len(sys.argv) == 2:
-        filepath = sys.argv[1]
-        print("Using SVO file: {0}".format(filepath))
-        init_params.set_from_svo_file(filepath)
-
-    # Open the camera
-    status = zed.open(init_params)
+    status = zed.open(init)
     if status != sl.ERROR_CODE.SUCCESS:
-        print(repr(status))
+        print("Camera Open : "+repr(status)+". Exit program.")
         exit()
+    
+    camera_infos = zed.get_camera_information()
+    pose = sl.Pose()
+    
+    tracking_state = sl.POSITIONAL_TRACKING_STATE.OFF
+    positional_tracking_parameters = sl.PositionalTrackingParameters()
+    positional_tracking_parameters.set_floor_as_origin = True
+    returned_state = zed.enable_positional_tracking(positional_tracking_parameters)
+    if returned_state != sl.ERROR_CODE.SUCCESS:
+        print("Enable Positional Tracking : "+repr(status)+". Exit program.")
+        exit()
+    
+    if opt.build_mesh:
+        spatial_mapping_parameters = sl.SpatialMappingParameters(resolution = sl.MAPPING_RESOLUTION.MEDIUM,mapping_range =  sl.MAPPING_RANGE.MEDIUM,max_memory_usage = 2048,save_texture = False,use_chunk_only = True,reverse_vertex_order = False,map_type = sl.SPATIAL_MAP_TYPE.MESH)
+        pymesh = sl.Mesh() 
+    else :
+        spatial_mapping_parameters = sl.SpatialMappingParameters(resolution = sl.MAPPING_RESOLUTION.MEDIUM,mapping_range =  sl.MAPPING_RANGE.MEDIUM,max_memory_usage = 2048,save_texture = False,use_chunk_only = True,reverse_vertex_order = False,map_type = sl.SPATIAL_MAP_TYPE.FUSED_POINT_CLOUD)
+        pymesh = sl.FusedPointCloud()
 
-    # Get camera parameters
-    camera_parameters = zed.get_camera_information().camera_configuration.calibration_parameters.left_cam
-
-    if CREATE_MESH:
-        pymesh = sl.Mesh()              # Current incremental mesh
-    else:
-        pymesh = sl.FusedPointCloud()   # Current incremental FusedPointCloud
-    image = sl.Mat()                    # Left image from camera
-    pose = sl.Pose()                    # Camera pose tracking data
-
-    viewer = gl.GLViewer()
-    viewer.init(camera_parameters, pymesh, CREATE_MESH)
-
-    spatial_mapping_parameters = sl.SpatialMappingParameters()
     tracking_state = sl.POSITIONAL_TRACKING_STATE.OFF
     mapping_state = sl.SPATIAL_MAPPING_STATE.NOT_ENABLED
+
+    
+    runtime_parameters = sl.RuntimeParameters()
+    runtime_parameters.confidence_threshold = 50
+    
     mapping_activated = False
-    last_call = time.time()             # Timestamp of last mesh request
 
-    # Enable positional tracking
-    err = zed.enable_positional_tracking()
-    if err != sl.ERROR_CODE.SUCCESS:
-        print(repr(err))
-        exit()
+    image = sl.Mat()  
+    point_cloud = sl.Mat()                
+    pose = sl.Pose() 
 
-    # Set runtime parameters
-    runtime = sl.RuntimeParameters()
-
-    print("Press on 'Space' for enable / disable spatial mapping")
-    print("Disable the spacial mapping after enabled it will output a .obj mesh file")
+    viewer = gl.GLViewer()
+    
+    viewer.init(zed.get_camera_information().camera_configuration.calibration_parameters.left_cam, pymesh, int(opt.build_mesh))
+    print("Press on 'Space' to enable / disable spatial mapping")
+    print("Disable the spatial mapping after enabling it will output a .obj mesh file")
     while viewer.is_available():
         # Grab an image, a RuntimeParameters object must be given to grab()
-        if zed.grab(runtime) == sl.ERROR_CODE.SUCCESS:
+        if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
             # Retrieve left image
             zed.retrieve_image(image, sl.VIEW.LEFT)
             # Update pose data (used for projection of the mesh over the current image)
@@ -120,7 +112,7 @@ def main():
                     spatial_mapping_parameters.resolution_meter = sl.SpatialMappingParameters().get_resolution_preset(sl.MAPPING_RESOLUTION.MEDIUM)
                     spatial_mapping_parameters.use_chunk_only = True
                     spatial_mapping_parameters.save_texture = False         # Set to True to apply texture over the created mesh
-                    if CREATE_MESH:
+                    if opt.build_mesh:
                         spatial_mapping_parameters.map_type = sl.SPATIAL_MAP_TYPE.MESH
                     else:
                         spatial_mapping_parameters.map_type = sl.SPATIAL_MAP_TYPE.FUSED_POINT_CLOUD
@@ -140,7 +132,7 @@ def main():
                     # Extract whole mesh
                     zed.extract_whole_spatial_map(pymesh)
 
-                    if CREATE_MESH:
+                    if opt.build_mesh:
                         filter_params = sl.MeshFilterParameters()
                         filter_params.set(sl.MESH_FILTER.MEDIUM) 
                         # Filter the extracted mesh
@@ -169,6 +161,66 @@ def main():
     zed.disable_spatial_mapping()
     zed.disable_positional_tracking()
     zed.close()
-    
+
+
+    # Free allocated memory before closing the camera
+    pymesh.clear()
+    image.free()
+    point_cloud.free()
+    # Close the ZED
+    zed.close()
+   
+          
+def parse_args(init):
+    if len(opt.input_svo_file)>0 and opt.input_svo_file.endswith(".svo"):
+        init.set_from_svo_file(opt.input_svo_file)
+        print("[Sample] Using SVO File input: {0}".format(opt.input_svo_file))
+    elif len(opt.ip_address)>0 :
+        ip_str = opt.ip_address
+        if ip_str.replace(':','').replace('.','').isdigit() and len(ip_str.split('.'))==4 and len(ip_str.split(':'))==2:
+            init.set_from_stream(ip_str.split(':')[0],int(ip_str.split(':')[1]))
+            print("[Sample] Using Stream input, IP : ",ip_str)
+        elif ip_str.replace(':','').replace('.','').isdigit() and len(ip_str.split('.'))==4:
+            init.set_from_stream(ip_str)
+            print("[Sample] Using Stream input, IP : ",ip_str)
+        else :
+            print("Unvalid IP format. Using live stream")
+    if ("HD2K" in opt.resolution):
+        init.camera_resolution = sl.RESOLUTION.HD2K
+        print("[Sample] Using Camera in resolution HD2K")
+    elif ("HD1200" in opt.resolution):
+        init.camera_resolution = sl.RESOLUTION.HD1200
+        print("[Sample] Using Camera in resolution HD1200")
+    elif ("HD1080" in opt.resolution):
+        init.camera_resolution = sl.RESOLUTION.HD1080
+        print("[Sample] Using Camera in resolution HD1080")
+    elif ("HD720" in opt.resolution):
+        init.camera_resolution = sl.RESOLUTION.HD720
+        print("[Sample] Using Camera in resolution HD720")
+    elif ("SVGA" in opt.resolution):
+        init.camera_resolution = sl.RESOLUTION.SVGA
+        print("[Sample] Using Camera in resolution SVGA")
+    elif ("VGA" in opt.resolution):
+        init.camera_resolution = sl.RESOLUTION.VGA
+        print("[Sample] Using Camera in resolution VGA")
+    elif len(opt.resolution)>0: 
+        print("[Sample] No valid resolution entered. Using default")
+    else : 
+        print("[Sample] Using default resolution")
+
+
+
+        
+         
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--input_svo_file', type=str, help='Path to an .svo file, if you want to replay it',default = '')
+    parser.add_argument('--ip_address', type=str, help='IP Adress, in format a.b.c.d:port or a.b.c.d, if you have a streaming setup', default = '')
+    parser.add_argument('--resolution', type=str, help='Resolution, can be either HD2K, HD1200, HD1080, HD720, SVGA or VGA', default = '')
+    parser.add_argument('--build_mesh', help = 'Either the script should plot a mesh or point clouds of surroundings', action='store_true')
+    opt = parser.parse_args()
+    if len(opt.input_svo_file)>0 and len(opt.ip_address)>0:
+        print("Specify only input_svo_file or ip_address, or none to use wired camera, not both. Exit program")
+        exit()
+    main() 
+    

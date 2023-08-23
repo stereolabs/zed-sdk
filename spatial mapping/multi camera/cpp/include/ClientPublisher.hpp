@@ -1,28 +1,33 @@
 #ifndef  __SENDER_RUNNER_HDR__
 #define __SENDER_RUNNER_HDR__
 
-#include <sl/Fusion.hpp>
 #include <sl/Camera.hpp>
+#include <sl/Fusion.hpp>
 
 #include <thread>
 
-class SenderRunner {
+class ClientPublisher{
 
 public:
-    SenderRunner();
-    ~SenderRunner();
+    ClientPublisher();
+    ~ClientPublisher();
 
-    bool open(sl::FusionConfiguration);
+    bool open(sl::InputType);
+
     void start();
     void stop();
 
+    bool isRunning() {
+        return running;
+    }
+
+
 private:
     sl::Camera zed;
-    sl::InitParameters init_params;
+    sl::InitParameters init_parameters;
     void work();
     std::thread runner;
     bool running;
-    sl::FusionConfiguration zed_config;
 };
 
 #endif // ! __SENDER_RUNNER_HDR__

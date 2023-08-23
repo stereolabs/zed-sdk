@@ -18,6 +18,7 @@ namespace sl
         Camera zedCamera;
         RuntimeParameters runtimeParameters;
         POSITIONAL_TRACKING_STATE tracking_state; 
+        PlaneDetectionParameters planeDetectionParameters;
 
         // Positional tracking data
         Pose cam_pose;
@@ -53,14 +54,17 @@ namespace sl
             ERROR_CODE err = zedCamera.Open(ref init_params);
 
             if (err != ERROR_CODE.SUCCESS)
+            {
+                Console.WriteLine("Error while opening camera " + err.ToString() + " exiting...");
                 Environment.Exit(-1);
+            }
 
             if (zedCamera.CameraModel == sl.MODEL.ZED)
             {
                 Console.WriteLine(" ERROR : Use ZED2 Camera and newer models only");
                 return;
             }
-
+            
             findPlaneStatus = ERROR_CODE.FAILURE;
             tracking_state = POSITIONAL_TRACKING_STATE.OFF;
 
@@ -70,11 +74,19 @@ namespace sl
             PositionalTrackingParameters positionalTrackingParameters = new PositionalTrackingParameters();
             zedCamera.EnablePositionalTracking(ref positionalTrackingParameters);
 
+            if (err != ERROR_CODE.SUCCESS)
+            {
+                Console.WriteLine("Error while enabling tracking " + err.ToString() + " exitin...");
+                Environment.Exit(-1);
+            }
+
             runtimeParameters = new RuntimeParameters();
             runtimeParameters.measure3DReferenceFrame = REFERENCE_FRAME.WORLD;
             // Create ZED Objects filled in the main loop
             zedMat = new Mat();
             cam_pose = new Pose();
+
+            planeDetectionParameters = new PlaneDetectionParameters();
 
             //Create mesh.
             planeMeshTriangles = new int[65000];
@@ -195,7 +207,7 @@ namespace sl
                         if (userAction.hit)
                         {                      
                             Vector2 imageClick = new Vector2((float)userAction.hitCoord.X * (float)zedCamera.ImageWidth, (float)userAction.hitCoord.Y * (float)zedCamera.ImageHeight);
-                            findPlaneStatus = zedCamera.findPlaneAtHit(ref plane, imageClick);
+                            findPlaneStatus = zedCamera.FindPlaneAtHit(ref plane, imageClick, ref planeDetectionParameters);
                             if (findPlaneStatus == ERROR_CODE.SUCCESS)
                             {
                                 zedCamera.convertHitPlaneToMesh(planeMeshVertices, planeMeshTriangles, out nbVertices, out nbTriangles);

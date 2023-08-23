@@ -46,7 +46,6 @@ struct TrackPoint {
         x = pos.x;
         y = pos.y;
         z = pos.z;
-
         if (state == sl::OBJECT_TRACKING_STATE::OK) {
             tracking_state = TrackPointState::OK;
         } else {
@@ -56,11 +55,10 @@ struct TrackPoint {
         timestamp = timestamp_;
     };
 
-    TrackPoint(sl::float3 pos, TrackPointState state, uint64_t timestamp_) {
+    TrackPoint(sl::float3 pos,TrackPointState state, uint64_t timestamp_) {
         x = pos.x;
         y = pos.y;
         z = pos.z;
-
         tracking_state = state;
 
         timestamp = timestamp_;
@@ -93,7 +91,7 @@ public:
 
     unsigned int id;
     std::deque<TrackPoint> positions; // Will store detected positions and the predicted ones
-    std::deque<TrackPoint> positions_to_draw; // Will store the visualization output => when smoothing track, point won't be the same as the real points
+    std::deque<TrackPoint> positions_to_draw; // Will store the visualization output 
     sl::OBJECT_TRACKING_STATE tracking_state;
     sl::OBJECT_CLASS object_type;
     uint64_t last_detected_timestamp;
@@ -116,7 +114,7 @@ public:
     ~TrackingViewer() {
     };
 
-    void generate_view(sl::Objects &objects, sl::Pose current_camera_pose, cv::Mat &tracking_view, bool tracking_enabled);
+    void generate_view(sl::Objects &objects, cv::Mat &left_display, sl::float2 img_scale, sl::Pose current_camera_pose, cv::Mat &tracking_view, bool tracking_enabled);
 
     void setCameraCalibration(const sl::CalibrationParameters calib) {
         camera_calibration = calib;
@@ -126,10 +124,11 @@ public:
     // Zoom functions
     void zoomIn();
     void zoomOut();
+    void render_2D(cv::Mat &left_display, sl::float2 img_scale, std::vector<sl::ObjectData> &objects, bool render_mask, bool isTrackingON);
 private:
     float x_min, x_max; // show objects between [x_min; x_max] (in millimeters)
     float z_min; // show objects between [z_min; 0] (z_min < 0) (in millimeters)
-
+    
     // Conversion from world position to pixel coordinates
     float x_step, z_step;
 
@@ -169,6 +168,7 @@ private:
     // Utils with pose information
     cv::Point2i toCVPoint(sl::float3 position, sl::Pose pose);
     cv::Point2i toCVPoint(TrackPoint position, sl::Pose pose);
+    cv::Point2i toCVPoint(TrackPoint position);
 
     // vizualization methods
     void drawTracklets(cv::Mat &tracking_view, sl::Pose current_camera_pose);

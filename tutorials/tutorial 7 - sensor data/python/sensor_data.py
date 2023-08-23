@@ -22,7 +22,7 @@ import pyzed.sl as sl
 import cv2
 import numpy as np
 import math
-
+import time 
 ## 
 # Basic class to handle the timestamp of the different sensors to know if it is a new sensors_data or an old one
 class TimestampHandler:
@@ -104,10 +104,9 @@ def main():
     ts_handler = TimestampHandler()
 
     # Get Sensor Data for 5 seconds
-    i = 0
     sensors_data = sl.SensorsData()
-
-    while i < 100 :
+    time_0 = time.time() 
+    while time.time()-time_0 < 5 :
         # retrieve the current sensors sensors_data
         # Depending on your Camera model or its firmware, differents sensors are presents.
         # They do not run at the same rate: Therefore, to do not miss samples we iterate as fast as we can and compare timestamp to know when a sensors_data is a new one
@@ -116,7 +115,6 @@ def main():
             # Check if the data has been updated since the last time
             # IMU is the sensor with the highest rate
             if ts_handler.is_new(sensors_data.get_imu_data()):
-                print("Sample " + str(i))
 
                 print(" - IMU:")
                 # Filtered orientation quaternion
@@ -141,7 +139,6 @@ def main():
                     magnetic_field_calibrated = sensors_data.get_barometer_data().pressure
                     print(" - Barometer\n \t Atmospheric pressure: {0} [hPa]".format(sensors_data.get_barometer_data().pressure))
 
-                i = i+1
 
     zed.close()
     return 0

@@ -35,7 +35,8 @@ def main():
     # Open the camera
     err = zed.open(init_params)
     if err != sl.ERROR_CODE.SUCCESS:
-        exit(1)
+        print("Camera Open : "+repr(err)+". Exit program.")
+        exit()
 
     obj_param = sl.ObjectDetectionParameters()
     obj_param.enable_tracking=True
@@ -51,20 +52,19 @@ def main():
 
     err = zed.enable_object_detection(obj_param)
     if err != sl.ERROR_CODE.SUCCESS :
-        print (repr(err))
+        print("Enable object detection : "+repr(err)+". Exit program.")
         zed.close()
-        exit(1)
+        exit()
 
     objects = sl.Objects()
     obj_runtime_param = sl.ObjectDetectionRuntimeParameters()
     obj_runtime_param.detection_confidence_threshold = 40
 
     iter = 0
-    while iter < 200:
+    while iter < 100:
         zed.grab()
         zed.retrieve_objects(objects, obj_runtime_param)
         if objects.is_new :
-            iter = iter +1
             obj_array = objects.object_list
             print(str(len(obj_array))+" Object(s) detected\n")
             if len(obj_array) > 0 :
@@ -89,10 +89,10 @@ def main():
                 for it in bounding_box :
                     print("    "+str(it),end='')
 
-                input('\nPress enter to continue: ')
-
+        iter = iter +1
 
     # Close the camera
+    zed.disable_object_detection()
     zed.close()
 
 if __name__ == "__main__":

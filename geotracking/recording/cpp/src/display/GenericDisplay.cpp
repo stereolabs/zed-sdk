@@ -1,4 +1,5 @@
 #include "display/GenericDisplay.h"
+#include "exporter/KMLExporter.h"
 
 #ifdef COMPILE_WITH_ZEDHUB
 #include <sl_iot/HubClient.hpp>
@@ -60,7 +61,9 @@ void GenericDisplay::updateGeoPoseData(sl::GeoPose geo_pose, sl::Timestamp curre
     static bool already_display_warning_message = false;
     if(!already_display_warning_message){
         already_display_warning_message = true;
-        std::cerr << "ZEDHub was not found ... the computed Geopose will be saved as KML file" << std::endl;
+        std::cerr << std::endl << "ZEDHub was not found ... the computed Geopose will be saved as KML file." << std::endl;
+        std::cerr << "Results will be saved in  \"fused_position.kml\" file. You could use google myMaps (https://www.google.com/maps/about/mymaps/) to visualize it." << std::endl;
     }
+    saveKMLData("fused_position.kml", geo_pose);
 #endif
 }

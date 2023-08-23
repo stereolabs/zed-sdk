@@ -31,6 +31,10 @@ link_directories(${OpenGL_LIBRARY_DIRS})
 link_directories(${CUDA_LIBRARY_DIRS})
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
+IF (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
+    add_definitions(-DJETSON_STYLE)
+ENDIF()
+
 FILE(GLOB_RECURSE SRC_FILES src/*.cpp)
 FILE(GLOB_RECURSE HDR_FILES include/*.hpp)
 

@@ -11,7 +11,7 @@ import torch.backends.cudnn as cudnn
 
 sys.path.insert(0, './yolov5')
 from models.experimental import attempt_load
-from utils.general import check_img_size, non_max_suppression, scale_coords, xyxy2xywh
+from utils.general import check_img_size, non_max_suppression, scale_boxes, xyxy2xywh
 from utils.torch_utils import select_device
 from utils.augmentations import letterbox
 
@@ -59,10 +59,10 @@ def xywh2abcd(xywh, im_shape):
     output[1][0] = x_max
     output[1][1] = y_min
 
-    output[2][0] = x_min
+    output[2][0] = x_max
     output[2][1] = y_max
 
-    output[3][0] = x_max
+    output[3][0] = x_min
     output[3][1] = y_max
     return output
 
@@ -71,7 +71,7 @@ def detections_to_custom_box(detections, im, im0):
     output = []
     for i, det in enumerate(detections):
         if len(det):
-            det[:, :4] = scale_coords(im.shape[2:], det[:, :4], im0.shape).round()
+            det[:, :4] = scale_boxes(im.shape[2:], det[:, :4], im0.shape).round()
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
 
             for *xyxy, conf, cls in reversed(det):
@@ -97,7 +97,7 @@ def torch_thread(weights, img_size, conf_thres=0.2, iou_thres=0.45):
     imgsz = img_size
 
     # Load model
-    model = attempt_load(weights, map_location=device)  # load FP32
+    model = attempt_load(weights, device=device)  # load FP32
     stride = int(model.stride.max())  # model stride
     imgsz = check_img_size(imgsz, s=stride)  # check img_size
     if half:

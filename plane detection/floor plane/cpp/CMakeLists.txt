@@ -31,6 +31,10 @@ link_directories(${GLUT_LIBRARY_DIRS})
 link_directories(${GLEW_LIBRARY_DIRS})
 link_directories(${OpenGL_LIBRARY_DIRS})
 
+IF (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
+    add_definitions(-DJETSON_STYLE)
+ENDIF()
+
 FILE(GLOB_RECURSE SRC_FILES src/*.cpp)
 FILE(GLOB_RECURSE HDR_FILES include/*.hpp)
 

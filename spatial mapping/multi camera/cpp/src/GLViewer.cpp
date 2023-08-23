@@ -97,7 +97,7 @@ void GLViewer::exit() {
     available = false;
 }
 
-void GLViewer::init(int argc, char **argv, sl::Mat &image, sl::Mat & pointcloud, CUstream stream) {
+void GLViewer::init(int argc, char **argv) {
 
     glutInit(&argc, argv);
 
@@ -119,14 +119,6 @@ void GLViewer::init(int argc, char **argv, sl::Mat &image, sl::Mat & pointcloud,
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_POINT_SMOOTH);
 
-    strm = stream;
-   
-    pc_render.initialize(pointcloud);
-    camera_viewer.initialize(image);
-
-    shader.it = Shader((GLchar*) MESH_VERTEX_SHADER, (GLchar*) MESH_FRAGMENT_SHADER);
-    shader.MVPM = glGetUniformLocation(shader.it.getProgramId(), "u_mvpMatrix");
-
     shader_mesh.it = Shader((GLchar*) MESH_VERTEX_SHADER, (GLchar*) MESH_FRAGMENT_SHADER);
     shader_mesh.MVPM = glGetUniformLocation(shader_mesh.it.getProgramId(), "u_mvpMatrix");
 
@@ -139,7 +131,6 @@ void GLViewer::init(int argc, char **argv, sl::Mat &image, sl::Mat & pointcloud,
     camera_.setRotation(rot);
 
     draw_mesh_as_wire = false;
-    draw_live_point_cloud = true;
     dark_background = true;
 
     // Map glut function on this class methods
@@ -170,8 +161,6 @@ void GLViewer::render() {
 
 void GLViewer::updateCameraPose(sl::Transform p, sl::POSITIONAL_TRACKING_STATE state_) {
     cam_pose = p;
-    pc_render.pushNewPC(strm);
-    camera_viewer.pushNewImage(strm);
 }
 
 void GLViewer::updateMap(sl::FusedPointCloud &fpc){
@@ -210,9 +199,6 @@ void GLViewer::update() {
     if (keyStates_['w'] == KEY_STATE::UP || keyStates_['W'] == KEY_STATE::UP) 
         draw_mesh_as_wire = !draw_mesh_as_wire;
     
-    if (keyStates_['l'] == KEY_STATE::UP || keyStates_['L'] == KEY_STATE::UP) 
-        draw_live_point_cloud = !draw_live_point_cloud;
-
     if (keyStates_['d'] == KEY_STATE::UP || keyStates_['D'] == KEY_STATE::UP) 
         dark_background = !dark_background;
        
@@ -243,7 +229,6 @@ void GLViewer::update() {
     for (auto& it : map_fpc)
         it.pushToGPU();
 
-    //pointCloud_.mutexData.unlock();
     camera_.update();
     clearInputs();
 }
@@ -255,13 +240,6 @@ void GLViewer::draw() {
     glPolygonMode(GL_BACK, GL_LINE);
     glLineWidth(2.f);
     glPointSize(point_size);
-
-    glUseProgram(shader.it.getProgramId());
-
-    sl::Transform pose_ = vpMatrix * cam_pose;
-    glUniformMatrix4fv(shader.MVPM, 1, GL_FALSE, sl::Transform::transpose(pose_).m);
-    camera_viewer.frustum.draw();
-    glUseProgram(0);
 
     if(map_fpc.size()){
         glUseProgram(shader_fpc.it.getProgramId());
@@ -278,10 +256,6 @@ void GLViewer::draw() {
             it.draw(draw_mesh_as_wire);
         glUseProgram(0);
     }
-
-    if(draw_live_point_cloud)
-        pc_render.draw(pose_);
-    camera_viewer.draw(pose_);
 }
 
 void GLViewer::clearInputs() {
@@ -605,69 +579,6 @@ bool Shader::compile(GLuint &shaderId, GLenum type, GLchar* src) {
     return true;
 }
 
-PointCloud::PointCloud() {
-
-}
-
-PointCloud::~PointCloud() {
-    close();
-}
-
-void PointCloud::close() {
-    if (refMat.isInit()) {
-        auto err = cudaGraphicsUnmapResources(1, &bufferCudaID_, 0);
-        if (err != cudaSuccess)
-            std::cerr << "Error: CUDA UnmapResources (" << err << ")" << std::endl;
-        glDeleteBuffers(1, &bufferGLID_);
-    }
-}
-
-void PointCloud::initialize(sl::Mat &ref) {
-    refMat = ref;
-
-    glGenBuffers(1, &bufferGLID_);
-    glBindBuffer(GL_ARRAY_BUFFER, bufferGLID_);
-    glBufferData(GL_ARRAY_BUFFER, refMat.getResolution().area() * 4 * sizeof (float), 0, GL_DYNAMIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    cudaError_t err = cudaGraphicsGLRegisterBuffer(&bufferCudaID_, bufferGLID_, cudaGraphicsRegisterFlagsNone);
-    if (err != cudaSuccess)
-        std::cerr << "Error: CUDA - OpenGL Interop failed (" << err << ")" << std::endl;
-
-    err = cudaGraphicsMapResources(1, &bufferCudaID_, 0);
-    if (err != cudaSuccess)
-        std::cerr << "Error: CUDA MapResources (" << err << ")" << std::endl;
-
-    err = cudaGraphicsResourceGetMappedPointer((void**) &xyzrgbaMappedBuf_, &numBytes_, bufferCudaID_);
-    if (err != cudaSuccess)
-        std::cerr << "Error: CUDA GetMappedPointer (" << err << ")" << std::endl;
-
-    shader_ = Shader(POINTCLOUD_VERTEX_SHADER, POINTCLOUD_FRAGMENT_SHADER);
-    shMVPMatrixLoc_ = glGetUniformLocation(shader_.getProgramId(), "u_mvpMatrix");
-}
-
-void PointCloud::pushNewPC(CUstream strm) {
-    if (refMat.isInit())
-        cudaMemcpyAsync(xyzrgbaMappedBuf_, refMat.getPtr<sl::float4>(sl::MEM::GPU), numBytes_, cudaMemcpyDeviceToDevice, strm);
-}
-
-void PointCloud::draw(const sl::Transform& vp) {
-    if (refMat.isInit()) {
-        glDisable(GL_BLEND);
-        glUseProgram(shader_.getProgramId());
-        glUniformMatrix4fv(shMVPMatrixLoc_, 1, GL_TRUE, vp.m);
-
-        glBindBuffer(GL_ARRAY_BUFFER, bufferGLID_);
-        glVertexAttribPointer(Shader::ATTRIB_VERTICES_POS, 4, GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray(Shader::ATTRIB_VERTICES_POS);
-
-        glDrawArrays(GL_POINTS, 0, refMat.getResolution().area());
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glUseProgram(0);
-        glEnable(GL_BLEND);
-    }
-}
-
 const sl::Translation CameraGL::ORIGINAL_FORWARD = sl::Translation(0, 0, 1);
 const sl::Translation CameraGL::ORIGINAL_UP = sl::Translation(0, 1, 0);
 const sl::Translation CameraGL::ORIGINAL_RIGHT = sl::Translation(1, 0, 0);
@@ -809,151 +720,4 @@ void CameraGL::updateView() {
 
 void CameraGL::updateVPMatrix() {
     vpMatrix_ = projection_ * view_;
-}
-
-CameraViewer::CameraViewer() {
-
-}
-
-CameraViewer::~CameraViewer() {
-	close();
-}
-
-void CameraViewer::close() {
-	if (ref.isInit()) {	
-        
-        auto err = cudaGraphicsUnmapResources(1, &cuda_gl_ressource, 0);
-	    if (err) std::cout << "err 3 " << err << " " << cudaGetErrorString(err) << "\n";
-
-		glDeleteTextures(1, &texture);
-		glDeleteBuffers(3, vboID_);
-		glDeleteVertexArrays(1, &vaoID_);
-	}
-}
-
-bool CameraViewer::initialize(sl::Mat &im) {
-
-    // Create 3D axis
-    float fx,fy,cx,cy;
-    fx = fy = 1400;
-    float width, height;
-    width = 2208;
-    height = 1242;
-    cx = width /2;
-    cy = height /2;
-        
-    float Z_ = .5f;
-    sl::float3 toOGL(1,-1,-1);
-    sl::float3 cam_0(0, 0, 0);
-    sl::float3 cam_1, cam_2, cam_3, cam_4;
-
-    float fx_ = 1.f / fx;
-    float fy_ = 1.f / fy;
-
-    cam_1.z = Z_;
-    cam_1.x = (0 - cx) * Z_ *fx_;
-    cam_1.y = (0 - cy) * Z_ *fy_ ;
-    cam_1 *= toOGL;
-
-    cam_2.z = Z_;
-    cam_2.x = (width - cx) * Z_ *fx_;
-    cam_2.y = (0 - cy) * Z_ *fy_;
-    cam_2 *= toOGL;
-
-    cam_3.z = Z_;
-    cam_3.x = (width - cx) * Z_ *fx_;
-    cam_3.y = (height - cy) * Z_ *fy_;
-    cam_3 *= toOGL;
-
-    cam_4.z = Z_;
-    cam_4.x = (0 - cx) * Z_ *fx_;
-    cam_4.y = (height - cy) * Z_ *fy_;
-    cam_4 *= toOGL;
-
-    sl::float3 clr(0.1,0.5,0.7);
-
-    frustum.addFace(cam_0, cam_1, cam_2, clr);
-    frustum.addFace(cam_0, cam_2, cam_3, clr);
-    frustum.addFace(cam_0, cam_3, cam_4, clr);
-    frustum.addFace(cam_0, cam_4, cam_1, clr);    
-    frustum.setDrawingType(GL_TRIANGLES);
-    frustum.pushToGPU();
-    
-    vert.push_back(cam_1);
-    vert.push_back(cam_2);
-    vert.push_back(cam_3);
-    vert.push_back(cam_4);
-
-    uv.push_back(sl::float2(0,0));
-    uv.push_back(sl::float2(1,0));
-    uv.push_back(sl::float2(1,1));
-    uv.push_back(sl::float2(0,1));
-    
-    faces.push_back(sl::uint3(0,1,2));
-    faces.push_back(sl::uint3(0,2,3));
-
-    ref = im;
-	shader = Shader(VERTEX_SHADER_TEXTURE, FRAGMENT_SHADER_TEXTURE);
-    shMVPMatrixLocTex_ = glGetUniformLocation(shader.getProgramId(), "u_mvpMatrix");
-
-	glGenVertexArrays(1, &vaoID_);
-	glGenBuffers(3, vboID_);
-
-    glBindVertexArray(vaoID_);
-    glBindBuffer(GL_ARRAY_BUFFER, vboID_[0]);
-    glBufferData(GL_ARRAY_BUFFER, vert.size() * sizeof(sl::float3), &vert[0], GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(Shader::ATTRIB_VERTICES_POS, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(Shader::ATTRIB_VERTICES_POS);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vboID_[1]);
-    glBufferData(GL_ARRAY_BUFFER, uv.size() * sizeof(sl::float2), &uv[0], GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(Shader::ATTRIB_COLOR_POS, 2, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(Shader::ATTRIB_COLOR_POS);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID_[2]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, faces.size() * sizeof(sl::uint3), &faces[0], GL_DYNAMIC_DRAW);
-
-    glBindVertexArray(0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    auto res = ref.getResolution();
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, res.width, res.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	cudaError_t err = cudaGraphicsGLRegisterImage(&cuda_gl_ressource, texture, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
-	if (err) std::cout << "err alloc " << err << " " << cudaGetErrorString(err) << "\n";
-	glDisable(GL_TEXTURE_2D);
-	
-	err = cudaGraphicsMapResources(1, &cuda_gl_ressource, 0);
-	if (err) std::cout << "err 0 " << err << " " << cudaGetErrorString(err) << "\n";
-	err = cudaGraphicsSubResourceGetMappedArray(&ArrIm, cuda_gl_ressource, 0, 0);
-	if (err) std::cout << "err 1 " << err << " " << cudaGetErrorString(err) << "\n";
-
-	return (err == cudaSuccess);
-}
-
-void CameraViewer::pushNewImage(CUstream strm) {
-	if (!ref.isInit())  return;
-	auto err = cudaMemcpy2DToArrayAsync(ArrIm, 0, 0, ref.getPtr<sl::uchar1>(sl::MEM::GPU), ref.getStepBytes(sl::MEM::GPU), ref.getPixelBytes() * ref.getWidth(), ref.getHeight(), cudaMemcpyDeviceToDevice, strm);
-	if (err) std::cout << "err 2 " << err << " " << cudaGetErrorString(err) << "\n";
-}
-
-void CameraViewer::draw(sl::Transform vpMatrix) {
-	if (!ref.isInit())  return;
-
-    glUseProgram(shader.getProgramId());
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    
-    glUniformMatrix4fv(shMVPMatrixLocTex_, 1, GL_FALSE, sl::Transform::transpose(vpMatrix).m);
-    glBindTexture(GL_TEXTURE_2D, texture);
-        
-    glBindVertexArray(vaoID_);
-    glDrawElements(GL_TRIANGLES, (GLsizei)faces.size()*3, GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
-    
-    glUseProgram(0);
 }

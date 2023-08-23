@@ -24,13 +24,13 @@ else()
 endif()
 
 # ZEDHub - if found
-find_package(SL_IOT)
+find_package(SL_HUB)
 
-if(SL_IOT_FOUND)
+if(SL_HUB_FOUND)
     message("Found ZEDHub library")
     add_definitions(-DCOMPILE_WITH_ZEDHUB=TRUE)
-    link_directories(${SL_IOT_LIB_DIR})
-    include_directories(${SL_IOT_INCLUDE_DIR})
+    link_directories(${SL_HUB_LIB_DIR})
+    include_directories(${SL_HUB_INCLUDE_DIR})
 endif()
 
 IF(NOT MSVC)
@@ -75,8 +75,8 @@ FILE(GLOB_RECURSE HDR_FILES include/*.h*)
 
 add_executable(${PROJECT_NAME} ${HDR_FILES} ${SRC_FILES})
 
-if(SL_IOT_FOUND)
-    set(LIBS sl_iot util ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${GLEW_LIBRARIES})
+if(SL_HUB_FOUND)
+    set(LIBS sl_hub util ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${GLEW_LIBRARIES})
 else()
     set(LIBS ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${GLEW_LIBRARIES})
 endif()

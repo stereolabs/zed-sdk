@@ -32,6 +32,10 @@ link_directories(${OpenGL_LIBRARY_DIRS})
 
 IF(NOT WIN32)
     SET(SPECIAL_OS_LIBS "pthread")
+
+    IF (CMAKE_SYSTEM_PROCESSOR MATCHES aarch64)
+	    add_definitions(-DJETSON_STYLE)
+    ENDIF()
 ENDIF()
 
 FILE(GLOB_RECURSE SRC_FILES src/*.c*)

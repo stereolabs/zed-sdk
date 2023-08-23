@@ -122,6 +122,9 @@ GLenum GLViewer::init(int argc, char **argv, sl::CameraParameters param, CUstrea
 
     glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
     glEnable(GL_DEPTH_TEST);
+#ifndef JETSON_STYLE
+    glEnable(GL_POINT_SMOOTH);
+#endif
 
     pointCloud_.initialize(image_size, strm_);
 

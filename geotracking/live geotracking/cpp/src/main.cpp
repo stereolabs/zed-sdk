@@ -112,7 +112,7 @@ int main(int argc, char **argv)
             // and GNSS. When the initialization is finish the getGeoPose will return sl::POSITIONAL_TRACKING_STATE::OK
             sl::GeoPose current_geopose;
             auto current_geopose_satus = fusion.getGeoPose(current_geopose);
-            if (current_geopose_satus == sl::POSITIONAL_TRACKING_STATE::OK)
+            if (current_geopose_satus == sl::GNSS_CALIBRATION_STATE::CALIBRATED)
             {
                 // Display it on ZED Hub:
                 viewer.updateGeoPoseData(current_geopose, zed.getTimestamp(sl::TIME_REFERENCE::CURRENT));

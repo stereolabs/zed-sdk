@@ -128,6 +128,10 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters &param, bool isT
     glEnable(GL_LINE_SMOOTH);
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 
+#ifndef JETSON_STYLE
+    glEnable(GL_POINT_SMOOTH);
+#endif
+
     pointCloud_.initialize(param.image_size);
 
     isTrackingON_ = isTrackingON;
@@ -241,6 +245,8 @@ void GLViewer::updateData(sl::Mat &matXYZRGBA, sl::Objects &objs, sl::Bodies & b
                 createSKPrimitive(body, sl::BODY_34_BONES, skeletons, clr_id);
             if (bodies.body_format == sl::BODY_FORMAT::BODY_38)
                 createSKPrimitive(body, sl::BODY_38_BONES, skeletons, clr_id);
+            /*if (bodies.body_format == sl::BODY_FORMAT::BODY_70)
+                createSKPrimitive(body, sl::BODY_70_BONES, skeletons, clr_id);*/
         }
     }
 
@@ -880,6 +886,9 @@ void PointCloud::update() {
 
 void PointCloud::draw(const sl::Transform& vp) {
     if (matGPU_.isInit()) {
+#ifndef JETSON_STYLE
+        glDisable(GL_BLEND);
+#endif
         glUseProgram(shader.it.getProgramId());
         glUniformMatrix4fv(shader.MVP_Mat, 1, GL_TRUE, vp.m);
 
@@ -890,6 +899,10 @@ void PointCloud::draw(const sl::Transform& vp) {
         glDrawArrays(GL_POINTS, 0, matGPU_.getResolution().area());
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glUseProgram(0);
+        
+#ifndef JETSON_STYLE
+        glEnable(GL_BLEND);
+#endif
     }
 }
 

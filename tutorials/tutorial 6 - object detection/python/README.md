@@ -23,7 +23,6 @@ zed = sl.Camera()
 
 # Create a InitParameters object and set configuration parameters
 init_params = sl.InitParameters()
-init_params.camera_resolution = sl.RESOLUTION.HD720  # Use HD720 video mode
 init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE
 init_params.coordinate_units = sl.UNIT.METER
 init_params.sdk_verbose = True
@@ -86,7 +85,6 @@ Once the program is over the modules can be disabled and the camera closed. This
 # Disable object detection and close the camera
 zed.disable_object_detection()
 zed.close()
-return 0
 ```
 
 And this is it!<br/>

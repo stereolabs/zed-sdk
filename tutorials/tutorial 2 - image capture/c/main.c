@@ -76,9 +76,6 @@ int main(int argc, char **argv) {
 	// Init pointer.
 	image_ptr = sl_mat_create_new(width, height, SL_MAT_TYPE_U8_C4, SL_MEM_CPU);
 
-	struct SL_CommunicationParameters params;
-	params.communication_type = SL_COMM_TYPE_INTRA_PROCESS;
-	sl_start_publishing(0, &params);
 
 	// Capture 50 frames and stop
 	int i = 0;

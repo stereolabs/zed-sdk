@@ -1,5 +1,16 @@
 #include "exporter/KMLExporter.h"
 
+#include <sstream>
+
+template <typename T>
+std::string to_string_with_precision(const T a_value, const int n = 6)
+{
+    std::ostringstream out;
+    out.precision(n);
+    out << std::fixed << a_value;
+    return std::move(out).str();
+}
+
 /**
  * @brief Dictionnary that store writter to KML files:
  *
@@ -71,7 +82,7 @@ void saveKMLData(std::string file_path, sl::GeoPose geopose)
         openKMLFile(file_path);
     double latitude, longitude, altitude;
     geopose.latlng_coordinates.getCoordinates(latitude, longitude, altitude, false);
-    all_kml_files[file_path] <<  std::to_string(longitude) + ", " + std::to_string(latitude) + ", " + std::to_string(altitude) + "\n";
+    all_kml_files[file_path] <<  to_string_with_precision(longitude, 12) + ", " + to_string_with_precision(latitude, 12) + ", " + to_string_with_precision(altitude, 12) + "\n";
 }
 /**
  * @brief Save GNSSData in KML file that can be displayed into google map (maps.google.com)
@@ -85,5 +96,5 @@ void saveKMLData(std::string file_path, sl::GNSSData gnss_data)
         openKMLFile(file_path);
     double latitude, longitude, altitude;
     gnss_data.getCoordinates(latitude, longitude, altitude, false);
-    all_kml_files[file_path] <<  std::to_string(longitude) + ", " + std::to_string(latitude)  + ", " + std::to_string(altitude) + "\n";
+    all_kml_files[file_path] <<  to_string_with_precision(longitude, 12) + ", " + to_string_with_precision(latitude, 12)  + ", " + to_string_with_precision(altitude, 12) + "\n";
 }

@@ -32,29 +32,29 @@
 #include <sl/Fusion.hpp>
 #include "display/GenericDisplay.h"
 #include "exporter/KMLExporter.h"
-#include "json.hpp"
-
-using json = nlohmann::json;
-
-/**
- * @brief Function used for getting GNSS data;
- *
- * @return sl::GNSSData
- */
-bool getNextGNSSData(std::string gnss_file_path, uint64_t current_timestamp, sl::GNSSData & out);
+#include "GNSSReplay.hpp"
 
 int main(int argc, char **argv) {
-    if (argc < 2) {
+    if (argc != 3) {
         std::cerr << "Usage ./ZED_GNSS_playback <svo-file> <gnss-data-file-path>" << std::endl;
         return EXIT_FAILURE;
     }
 
-    // Open the camera
+    std::string svo_name, gnss_file;
+    for(int i = 1; i<3; i++){
+        std::string arg(argv[i]);
+        if(arg.find(".svo") != std::string::npos)
+            svo_name = arg;
+        if(arg.find(".json") != std::string::npos)
+            gnss_file = arg;
+    }
+        // Open the camera
     sl::Camera zed;
     sl::InitParameters init_params;
     init_params.depth_mode = sl::DEPTH_MODE::ULTRA;
-    init_params.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
-    init_params.input.setFromSVOFile(argv[1]);
+    init_params.coordinate_system = sl::COORDINATE_SYSTEM::IMAGE;
+    init_params.coordinate_units = sl::UNIT::METER;
+    init_params.input.setFromSVOFile(svo_name.c_str());
     sl::ERROR_CODE camera_open_error = zed.open(init_params);
     if (camera_open_error != sl::ERROR_CODE::SUCCESS) {
         std::cerr << "[ZED][ERROR] Can't open ZED camera" << std::endl;
@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
     }
     // Enable positional tracking:
     sl::PositionalTrackingParameters pose_tracking_params;
-    //pose_tracking_params.mode = sl::POSITIONAL_TRACKING_MODE::QUALITY;
+    pose_tracking_params.mode = sl::POSITIONAL_TRACKING_MODE::QUALITY;
     pose_tracking_params.enable_area_memory = false;
     auto positional_init = zed.enablePositionalTracking(pose_tracking_params);
     if (positional_init != sl::ERROR_CODE::SUCCESS) {
@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
     // Create Fusion object:
     sl::Fusion fusion;
     sl::InitFusionParameters init_fusion_param;
-    init_fusion_param.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
+    init_fusion_param.coordinate_system = sl::COORDINATE_SYSTEM::IMAGE;
     init_fusion_param.coordinate_units = sl::UNIT::METER;
     init_fusion_param.verbose = true;
     sl::FUSION_ERROR_CODE fusion_init_code = fusion.init(init_fusion_param);
@@ -97,6 +97,13 @@ int main(int argc, char **argv) {
     fusion.subscribe(uuid);
     // Enable positional tracking for Fusion object
     sl::PositionalTrackingFusionParameters positional_tracking_fusion_parameters;
+    sl::GNSSCalibrationParameters gnss_calibration_parameter;
+    gnss_calibration_parameter.enable_reinitialization = false;
+    gnss_calibration_parameter.enable_translation_uncertainty_target = false;
+    gnss_calibration_parameter.gnss_vio_reinit_threshold = 5;
+    gnss_calibration_parameter.target_yaw_uncertainty = 7e-3;
+    gnss_calibration_parameter.enable_rolling_calibration = false;
+    positional_tracking_fusion_parameters.gnss_calibration_parameters = gnss_calibration_parameter;
     positional_tracking_fusion_parameters.enable_GNSS_fusion = true;
     fusion.enablePositionalTracking(positional_tracking_fusion_parameters);
 
@@ -105,19 +112,15 @@ int main(int argc, char **argv) {
     viewer.init(argc, argv);
     std::cout << "Start grabbing data ... the geo-tracking will be displayed in ZEDHub map section" << std::endl;
     sl::Pose zed_pose;
-    unsigned current_grab_idx = 0;
-    while (viewer.isAvailable()) {
-        if(current_grab_idx > 20000){
-            break;
-        }
 
+    GNSSReplay gnss_replay(gnss_file);
+    while (viewer.isAvailable()) {
         // Grab camera:
         auto zed_status = zed.grab();
         if (zed_status == sl::ERROR_CODE::SUCCESS) {
             // You can still use the classical getPosition for your application, just not that the position returned by this method
             // is the position without any GNSS/cameras fusion
             zed.getPosition(zed_pose, sl::REFERENCE_FRAME::WORLD);
-
             zed.retrieveImage(left_img, sl::VIEW::LEFT, sl::MEM::CPU, display_resolution);
             cv::imshow("left", slMat2cvMat(left_img));
             cv::waitKey(10);
@@ -127,29 +130,28 @@ int main(int argc, char **argv) {
             break;
 
         // Get GNSS data:
-        sl::GNSSData input_gnss;
-        while (getNextGNSSData(argv[2], zed_pose.timestamp.getNanoseconds(), input_gnss)) {
-            // Publish GNSS data to Fusion
+        sl::GNSSData input_gnss;        
+        if(gnss_replay.grab(input_gnss, zed_pose.timestamp.getNanoseconds()) == sl::FUSION_ERROR_CODE::SUCCESS){
             auto ingest_error = fusion.ingestGNSSData(input_gnss);
-            saveKMLData("input_gnss.kml", input_gnss);
+            saveKMLData("raw_gnss.kml", input_gnss);
             if (ingest_error != sl::FUSION_ERROR_CODE::SUCCESS) {
                 std::cout << "Ingest error occurred when ingesting GNSSData: " << ingest_error << std::endl;
             }
         }
-
+        
         // Process data and compute positions:
         if (fusion.process() == sl::FUSION_ERROR_CODE::SUCCESS) {
-            current_grab_idx++;
+            
             sl::Pose fused_position;
             // Get position into the ZED CAMERA coordinate system:
             sl::POSITIONAL_TRACKING_STATE current_state = fusion.getPosition(fused_position);
             if (current_state == sl::POSITIONAL_TRACKING_STATE::OK) {
-                std::stringstream ss;
-                ss << fused_position.pose_data.getTranslation();
-                std::string translation_message = ss.str();
-                ss.clear();
-                ss << fused_position.pose_data.getEulerAngles();
-                std::string rotation_message = ss.str();
+                std::stringstream ss_translation;
+                ss_translation << fused_position.pose_data.getTranslation();
+                std::string translation_message = ss_translation.str();
+                std::stringstream ss_rotation;
+                ss_rotation << fused_position.pose_data.getEulerAngles();
+                std::string rotation_message = ss_rotation.str();
                 // Display it on OpenGL:
                 viewer.updatePoseData(fused_position.pose_data, translation_message, rotation_message, current_state);
             }
@@ -157,95 +159,30 @@ int main(int argc, char **argv) {
             // and GNSS. When the initialization is finish the getGeoPose will return sl::POSITIONAL_TRACKING_STATE::OK
             sl::GeoPose current_geopose;
             auto current_geopose_satus = fusion.getGeoPose(current_geopose);
-            if (current_geopose_satus == sl::POSITIONAL_TRACKING_STATE::OK) {
+            if (current_geopose_satus == sl::GNSS_CALIBRATION_STATE::CALIBRATED) {
                 // Display it on ZED Hub:
                 viewer.updateGeoPoseData(current_geopose, zed.getTimestamp(sl::TIME_REFERENCE::CURRENT));
-                
-            } else {
+
+                sl::Transform current_calibration = fusion.getGeoTrackingCalibration();
+            } 
+            
+            {
                 // GNSS coordinate system to ZED coordinate system is not initialize yet
                 // The initialisation between the coordinates system is basicaly an optimization problem that
                 // Try to fit the ZED computed path with the GNSS computed path. In order to do it just move
                 // your system by the distance you specified in positional_tracking_fusion_parameters.gnss_initialisation_distance
+                float yaw_std;
+                sl::float3 position_std;
+                fusion.getCurrentGNSSCalibrationSTD(yaw_std, position_std);
+                if(yaw_std != -1.f)
+                    std::cout << "GNSS State"<<current_geopose_satus<< ": calibration uncertainty yaw_std " << yaw_std << " position_std " << position_std[0] << ", " << position_std[1] << ", " << position_std[2] << "\r";
             }
         }
     }
+
+    closeAllKMLWriter();
     fusion.close();
     zed.close();
     
     return 0;
-}
-
-json readGNSSJsonFile(std::string gnss_file_path) {
-
-    std::ifstream gnss_file_data;
-    gnss_file_data.open(gnss_file_path);
-    if (!gnss_file_data.is_open()) {
-        std::cerr << "Unable to open " << gnss_file_path << std::endl;
-        exit(EXIT_FAILURE);
-    }
-    json out = json::parse(gnss_file_data);
-    return out;
-}
-
-bool getNextGNSSData(std::string gnss_file_path, uint64_t current_timestamp, sl::GNSSData & out) {
-    static json gnss_data;
-    static unsigned current_gnss_idx = 0;
-    float cov_factor = 0.1;
-
-    if (current_gnss_idx == 0)
-        gnss_data = readGNSSJsonFile(gnss_file_path);
-    if (current_gnss_idx < gnss_data["GNSS"].size()) {
-        json current_gnss_data_json = gnss_data["GNSS"][current_gnss_idx];
-        // Check inputs:
-        if (current_gnss_data_json["coordinates"].is_null())
-            return false;
-        if (current_gnss_data_json["coordinates"]["latitude"].is_null())
-            return false;
-        if (current_gnss_data_json["coordinates"]["longitude"].is_null())
-            return false;
-        if (current_gnss_data_json["coordinates"]["altitude"].is_null())
-            return false;
-        if (current_gnss_data_json["ts"].is_null())
-            return false;
-
-        for (unsigned i = 0; i < 9; i++)
-            if (current_gnss_data_json["position_covariance"][i].is_null())
-                return false;
-
-
-        sl::GNSSData current_gnss_data;
-        // Fill out coordinates:
-        current_gnss_data.setCoordinates(current_gnss_data_json["coordinates"]["latitude"].get<float>(), current_gnss_data_json["coordinates"]["longitude"].get<float>(), current_gnss_data_json["coordinates"]["altitude"].get<float>(), false);
-        // Fill out default standard deviation:
-        current_gnss_data.longitude_std = current_gnss_data_json["longitude_std"].get<float>()*cov_factor;
-        current_gnss_data.latitude_std = current_gnss_data_json["latitude_std"].get<float>()*cov_factor;
-        current_gnss_data.altitude_std = current_gnss_data_json["altitude_std"].get<float>()*cov_factor;
-        // Fill out covariance [must be not null]
-        std::array<double, 9> position_covariance;
-        position_covariance[0] = current_gnss_data.longitude_std * current_gnss_data.longitude_std ;
-        position_covariance[4] = current_gnss_data.latitude_std * current_gnss_data.latitude_std ;
-        position_covariance[8] = current_gnss_data.altitude_std * current_gnss_data.altitude_std ;
-        current_gnss_data.position_covariance = position_covariance;
-        // Fill out timestamp:
-        current_gnss_data.ts.setMicroseconds(current_gnss_data_json["ts"].get<uint64_t>());
-
-        // If zed is in advance jump:
-        if(current_gnss_data.ts.getNanoseconds()  < current_timestamp){
-            current_gnss_idx++;
-            return getNextGNSSData(gnss_file_path, current_timestamp, out);
-
-        }   
-            
-        // Verify that the current GNSS data and camera timestamp are within a reasonable time offset of each other to ensure accurate alignment of spatial and visual data:
-        int64_t current_zed_timestamp = current_timestamp;
-        sl::Timestamp timestamp_difference(abs(current_zed_timestamp - (int64_t) current_gnss_data.ts.getNanoseconds()));
-        if (timestamp_difference.getSeconds() > 10)
-            return false;
-
-
-        current_gnss_idx++;
-        out = current_gnss_data;
-        return true;
-    }
-    return false;
 }

@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
 	bt_param.max_range = 40;
 	bt_param.detection_model = SL_BODY_TRACKING_MODEL_HUMAN_BODY_MEDIUM;
 	bt_param.allow_reduced_precision_inference = false;
-	bt_param.body_format = SL_BODY_FORMAT_BODY_70;
+	bt_param.body_format = SL_BODY_FORMAT_BODY_38;
 	bt_param.body_selection = SL_BODY_KEYPOINTS_SELECTION_FULL;
 	bt_param.instance_module_id = 0;
 
@@ -104,8 +104,10 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	struct SL_ObjectDetectionRuntimeParameters bt_rt_param;
+	struct SL_BodyTrackingRuntimeParameters bt_rt_param;
 	bt_rt_param.detection_confidence_threshold = 40;
+	bt_rt_param.minimum_keypoints_threshold = -1;
+	bt_rt_param.skeleton_smoothing = 0.0f;
 
 	struct SL_RuntimeParameters rt_param;
 	rt_param.enable_depth = true;
@@ -127,12 +129,12 @@ int main(int argc, char **argv) {
 			sl_retrieve_bodies(camera_id, &bt_rt_param, &bodies, 0);
 
 			if (bodies.is_new == 1) {
-				printf("%i Objects detected \n", bodies.nb_bodies);
+				printf("%i Bodies  detected \n", bodies.nb_bodies);
 
 				if (bodies.nb_bodies > 0) {
 					struct SL_BodyData first_body = bodies.body_list[0];
 
-					printf("First object attributes :\n");
+					printf("First body attributes :\n");
 					if (bt_param.enable_tracking == true) {
 						printf(" Tracking ID: %i tracking state: %i / %i \n", (int)first_body.id, (int)first_body.tracking_state, (int)first_body.action_state);
 					}
@@ -140,15 +142,12 @@ int main(int argc, char **argv) {
 					printf(" 3D Position: (%f, %f, %f) / Velocity: (%f, %f, %f) \n", first_body.position.x, first_body.position.y, first_body.position.z,
 						first_body.velocity.x, first_body.velocity.y, first_body.velocity.z);
 
-					printf(" Bounding Box 2D \n");
-					for (int i = 0; i < 4; i++) {
-						printf("    (%f,%f) \n", first_body.bounding_box_2d[i].x, first_body.bounding_box_2d[i].y);
-					}
+					printf("Position of first 2D keypoint \n");
+					printf("    (%f,%f) \n", first_body.keypoint_2d[0].x, first_body.keypoint_2d[0].y);
 
-					printf(" Bounding Box 3D \n");
-					for (int i = 0; i < 4; i++) {
-						printf("    (%f,%f,%f) \n", first_body.bounding_box[i].x, first_body.bounding_box[i].y, first_body.bounding_box[i].z);
-					}
+					printf("Position of first 3D keypoint \n");
+					printf("    (%f,%f,%f) \n", first_body.keypoint[0].x, first_body.keypoint[0].y, first_body.keypoint[0].z);
+
 
 					printf("Press Enter to Continue");
 					while (getchar() != '\n');

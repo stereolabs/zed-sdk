@@ -129,6 +129,9 @@ void GLViewer::init(int argc, char **argv) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+#ifndef JETSON_STYLE
+    glEnable(GL_POINT_SMOOTH);
+#endif
 
     // Compile and create the shader for 3D objects
     shader.it = Shader(VERTEX_SHADER, FRAGMENT_SHADER);
@@ -796,6 +799,10 @@ void PointCloud::pushNewPC(CUstream strm) {
 
 void PointCloud::draw(const sl::Transform& vp, bool draw_flat) {
     if (refMat.isInit()) {
+#ifndef JETSON_STYLE
+        glDisable(GL_BLEND);
+#endif
+
         glUseProgram(shader_.getProgramId());
         glUniformMatrix4fv(shMVPMatrixLoc_, 1, GL_TRUE, vp.m);
 
@@ -809,6 +816,10 @@ void PointCloud::draw(const sl::Transform& vp, bool draw_flat) {
         glDrawArrays(GL_POINTS, 0, refMat.getResolution().area());
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glUseProgram(0);
+
+#ifndef JETSON_STYLE
+        glEnable(GL_BLEND);
+#endif
     }
 }
 
