@@ -56,10 +56,9 @@ In this tutorial, we grab 100 not synchronized data
     ts_handler = TimestampHandler()
 
     # Get Sensor Data for 5 seconds
-    i = 0
     sensors_data = sl.SensorsData()
-
-    while i < 100 :
+    time_0 = time.time() 
+    while time.time()-time_0 < 5 :
         # retrieve the current sensors sensors_data
         # Depending on your Camera model or its firmware, differents sensors are presents.
         # They do not run at the same rate: Therefore, to do not miss samples we iterate as fast as we can and compare timestamp to know when a sensors_data is a new one

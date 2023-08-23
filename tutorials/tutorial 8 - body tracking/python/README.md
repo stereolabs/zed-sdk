@@ -34,33 +34,37 @@ if err != sl.ERROR_CODE.SUCCESS:
     exit(1)
 ```
 
-## Enable Object detection
+## Enable Body Tracking
 
 We will define the object detection parameters. Notice that the object tracking needs the positional tracking to be able to track the objects in the world reference frame.
 
 ```python
 # Define the Objects detection module parameters
-obj_param = sl.ObjectDetectionParameters()
-obj_param.detection_model = sl.DETECTION_MODEL.HUMAN_BODY_FAST
-obj_param.enable_tracking = True
-obj_param.image_sync = True
+body_params = sl.BodyTrackingParameters()
+# Different model can be chosen, optimizing the runtime or the accuracy
+body_params.detection_model = sl.BODY_TRACKING_MODEL.HUMAN_BODY_FAST
+body_params.enable_tracking = True
+body_params.image_sync = True
+body_params.enable_segmentation = False
 # Optimize the person joints position, requires more computations
-obj_param.enable_body_fitting = True
-
+body_params.enable_body_fitting = True
 # Object tracking requires the positional tracking module
-camera_infos = zed.get_camera_information()
-if obj_param.enable_tracking :
-    zed.enable_positional_tracking()
+
+if body_params.enable_tracking:
+    positional_tracking_param = sl.PositionalTrackingParameters()
+    # positional_tracking_param.set_as_static = True
+    positional_tracking_param.set_floor_as_origin = True
+    zed.enable_positional_tracking(positional_tracking_param)
 ```
 
 Then we can start the module, it will load the model. This operation can take a few seconds. The first time the module is used, the model will be optimized for the hardware and will take more time. This operation is done only once.
 
 ```python
-err = zed.enable_object_detection(obj_param)
-if err != sl.ERROR_CODE.SUCCESS :
-    print (repr(err))
+err = zed.enable_body_tracking(body_params)
+if err != sl.ERROR_CODE.SUCCESS:
+    print("Enable Body Tracking : "+repr(err)+". Exit program.")
     zed.close()
-    exit(1)
+    exit()
 ```
 
 The object detection is now activated.
@@ -70,14 +74,19 @@ The object detection is now activated.
 The object confidence threshold can be adjusted at runtime to select only the revelant skeletons depending on the scene complexity. Since the parameters have been set to `image_sync`, for each `grab` call, the image will be fed into the AI module and will output the detections for each frames.
 
 ```python
-# Detection Output
-objects = sl.Objects()
-# Detection runtime parameters
-obj_runtime_param = sl.ObjectDetectionRuntimeParameters()
-while zed.grab() == sl.ERROR_CODE.SUCCESS:
-    zed_error = zed.retrieve_objects(objects, obj_runtime_param);
-    if objects.is_new :
-        print(str(len(objects.object_list))+" Person(s) detected ("+str(zed.get_current_fps())+" FPS)")
+bodies = sl.Bodies()
+body_runtime_param = sl.BodyTrackingRuntimeParameters()
+# For outdoor scene or long range, the confidence should be lowered to avoid missing detections (~20-30)
+# For indoor scene or closer range, a higher confidence limits the risk of false positives and increase the precision (~50+)
+body_runtime_param.detection_confidence_threshold = 40
+
+i = 0 
+    while i < 100:
+        if zed.grab() == sl.ERROR_CODE.SUCCESS:
+            err = zed.retrieve_bodies(bodies, body_runtime_param)
+            if bodies.is_new:
+                body_array = bodies.body_list
+                print(str(len(body_array)) + " Person(s) detected\n")
 ```
 
 ## Disable modules and exit
@@ -85,10 +94,9 @@ while zed.grab() == sl.ERROR_CODE.SUCCESS:
 Once the program is over the modules can be disabled and the camera closed. This step is optional since the `zed.close()` will take care of disabling all the modules. This function is also called automatically by the destructor if necessary.<br/>
 
 ```python
-# Disable object detection and close the camera
-zed.disable_object_detection()
+# Close the camera
+zed.disable_body_tracking()
 zed.close()
-return 0
 ```
 
 And this is it!<br/>

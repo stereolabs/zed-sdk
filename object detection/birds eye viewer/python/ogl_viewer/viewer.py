@@ -350,7 +350,7 @@ class Simple3DObject:
         self.drawing_type = _type
 
     def draw(self):
-        if (self.elementbufferSize):            
+        if (self.elementbufferSize):
             glEnableVertexAttribArray(0)
             glBindBuffer(GL_ARRAY_BUFFER, self.vboID[0])
             glVertexAttribPointer(0,self.pt_type,GL_FLOAT,GL_FALSE,0,None)

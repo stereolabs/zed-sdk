@@ -22,6 +22,7 @@ import pyzed.sl as sl
 import math
 import numpy as np
 import sys
+import math
 
 def main():
     # Create a Camera object
@@ -29,21 +30,18 @@ def main():
 
     # Create a InitParameters object and set configuration parameters
     init_params = sl.InitParameters()
-    init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE  # Use PERFORMANCE depth mode
-    init_params.coordinate_units = sl.UNIT.METER  # Use meter units (for depth measurements)
-    init_params.camera_resolution = sl.RESOLUTION.HD720
+    init_params.depth_mode = sl.DEPTH_MODE.ULTRA  # Use ULTRA depth mode
+    init_params.coordinate_units = sl.UNIT.MILLIMETER  # Use meter units (for depth measurements)
 
     # Open the camera
-    err = zed.open(init_params)
-    if err != sl.ERROR_CODE.SUCCESS:
-        exit(1)
+    status = zed.open(init_params)
+    if status != sl.ERROR_CODE.SUCCESS: #Ensure the camera has opened succesfully
+        print("Camera Open : "+repr(status)+". Exit program.")
+        exit()
 
     # Create and set RuntimeParameters after opening the camera
     runtime_parameters = sl.RuntimeParameters()
-    runtime_parameters.confidence_threshold = 100
-    runtime_parameters.texture_confidence_threshold = 100
-
-    # Capture 150 images and depth, then stop
+    
     i = 0
     image = sl.Mat()
     depth = sl.Mat()
@@ -51,9 +49,8 @@ def main():
 
     mirror_ref = sl.Transform()
     mirror_ref.set_translation(sl.Translation(2.75,4.0,0))
-    tr_np = mirror_ref.m
 
-    while i < 150:
+    while i < 50:
         # A new image is available if grab() returns SUCCESS
         if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
             # Retrieve left image
@@ -69,21 +66,15 @@ def main():
             y = round(image.get_height() / 2)
             err, point_cloud_value = point_cloud.get_value(x, y)
 
-            distance = math.sqrt(point_cloud_value[0] * point_cloud_value[0] +
-                                 point_cloud_value[1] * point_cloud_value[1] +
-                                 point_cloud_value[2] * point_cloud_value[2])
-
-            point_cloud_np = point_cloud.get_data()
-            point_cloud_np.dot(tr_np)
-
-            if not np.isnan(distance) and not np.isinf(distance):
-                print("Distance to Camera at ({}, {}) (image center): {:1.3} m".format(x, y, distance), end="\r")
-                # Increment the loop
-                i = i + 1
-            else:
-                print("Can't estimate distance at this position.")
-                print("Your camera is probably too close to the scene, please move it backwards.\n")
-            sys.stdout.flush()
+            if math.isfinite(point_cloud_value[2]):
+                distance = math.sqrt(point_cloud_value[0] * point_cloud_value[0] +
+                                    point_cloud_value[1] * point_cloud_value[1] +
+                                    point_cloud_value[2] * point_cloud_value[2])
+                print(f"Distance to Camera at {{{x};{y}}}: {distance}")
+            else : 
+                print(f"The distance can not be computed at {{{x};{y}}}")
+            i += 1    
+           
 
     # Close the camera
     zed.close()

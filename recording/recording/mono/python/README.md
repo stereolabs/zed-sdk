@@ -8,7 +8,13 @@ This sample shows how to record video in SVO format
  
 ## Run the program
 
-      python "svo_recording.py" my_svo_file.svo
+To run the program, use the following command in your terminal:
+```bash
+python svo_recording.py --output_svo_file <output_svo_file> 
+```
+
+Arguments: 
+   - --output_svo_file Path to .svo file that will be created
 
 ### Features
  - give a name to the file to be created

@@ -1,47 +1,20 @@
-########################################################################
-#
-# Copyright (c) 2023, STEREOLABS.
-#
-# All rights reserved.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-########################################################################
+# Tutorial 9: Geotracking with the ZED
 
-"""
-    This sample shows how to fuse the position of the ZED camera with an external GNSS Sensor
-"""
+This tutorial shows how to use the ZED as a positional tracker with a GNSS equipment. The program will loop until 200 position are grabbed.
+We assume that you have followed previous tutorials.
 
-import sys
-import pyzed.sl as sl
+### Prerequisites
 
+- Windows 10, Ubuntu LTS, L4T
+- [ZED SDK](https://www.stereolabs.com/developers/) and its dependencies ([CUDA](https://developer.nvidia.com/cuda-downloads))
+- [ZED SDK Python API](https://www.stereolabs.com/docs/app-development/python/install/)
 
-if __name__ == "__main__":
+# Code overview
+## Create a camera
 
-    # some variables
-    camera_pose = sl.Pose()    
-    odometry_pose = sl.Pose()    
-    py_translation = sl.Translation()
-    pose_data = sl.Transform()
-    text_translation = ""
-    text_rotation = ""   
+As in previous tutorials, we create, configure and open the ZED. 
 
-    # Create a ZED camera object
-    
-    init_params = sl.InitParameters(camera_resolution=sl.RESOLUTION.HD720,
-                                 coordinate_units=sl.UNIT.METER,
-                                 coordinate_system=sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP)
-                                 
+```python
     # step 1
     # create the camera that will input the position from its odometry
     zed = sl.Camera()
@@ -72,6 +45,11 @@ if __name__ == "__main__":
         exit()
     camera_info = zed.get_camera_information()
 
+```
+For the list of available parameters for tracking, check the online documentation.
+
+## Setup fusion 
+```python
     # step 2
     # init the fusion module that will input both the camera and the GPS
     fusion = sl.Fusion()
@@ -88,7 +66,15 @@ if __name__ == "__main__":
     if status != sl.FUSION_ERROR_CODE.SUCCESS:
         print("Failed to subscribe to", uuid.serial_number, status)
         exit(1)
+```
 
+## Capture fusion pose data
+
+Now that the ZED is opened and fusion is setup, we create a loop to grab and retrieve the camera position.
+
+We create here a GNSS structure containing dummy information to process fusion. 
+
+```python
     x = 0
     
     i = 0
@@ -134,4 +120,9 @@ if __name__ == "__main__":
         i = i +1
 
     zed.close()
+```
+
+This will loop until the ZED has been tracked during 200 frames. We display the camera translation (in meters) in the console window and close the camera before exiting the application.
+
+You can now use the ZED with a GNSS device to get precise geotracking. 
 

@@ -75,7 +75,7 @@ namespace sl
 
             if (err != ERROR_CODE.SUCCESS)
             {
-                Console.WriteLine("Error while opening camera "  + err.ToString() + " exitin...");  
+                Console.WriteLine("Error while opening camera "  + err.ToString() + " exiting...");  
                 Environment.Exit(-1);
             }
 

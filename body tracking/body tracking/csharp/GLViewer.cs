@@ -393,7 +393,6 @@ namespace sl
             Tuple.Create<BODY_38_PARTS, BODY_38_PARTS>(BODY_38_PARTS.RIGHT_ANKLE, BODY_38_PARTS.RIGHT_SMALL_TOE)
         };
 
-
         public void exit()
         {
             if (currentInstance != null)

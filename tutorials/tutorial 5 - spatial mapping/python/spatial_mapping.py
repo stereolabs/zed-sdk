@@ -19,6 +19,7 @@
 ########################################################################
 
 import pyzed.sl as sl
+import sys
 
 
 def main():
@@ -35,7 +36,8 @@ def main():
     # Open the camera
     err = zed.open(init_params)
     if err != sl.ERROR_CODE.SUCCESS:
-        exit(1)
+        print("Camera Open : "+repr(err)+". Exit program.")
+        exit()
 
     # Enable positional tracking with default parameters.
     # Positional tracking needs to be enabled before using spatial mapping
@@ -43,27 +45,30 @@ def main():
     tracking_parameters = sl.PositionalTrackingParameters(_init_pos=py_transform)
     err = zed.enable_positional_tracking(tracking_parameters)
     if err != sl.ERROR_CODE.SUCCESS:
-        exit(1)
+        print("Enable positional tracking : "+repr(err)+". Exit program.")
+        zed.close()
+        exit()
 
     # Enable spatial mapping
     mapping_parameters = sl.SpatialMappingParameters(map_type=sl.SPATIAL_MAP_TYPE.FUSED_POINT_CLOUD)
     err = zed.enable_spatial_mapping(mapping_parameters)
     if err != sl.ERROR_CODE.SUCCESS:
+        print("Enable spatial mapping : "+repr(err)+". Exit program.")
+        zed.close()
         exit(1)
 
-    # Grab data during 3000 frames
+    # Grab data during 500 frames
     i = 0
     py_fpc = sl.FusedPointCloud()  # Create a Mesh object
     runtime_parameters = sl.RuntimeParameters()
 
-    while i < 3000:
+    while i < 500:
         # For each new grab, mesh data is updated
         if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
             # In the background, spatial mapping will use newly retrieved images, depth and pose to update the mesh
             mapping_state = zed.get_spatial_mapping_state()
-
-            print("\rImages captured: {0} / 3000 || {1}".format(i, mapping_state))
-
+            sys.stdout.write("Images captured: {0} / 500 || {1} \033[K\r".format(i, mapping_state))
+            sys.stdout.flush()            
             i = i + 1
 
     print("\n")
@@ -72,8 +77,8 @@ def main():
     print("Extracting Point Cloud...\n")
     err = zed.extract_whole_spatial_map(py_fpc)
     print(repr(err))
-    #print("Filtering Mesh...\n")
-    #py_mesh.filter(sl.MeshFilterParameters())  # Filter the mesh (remove unnecessary vertices and faces)
+    print("Filtering Mesh...\n")
+    py_fpc.filter(sl.MeshFilterParameters())  # Filter the mesh (remove unnecessary vertices and faces)
     print("Saving Point Cloud...\n")
     py_fpc.save("fpc.obj")
 

@@ -22,6 +22,7 @@
 #include "ClientPublisher.hpp"
 #include "GLViewer.hpp"
 
+#define BUILD_MESH 1
 
 int main(int argc, char **argv) {
    
@@ -69,13 +70,17 @@ int main(int argc, char **argv) {
 
     // create and initialize it
     sl::Fusion fusion;
-    fusion.init(init_params);
+    auto state = fusion.init(init_params);
+    if(state != sl::FUSION_ERROR_CODE::SUCCESS){
+        std::cout<<"ERROR Init "<<state<<std::endl;
+        return 1;
+    }
 
     // subscribe to every cameras of the setup to internally gather their data
     std::vector<sl::CameraIdentifier> cameras;
     for (auto& it : configurations) {
         sl::CameraIdentifier uuid(it.serial_number);
-        // to subscribe to a camera you must give its serial number, the way to communicate with it (shared memory or local network), and its world pose in the setup.
+        // to subscribe to a camera you must give its serial number, the way to communicate with it (shared memory or local network), and its world pose in the setup.        
         auto state = fusion.subscribe(uuid, it.communication_parameters, it.pose);
         if (state != sl::FUSION_ERROR_CODE::SUCCESS)
             std::cout << "Unable to subscribe to " << std::to_string(uuid.sn) << " . " << state << std::endl;
@@ -89,60 +94,67 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    // as this sample shows how to fuse body detection from the multi camera setup
-    // we enable the Body Tracking module with its options
-    sl::BodyTrackingFusionParameters body_fusion_init_params;
-    body_fusion_init_params.enable_tracking = true;
-    body_fusion_init_params.enable_body_fitting = false; // skeletons will looks more natural but requires more computations
-    fusion.enableBodyTracking(body_fusion_init_params);
-
-    // define fusion behavior 
-    sl::BodyTrackingFusionRuntimeParameters body_tracking_runtime_parameters;
-    // be sure that the detection skeleton is complete enough
-    body_tracking_runtime_parameters.skeleton_minimum_allowed_keypoints = 7;
-
-    // we can also want to retrieve skeleton seen by multiple camera, in this case at least half of them
-    body_tracking_runtime_parameters.skeleton_minimum_allowed_camera = cameras.size() / 2.;
+    sl::PositionalTrackingFusionParameters positional_tracking_param;
+    state = fusion.enablePositionalTracking(positional_tracking_param);
+    if(state != sl::FUSION_ERROR_CODE::SUCCESS){
+        std::cout<<"ERROR PositionalTracking "<<state<<std::endl;
+        return 1;
+    }
 
     // creation of a 3D viewer
     GLViewer viewer;
     viewer.init(argc, argv);
 
-    std::cout << "Viewer Shortcuts\n" <<
-        "\t- 'r': swicth on/off for raw skeleton display\n" <<
-        "\t- 'p': swicth on/off for live point cloud display\n" <<
-        "\t- 'c': swicth on/off point cloud display with flat color\n" << std::endl;
+    sl::SpatialMappingFusionParameters spatial_mapping_parameters;
+#if BUILD_MESH
+    spatial_mapping_parameters.map_type = sl::SpatialMappingParameters::SPATIAL_MAP_TYPE::MESH;
+    sl::Mesh map;
+#else
+    spatial_mapping_parameters.map_type = sl::SpatialMappingParameters::SPATIAL_MAP_TYPE::FUSED_POINT_CLOUD;
+    sl::FusedPointCloud map;
+#endif
 
-    for (auto& it : clients) 
-        if (it.isRunning())
-            viewer.setupNewCamera(it.getSerial(), it.getViewRef(), it.getPointCloufRef(), it.getStream());    
+    // Set mapping range, it will set the resolution accordingly (a higher range, a lower resolution)
+    spatial_mapping_parameters.set(sl::SpatialMappingParameters::MAPPING_RANGE::SHORT);
+    spatial_mapping_parameters.set(sl::SpatialMappingParameters::MAPPING_RESOLUTION::HIGH);
+    // Request partial updates only (only the last updated chunks need to be re-draw)
+    spatial_mapping_parameters.use_chunk_only = true;
+    // Stability counter defines how many times a stable 3D points should be seen before it is integrated into the spatial mapping
+    spatial_mapping_parameters.stability_counter = 4;
 
-    // fusion outputs
-    sl::Bodies fused_bodies;
-    std::map<sl::CameraIdentifier, sl::Bodies> camera_raw_data;
-    sl::FusionMetrics metrics;
+    state = fusion.enableSpatialMapping(spatial_mapping_parameters);
+    if(state != sl::FUSION_ERROR_CODE::SUCCESS){
+        std::cout<<"ERROR Spatial Mapping "<<state<<std::endl;
+        return 1;
+    }
+
+    sl::Timestamp last_update = 0;
+    bool wait_for_mesh = false;    
 
     // run the fusion as long as the viewer is available.
     while (viewer.isAvailable()) {
         // run the fusion process (which gather data from all camera, sync them and process them)
         if (fusion.process() == sl::FUSION_ERROR_CODE::SUCCESS) {
-            // Retrieve fused body
-            fusion.retrieveBodies(fused_bodies, body_tracking_runtime_parameters);
-            // for debug, you can retrieve the data send by each camera
-            for (auto& id : cameras) {
-                fusion.retrieveBodies(camera_raw_data[id], body_tracking_runtime_parameters, id);
-                sl::Pose pose;
-                if(fusion.getPosition(pose, sl::REFERENCE_FRAME::WORLD, id, sl::POSITION_TYPE::RAW) == sl::POSITIONAL_TRACKING_STATE::OK)
-                    viewer.setCameraPose(id.sn, pose.pose_data);
+
+            auto ts = sl::getCurrentTimeStamp();
+            if(!wait_for_mesh && (ts.getMilliseconds() - last_update.getMilliseconds() > 100 )){
+                fusion.requestSpatialMapAsync();
+                wait_for_mesh =true;
             }
-            // get metrics about the fusion process for monitoring purposes
-            fusion.getProcessMetrics(metrics);
+
+            if(wait_for_mesh && fusion.getSpatialMapRequestStatusAsync() == sl::FUSION_ERROR_CODE::SUCCESS){
+                fusion.retrieveSpatialMapAsync(map);
+                // update the 3D view
+                viewer.updateMap(map);
+                wait_for_mesh = false;
+                last_update = ts;
+            }
         }
-        // update the 3D view
-        viewer.updateBodies(fused_bodies, camera_raw_data, metrics);
     }
 
     viewer.exit();
+
+    map.save("MyMap.ply", sl::MESH_FILE_FORMAT::PLY);
 
     for (auto &it: clients)
         it.stop();

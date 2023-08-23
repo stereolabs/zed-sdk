@@ -26,52 +26,54 @@
 import sys
 import ogl_viewer.viewer as gl
 import pyzed.sl as sl
+import argparse
 
-def parseArg(argLen, argv, param):
-    if(argLen>1):
-        if(".svo" in argv):
-            # SVO input mode
-            param.set_from_svo_file(sys.argv[1])
-            print("Sample using SVO file input "+ sys.argv[1])
-        elif(len(argv.split(":")) == 2 and len(argv.split(".")) == 4):
-            #  Stream input mode - IP + port
-            l = argv.split(".")
-            ip_adress = l[0] + '.' + l[1] + '.' + l[2] + '.' + l[3].split(':')[0]
-            port = int(l[3].split(':')[1])
-            param.set_from_stream(ip_adress,port)
-            print("Stream input mode")
-        elif (len(argv.split(":")) != 2 and len(argv.split(".")) == 4):
-            #  Stream input mode - IP
-            param.set_from_stream(argv)
-            print("Stream input mode")
-        elif("HD2K" in argv):
-            param.camera_resolution = sl.RESOLUTION.HD2K
-            print("Using camera in HD2K mode")
-        elif("HD1200" in argv):
-            param.camera_resolution = sl.RESOLUTION.HD1200
-            print("Using camera in HD1200 mode")
-        elif("HD1080" in argv):
-            param.camera_resolution = sl.RESOLUTION.HD1080
-            print("Using camera in HD1080 mode")
-        elif("HD720" in argv):
-            param.camera_resolution = sl.RESOLUTION.HD720
-            print("Using camera in HD720 mode")
-        elif("SVGA" in argv):
-            param.camera_resolution = sl.RESOLUTION.SVGA
-            print("Using camera in SVGA mode")
-        elif("VGA" in argv and "SVGA" not in argv):
-            param.camera_resolution = sl.RESOLUTION.VGA
-            print("Using camera in VGA mode")
+def parse_args(init):
+    if len(opt.input_svo_file)>0 and opt.input_svo_file.endswith(".svo"):
+        init.set_from_svo_file(opt.input_svo_file)
+        print("[Sample] Using SVO File input: {0}".format(opt.input_svo_file))
+    elif len(opt.ip_address)>0 :
+        ip_str = opt.ip_address
+        if ip_str.replace(':','').replace('.','').isdigit() and len(ip_str.split('.'))==4 and len(ip_str.split(':'))==2:
+            init.set_from_stream(ip_str.split(':')[0],int(ip_str.split(':')[1]))
+            print("[Sample] Using Stream input, IP : ",ip_str)
+        elif ip_str.replace(':','').replace('.','').isdigit() and len(ip_str.split('.'))==4:
+            init.set_from_stream(ip_str)
+            print("[Sample] Using Stream input, IP : ",ip_str)
+        else :
+            print("Unvalid IP format. Using live stream")
+    if ("HD2K" in opt.resolution):
+        init.camera_resolution = sl.RESOLUTION.HD2K
+        print("[Sample] Using Camera in resolution HD2K")
+    elif ("HD1200" in opt.resolution):
+        init.camera_resolution = sl.RESOLUTION.HD1200
+        print("[Sample] Using Camera in resolution HD1200")
+    elif ("HD1080" in opt.resolution):
+        init.camera_resolution = sl.RESOLUTION.HD1080
+        print("[Sample] Using Camera in resolution HD1080")
+    elif ("HD720" in opt.resolution):
+        init.camera_resolution = sl.RESOLUTION.HD720
+        print("[Sample] Using Camera in resolution HD720")
+    elif ("SVGA" in opt.resolution):
+        init.camera_resolution = sl.RESOLUTION.SVGA
+        print("[Sample] Using Camera in resolution SVGA")
+    elif ("VGA" in opt.resolution):
+        init.camera_resolution = sl.RESOLUTION.VGA
+        print("[Sample] Using Camera in resolution VGA")
+    elif len(opt.resolution)>0: 
+        print("[Sample] No valid resolution entered. Using default")
+    else : 
+        print("[Sample] Using default resolution")
 
 
-if __name__ == "__main__":
+
+def main():
     print("Running Depth Sensing sample ... Press 'Esc' to quit\nPress 's' to save the point cloud")
 
     init = sl.InitParameters(depth_mode=sl.DEPTH_MODE.ULTRA,
                                  coordinate_units=sl.UNIT.METER,
                                  coordinate_system=sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP)
-    if (len(sys.argv) > 1):
-        parseArg(len(sys.argv), sys.argv[1], init)
+    parse_args(init)
     zed = sl.Camera()
     status = zed.open(init)
     if status != sl.ERROR_CODE.SUCCESS:
@@ -94,13 +96,26 @@ if __name__ == "__main__":
             zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA,sl.MEM.CPU, res)
             viewer.updateData(point_cloud)
             if(viewer.save_data == True):
-                point_cloud_to_save = sl.Mat();
+                point_cloud_to_save = sl.Mat()
                 zed.retrieve_measure(point_cloud_to_save, sl.MEASURE.XYZRGBA, sl.MEM.CPU)
                 err = point_cloud_to_save.write('Pointcloud.ply')
                 if(err == sl.ERROR_CODE.SUCCESS):
-                    print("point cloud saved")
+                    print("Current .ply file saving succeed")
                 else:
-                    print("the point cloud has not been saved")
+                    print("Current .ply file failed")
                 viewer.save_data = False
     viewer.exit()
     zed.close()
+
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--input_svo_file', type=str, help='Path to an .svo file, if you want to replay it',default = '')
+    parser.add_argument('--ip_address', type=str, help='IP Adress, in format a.b.c.d:port or a.b.c.d, if you have a streaming setup', default = '')
+    parser.add_argument('--resolution', type=str, help='Resolution, can be either HD2K, HD1200, HD1080, HD720, SVGA or VGA', default = '')
+    opt = parser.parse_args()
+    if len(opt.input_svo_file)>0 and len(opt.ip_address)>0:
+        print("Specify only input_svo_file or ip_address, or none to use wired camera, not both. Exit program")
+        exit()
+    main() 

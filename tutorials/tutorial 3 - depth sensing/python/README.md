@@ -13,7 +13,7 @@ We assume that you have followed previous tutorials (opening the ZED and image c
 ## Create a camera
 
 As in other tutorials, we create, configure and open the ZED.
-We set the ZED in HD720 mode at 60fps and enable depth in PERFORMANCE mode. The ZED SDK provides different depth modes: PERFORMANCE, MEDIUM, QUALITY. For more information, see online documentation.
+We set the ZED in HD720 mode at 60fps and enable depth in ULTRA mode. The ZED SDK provides different depth modes: PERFORMANCE, ULTRA, QUALITY. For more information, see online documentation.
 
 ```python
 # Create a ZED camera
@@ -21,8 +21,8 @@ zed = sl.Camera()
 
 # Create configuration parameters
 init_params = sl.InitParameters()
-init_params.sdk_verbose = True # Enable the verbose mode
-init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE # Set the depth mode to performance (fastest)
+init_params.depth_mode = sl.DEPTH_MODE.ULTRA  # Use ULTRA depth mode
+init_params.coordinate_units = sl.UNIT.MILLIMETER  # Use meter units (for depth measurements)
 
 
 # Open the camera
@@ -31,7 +31,7 @@ if (err!=sl.ERROR_CODE.SUCCESS):
   exit(-1)
 ```
 
-<i>Note: Default parameter for depth mode is DEPTH_MODE.PERFORMANCE. In practice, it is not necessary to set the depth mode in InitParameters. </i>
+<i>Note: Default parameter for depth mode is DEPTH_MODE.PERFORMANCE </i>
 
 ## Capture data
 
@@ -40,7 +40,7 @@ Retrieving the depth map is as simple as retrieving an image:
 * We create a Mat to store the depth map.
 * We call retrieve_measure() to get the depth map.
 
-```
+```python
 # Capture 50 images and depth, then stop
 i = 0
 image = sl.Mat()
@@ -52,8 +52,8 @@ while (i < 50) :
         zed.retrieve_image(image, sl.VIEW.LEFT) # Get the left image
         zed.retrieve_measure(depth, sl.MEASURE.DEPTH) # Retrieve depth Mat. Depth is aligned on the left image
         i = i + 1
-    }
-}
+    
+
 ```
 
 
@@ -68,7 +68,7 @@ y = image.get_height() / 2
 point_cloud_value = point_cloud.get_value(x, y)
 
 distance = math.sqrt(point_cloud_value[0]*point_cloud_value[0] + point_cloud_value[1]*point_cloud_value[1] + point_cloud_value[2]*point_cloud_value[2])
-printf("Distance to Camera at (", x, y, "): ", distance, "mm")
+print(f"Distance to Camera at {{{x};{y}}}: {distance}")
 ```
 
 Once 50 frames have been grabbed, we close the camera.

@@ -64,16 +64,16 @@ It means that you just simply have to grab images to have a mesh creating in bac
 In this tutorial, we grab 500 frames and then stop the loop to extract mesh.
 
 ```python
-# Grab data during 3000 frames
+# Grab data during 500 frames
 	i = 0
 	mesh = sl.Mesh() # Create a mesh object
-	while (i < 3000) :
+	while (i < 500) :
 		if (zed.grab() == sl.ERROR_CODE.SUCCESS) :
 			# In background, spatial mapping will use new images, depth and pose to create and update the mesh. No specific functions are required here
 			mapping_state = zed.get_spatial_mapping_state()
 
 			# Print spatial mapping state
-			print("\rImages captured: {0} / 3000 || {1}".format(i, mapping_state))
+			print("\rImages captured: {0} / 100 || {1}".format(i, mapping_state))
 			i = i+1
 	print('\n')
 ```

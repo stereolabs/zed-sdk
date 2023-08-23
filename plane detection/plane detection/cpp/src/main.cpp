@@ -84,6 +84,9 @@ int main(int argc, char** argv) {
     RuntimeParameters runtime_parameters;
     runtime_parameters.measure3D_reference_frame = REFERENCE_FRAME::WORLD;
     
+    // the plane detection parameters can be change
+    PlaneDetectionParameters plane_parameters;
+
     while(viewer.isAvailable()) {
         if(zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS) {
             // Retrieve image in GPU memory
@@ -97,7 +100,7 @@ int main(int argc, char** argv) {
                 // Ask for a mesh update 
                 if(user_action.hit) {
                     auto image_click = sl::uint2(user_action.hit_coord.x * camera_infos.camera_configuration.resolution.width,user_action.hit_coord.y * camera_infos.camera_configuration.resolution.height);
-                    find_plane_status = zed.findPlaneAtHit(image_click, plane);
+                    find_plane_status = zed.findPlaneAtHit(image_click, plane, plane_parameters);
                 }
 
                 //if 500ms have spend since last request

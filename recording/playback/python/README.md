@@ -8,7 +8,13 @@ This sample demonstrates how to read a SVO video file.
  
 ## Run the program
 
-      python "svo_playback.py" svo_file.svo
+To run the program, use the following command in your terminal:
+```bash
+python svo_playback.py --input_svo_file <input_svo_file> 
+```
+
+Arguments: 
+   - --input_svo_file Path to an existing .svo file 
 
 ### Features
  - Displays readed frame as an OpenCV image

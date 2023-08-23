@@ -32,7 +32,7 @@ init_params.camera_fps = 30 # Set fps at 30
 # Open the camera
 err = zed.open(init_params)
 if (err != sl.ERROR_CODE.SUCCESS) :
-    exit(-1);
+    exit(-1)
 ```
 
 
@@ -72,7 +72,8 @@ while (i < 50) :
         # A new image is available if grab() returns SUCCESS
         zed.retrieve_image(image, sl.VIEW.LEFT) # Get the left image
         timestamp = zed.get_timestamp(sl.TIME_REFERENCE.IMAGE) # Get the timestamp at the time the image was captured
-	print("Image resolution: ", image.get_width(), " x ", image.get_height()," || Image timestamp: ", timestamp.get_milliseconds())
+	    print("Image resolution: {0} x {1} || Image timestamp: {2}\n".format(image.get_width(), image.get_height(),
+                  timestamp.get_milliseconds()))
         i = i+1
 ```
 <i>Note:</i> the image timestamp is given in nanoseconds. You can compare the timestamp between two grab() : it should be close to the framerate time, if you don't have frames dropped.

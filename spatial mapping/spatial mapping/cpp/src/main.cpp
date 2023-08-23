@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
     InitParameters init_parameters;
     init_parameters.depth_mode = DEPTH_MODE::NEURAL;
     init_parameters.coordinate_units = UNIT::METER;
-    init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed    
+    init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
     init_parameters.depth_maximum_distance = 8.;
     parse_args(argc, argv, init_parameters);
 
@@ -72,10 +72,8 @@ int main(int argc, char **argv) {
     // Setup and start positional tracking
     Pose pose;
     POSITIONAL_TRACKING_STATE tracking_state = POSITIONAL_TRACKING_STATE::OFF;
-    PositionalTrackingParameters positional_tracking_parameters;
-    positional_tracking_parameters.enable_area_memory = false;
-    positional_tracking_parameters.set_floor_as_origin = true;
-    returned_state = zed.enablePositionalTracking(positional_tracking_parameters);
+
+    returned_state = zed.enablePositionalTracking();
     if (returned_state != ERROR_CODE::SUCCESS) {
         print("Enabling positional tracking failed: ", returned_state);
         zed.close();
@@ -93,20 +91,19 @@ int main(int argc, char **argv) {
     FusedPointCloud map;
 #endif
     // Set mapping range, it will set the resolution accordingly (a higher range, a lower resolution)
-    spatial_mapping_parameters.set(SpatialMappingParameters::MAPPING_RANGE::MEDIUM);
-    spatial_mapping_parameters.set(SpatialMappingParameters::MAPPING_RESOLUTION::MEDIUM);
-    // Request partial updates only (only the lastest updated chunks need to be re-draw)
+    spatial_mapping_parameters.set(SpatialMappingParameters::MAPPING_RANGE::SHORT);
+    spatial_mapping_parameters.set(SpatialMappingParameters::MAPPING_RESOLUTION::HIGH);
+    // Request partial updates only (only the last updated chunks need to be re-draw)
     spatial_mapping_parameters.use_chunk_only = true;
     // Stability counter defines how many times a stable 3D points should be seen before it is integrated into the spatial mapping
     spatial_mapping_parameters.stability_counter = 4;
-    
 
     // Timestamp of the last fused point cloud requested
     chrono::high_resolution_clock::time_point ts_last; 
 
     // Setup runtime parameters
     RuntimeParameters runtime_parameters;
-    // Use low depth confidence avoid introducing noise in the constructed model
+    // Use low depth confidence to avoid introducing noise in the constructed model
     runtime_parameters.confidence_threshold = 50;
 
     auto resolution = camera_infos.camera_configuration.resolution;
@@ -128,10 +125,14 @@ int main(int argc, char **argv) {
 
     bool wait_for_mapping = true;
 
+    sl::Timestamp timestamp_start;
+    timestamp_start.data_ns = 0;
+
     // Start the main loop
     while (viewer.isAvailable()) {
         // Grab a new image
-        if (zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS) {
+        if (zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS)
+        {
             // Retrieve the left image
             zed.retrieveImage(image, VIEW::LEFT, MEM::GPU, display_resolution);
             zed.retrieveMeasure(point_cloud, MEASURE::XYZBGRA, MEM::GPU, display_resolution);
@@ -167,7 +168,7 @@ int main(int argc, char **argv) {
     }
 
     // Save generated point cloud
-    //map.save("MyFusedPointCloud");
+    map.save("MyMap", sl::MESH_FILE_FORMAT::PLY);
 
     // Free allocated memory before closing the camera
     image.free();

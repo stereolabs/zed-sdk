@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
     //init_parameters.camera_resolution = RESOLUTION::HD1200;
     init_parameters.depth_mode = DEPTH_MODE::NONE;
     //init_parameters.input.setFromCameraID(-1,sl::BUS_TYPE::USB);
-    init_parameters.sdk_verbose= true;
+    init_parameters.sdk_verbose= 1;
     parseArgs(argc,argv,init_parameters);
 
     // Open the camera
@@ -62,6 +62,7 @@ int main(int argc, char **argv) {
     }
 
     // Enable recording with the filename specified in argument
+    argv[1] = "test.svo";
     String path_output(argv[1]);
     returned_state = zed.enableRecording(RecordingParameters(path_output, SVO_COMPRESSION_MODE::H264_LOSSLESS));
     if (returned_state != ERROR_CODE::SUCCESS) {
@@ -83,6 +84,8 @@ int main(int argc, char **argv) {
                 frames_recorded++;
             print("Frame count: " +to_string(frames_recorded));
         }
+        else
+            break;
     }
 
     // Stop recording
@@ -111,7 +114,8 @@ void parseArgs(int argc, char **argv,sl::InitParameters& param)
 {
     if (argc > 2 && string(argv[2]).find(".svo")!=string::npos) {
         // SVO input mode
-        cout<<"[sample][Warning] SVO input is not supported... switching to live mode"<<endl;
+        param.input.setFromSVOFile(argv[2]);
+        cout << "[Sample] Using SVO File input: " << argv[2] << endl;
     } else if (argc > 2 && string(argv[2]).find(".svo")==string::npos) {
         string arg = string(argv[2]);
         unsigned int a,b,c,d,port;

@@ -53,12 +53,14 @@ A pose is always linked to a reference frame. The SDK provides two reference fra
 In the example, we get the device position in the World Frame.
 
 ```python
-# Track the camera position during 1000 frames
 i = 0
 zed_pose = sl.Pose()
-while (i < 1000) :
-    if (zed.grab() == sl.ERROR_CODE.SUCCESS) :
-        zed.get_position(zed_pose, sl.REFERENCE_FRAME.WORLD) # Get the pose of the left eye of the camera with reference to the world frame
+# Track the camera position during 1000 frames
+while i < 1000:
+    if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
+        # Get the pose of the left eye of the camera with reference to the world frame
+        zed.get_position(zed_pose, sl.REFERENCE_FRAME.WORLD)
+        
 
         # Display the translation and timestamp
         py_translation = sl.Translation()
@@ -74,29 +76,37 @@ while (i < 1000) :
         oz = round(zed_pose.get_orientation(py_orientation).get()[2], 3)
         ow = round(zed_pose.get_orientation(py_orientation).get()[3], 3)
         print("Orientation: Ox: {0}, Oy: {1}, Oz {2}, Ow: {3}\n".format(ox, oy, oz, ow))
-
-	i = i+1
-    
-
 ```
 
 ### Inertial Data
 
-If a ZED Mini or a ZED2 is open, we can have access to the inertial data from the integrated IMU
+If the ZED used is not a ZED 1, we can have access to the inertial data from the integrated IMU
 
 ```python
-bool zed_mini = (zed.getCameraInformation().camera_model == sl.MODEL.ZED_M);
-bool zed_two = (zed.getCameraInformation().camera_model == sl.MODEL.ZED2);
+can_compute_imu = zed.get_camera_information().camera_model != sl.MODEL.ZED
 ```
 
-First, we test that the opened camera is a ZED Mini, then, we display some useful IMU data, such as the quaternion and the linear acceleration.
+First, we test that the opened camera is a ZED Mini, a ZED two, or a ZED two i, then, we display some useful IMU data, such as the quaternion and the linear acceleration.
 
 ```python
-if (zed_mini or zed_two) : # Display IMU data
-
-    # Get IMU data
+if can_compute_imu:
     zed.get_sensors_data(zed_sensors, sl.TIME_REFERENCE.IMAGE)
     zed_imu = zed_sensors.get_imu_data()
+    #Display the IMU acceleratoin
+    acceleration = [0,0,0]
+    zed_imu.get_linear_acceleration(acceleration)
+    ax = round(acceleration[0], 3)
+    ay = round(acceleration[1], 3)
+    az = round(acceleration[2], 3)
+    print("IMU Acceleration: Ax: {0}, Ay: {1}, Az {2}\n".format(ax, ay, az))
+    
+    #Display the IMU angular velocity
+    a_velocity = [0,0,0]
+    zed_imu.get_angular_velocity(a_velocity)
+    vx = round(a_velocity[0], 3)
+    vy = round(a_velocity[1], 3)
+    vz = round(a_velocity[2], 3)
+    print("IMU Angular Velocity: Vx: {0}, Vy: {1}, Vz {2}\n".format(vx, vy, vz))
 
     # Display the IMU orientation quaternion
     zed_imu_pose = sl.Transform()
@@ -106,16 +116,8 @@ if (zed_mini or zed_two) : # Display IMU data
     ow = round(zed_imu.get_pose(zed_imu_pose).get_orientation().get()[3], 3)
     print("IMU Orientation: Ox: {0}, Oy: {1}, Oz {2}, Ow: {3}\n".format(ox, oy, oz, ow))
 
-    #Display the IMU acceleratoin
-    acceleration = [0,0,0]
-    zed_imu.get_linear_acceleration(acceleration)
-    ax = round(acceleration[0], 3)
-    ay = round(acceleration[1], 3)
-    az = round(acceleration[2], 3)
-    print("IMU Acceleration: Ax: {0}, Ay: {1}, Az {2}\n".format(ax, ay, az))
+    i = i + 1
 
-
-}
 ```
 
 This will loop until the ZED has been tracked during 1000 frames. We display the camera translation (in meters) in the console window and close the camera before exiting the application.

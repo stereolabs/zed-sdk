@@ -33,7 +33,9 @@ def main():
     # Open the camera
     err = zed.open(init_params)
     if err != sl.ERROR_CODE.SUCCESS:
-        exit(1)
+        print("Camera Open : "+repr(err)+". Exit program.")
+        exit()
+
 
     # Capture 50 frames and stop
     i = 0

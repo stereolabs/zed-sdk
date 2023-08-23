@@ -19,37 +19,26 @@
 ///////////////////////////////////////////////////////////////////////////
 
 /*********************************************************************************
- ** This sample demonstrates how to capture 3D point cloud and detected objects **
- **      with the ZED SDK and display the result in an OpenGL window. 	        **
+ ** This example how to do object detection with possible re-identification (with a given memory time) on a 2D display **
  *********************************************************************************/
 
 // Standard includes
 #include <iostream>
 #include <fstream>
-
+#include <deque>
 // Flag to disable the GUI to increase detection performances
 // On low-end hardware such as Jetson Nano, the GUI significantly slows
 // down the detection and increase the memory consumption
 #define ENABLE_GUI 1
 
-// Flag to enable/disable the batch option in Object Detection module
-// Batching system allows to reconstruct trajectories from the object detection module by adding Re-Identification / Appareance matching.
-// For example, if an object is not seen during some time, it can be re-ID to a previous ID if the matching score is high enough
-// Use with caution if image retention is activated (See BatchSystemhandler.hpp) :
-//   --> Images will only appears if a object is detected since the batching system is based on OD detection.
-#define USE_BATCHING 0
+#define ENABLE_BATCHING_REID 0
 
 // ZED includes
 #include <sl/Camera.hpp>
 
-// Sample includes
-#if USE_BATCHING
-#include "BatchSystemHandler.hpp"
-#endif
-
 #if ENABLE_GUI
-#include "GLViewer.hpp"
 #include "TrackingViewer.hpp"
+#include "GLViewer.hpp"
 #endif
 
 // Using std and sl namespaces
@@ -58,7 +47,7 @@ using namespace sl;
 bool is_playback = false;
 void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
 void parseArgs(int argc, char **argv, InitParameters& param);
-
+void printHelp();
 int main(int argc, char **argv) {
 
 #ifdef _SL_JETSON_
@@ -93,16 +82,13 @@ int main(int argc, char **argv) {
     print("Object Detection: Loading Module...");
     // Define the Objects detection module parameters
     ObjectDetectionParameters detection_parameters;
-    detection_parameters.enable_tracking = true;
+    detection_parameters.enable_tracking = true; 
     detection_parameters.enable_segmentation = false; // designed to give person pixel mask
     detection_parameters.detection_model = isJetson ? OBJECT_DETECTION_MODEL::MULTI_CLASS_BOX_FAST : OBJECT_DETECTION_MODEL::MULTI_CLASS_BOX_ACCURATE;
 
-#if USE_BATCHING
+#if ENABLE_BATCHING_REID
     detection_parameters.batch_parameters.enable = true;
-    detection_parameters.batch_parameters.latency = 2.f;
-    BatchSystemHandler batchHandler(detection_parameters.batch_parameters.latency * 2);
-#else
-    detection_parameters.batch_parameters.enable = false;
+    detection_parameters.batch_parameters.latency = 3.f;
 #endif
     returned_state = zed.enableObjectDetection(detection_parameters);
     if (returned_state != ERROR_CODE::SUCCESS) {
@@ -110,7 +96,6 @@ int main(int argc, char **argv) {
         zed.close();
         return EXIT_FAILURE;
     }
-
     // Detection runtime parameters
     // default detection threshold, apply to all object class
     int detection_confidence = 60;
@@ -121,11 +106,12 @@ int main(int argc, char **argv) {
     detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::PERSON] = detection_confidence;
     detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::VEHICLE] = detection_confidence;
 
+
     // Detection output
     bool quit = false;
 
 #if ENABLE_GUI
-
+    
     float image_aspect_ratio = camera_config.resolution.width / (1.f * camera_config.resolution.height);
     int requested_low_res_w = min(1280, (int)camera_config.resolution.width);
     sl::Resolution display_resolution(requested_low_res_w, requested_low_res_w / image_aspect_ratio);
@@ -144,10 +130,10 @@ int main(int argc, char **argv) {
 
 
     // 2D tracks
-    TrackingViewer track_view_generator(tracks_resolution, camera_config.fps, init_parameters.depth_maximum_distance, 3);
+    TrackingViewer track_view_generator(tracks_resolution, camera_config.fps, init_parameters.depth_maximum_distance, detection_parameters.batch_parameters.latency);
     track_view_generator.setCameraCalibration(camera_config.calibration_parameters);
 
-    string window_name = "ZED| 2D View and Birds view";
+    string window_name = "ZED| 3D View tracking";
     cv::namedWindow(window_name, cv::WINDOW_NORMAL); // Create Window
     cv::createTrackbar("Confidence", window_name, &detection_confidence, 100);
 
@@ -158,24 +144,23 @@ int main(int argc, char **argv) {
     Mat point_cloud(pc_resolution, MAT_TYPE::F32_C4, MEM::GPU);
     GLViewer viewer;
     viewer.init(argc, argv, camera_parameters, detection_parameters.enable_tracking);
+    printHelp();
+    Pose cam_w_pose;
+    cam_w_pose.pose_data.setIdentity();
 #endif
+
+    std::map<int, int> id_counter;
 
     RuntimeParameters runtime_parameters;
     runtime_parameters.confidence_threshold = 50;
-
-    Pose cam_c_pose;
-    cam_c_pose.pose_data.setIdentity();
-
-    Pose cam_w_pose;
-    cam_w_pose.pose_data.setIdentity();
     Objects objects;
-
     bool gl_viewer_available = true;
-    while (
+        while (
 #if ENABLE_GUI
             gl_viewer_available &&
 #endif
             !quit && zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS) {
+
 
         // update confidence threshold based on TrackBar
         if (detection_parameters_rt.object_class_filter.empty())
@@ -185,94 +170,89 @@ int main(int argc, char **argv) {
                 detection_parameters_rt.object_class_detection_confidence_threshold[it] = detection_confidence;
 
         returned_state = zed.retrieveObjects(objects, detection_parameters_rt);
+        if (returned_state == ERROR_CODE::SUCCESS) {
+            
+#if ENABLE_BATCHING_REID
+            // store the id of detetected objects
+            for(auto &it: objects.object_list)
+                id_counter[it.id] = 1;
 
-        if ((returned_state == ERROR_CODE::SUCCESS) && objects.is_new) {
+            // check if bacthed trajectories are available
+            std::vector<sl::ObjectsBatch> objectsBatch;
+            if(zed.getObjectsBatch(objectsBatch)==sl::ERROR_CODE::SUCCESS){
+                if(objectsBatch.size()){
+                    std::cout<<"During last batch processing: "<<id_counter.size()<<" Object were detected: ";
+                    for(auto it :id_counter) std::cout<<it.first<<" ";
+                    std::cout<<"\nWhile "<<objectsBatch.size()<<" different only after reID: ";
+                    for(auto it :objectsBatch) std::cout<<it.id<<" ";
+                    std::cout<<std::endl;
+                    id_counter.clear();
+                }
+            }
+#endif
+
 #if ENABLE_GUI
             zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, pc_resolution);
             zed.getPosition(cam_w_pose, REFERENCE_FRAME::WORLD);
             zed.retrieveImage(image_left, VIEW::LEFT, MEM::CPU, display_resolution);
+            image_render_left.copyTo(image_left_ocv);
+            track_view_generator.generate_view(objects, image_left_ocv,img_scale,cam_w_pose, image_track_ocv, objects.is_tracked);  
+            viewer.updateData(point_cloud, objects.object_list, cam_w_pose.pose_data);
 
-            bool update_render_view = true;
-            bool update_3d_view = true;
-            bool update_tracking_view = true;
-
-#if USE_BATCHING
-            zed.getPosition(cam_c_pose, REFERENCE_FRAME::CAMERA);
-            std::vector<sl::ObjectsBatch> objectsBatch;
-            zed.getObjectsBatch(objectsBatch);
-            batchHandler.push(cam_c_pose, cam_w_pose, image_left, point_cloud, objectsBatch);
-            batchHandler.pop(cam_c_pose, cam_w_pose, image_left, point_cloud, objects);
-            update_tracking_view = objects.is_new;
-            update_render_view = WITH_IMAGE_RETENTION ? objects.is_new : true;
-            update_3d_view = WITH_IMAGE_RETENTION ? objects.is_new : true;
-#endif
-
-            if (update_render_view) {
-                image_render_left.copyTo(image_left_ocv);
-                render_2D(image_left_ocv, img_scale, objects.object_list, true, detection_parameters.enable_tracking);
+            gl_viewer_available = viewer.isAvailable();
+            // as image_left_ocv and image_track_ocv are both ref of global_image, no need to update it
+            cv::imshow(window_name, global_image);
+            key = cv::waitKey(10);
+            if (key == 'i') {
+                track_view_generator.zoomIn();
+            } else if (key == 'o') {
+                track_view_generator.zoomOut();
+            } else if (key == 'q') {
+                quit = true;
+            } else if (key == 'p') {
+                detection_parameters_rt.object_class_filter.clear();
+                detection_parameters_rt.object_class_filter.push_back(OBJECT_CLASS::PERSON);
+                detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::PERSON] = detection_confidence;
+                cout << "Person only" << endl;
+            } else if (key == 'v') {
+                detection_parameters_rt.object_class_filter.clear();
+                detection_parameters_rt.object_class_filter.push_back(OBJECT_CLASS::VEHICLE);
+                detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::VEHICLE] = detection_confidence;
+                cout << "Vehicle only" << endl;
+            } else if (key == 'c') {
+                detection_parameters_rt.object_class_filter.clear();
+                detection_parameters_rt.object_class_detection_confidence_threshold.clear();
+                cout << "Clear Filters" << endl;
             }
-
-            if (update_3d_view)
-                viewer.updateData(point_cloud, objects.object_list, cam_w_pose.pose_data);
-
-            if (update_tracking_view)
-                track_view_generator.generate_view(objects, cam_w_pose, image_track_ocv, objects.is_tracked);
-#else
-#if USE_BATCHING
-            std::vector<sl::ObjectsBatch> objectsBatch;
-            zed.getObjectsBatch(objectsBatch);
-            batchHandler.push(objectsBatch);
-            batchHandler.pop(objects);
-#endif
-            cout << "Detected " << objects.object_list.size() << " Object(s)" << endl;
 #endif
         }
 
-        if (is_playback && zed.getSVOPosition() == zed.getSVONumberOfFrames()) {
-            quit = true;
-        }
-
-#if ENABLE_GUI
-        gl_viewer_available = viewer.isAvailable();
-        // as image_left_ocv and image_track_ocv are both ref of global_image, no need to update it
-        cv::imshow(window_name, global_image);
-        key = cv::waitKey(10);
-        if (key == 'i') {
-            track_view_generator.zoomIn();
-        } else if (key == 'o') {
-            track_view_generator.zoomOut();
-        } else if (key == 'q') {
-            quit = true;
-        } else if (key == 'p') {
-            detection_parameters_rt.object_class_filter.clear();
-            detection_parameters_rt.object_class_filter.push_back(OBJECT_CLASS::PERSON);
-            detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::PERSON] = detection_confidence;
-            cout << "Person only" << endl;
-        } else if (key == 'v') {
-            detection_parameters_rt.object_class_filter.clear();
-            detection_parameters_rt.object_class_filter.push_back(OBJECT_CLASS::VEHICLE);
-            detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::VEHICLE] = detection_confidence;
-            cout << "Vehicle only" << endl;
-        } else if (key == 'c') {
-            detection_parameters_rt.object_class_filter.clear();
-            detection_parameters_rt.object_class_detection_confidence_threshold.clear();
-            cout << "Clear Filters" << endl;
-        }
-
-#endif
+        if (is_playback && zed.getSVOPosition() == zed.getSVONumberOfFrames()) 
+            quit = true;        
     }
+
+
 #if ENABLE_GUI
     viewer.exit();
     point_cloud.free();
     image_left.free();
 #endif
-#if USE_BATCHING
-    batchHandler.clear();
-#endif
     zed.disableObjectDetection();
     zed.close();
     return EXIT_SUCCESS;
 }
+
+
+void printHelp() {
+    cout << "\n\nBirds eye view hotkeys:\n";
+    cout << "* Filter Person Only:              'p'\n";
+    cout << "* Filter Vehicule Only:            'v'\n";
+    cout << "* Clear Filters:                   'c'\n";
+    cout << "* Zoom out tracking view:          'o'\n";
+    cout << "* Zoom in tracking view:           'i'\n";
+    cout << "* Exit:                            'q'\n\n";
+}
+
 
 void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     cout << "[Sample] ";
