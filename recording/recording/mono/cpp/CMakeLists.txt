@@ -21,7 +21,20 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 link_directories(${ZED_LIBRARY_DIR})
 link_directories(${CUDA_LIBRARY_DIRS})
+IF(NOT WIN32)
+    IF (BUILD_WITH_SANITIZER)
+        message("!! Building with address sanitizer and -g !!")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address -Wall -Wextra -g")
+        set (CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=address -Wall -Wextra -g")
+        add_definitions(-g -fsanitize=address -fno-omit-frame-pointer -static-libasan -Wall -Wextra)
+    ENDIF()
 
+    IF (BUILD_WITH_DEBUGINFOS)
+        message("!! Building with -g !!")
+        add_definitions(-g)
+    ENDIF()
+ENDIF()
+    
 ADD_EXECUTABLE(${PROJECT_NAME} include/utils.hpp src/main.cpp)
 
 if (LINK_SHARED_ZED)

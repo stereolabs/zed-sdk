@@ -28,7 +28,7 @@ def main():
 
     # Create a InitParameters object and set configuration parameters
     init_params = sl.InitParameters()
-    init_params.camera_resolution = sl.RESOLUTION.HD720  # Use HD720 video mode (default fps: 60)
+    init_params.camera_resolution = sl.RESOLUTION.AUTO  # Use HD720 or HD1200 video mode (default fps: 60)
     # Use a right-handed Y-up coordinate system
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
     init_params.coordinate_units = sl.UNIT.METER  # Set units in meters
@@ -50,7 +50,7 @@ def main():
         exit()
 
     # Enable spatial mapping
-    mapping_parameters = sl.SpatialMappingParameters(map_type=sl.SPATIAL_MAP_TYPE.FUSED_POINT_CLOUD)
+    mapping_parameters = sl.SpatialMappingParameters(map_type=sl.SPATIAL_MAP_TYPE.MESH)
     err = zed.enable_spatial_mapping(mapping_parameters)
     if err != sl.ERROR_CODE.SUCCESS:
         print("Enable spatial mapping : "+repr(err)+". Exit program.")
@@ -59,7 +59,7 @@ def main():
 
     # Grab data during 500 frames
     i = 0
-    py_fpc = sl.FusedPointCloud()  # Create a Mesh object
+    mesh = sl.Mesh()  # Create a Mesh object
     runtime_parameters = sl.RuntimeParameters()
 
     while i < 500:
@@ -74,13 +74,13 @@ def main():
     print("\n")
 
     # Extract, filter and save the mesh in an obj file
-    print("Extracting Point Cloud...\n")
-    err = zed.extract_whole_spatial_map(py_fpc)
+    print("Extracting Mesh...\n")
+    err = zed.extract_whole_spatial_map(mesh)
     print(repr(err))
     print("Filtering Mesh...\n")
-    py_fpc.filter(sl.MeshFilterParameters())  # Filter the mesh (remove unnecessary vertices and faces)
-    print("Saving Point Cloud...\n")
-    py_fpc.save("fpc.obj")
+    mesh.filter(sl.MeshFilterParameters())  # Filter the mesh (remove unnecessary vertices and faces)
+    print("Saving Mesh...\n")
+    mesh.save("mesh.obj")
 
     # Disable tracking and mapping and close the camera
     zed.disable_spatial_mapping()

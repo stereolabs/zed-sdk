@@ -99,6 +99,7 @@ int main(int argc, char **argv) {
     init_parameters.sdk_verbose = true;
     init_parameters.camera_resolution= sl::RESOLUTION::AUTO;
     init_parameters.depth_mode = sl::DEPTH_MODE::NONE; // no depth computation required here
+    init_parameters.async_grab_camera_recovery = true;
     parseArgs(argc,argv, init_parameters);
 
     // Open the camera
@@ -151,7 +152,8 @@ int main(int argc, char **argv) {
             cv::imshow(win_name, cvImage);
         }else {
             print("Error during capture : ", returned_state);
-            break;
+            if (returned_state!=sl::ERROR_CODE::CAMERA_REBOOTING)
+                break;
         }
         
         key = cv::waitKey(10);

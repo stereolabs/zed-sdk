@@ -40,7 +40,6 @@ This module uses the GPU to perform deep neural networks computations. On platfo
 // Create ZED objects
 Camera zed;
 InitParameters initParameters;
-initParameters.camera_resolution = RESOLUTION::HD720;
 initParameters.depth_mode = DEPTH_MODE::PERFORMANCE;
 initParameters.sdk_verbose = true;
 

@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     # Create a ZED camera object
     
-    init_params = sl.InitParameters(camera_resolution=sl.RESOLUTION.HD720,
+    init_params = sl.InitParameters(camera_resolution=sl.RESOLUTION.AUTO,
                                  coordinate_units=sl.UNIT.METER,
                                  coordinate_system=sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP)
                                  

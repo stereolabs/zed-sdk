@@ -221,15 +221,19 @@ sl::float3 newColor(float hh) {
     return clr;
 }
 
-void GLViewer::setupNewCamera(int id, sl::Mat view, sl::Mat pc, CUstream strm){
+void GLViewer::updateCamera(int id, sl::Mat &view, sl::Mat &pc){
     mtx.lock();
     if (colors.find(id) == colors.end()) {
         float hh = uint_dist360(rng) / 60.f;
         colors[id] = newColor(hh);
     }
-    viewers[id].initialize(view, colors[id]);
-    point_clouds[id].initialize(pc, colors[id]);
-    streams[id] = strm;
+
+    if(view.isInit() && viewers.find(id) == viewers.end())
+        viewers[id].initialize(view, colors[id]);
+
+    if(pc.isInit() && point_clouds.find(id) == point_clouds.end())
+        point_clouds[id].initialize(pc, colors[id]);
+    
     mtx.unlock();
 }
 
@@ -281,7 +285,6 @@ void GLViewer::render() {
 void GLViewer::setCameraPose(int id, sl::Transform pose) {
     mtx.lock();
     poses[id] = pose;
-
     if (colors.find(id) == colors.end()) {
         float hh = uint_dist360(rng) / 60.f;      
         colors[id] = newColor(hh);
@@ -436,10 +439,10 @@ void GLViewer::update() {
         it.second.pushToGPU();
 
     for(auto &it: point_clouds)
-        it.second.pushNewPC(streams[it.first]);
+        it.second.pushNewPC();
 
     for(auto &it: viewers)
-        it.second.pushNewImage(streams[it.first]);
+        it.second.pushNewImage();
 
     mtx.unlock();
     clearInputs();
@@ -792,9 +795,9 @@ void PointCloud::initialize(sl::Mat &ref, sl::float3 clr_) {
     shDrawColor = glGetUniformLocation(shader_.getProgramId(), "u_drawFlat");
 }
 
-void PointCloud::pushNewPC(CUstream strm) {
+void PointCloud::pushNewPC() {
     if (refMat.isInit())
-        cudaMemcpyAsync(xyzrgbaMappedBuf_, refMat.getPtr<sl::float4>(sl::MEM::GPU), numBytes_, cudaMemcpyDeviceToDevice, strm);
+        cudaMemcpy(xyzrgbaMappedBuf_, refMat.getPtr<sl::float4>(sl::MEM::CPU), numBytes_, cudaMemcpyHostToDevice);
 }
 
 void PointCloud::draw(const sl::Transform& vp, bool draw_flat) {
@@ -949,9 +952,9 @@ bool CameraViewer::initialize(sl::Mat &im, sl::float3 clr) {
 	return (err == cudaSuccess);
 }
 
-void CameraViewer::pushNewImage(CUstream strm) {
+void CameraViewer::pushNewImage() {
 	if (!ref.isInit())  return;
-	auto err = cudaMemcpy2DToArrayAsync(ArrIm, 0, 0, ref.getPtr<sl::uchar1>(sl::MEM::GPU), ref.getStepBytes(sl::MEM::GPU), ref.getPixelBytes() * ref.getWidth(), ref.getHeight(), cudaMemcpyDeviceToDevice, strm);
+	auto err = cudaMemcpy2DToArray(ArrIm, 0, 0, ref.getPtr<sl::uchar1>(sl::MEM::CPU), ref.getStepBytes(sl::MEM::CPU), ref.getPixelBytes() * ref.getWidth(), ref.getHeight(), cudaMemcpyHostToDevice);
 	if (err) std::cout << "err 2 " << err << " " << cudaGetErrorString(err) << "\n";
 }
 

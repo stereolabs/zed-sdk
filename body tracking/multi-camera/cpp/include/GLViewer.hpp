@@ -162,7 +162,7 @@ public:
     void initialize(sl::Mat&, sl::float3 clr);
     // Push a new point cloud
     // Warning: can be called from any thread but the mutex "mutexData" must be locked
-    void pushNewPC(CUstream);
+    void pushNewPC();
     // Draw the point cloud
     // Warning: must be called in the Opengl thread
     void draw(const sl::Transform& vp, bool draw_clr);
@@ -192,7 +192,7 @@ public:
     // Initialize Opengl and Cuda buffers
     bool initialize(sl::Mat& image, sl::float3 clr);
     // Push a new Image + Z buffer and transform into a point cloud
-    void pushNewImage(CUstream);
+    void pushNewImage();
     // Draw the Image
     void draw(sl::Transform vpMatrix);
     // Close (disable update)
@@ -231,7 +231,7 @@ public:
     bool isAvailable();
     void init(int argc, char **argv);
 
-    void setupNewCamera(int, sl::Mat, sl::Mat, CUstream );
+    void updateCamera(int, sl::Mat &, sl::Mat &);
 
     void updateBodies(sl::Bodies &objs,std::map<sl::CameraIdentifier, sl::Bodies>& singldata, sl::FusionMetrics& metrics);
     
@@ -301,7 +301,7 @@ private:
     std::map<int, PointCloud> point_clouds;
     std::map<int, CameraViewer> viewers;
     std::map<int, sl::Transform> poses;
-    std::map<int, CUstream> streams;
+    
     std::map<int, Simple3DObject> skeletons_raw;
     std::map<int, sl::float3> colors;
     std::map<int, sl::float3> colors_sk;

@@ -16,11 +16,11 @@ public:
 
     void start();
     void stop();
+    void setStartSVOPosition(unsigned pos);
 
     bool isRunning() {
         return running;
     }
-
 
 private:
     sl::Camera zed;
