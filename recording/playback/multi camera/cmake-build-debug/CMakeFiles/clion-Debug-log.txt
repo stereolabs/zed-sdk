@@ -1,1 +1,0 @@
-CMakeLists.txt not found in /home/user/Desktop/sl/ZEDKit/zed-examples/recording/playback/multi camera Select CMakeLists.txt

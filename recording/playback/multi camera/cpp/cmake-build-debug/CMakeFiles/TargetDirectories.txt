@@ -1,3 +1,0 @@
-/home/user/Desktop/sl/ZEDKit/zed-examples/recording/playback/multi camera/cpp/cmake-build-debug/CMakeFiles/ZED_SVO_Playback_Multi.dir
-/home/user/Desktop/sl/ZEDKit/zed-examples/recording/playback/multi camera/cpp/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/user/Desktop/sl/ZEDKit/zed-examples/recording/playback/multi camera/cpp/cmake-build-debug/CMakeFiles/rebuild_cache.dir

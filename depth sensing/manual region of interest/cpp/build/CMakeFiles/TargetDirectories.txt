@@ -1,3 +1,0 @@
-/home/user/Desktop/sl/ZEDKit/zed-examples/depth sensing/manual region of interest/cpp/build/CMakeFiles/ZED_Sensing_ROI.dir
-/home/user/Desktop/sl/ZEDKit/zed-examples/depth sensing/manual region of interest/cpp/build/CMakeFiles/edit_cache.dir
-/home/user/Desktop/sl/ZEDKit/zed-examples/depth sensing/manual region of interest/cpp/build/CMakeFiles/rebuild_cache.dir
