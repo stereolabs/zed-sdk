@@ -1,0 +1,4 @@
+/usr/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/home/user/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/223.8617.54/bin/ninja/linux/x64/ninja -G Ninja -S "/home/user/Desktop/sl/ZEDKit/zed-examples/recording/playback/multi camera/cpp" -B "/home/user/Desktop/sl/ZEDKit/zed-examples/recording/playback/multi camera/cpp/cmake-build-debug"
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/user/Desktop/sl/ZEDKit/zed-examples/recording/playback/multi camera/cpp/cmake-build-debug

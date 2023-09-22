@@ -51,7 +51,7 @@ if __name__ == "__main__":
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
     init_params.coordinate_units = sl.UNIT.METER
     init_params.depth_mode = sl.DEPTH_MODE.ULTRA
-    init_params.camera_resolution = sl.RESOLUTION.HD720
+    init_params.camera_resolution = sl.RESOLUTION.HD1080
 
     communication_parameters = sl.CommunicationParameters()
     communication_parameters.set_for_shared_memory()

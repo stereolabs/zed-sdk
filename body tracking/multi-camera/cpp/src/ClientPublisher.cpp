@@ -2,7 +2,6 @@
 
 ClientPublisher::ClientPublisher() : running(false)
 {
-    init_parameters.depth_mode = sl::DEPTH_MODE::ULTRA;
 }
 
 ClientPublisher::~ClientPublisher()
@@ -15,7 +14,11 @@ bool ClientPublisher::open(sl::InputType input) {
     if (runner.joinable())
         return false;
 
+    sl::InitParameters init_parameters;
+    init_parameters.depth_mode = sl::DEPTH_MODE::ULTRA;
     init_parameters.input = input;
+    if (input.getType() == sl::InputType::INPUT_TYPE::SVO_FILE)
+        init_parameters.svo_real_time_mode = true;
     init_parameters.coordinate_units = sl::UNIT::METER;
     init_parameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
     auto state = zed.open(init_parameters);
@@ -39,7 +42,7 @@ bool ClientPublisher::open(sl::InputType input) {
     // define the body tracking parameters, as the fusion can does the tracking and fitting you don't need to enable them here, unless you need it for your app
     sl::BodyTrackingParameters body_tracking_parameters;
     body_tracking_parameters.detection_model = sl::BODY_TRACKING_MODEL::HUMAN_BODY_MEDIUM;
-    body_tracking_parameters.body_format = sl::BODY_FORMAT::BODY_38;
+    body_tracking_parameters.body_format = sl::BODY_FORMAT::BODY_18;
     body_tracking_parameters.enable_body_fitting = false;
     body_tracking_parameters.enable_tracking = false;
     state = zed.enableBodyTracking(body_tracking_parameters);
@@ -48,20 +51,6 @@ bool ClientPublisher::open(sl::InputType input) {
         std::cout << "Error: " << state << std::endl;
         return false;
     }
-
-    auto camera_infos = zed.getCameraInformation();
-
-    serial = camera_infos.serial_number;
-
-    auto resolution = camera_infos.camera_configuration.resolution;
-
-    // Define display resolution and check that it fit at least the image resolution
-    float image_aspect_ratio = resolution.width / (1.f * resolution.height);
-    int requested_low_res_w = std::min(640, (int)resolution.width);
-    low_resolution = sl::Resolution(requested_low_res_w, requested_low_res_w / image_aspect_ratio);
-    
-    view.alloc(low_resolution, sl::MAT_TYPE::U8_C4, sl::MEM::GPU);
-    point_cloud.alloc(low_resolution, sl::MAT_TYPE::F32_C4, sl::MEM::GPU);
 
     return true;
 }
@@ -91,22 +80,25 @@ void ClientPublisher::work()
     sl::BodyTrackingRuntimeParameters body_runtime_parameters;
     body_runtime_parameters.detection_confidence_threshold = 40;
 
-    sl::RuntimeParameters runtime_parameters;
-    runtime_parameters.confidence_threshold = 30;
 
     // in this sample we use a dummy thread to process the ZED data.
     // you can replace it by your own application and use the ZED like you use to, retrieve its images, depth, sensors data and so on.
-    // as long as you call the grab function and the retrieveBodies (wich run the detection) the camera will be able to seamlessly transmit the data to the fusion module.
+    // as long as you call the grab function and the retrieveBodies (which runs the detection) the camera will be able to seamlessly transmit the data to the fusion module.
     while (running) {
-        if (zed.grab(runtime_parameters) == sl::ERROR_CODE::SUCCESS) {
+        if (zed.grab() == sl::ERROR_CODE::SUCCESS) {
             /*
             Your App
-            */            
-            zed.retrieveImage(view, sl::VIEW::LEFT, sl::MEM::GPU, low_resolution);
-            zed.retrieveMeasure(point_cloud, sl::MEASURE::XYZBGRA, sl::MEM::GPU, low_resolution);
+
+            */
 
             // just be sure to run the bodies detection
             zed.retrieveBodies(bodies, body_runtime_parameters);
         }
     }
 }
+
+void ClientPublisher::setStartSVOPosition(unsigned pos) {
+    zed.setSVOPosition(pos);
+    zed.grab();
+}
+

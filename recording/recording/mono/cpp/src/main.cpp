@@ -45,13 +45,10 @@ int main(int argc, char **argv) {
 
     // Create a ZED camera
     Camera zed;
-
+    
     // Set configuration parameters for the ZED
     InitParameters init_parameters;
-    //init_parameters.camera_resolution = RESOLUTION::HD1200;
     init_parameters.depth_mode = DEPTH_MODE::NONE;
-    //init_parameters.input.setFromCameraID(-1,sl::BUS_TYPE::USB);
-    init_parameters.sdk_verbose= 1;
     parseArgs(argc,argv,init_parameters);
 
     // Open the camera
@@ -62,9 +59,10 @@ int main(int argc, char **argv) {
     }
 
     // Enable recording with the filename specified in argument
-    argv[1] = "test.svo";
-    String path_output(argv[1]);
-    returned_state = zed.enableRecording(RecordingParameters(path_output, SVO_COMPRESSION_MODE::H264_LOSSLESS));
+    RecordingParameters recording_parameters;
+    recording_parameters.video_filename.set(argv[1]);
+    recording_parameters.compression_mode = SVO_COMPRESSION_MODE::H264;
+    returned_state = zed.enableRecording(recording_parameters);
     if (returned_state != ERROR_CODE::SUCCESS) {
         print("Recording ZED : ", returned_state);
         zed.close();

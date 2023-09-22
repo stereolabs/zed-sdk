@@ -40,7 +40,7 @@ Camera zed;
 
 // Set configuration parameters
 InitParameters init_params;
-init_params.camera_resolution = RESOLUTION::HD720; // Use HD720 video mode (default fps: 60)
+init_params.camera_resolution = RESOLUTION::AUTO; // Use HD720 or HD1200 video mode (default fps: 60)
 init_params.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // Use a right-handed Y-up coordinate system
 init_params.coordinate_units = UNIT::METER; // Set units in meters
 

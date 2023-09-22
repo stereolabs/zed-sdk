@@ -47,7 +47,7 @@ int main(int argc, char **argv)
     init_params.depth_mode = sl::DEPTH_MODE::ULTRA;
     init_params.coordinate_system = sl::COORDINATE_SYSTEM::IMAGE;
     init_params.coordinate_units = sl::UNIT::METER;
-    init_params.camera_resolution = sl::RESOLUTION::HD720;
+    init_params.camera_resolution = sl::RESOLUTION::AUTO;
     init_params.camera_fps = 60;
     sl::Camera zed;
     sl::ERROR_CODE camera_open_error = zed.open(init_params);

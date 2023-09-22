@@ -37,7 +37,6 @@ signal(SIGINT, handler)
 def main():
     
     init = sl.InitParameters()
-    init.camera_resolution = sl.RESOLUTION.HD720
     init.depth_mode = sl.DEPTH_MODE.NONE # Set configuration parameters for the ZED
 
     status = cam.open(init) 

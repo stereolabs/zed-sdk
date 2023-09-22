@@ -298,6 +298,10 @@ void parseArgs(int argc, char** argv, sl::InitParameters& param) {
             param.camera_resolution = sl::RESOLUTION::HD2K;
             std::cout << "[Sample] Using Camera in resolution HD2K" << std::endl;
         }
+        else if (arg.find("HD1200") != std::string::npos) {
+            param.camera_resolution = sl::RESOLUTION::HD1200;
+            std::cout << "[Sample] Using Camera in resolution HD1200" << std::endl;
+        }
         else if (arg.find("HD1080") != std::string::npos) {
             param.camera_resolution = sl::RESOLUTION::HD1080;
             std::cout << "[Sample] Using Camera in resolution HD1080" << std::endl;
@@ -305,6 +309,10 @@ void parseArgs(int argc, char** argv, sl::InitParameters& param) {
         else if (arg.find("HD720") != std::string::npos) {
             param.camera_resolution = sl::RESOLUTION::HD720;
             std::cout << "[Sample] Using Camera in resolution HD720" << std::endl;
+        }
+        else if (arg.find("SVGA") != std::string::npos) {
+            param.camera_resolution = sl::RESOLUTION::SVGA;
+            std::cout << "[Sample] Using Camera in resolution SVGA" << std::endl;
         }
         else if (arg.find("VGA") != std::string::npos) {
             param.camera_resolution = sl::RESOLUTION::VGA;

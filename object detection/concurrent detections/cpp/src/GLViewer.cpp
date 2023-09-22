@@ -245,8 +245,6 @@ void GLViewer::updateData(sl::Mat &matXYZRGBA, sl::Objects &objs, sl::Bodies & b
                 createSKPrimitive(body, sl::BODY_34_BONES, skeletons, clr_id);
             if (bodies.body_format == sl::BODY_FORMAT::BODY_38)
                 createSKPrimitive(body, sl::BODY_38_BONES, skeletons, clr_id);
-            /*if (bodies.body_format == sl::BODY_FORMAT::BODY_70)
-                createSKPrimitive(body, sl::BODY_70_BONES, skeletons, clr_id);*/
         }
     }
 

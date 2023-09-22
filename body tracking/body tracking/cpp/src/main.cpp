@@ -111,7 +111,9 @@ int main(int argc, char **argv) {
 
     // Configure object detection runtime parameters
     BodyTrackingRuntimeParameters body_tracker_parameters_rt;
-    body_tracker_parameters_rt.detection_confidence_threshold = 40;
+    body_tracker_parameters_rt.detection_confidence_threshold = 60;
+    body_tracker_parameters_rt.skeleton_smoothing = 0.7;
+    
     // Create ZED Bodies filled in the main loop
     Bodies bodies;
 
