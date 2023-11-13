@@ -41,7 +41,7 @@ Camera zed;
 
 // Create configuration parameters
 InitParameters init_params;
-init_params.sdk_verbose = true; // Enable the verbose mode
+init_params.sdk_verbose = 1; // Enable the verbose mode
 init_params.depth_mode = DEPTH_MODE::PERFORMANCE; // Set the depth mode to performance (fastest)
 init_params.coordinate_units = UNIT::MILLIMETER; // Use millimeter units
 

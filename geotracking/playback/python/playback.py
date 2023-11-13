@@ -52,7 +52,7 @@ def main():
     if status != sl.ERROR_CODE.SUCCESS:
         print("[ZED][ERROR] Camera Open : "+repr(status)+". Exit program.")
         exit()
-   # Enable positional tracking:
+    # Enable positional tracking:
     positional_init = zed.enable_positional_tracking()
     if positional_init != sl.ERROR_CODE.SUCCESS:
         print("[ZED][ERROR] Can't start tracking of camera : "+repr(status)+". Exit program.")
@@ -86,15 +86,16 @@ def main():
     # Enable positional tracking for Fusion object
     positional_tracking_fusion_parameters = sl.PositionalTrackingFusionParameters()
     positional_tracking_fusion_parameters.enable_GNSS_fusion = True 
-    gnss_calibration_parameters = {
-                "target_yaw_uncertainty" : 7e-3,
-        "enable_translation_uncertainty_target" : False,
-        "target_translation_uncertainty" : 10e-2,
-        "enable_reinitialization" : False,
-        "gnss_vio_reinit_threshold" : 5,
-        "enable_rolling_calibration" : False
-    }
-    fusion.enable_positionnal_tracking({"gnss_calibration_parameters" : gnss_calibration_parameters , "enable_GNSS_fusion" : True})
+    gnss_calibration_parameters = sl.GNSSCalibrationParameters()
+    gnss_calibration_parameters.target_yaw_uncertainty = 7e-3
+    gnss_calibration_parameters.enable_translation_uncertainty_target = False
+    gnss_calibration_parameters.target_translation_uncertainty =  15e-2
+    gnss_calibration_parameters.enable_reinitialization = False
+    gnss_calibration_parameters.gnss_vio_reinit_threshold = 5
+    gnss_calibration_parameters.enable_rolling_calibration = False
+    positional_tracking_fusion_parameters.gnss_calibration_parameters = gnss_calibration_parameters
+
+    fusion.enable_positionnal_tracking(positional_tracking_fusion_parameters)
     
     # Setup viewer:
     py_translation = sl.Translation()
@@ -129,7 +130,9 @@ def main():
                             "altitude": altitude,
                         }
             export.saveKMLData("raw_gnss.kml", coordinates) 
-            if ingest_error != sl.FUSION_ERROR_CODE.SUCCESS:
+            # Fusion is asynchronous and needs synchronization. Sometime GNSSData comes before camera data raising "NO_NEW_DATA_AVAILABLE" error
+            # This does not necessary means that fusion doesn't work but that no camera data were presents for the gnss timestamp when you ingested the data.
+            if ingest_error != sl.FUSION_ERROR_CODE.SUCCESS and ingest_error != sl.FUSION_ERROR_CODE.NO_NEW_DATA_AVAILABLE:
                 print("Ingest error occurred when ingesting GNSSData: ",ingest_error)
         # get the fused position
         if fusion.process() == sl.FUSION_ERROR_CODE.SUCCESS:
@@ -151,13 +154,14 @@ def main():
                 viewer.updateGeoPoseData(current_geopose, zed.get_timestamp(sl.TIME_REFERENCE.CURRENT).data_ns/1000)
                 _, yaw_std, position_std = fusion.get_current_gnss_calibration_std()
                 if yaw_std != -1:
-                    print("GNSS State : ",current_geopose_satus," : calibration uncertainty yaw_std ",yaw_std ,"position_std",position_std[0],",",position_std[1],",",position_std[2])
+                    print("GNSS State : ",current_geopose_satus," : calibration uncertainty yaw_std ",yaw_std ,"position_std",position_std[0],",",position_std[1],",",position_std[2], end='\r')
             else : 
                 """
                 GNSS coordinate system to ZED coordinate system is not initialize yet
                 The initialisation between the coordinates system is basicaly an optimization problem that
                 Try to fit the ZED computed path with the GNSS computed path. In order to do it just move
-                your system by the distance you specified in positional_tracking_fusion_parameters.gnss_initialisation_distance
+                your system and wait that uncertainty come bellow uncertainty threshold you set up in your 
+                initialization parameters.
                 """
     fusion.close()
     zed.close()

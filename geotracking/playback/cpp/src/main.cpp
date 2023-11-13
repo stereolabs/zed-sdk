@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
     gnss_calibration_parameter.enable_reinitialization = false;
     gnss_calibration_parameter.enable_translation_uncertainty_target = false;
     gnss_calibration_parameter.gnss_vio_reinit_threshold = 5;
-    gnss_calibration_parameter.target_yaw_uncertainty = 7e-3;
+    gnss_calibration_parameter.target_yaw_uncertainty = 1e-2;
     gnss_calibration_parameter.enable_rolling_calibration = false;
     positional_tracking_fusion_parameters.gnss_calibration_parameters = gnss_calibration_parameter;
     positional_tracking_fusion_parameters.enable_GNSS_fusion = true;
