@@ -30,7 +30,7 @@ def main():
     init_params = sl.InitParameters()
     init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE
     init_params.coordinate_units = sl.UNIT.METER
-    init_params.sdk_verbose = True
+    init_params.sdk_verbose = 1
 
     # Open the camera
     err = zed.open(init_params)
