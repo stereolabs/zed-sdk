@@ -10,7 +10,8 @@ body:
         Thanks for taking the time to fill out this feature request module.
         Please fill out each section below. This info allows Stereolabs developers to correctly evaluate your request.
 
-        Please use this service only to propose new features related to this repository.
+        **Please use this service only to propose new features related to this repository**
+        
         If you have a problem with a device, a ZED SDK tool, or * generic questions* please do not open an issue on GitHub, 
         but send an email to support@stereolabs.com or start a thread on the [StereoLabs Community Forum](https://community.stereolabs.com/).
 
