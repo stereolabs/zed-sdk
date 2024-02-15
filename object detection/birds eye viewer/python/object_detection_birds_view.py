@@ -98,6 +98,8 @@ def main():
     detection_parameters_rt.object_class_detection_confidence_threshold[sl.OBJECT_CLASS.PERSON] = detection_confidence
     detection_parameters_rt.object_class_detection_confidence_threshold[sl.OBJECT_CLASS.VEHICLE] = detection_confidence
 
+    if use_faceme:
+        import faceme_wrapper
 
     quit_bool = False
     if not opt.disable_gui:
