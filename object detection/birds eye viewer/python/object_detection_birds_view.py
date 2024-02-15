@@ -34,6 +34,20 @@ import platform
 from collections import deque
 
 
+import cv2
+
+import faceme_wrapper
+testimg = "/home/waragai/github/ex-faceme/images/each_face/わらがい.jpg"
+img = cv2.imread(testimg)
+recognize_results, search_results = faceme_wrapper.process_image(img)
+out_cvimg = img
+out_cvimg = faceme_wrapper.draw_recognized(out_cvimg, recognize_results, search_results)
+cv2.imwrite("out_cvimg.jpg", out_cvimg)
+cv2.imshow("out", out_cvimg)
+key = cv2.waitKey(0)
+
+cv2.destroyAllWindows()
+
 is_jetson = False
 
 if platform.uname().machine.startswith('aarch64'):
@@ -166,7 +180,15 @@ def main():
                 
                 zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA, sl.MEM.CPU, pc_resolution)
                 zed.get_position(cam_w_pose, sl.REFERENCE_FRAME.WORLD)
+                # waragai: Here we have image_left
                 zed.retrieve_image(image_left, sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
+                image = image_left.get_data()
+                recognize_results, search_results = faceme_wrapper.process_image(image)
+                out_cvimg = image
+                out_cvimg = faceme_wrapper.draw_recognized(out_cvimg, recognize_results, search_results)
+                cv2.imwrite("out_cvimg.jpg", out_cvimg)
+                cv2.imshow("out", out_cvimg)
+
                 image_render_left = image_left.get_data()
                 np.copyto(image_left_ocv,image_render_left)
                 track_view_generator.generate_view(objects, image_left_ocv,image_scale ,cam_w_pose, image_track_ocv, objects.is_tracked)
