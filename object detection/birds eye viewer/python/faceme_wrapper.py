@@ -40,6 +40,7 @@ def initialize_SDK():
 
 
 initialize_SDK()
+
 def pil2cv(image) -> np.ndarray:
     ''' PIL型 -> OpenCV型 '''
     new_image = np.array(image, dtype=np.uint8)
@@ -104,11 +105,12 @@ def gen_output_dict(ret, similar_faces: List, recognized: Dict) -> Dict:
         return {"Result": "Success",
                       "Similiar Face Info": similar_faces,
                       "boundingBox": recognized["boundingBox"]}
-def draw_recognized(out_cvimg, recognize_results, search_results) -> np.ndarray:
+def draw_recognized(out_cvimg, recognize_results, search_results, enable_print=False) -> np.ndarray:
     for recognized, searched in zip(recognize_results, search_results):
         ret, similar_faces = searched
         outputDict = gen_output_dict(ret, similar_faces, recognized)
-        OutputJsonResult(outputDict)
+        if enable_print:
+            OutputJsonResult(outputDict)
         person = similar_faces[0]["name"] if similar_faces else "visitor"
 
         bbox = recognized["boundingBox"]
@@ -117,6 +119,14 @@ def draw_recognized(out_cvimg, recognize_results, search_results) -> np.ndarray:
         out_cvimg = putText_utf(out_cvimg, unicode_text=person, org=(xl, yu), font_size=36, color=(255, 0, 0))
     return out_cvimg
 
+def bbox_and_name(recognize_results, search_results):
+    r = []
+    for recognized, searched in zip(recognize_results, search_results):
+        ret, similar_faces = searched
+        person = similar_faces[0]["name"] if similar_faces else "visitor"
+        recognized["boundingBox"]
+        r.append((recognized["boundingBox"], person))
+    return r
 
 def process_image(img: np.ndarray) -> Tuple[Dict, Dict]:
     ret, faceme_img = faceMe_sdk.convert_opencvMat_to_faceMe_image(img)

@@ -16,6 +16,7 @@ if __name__ == "__main__":
         while True:
             r, img = cap.read()
             recognize_results, search_results = faceme_wrapper.process_image(img)
+            print(faceme_wrapper.bbox_and_name(recognize_results, search_results))
             out_cvimg = img
             out_cvimg = faceme_wrapper.draw_recognized(out_cvimg, recognize_results, search_results)
             cv2.imwrite("out_cvimg.jpg", out_cvimg)
@@ -26,6 +27,7 @@ if __name__ == "__main__":
     else:
         img = cv2.imread(args.src)
         recognize_results, search_results = faceme_wrapper.process_image(img)
+        print(faceme_wrapper.bbox_and_name(recognize_results, search_results))
         out_cvimg = img
         out_cvimg = faceme_wrapper.draw_recognized(out_cvimg, recognize_results, search_results)
         cv2.imwrite("out_cvimg.jpg", out_cvimg)

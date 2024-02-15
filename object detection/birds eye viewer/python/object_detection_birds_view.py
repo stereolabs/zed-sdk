@@ -182,12 +182,13 @@ def main():
                 zed.get_position(cam_w_pose, sl.REFERENCE_FRAME.WORLD)
                 # waragai: Here we have image_left
                 zed.retrieve_image(image_left, sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
-                image = image_left.get_data()
-                recognize_results, search_results = faceme_wrapper.process_image(image)
-                out_cvimg = image
-                out_cvimg = faceme_wrapper.draw_recognized(out_cvimg, recognize_results, search_results)
-                cv2.imwrite("out_cvimg.jpg", out_cvimg)
-                cv2.imshow("out", out_cvimg)
+                cvimage = image_left.get_data()
+                recognize_results, search_results = faceme_wrapper.process_image(cvimage)
+                summary = faceme_wrapper.bbox_and_name(recognize_results, search_results)
+                print(summary)
+                cvimage = faceme_wrapper.draw_recognized(cvimage, recognize_results, search_results)
+                cv2.imwrite("out_cvimg.jpg", cvimage)
+                # cv2.imshow("out", out_cvimg)
 
                 image_render_left = image_left.get_data()
                 np.copyto(image_left_ocv,image_render_left)
