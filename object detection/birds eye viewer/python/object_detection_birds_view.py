@@ -200,14 +200,22 @@ def main():
                     recognize_results, search_results = faceme_wrapper.process_image(subimage)
                     summary = faceme_wrapper.bbox_and_name(recognize_results, search_results)
                     print(f"{summary=}")
+
+                    name_to_view = id2person_name.get(object.id, "unknown")
                     if len(summary) > 0:
                         _, (p1, p2), person_name = summary[0]
-                        if object.id not in id2person_name:
+                        if object.id not in id2person_name or (person_name.lower() not in ("visitor", "")):
                             id2person_name[object.id] = person_name
+                        if person_name not in ("visitor", ""):
+                            name_to_view = person_name
+
                         p1 = (p1[0] + xl, p1[1] + yu)
                         p2 = (p2[0] + xl, p2[1] + yu)
                         cv2.rectangle(image_left_ocv, p1, p2, (0, 255, 0), thickness=3)
-                        image_left_ocv = faceme_wrapper.putText_utf(image_left_ocv, unicode_text=person_name, org=p1, font_size=36, color=(255, 0, 0))
+                        image_left_ocv = faceme_wrapper.putText_utf(image_left_ocv, unicode_text=name_to_view, org=p1, font_size=36, color=(255, 0, 0))
+                    else:
+                        image_left_ocv = faceme_wrapper.putText_utf(image_left_ocv, unicode_text=name_to_view, org=(xl, yu), font_size=36, color=(255, 0, 0))
+
                 print(f"{id2person_name=}")
             if not opt.disable_gui:
                 zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA, sl.MEM.CPU, pc_resolution)
