@@ -190,7 +190,8 @@ def main():
                     bbox = util.bbox_to_xyxy(object.bounding_box_2d)
                     print(f"{bbox=}")
                     (xl, yu), (xr, yd) = bbox
-                    subimage = image_render_left[yu:yd, xl:xr, :]
+                    subimage = image_render_left[yu:yd, xl:xr, :].copy()
+                    cv2.imwrite("subimage.jpg", subimage)
                     recognize_results, search_results = faceme_wrapper.process_image(subimage)
                     summary = faceme_wrapper.bbox_and_name(recognize_results, search_results)
                     print(f"{summary=}")
