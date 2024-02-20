@@ -191,7 +191,6 @@ def main():
                     print(f"{bbox=}")
                     (xl, yu), (xr, yd) = bbox
                     subimage = image_render_left[yu:yd, xl:xr, :].copy()
-                    cv2.imwrite("subimage.jpg", subimage)
                     recognize_results, search_results = faceme_wrapper.process_image(subimage)
                     summary = faceme_wrapper.bbox_and_name(recognize_results, search_results)
                     print(f"{summary=}")
@@ -203,7 +202,7 @@ def main():
                 zed.retrieve_image(image_left, sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
                 image_render_left = image_left.get_data()
                 np.copyto(image_left_ocv,image_render_left)  # dst, src
-                if use_faceme:
+                if 0 and use_faceme:
                     # waragai: Here we have image_left
                     # bbox を包含するPersonのbboxが一つならば、対応付けは簡単。
                     cvimage = image_left.get_data()
