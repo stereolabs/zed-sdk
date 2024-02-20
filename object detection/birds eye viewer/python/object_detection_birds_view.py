@@ -222,6 +222,7 @@ def main():
                     image_left_ocv = faceme_wrapper.draw_recognized(image_left_ocv, recognize_results, search_results)
 
                 track_view_generator.generate_view(objects, image_left_ocv,image_scale ,cam_w_pose, image_track_ocv, objects.is_tracked)
+                # left part: , right part :
                 global_image = cv2.hconcat([image_left_ocv,image_track_ocv])
                 viewer.updateData(point_cloud, objects)
                 
