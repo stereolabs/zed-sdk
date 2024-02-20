@@ -208,7 +208,7 @@ def main():
             if not opt.disable_gui:
                 
                 zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA, sl.MEM.CPU, pc_resolution)
-                zed.get_position(cam_w_pose, sl.REFERENCE_FRAME.WORLD)
+                zed.get_position(cam_w_pose, sl.REFERENCE_FRAME.WORLD)  # cam_w_pos: camera world position
                 zed.retrieve_image(image_left, sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
                 image_render_left = image_left.get_data()
                 np.copyto(image_left_ocv,image_render_left)  # dst, src
@@ -222,7 +222,7 @@ def main():
                     image_left_ocv = faceme_wrapper.draw_recognized(image_left_ocv, recognize_results, search_results)
 
                 track_view_generator.generate_view(objects, image_left_ocv,image_scale ,cam_w_pose, image_track_ocv, objects.is_tracked)
-                # left part: , right part :
+                # left part: 左カメラ画像 , right part :　top view のtracking　画像
                 global_image = cv2.hconcat([image_left_ocv,image_track_ocv])
                 viewer.updateData(point_cloud, objects)
                 
