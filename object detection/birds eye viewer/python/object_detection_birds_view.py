@@ -174,6 +174,8 @@ def main():
 
             # waragai
             print("------")
+            zed.retrieve_image(image_left, sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
+            image_render_left = image_left.get_data()
             for object in objects.object_list:
                 # print(f"{inspect.getmembers(object)=}")
                 for key, val in inspect.getmembers(object):
@@ -183,7 +185,14 @@ def main():
                 print(f"{object.bounding_box_2d=}")
                 print(f"{object.label=}")
                 print(f"{object.confidence=}")
-
+                import util
+                bbox = util.bbox_to_xyxy(object.bounding_box_2d)
+                print(f"{bbox=}")
+                (xl, yu), (xr, yd) = bbox
+                subimage = image_render_left[yu:yd, xl:xr, :]
+                recognize_results, search_results = faceme_wrapper.process_image(subimage)
+                summary = faceme_wrapper.bbox_and_name(recognize_results, search_results)
+                print(summary)
 
             if not opt.disable_gui:
                 
