@@ -4,7 +4,13 @@ FaceMe SDK is developed by Cyberlink.
 
 Documentation for  FaceMe will be placed in ~/FaceMeSDK/Documents.
 
+FaceMe SDK - Python API Document.pdf
+
+Coding Policy:
+- Keep It Simple Stupid.
+
 """
+
 import os
 import json
 from pathlib import Path
@@ -18,7 +24,7 @@ from FaceMe.FaceMeSDK import FaceMeSDK, FR_FAILED, FR_SUCC
 
 
 REPO_ROOT = Path(__file__).resolve().parent
-LICENSE_FILE = REPO_ROOT / ".LICENSE_KEY"
+LICENSE_FILE = REPO_ROOT / ".LICENSE_KEY"  # Jetson, Ubuntu(X86) の場合で値が異なります。
 LICENSE_KEY = LICENSE_FILE.open("rt").read().strip()
 
 def initialize_SDK():
@@ -27,7 +33,9 @@ def initialize_SDK():
     app_bundle_path = os.path.dirname(os.path.realpath(__file__))
     app_cache_path = os.path.join(os.getenv('HOME'), ".cache")
     app_data_path = os.path.join(os.getenv('HOME'), ".local", "share")
-    options = {}
+    options = {
+        "minFaceWidthRatio": 0.05,
+    }
 
     ret = faceMe_sdk.initialize(LICENSE_KEY, app_bundle_path, app_cache_path, app_data_path, options)
     if FR_FAILED(ret):
@@ -90,7 +98,7 @@ def putText_utf(cvimg: np.ndarray, unicode_text: str, org: Tuple, font_size: int
     return out_cvimg
 
 
-def gen_output_dict(ret, similar_faces: List, recognized: Dict) -> Dict:
+def gen_output_dict(ret, similar_faces: List[Dict], recognized: Dict) -> Dict:
     if ret == FaceMe.FR_RETURN_NOT_FOUND or len(similar_faces) == 0:
         return {"Result": "Fail",
                       "Error Code": ret,
@@ -106,6 +114,14 @@ def gen_output_dict(ret, similar_faces: List, recognized: Dict) -> Dict:
                       "Similiar Face Info": similar_faces,
                       "boundingBox": recognized["boundingBox"]}
 def draw_recognized(out_cvimg, recognize_results, search_results, enable_print=False) -> np.ndarray:
+    """
+
+    :param out_cvimg: 書き込む対象のCvMatの画像
+    :param recognize_results: faceMe_sdk.recognize_faces(images)の戻り値
+    :param search_results: faceMe_sdk.search_similar_faces() の戻り値
+    :param enable_print: outputDictのデータをコンソールに出力するときにTrueを設定
+    :return: 書き込んだあとのout_cvimg
+    """
     for recognized, searched in zip(recognize_results, search_results):
         ret, similar_faces = searched
         outputDict = gen_output_dict(ret, similar_faces, recognized)
@@ -119,19 +135,51 @@ def draw_recognized(out_cvimg, recognize_results, search_results, enable_print=F
         out_cvimg = putText_utf(out_cvimg, unicode_text=person, org=(xl, yu), font_size=36, color=(255, 0, 0))
     return out_cvimg
 
-def bbox_and_name(recognize_results, search_results):
+def bbox_and_name(recognize_results: List, search_results: List) -> List:
+    """
+    :param recognize_results:
+    :param search_results:
+    :return: List of (imageIndex, bbox, name)
+    """
     r = []
     for recognized, searched in zip(recognize_results, search_results):
         ret, similar_faces = searched
         person = similar_faces[0]["name"] if similar_faces else "visitor"
         recognized["boundingBox"]
-        r.append((recognized["boundingBox"], person))
+        r.append((recognized["imageIndex"], recognized["boundingBox"], person))
     return r
 
 def process_image(img: np.ndarray) -> Tuple[Dict, Dict]:
-    ret, faceme_img = faceMe_sdk.convert_opencvMat_to_faceMe_image(img)
-    images = [faceme_img]
-    ret, recognize_results = faceMe_sdk.recognize_faces(images)
+    """
+    1枚のimg中のreco
+    :param img:
+    :return: faceMe_sdk.recognize_faces()の結果とfaceMe_sdk.search_similar_faces()の結果
+    """
+    return process_images([img])
+
+def convert_to_faceme_images(cvimgs: List[np.ndarray]) -> Tuple[List, List]:
+    """
+    cvimageのリストを faceme_image のリストに変換する。
+
+    :param cvimgs: List[np.ndarray]
+    :return:
+    """
+    faceme_images = []
+    rets = []
+    for cvimg in cvimgs:
+        ret, faceme_img = faceMe_sdk.convert_opencvMat_to_faceMe_image(cvimg)
+        faceme_images.append(faceme_img)
+        rets.append(ret)
+    return rets, faceme_images
+def process_images(cvimgs: List[np.ndarray]) -> Tuple[Dict, Dict]:
+    """
+    複数のcvimage に対して、recognize_faces()とsearch_similar_faces()を実行する。
+
+    :param cvimgs:
+    :return:
+    """
+    _, faceme_images = convert_to_faceme_images(cvimgs)
+    ret, recognize_results = faceMe_sdk.recognize_faces(faceme_images)
     if FR_FAILED(ret):
         outputDict = {"Result": "Fail",
                       "Error Code": ret,

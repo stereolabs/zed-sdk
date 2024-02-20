@@ -24,6 +24,8 @@
 """
 
 import sys
+import inspect
+
 import numpy as np
 import cv2
 import pyzed.sl as sl
@@ -147,13 +149,16 @@ def main():
         else :  # if using class filter, set confidence for each class
             for parameter in detection_parameters_rt.object_class_filter:
                 detection_parameters_rt.object_class_detection_confidence_threshold[parameter] = detection_confidence
-        
+
+        # waragai: ここで, objectsが取得される。
         returned_state = zed.retrieve_objects(objects, detection_parameters_rt)
+
         if returned_state == sl.ERROR_CODE.SUCCESS:
             if opt.enable_batching_reid:
+                # objectsにはobject_list というListがある。
                 for object in objects.object_list : 
                     id_counter[str(object.id)] = 1
-                        
+
                 #check if batched trajectories are available 
                 objects_batch = [] 
                 if zed.get_objects_batch(objects_batch) == sl.ERROR_CODE.SUCCESS:
@@ -166,6 +171,20 @@ def main():
                             print(it.id, end=" ")
                         print()
                         id_counter.clear()
+
+            # waragai
+            print("------")
+            for object in objects.object_list:
+                # print(f"{inspect.getmembers(object)=}")
+                for key, val in inspect.getmembers(object):
+                    if key[:2] != "__":
+                        print(key, val)
+                print(f"{object.bounding_box=}")
+                print(f"{object.bounding_box_2d=}")
+                print(f"{object.label=}")
+                print(f"{object.confidence=}")
+
+
             if not opt.disable_gui:
                 
                 zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA, sl.MEM.CPU, pc_resolution)
@@ -175,6 +194,7 @@ def main():
                 np.copyto(image_left_ocv,image_render_left)  # dst, src
                 if use_faceme:
                     # waragai: Here we have image_left
+                    # bbox を包含するPersonのbboxが一つならば、対応付けは簡単。
                     cvimage = image_left.get_data()
                     recognize_results, search_results = faceme_wrapper.process_image(cvimage)
                     summary = faceme_wrapper.bbox_and_name(recognize_results, search_results)
