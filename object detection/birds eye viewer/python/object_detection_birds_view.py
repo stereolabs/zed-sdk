@@ -202,7 +202,7 @@ def main():
                 zed.retrieve_image(image_left, sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
                 image_render_left = image_left.get_data()
                 np.copyto(image_left_ocv,image_render_left)  # dst, src
-                if 0 and use_faceme:
+                if use_faceme:
                     # waragai: Here we have image_left
                     # bbox を包含するPersonのbboxが一つならば、対応付けは簡単。
                     cvimage = image_left.get_data()
