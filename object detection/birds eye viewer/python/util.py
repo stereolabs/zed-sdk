@@ -1,4 +1,14 @@
 def bbox_to_xyxy(bounding_box_2d, as_int=True):
+    """
+    4点の座標から、左上、右下の座標に変換する。
+
+    Args:
+        bounding_box_2d: ４点の座標
+        as_int: Trueのとき、int型で返す。
+
+    Returns:　左上、右下の座標
+
+    """
     xlist = [x for x, _ in bounding_box_2d]
     ylist = [y for _, y in bounding_box_2d]
     xmin = min(xlist)
