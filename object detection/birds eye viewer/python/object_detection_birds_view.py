@@ -186,7 +186,7 @@ def main():
                 print(f"{object.label=}")
                 print(f"{object.confidence=}")
                 import util
-                if object.label == "Person":
+                if 1 or object.label == "Person":
                     bbox = util.bbox_to_xyxy(object.bounding_box_2d)
                     print(f"{bbox=}")
                     (xl, yu), (xr, yd) = bbox
