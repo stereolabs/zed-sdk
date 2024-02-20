@@ -103,6 +103,8 @@ def main():
     if use_faceme:
         import faceme_wrapper
 
+    id2person_name = {}
+
     quit_bool = False
     if not opt.disable_gui:
         
@@ -177,17 +179,18 @@ def main():
             zed.retrieve_image(image_left, sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
             image_render_left = image_left.get_data()
             for object in objects.object_list:
-                # print(f"{inspect.getmembers(object)=}")
+                print("key, val start")
                 for key, val in inspect.getmembers(object):
                     if key[:2] != "__":
                         print(key, val)
+                print("key, val end")
                 print(f"{object.bounding_box=}")
                 print(f"{object.bounding_box_2d=}")
                 print(f"{object.label=}")
                 print(f"{type(object.label)=}")
                 print(f"{object.confidence=}")
                 import util
-                if str(object.label) == "Person":
+                if str(object.label) == "Person":  # 本当はEnum型
                     bbox = util.bbox_to_xyxy(object.bounding_box_2d)
                     print(f"{bbox=}")
                     (xl, yu), (xr, yd) = bbox
@@ -195,7 +198,13 @@ def main():
                     recognize_results, search_results = faceme_wrapper.process_image(subimage)
                     summary = faceme_wrapper.bbox_and_name(recognize_results, search_results)
                     print(f"{summary=}")
-
+                    if len(summary) > 0:
+                        id2person_name[object.id] = summary[0][2]
+                        p1, p2 = summary[0][1]
+                        p1 = (p1[0] + xl, p1[1] + yu)
+                        p2 = (p2[0] + xl, p2[1] + yu)
+                        # 描画する
+                print(f"{id2person_name=}")
             if not opt.disable_gui:
                 
                 zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA, sl.MEM.CPU, pc_resolution)
