@@ -95,6 +95,18 @@ class TrackingViewer:
             self.drawPosition(objects, tracking_view, current_camera_pose)
 
     def render_2D(self, left_display, img_scale, objects, render_mask, isTrackingON):
+        """
+        left_display に検出・追跡の状況を追記する。
+        Args:
+            left_display:
+            img_scale:
+            objects:
+            render_mask:
+            isTrackingON:
+
+        Returns:
+
+        """
         overlay = left_display.copy()
         line_thickness = 2
         
@@ -124,7 +136,7 @@ class TrackingViewer:
                 cv2.putText(left_display, "ID " + str(obj.id), (int(position_image[0]) - 20, int(position_image[1]) - 30),
                             cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.5, (255, 255, 255, 255), 1)
                 if math.isfinite(obj.position[2]):
-                    text = "{:.1f}M".format(abs(obj.position[2] / 1000.0))
+                    text = "{:.2f}M".format(abs(obj.position[2]))
                     cv2.putText(left_display, text, (int(position_image[0]) - 20, int(position_image[1])),
                                 cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.5, (255, 255, 255, 255), 1)
         cv2.addWeighted(left_display, 0.7, overlay, 0.3, 0.0, left_display)

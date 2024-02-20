@@ -103,6 +103,8 @@ def main():
     if use_faceme:
         import faceme_wrapper
 
+    id2person_name = {}
+
     quit_bool = False
     if not opt.disable_gui:
         
@@ -174,25 +176,43 @@ def main():
 
             # waragai
             print("------")
+            zed.retrieve_image(image_left, sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
+            image_render_left = image_left.get_data()
             for object in objects.object_list:
-                # print(f"{inspect.getmembers(object)=}")
+                print("key, val start")
                 for key, val in inspect.getmembers(object):
                     if key[:2] != "__":
                         print(key, val)
+                print("key, val end")
                 print(f"{object.bounding_box=}")
                 print(f"{object.bounding_box_2d=}")
                 print(f"{object.label=}")
+                print(f"{type(object.label)=}")
                 print(f"{object.confidence=}")
-
-
+                import util
+                if str(object.label) == "Person":  # 本当はEnum型
+                    bbox = util.bbox_to_xyxy(object.bounding_box_2d)
+                    print(f"{bbox=}")
+                    (xl, yu), (xr, yd) = bbox
+                    subimage = image_render_left[yu:yd, xl:xr, :].copy()
+                    recognize_results, search_results = faceme_wrapper.process_image(subimage)
+                    summary = faceme_wrapper.bbox_and_name(recognize_results, search_results)
+                    print(f"{summary=}")
+                    if len(summary) > 0:
+                        id2person_name[object.id] = summary[0][2]
+                        p1, p2 = summary[0][1]
+                        p1 = (p1[0] + xl, p1[1] + yu)
+                        p2 = (p2[0] + xl, p2[1] + yu)
+                        # 描画する
+                print(f"{id2person_name=}")
             if not opt.disable_gui:
                 
                 zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA, sl.MEM.CPU, pc_resolution)
-                zed.get_position(cam_w_pose, sl.REFERENCE_FRAME.WORLD)
+                zed.get_position(cam_w_pose, sl.REFERENCE_FRAME.WORLD)  # cam_w_pos: camera world position
                 zed.retrieve_image(image_left, sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
                 image_render_left = image_left.get_data()
                 np.copyto(image_left_ocv,image_render_left)  # dst, src
-                if use_faceme:
+                if 0 and use_faceme:
                     # waragai: Here we have image_left
                     # bbox を包含するPersonのbboxが一つならば、対応付けは簡単。
                     cvimage = image_left.get_data()
@@ -202,6 +222,7 @@ def main():
                     image_left_ocv = faceme_wrapper.draw_recognized(image_left_ocv, recognize_results, search_results)
 
                 track_view_generator.generate_view(objects, image_left_ocv,image_scale ,cam_w_pose, image_track_ocv, objects.is_tracked)
+                # left part: 左カメラ画像 , right part :　top view のtracking　画像
                 global_image = cv2.hconcat([image_left_ocv,image_track_ocv])
                 viewer.updateData(point_cloud, objects)
                 
