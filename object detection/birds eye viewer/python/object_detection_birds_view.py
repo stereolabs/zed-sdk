@@ -193,7 +193,7 @@ def main():
                     subimage = image_render_left[yu:yd, xl:xr, :]
                     recognize_results, search_results = faceme_wrapper.process_image(subimage)
                     summary = faceme_wrapper.bbox_and_name(recognize_results, search_results)
-                    print(summary)
+                    print(f"{summary=}")
 
             if not opt.disable_gui:
                 
