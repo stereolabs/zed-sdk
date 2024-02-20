@@ -131,14 +131,17 @@ class TrackingViewer:
                 else:
                     overlay[roi[0][1]:roi[1][1], roi[0][0]:roi[1][0]] = base_color
                 position_image = getImagePosition(obj.bounding_box_2d, img_scale)
-                cv2.putText(left_display, str(obj.label), (int(position_image[0]) - 20, int(position_image[1]) - 12),
-                            cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.5, (255, 255, 255, 255), 1)
-                cv2.putText(left_display, "ID " + str(obj.id), (int(position_image[0]) - 20, int(position_image[1]) - 30),
-                            cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.5, (255, 255, 255, 255), 1)
+                color_green = (0, 255, 0, 255)
+                color_red = (0, 0, 255, 255)
+                width = 2
+                cv2.putText(left_display, str(obj.label), (int(position_image[0]) - 20, int(position_image[1]) - 18),
+                            cv2.FONT_HERSHEY_COMPLEX_SMALL, 1.0, color_green, width)
+                cv2.putText(left_display, "ID " + str(obj.id), (int(position_image[0]) - 20, int(position_image[1]) - 45),
+                            cv2.FONT_HERSHEY_COMPLEX_SMALL, 1.0, color_green, width)
                 if math.isfinite(obj.position[2]):
                     text = "{:.2f}M".format(abs(obj.position[2]))
                     cv2.putText(left_display, text, (int(position_image[0]) - 20, int(position_image[1])),
-                                cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.5, (255, 255, 255, 255), 1)
+                                cv2.FONT_HERSHEY_COMPLEX_SMALL, 1.0, color_red, width)
         cv2.addWeighted(left_display, 0.7, overlay, 0.3, 0.0, left_display)
         
         
