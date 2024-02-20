@@ -1,4 +1,4 @@
-def bbox_to_xyxy(bounding_box_2d):
+def bbox_to_xyxy(bounding_box_2d, as_int=True):
     xlist = [x for x, _ in bounding_box_2d]
     ylist = [y for _, y in bounding_box_2d]
     xmin = min(xlist)
@@ -6,6 +6,9 @@ def bbox_to_xyxy(bounding_box_2d):
 
     ymin = min(ylist)
     ymax = max(ylist)
+
+    if as_int:
+        xmin, xmax, ymin, ymax = int(xmin), int(xmax), int(ymin), int(ymax)
 
     return ((xmin, ymin), (xmax, ymax))
 
