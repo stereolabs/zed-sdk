@@ -189,6 +189,7 @@ def main():
                 bbox = util.bbox_to_xyxy(object.bounding_box_2d)
                 print(f"{bbox=}")
                 (xl, yu), (xr, yd) = bbox
+                print(f"{image_render_left=}")
                 subimage = image_render_left[yu:yd, xl:xr, :]
                 recognize_results, search_results = faceme_wrapper.process_image(subimage)
                 summary = faceme_wrapper.bbox_and_name(recognize_results, search_results)
