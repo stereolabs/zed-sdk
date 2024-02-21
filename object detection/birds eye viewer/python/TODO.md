@@ -2,8 +2,10 @@
 - 人検出枠だけを候補領域として顔検索する。
   - 利点：遠方に見える人物の顔を検出・照合できる。
   - 人検出枠と顔との対応関係が少しばかり改善する。
+- 身長の概略を算出する機能を追加した。 
 ### 実装済み
-  - bounding_box_2d の4点からxmin, xmax, ymin, ymaxを取得する関数。
+- bounding_box_2d の4点からxmin, xmax, ymin, ymaxを取得する関数。
+- bounding_box_3d の8点からxmin, xmax, ymin, ymax, zmin, zmaxを取得する関数。
 
 # TODO
 ## 案

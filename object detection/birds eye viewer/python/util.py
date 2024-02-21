@@ -22,6 +22,35 @@ def bbox_to_xyxy(bounding_box_2d, as_int=True):
 
     return ((xmin, ymin), (xmax, ymax))
 
+def bbox_to_xyzxyz(bounding_box_3d, as_int=False):
+    """
+    4点の座標から、左上、右下の座標に変換する。
+
+    Args:
+        bounding_box_2d: ４点の座標
+        as_int: Trueのとき、int型で返す。
+
+    Returns:　左上、右下の座標
+
+    """
+    xlist = [x for x, _, _ in bounding_box_3d]
+    ylist = [y for _, y, _ in bounding_box_3d]
+    zlist = [z for _, _, z in bounding_box_3d]
+    xmin = min(xlist)
+    xmax = max(xlist)
+
+    ymin = min(ylist)
+    ymax = max(ylist)
+
+    zmin = min(zlist)
+    zmax = max(zlist)
+
+    if as_int:
+        xmin, xmax, ymin, ymax, zmin, zmax = int(xmin), int(xmax), int(ymin), int(ymax), int(zmin), int(zmax)
+
+    return ((xmin, ymin, zmin), (xmax, ymax, zmax))
+
+
 if __name__ == "__main__":
     bounding_box_2d = [[ 553.,  232.],
                        [1275., 232.],
@@ -40,3 +69,6 @@ if __name__ == "__main__":
                     [0.6569318, -0.46021688, -1.0060775],
                     [0.64953876, -0.31534344, -0.15461853]
                   ]
+
+    box = bbox_to_xyzxyz(bounding_box, as_int=False)
+    print(box)

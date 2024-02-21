@@ -41,7 +41,7 @@ is_jetson = False
 
 use_faceme = True
 
-SHOW_OBJECT = False
+SHOW_OBJECT = True
 
 if platform.uname().machine.startswith('aarch64'):
     is_jetson = True
@@ -215,6 +215,14 @@ def main():
                     print(f"{object.bounding_box_2d=}")
                     print(f"{object.label=}")
                     print(f"{object.confidence=}")
+                    box3d = util.bbox_to_xyzxyz(object.bounding_box)
+                    print(f"{box3d=}")
+                    (xmin, ymin, zmin), (xmax, ymax, zmax) = box3d
+                    # 床の高さがきちんと算出されているかどうかで、yのsizeは影響を受ける。
+                    print(f"{xmax - xmin:.2f}")  # right  left +: 画像上を右にあるとき
+                    print(f"{ymax - ymin:.2f}")  # height +: upper
+                    print(f"{zmax - zmin:.2f}")  # カメラから遠くなるほど、−の値が大きくなる。
+
                 if use_faceme:
                     if object.label == sl.OBJECT_CLASS.PERSON:
                         bbox = util.bbox_to_xyxy(object.bounding_box_2d)
