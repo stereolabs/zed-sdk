@@ -36,6 +36,8 @@ def bbox_to_xyzxyz(bounding_box_3d, as_int=False):
     xlist = [x for x, _, _ in bounding_box_3d]
     ylist = [y for _, y, _ in bounding_box_3d]
     zlist = [z for _, _, z in bounding_box_3d]
+    if not (len(xlist) == 8 and len(ylist) == 8 and len(zlist) == 8):
+        return None
     xmin = min(xlist)
     xmax = max(xlist)
 
