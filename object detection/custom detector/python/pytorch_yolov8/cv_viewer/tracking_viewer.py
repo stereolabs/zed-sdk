@@ -6,6 +6,7 @@ import pyzed.sl as sl
 import math
 from collections import deque
 
+import inspect
 
 # ----------------------------------------------------------------------
 #       2D LEFT VIEW
@@ -34,6 +35,8 @@ def render_2D(left_display, img_scale, objects, is_tracking_on):
 
     line_thickness = 2
     for obj in objects.object_list:
+        for k, v in inspect.getmembers(obj):
+            print(k, v)
         if render_object(obj, is_tracking_on):
             base_color = generate_color_id_u(obj.id)
             # Display image scaled 2D bounding box
