@@ -6,7 +6,7 @@ import pyzed.sl as sl
 import math
 from collections import deque
 
-import coconames
+from cv_viewer.coconames import to_coco_str
 
 import inspect
 
@@ -68,7 +68,7 @@ def render_2D(left_display, img_scale, objects, is_tracking_on):
             position_image = get_image_position(obj.bounding_box_2d, img_scale)
             text_position = (int(position_image[0] - 20), int(position_image[1] - 12))
             text = "class " + str(obj.raw_label)
-            text = "class " + coconames.to_coco_str(obj.raw_label)
+            text = f"class {obj.raw_label} " + to_coco_str(obj.raw_label)
             text_color = (255, 255, 255, 255)
             cv2.putText(left_display, text, text_position, cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.5, text_color, 1)
 
