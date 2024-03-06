@@ -53,8 +53,9 @@ def main():
     init_params = sl.InitParameters()
     init_params.coordinate_units = sl.UNIT.METER
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP  
-    init_params.depth_mode = sl.DEPTH_MODE.ULTRA
+    init_params.depth_mode = sl.DEPTH_MODE.NEURAL
     init_params.depth_maximum_distance = 10.0
+    init_params.depth_stabilization = 1
     parse_args(init_params)
     
     is_playback = len(opt.input_svo_file)>0 # Defines if an SVO is used
