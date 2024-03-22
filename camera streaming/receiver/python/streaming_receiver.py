@@ -56,7 +56,7 @@ def on_mouse(event,x,y,flags,param):
 def main():
     init_parameters = sl.InitParameters()
     init_parameters.depth_mode = sl.DEPTH_MODE.NONE
-    init_parameters.sdk_verbose = True
+    init_parameters.sdk_verbose = 1
     init_parameters.set_from_stream(opt.ip_address.split(':')[0],int(opt.ip_address.split(':')[1]))
     cam = sl.Camera()
     status = cam.open(init_parameters)
