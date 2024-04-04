@@ -1,6 +1,6 @@
 ﻿///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2023, STEREOLABS.
+// Copyright (c) 2024, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -85,6 +85,7 @@ namespace sl
 
             // Enable tracking
             PositionalTrackingParameters positionalTrackingParameters = new PositionalTrackingParameters();
+            positionalTrackingParameters.mode = POSITIONAL_TRACKING_MODE.GEN_1;
             err = zedCamera.EnablePositionalTracking(ref positionalTrackingParameters);
 
             if (err != ERROR_CODE.SUCCESS)

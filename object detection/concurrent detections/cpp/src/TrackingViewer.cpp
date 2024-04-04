@@ -31,7 +31,7 @@ void draw(std::vector<sl::uint2>& bb, sl::Mat& mask, float z, int id, sl::OBJECT
     // scaled ROI
     cv::Rect roi(top_left_corner, bottom_right_corner);
     // Use isInit() to check if mask is available
-    if (mask.isInit()) {
+    if (mask.isInit() && mask.getResolution().area() > 10 && roi.size().area() >0) {
         // Here, obj.mask is the object segmentation mask inside the object bbox, computed on the native resolution
         // The resize is needed to get the mask on the display resolution
         cv::Mat tmp_mask;

@@ -41,7 +41,6 @@ We will define the object detection parameters. Notice that the object tracking 
 # Define the Objects detection module parameters
 obj_param = sl.ObjectDetectionParameters()
 obj_param.enable_tracking=True
-obj_param.image_sync=True
 obj_param.enable_mask_output=True
 
 # Object tracking requires the positional tracking module
@@ -64,7 +63,7 @@ The object detection is now activated.
 
 ## Capture data
 
-The object confidence threshold can be adjusted at runtime to select only the revelant objects depending on the scene complexity. Since the parameters have been set to `image_sync`, for each `grab` call, the image will be fed into the AI module and will output the detections for each frames.
+The object confidence threshold can be adjusted at runtime to select only the revelant objects depending on the scene complexity. For each `grab` call, the image will be fed into the AI module and will output the detections for each frames.
 
 ```python
 # Detection Output

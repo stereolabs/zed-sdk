@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2023, STEREOLABS.
+// Copyright (c) 2024, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -33,22 +33,32 @@
 using namespace std;
 using namespace sl;
 
-void parseArgs(int argc, char **argv, sl::InitParameters& param);
+std::string parseArgs(int argc, char **argv, sl::InitParameters& param);
 
 int main(int argc, char **argv) {
     Camera zed;
     // Set configuration parameters for the ZED
     InitParameters init_parameters;
-    init_parameters.depth_mode = DEPTH_MODE::ULTRA;
+    init_parameters.depth_mode = DEPTH_MODE::NEURAL;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
     init_parameters.sdk_verbose = 1;
-    parseArgs(argc, argv, init_parameters);
+    auto mask_path = parseArgs(argc, argv, init_parameters);
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
     if (returned_state != ERROR_CODE::SUCCESS) {
         print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
+    }
+
+    // Load optional region of interest to exclude irrelevant area of the image
+    if(!mask_path.empty()) {
+        sl::Mat mask_roi;
+        auto err = mask_roi.read(mask_path.c_str());
+        if(err == sl::ERROR_CODE::SUCCESS)
+            zed.setRegionOfInterest(mask_roi, {MODULE::ALL});
+        else
+            std::cout << "Error loading Region of Interest file: " << err << std::endl;
     }
 
     auto camera_config = zed.getCameraInformation().camera_configuration;
@@ -69,7 +79,7 @@ int main(int argc, char **argv) {
 
     RuntimeParameters runParameters;
     // Setting the depth confidence parameters
-    runParameters.confidence_threshold = 50;
+    runParameters.confidence_threshold = 100;
     runParameters.texture_confidence_threshold = 100;
 
     // Allocation of 4 channels of float on GPU
@@ -103,7 +113,23 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 
-void parseArgs(int argc, char **argv, sl::InitParameters& param) {
+inline int findImageExtension(int argc, char **argv) {
+    int arg_idx=-1;
+    int arg_idx_search = 0;
+    if (argc > 2) arg_idx_search=2;
+    else if(argc > 1) arg_idx_search=1;
+
+    if(arg_idx_search > 0 && (string(argv[arg_idx_search]).find(".png") != string::npos || 
+        string(argv[arg_idx_search]).find(".jpg") != string::npos))
+        arg_idx = arg_idx_search;
+    return arg_idx;
+}
+
+
+std::string parseArgs(int argc, char **argv, sl::InitParameters& param) {
+    int mask_arg = findImageExtension(argc, argv);
+    std::string mask_path;
+
     if (argc > 1 && string(argv[1]).find(".svo") != string::npos) {
         // SVO input mode
         param.input.setFromSVOFile(argv[1]);
@@ -139,7 +165,12 @@ void parseArgs(int argc, char **argv, sl::InitParameters& param) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;
         }
-    } else {
-        // Default
+    } 
+    
+    if (mask_arg > 0) {
+        mask_path = string(argv[mask_arg]);
+        cout << "[Sample] Using Region of Interest from file : " << mask_path << endl;
     }
+
+    return mask_path;
 }

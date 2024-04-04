@@ -166,7 +166,7 @@ class GLViewer:
         self.previousMouseMotion = [0., 0.]
         self.mouseMotion = [0., 0.]
         self.pose = sl.Transform()
-        self.trackState = sl.POSITIONAL_TRACKING_STATE
+        self.trackState = None
         self.txtT = ""
         self.txtR = ""
 
@@ -400,51 +400,47 @@ class GLViewer:
         glUseProgram(0)
         
     def print_text(self):
-        glMatrixMode(GL_PROJECTION)
-        glPushMatrix()
-        glLoadIdentity()
-        w_wnd = glutGet(GLUT_WINDOW_WIDTH)
-        h_wnd = glutGet(GLUT_WINDOW_HEIGHT)
-        glOrtho(0, w_wnd, 0, h_wnd, -1., 1.)
+        if self.trackState is not None:
+            glMatrixMode(GL_PROJECTION)
+            glPushMatrix()
+            glLoadIdentity()
+            w_wnd = glutGet(GLUT_WINDOW_WIDTH)
+            h_wnd = glutGet(GLUT_WINDOW_HEIGHT)
+            glOrtho(0, w_wnd, 0, h_wnd, -1., 1.)
 
-        glMatrixMode(GL_MODELVIEW)
-        glPushMatrix()
-        glLoadIdentity()
+            glMatrixMode(GL_MODELVIEW)
+            glPushMatrix()
+            glLoadIdentity()
 
-        start_w = 20
-        start_h = h_wnd - 40
+            start_w = 20
+            start_h = h_wnd - 40
 
-        if(self.trackState == sl.POSITIONAL_TRACKING_STATE.OK):
             glColor3f(0.2, 0.65, 0.2)
-        else:
-            glColor3f(0.85, 0.2, 0.2)
+            glRasterPos2i(start_w, start_h)
+            safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18,  "POSITIONAL TRACKING STATUS: " + str(self.trackState.tracking_fusion_status))
 
-        glRasterPos2i(start_w, start_h)
+            dark_clr = 0.12
+            glColor3f(dark_clr, dark_clr, dark_clr)
+            glRasterPos2i(start_w, start_h - 40)
+            safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, "Translation (m) :")
 
-        safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18,  "POSITIONAL TRACKING : " + str(self.trackState))
+            glColor3f(0.4980, 0.5490, 0.5529)
+            glRasterPos2i(155, start_h - 40)
 
-        dark_clr = 0.12
-        glColor3f(dark_clr, dark_clr, dark_clr)
-        glRasterPos2i(start_w, start_h - 25)
-        safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, "Translation (m) :")
+            safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, self.txtT)
 
-        glColor3f(0.4980, 0.5490, 0.5529)
-        glRasterPos2i(155, start_h - 25)
+            glColor3f(dark_clr, dark_clr, dark_clr)
+            glRasterPos2i(start_w, start_h - 60)
+            safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, "Rotation   (rad) :")
 
-        safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, self.txtT)
+            glColor3f(0.4980, 0.5490, 0.5529)
+            glRasterPos2i(155, start_h - 60)
+            safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, self.txtR)
 
-        glColor3f(dark_clr, dark_clr, dark_clr)
-        glRasterPos2i(start_w, start_h - 50)
-        safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, "Rotation   (rad) :")
-
-        glColor3f(0.4980, 0.5490, 0.5529)
-        glRasterPos2i(155, start_h - 50)
-        safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, self.txtR)
-
-        glMatrixMode(GL_PROJECTION)
-        glPopMatrix()
-        glMatrixMode(GL_MODELVIEW)
-        glPopMatrix()
+            glMatrixMode(GL_PROJECTION)
+            glPopMatrix()
+            glMatrixMode(GL_MODELVIEW)
+            glPopMatrix()
 
 class CameraGL:
     def __init__(self):

@@ -19,7 +19,7 @@ void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suff
 
 
 
-GLchar* VERTEX_SHADER =
+const GLchar* VERTEX_SHADER =
 "#version 330 core\n"
 "layout(location = 0) in vec3 in_Vertex;\n"
 "layout(location = 1) in vec3 in_Color;\n"
@@ -30,7 +30,7 @@ GLchar* VERTEX_SHADER =
 "	gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
 "}";
 
-GLchar* FRAGMENT_SHADER =
+const GLchar* FRAGMENT_SHADER =
 "#version 330 core\n"
 "in vec3 b_color;\n"
 "layout(location = 0) out vec4 out_Color;\n"
@@ -273,7 +273,7 @@ void GLViewer::draw() {
     glUseProgram(0);
 }
 
-void GLViewer::updateData(sl::Transform zed_rt, std::string str_t, std::string str_r, sl::POSITIONAL_TRACKING_STATE state) {
+void GLViewer::updateData(sl::Transform zed_rt, std::string str_t, std::string str_r, sl::PositionalTrackingStatus state) {
     mtx.lock();
     vecPath.push_back(zed_rt.getTranslation());
     zedModel.setRT(zed_rt);
@@ -304,27 +304,33 @@ void GLViewer::printText() {
     int start_w = 20;
     int start_h = h_wnd - 40;
 
-    (trackState == sl::POSITIONAL_TRACKING_STATE::OK) ? glColor3f(0.2f, 0.65f, 0.2f) : glColor3f(0.85f, 0.2f, 0.2f);
-    glRasterPos2i(start_w, start_h);
-    std::string track_str = (str_tracking + sl::toString(trackState).c_str());
-    safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, track_str.c_str());
-
     float dark_clr = 0.12f;
+    std::string odom_status = "POSITIONAL TRACKING STATUS: ";
+    
     glColor3f(dark_clr, dark_clr, dark_clr);
-    glRasterPos2i(start_w, start_h - 25);
+    glRasterPos2i(start_w, start_h);
+    safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, odom_status.c_str());
+
+    (trackState.tracking_fusion_status != sl::POSITIONAL_TRACKING_FUSION_STATUS::UNAVAILABLE) ? glColor3f(0.2f, 0.65f, 0.2f) : glColor3f(0.85f, 0.2f, 0.2f);
+    std::string track_str = (sl::toString(trackState.tracking_fusion_status).c_str());
+    glRasterPos2i(start_w + 300, start_h);
+    safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, track_str.c_str());
+    
+    glColor3f(dark_clr, dark_clr, dark_clr);
+    glRasterPos2i(start_w, start_h - 20);
     safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, "Translation (m) :");
 
     glColor3f(0.4980f, 0.5490f, 0.5529f);
-    glRasterPos2i(155, start_h - 25);
+    glRasterPos2i(155, start_h - 20);
 
     safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, txtT.c_str());
 
     glColor3f(dark_clr, dark_clr, dark_clr);
-    glRasterPos2i(start_w, start_h - 50);
+    glRasterPos2i(start_w, start_h - 40);
     safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, "Rotation   (rad) :");
 
     glColor3f(0.4980f, 0.5490f, 0.5529f);
-    glRasterPos2i(155, start_h - 50);
+    glRasterPos2i(155, start_h - 40);
     safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, txtR.c_str());
 
     glMatrixMode(GL_PROJECTION);
@@ -531,7 +537,7 @@ Transform Simple3DObject::getModelMatrix() const {
     return tmp;
 }
 
-Shader::Shader(GLchar* vs, GLchar* fs) {
+Shader::Shader(const GLchar* vs, const GLchar* fs) {
     if (!compile(verterxId_, GL_VERTEX_SHADER, vs)) {
         std::cout << "ERROR: while compiling vertex shader" << std::endl;
     }
@@ -579,7 +585,7 @@ GLuint Shader::getProgramId() {
     return programId_;
 }
 
-bool Shader::compile(GLuint &shaderId, GLenum type, GLchar* src) {
+bool Shader::compile(GLuint &shaderId, GLenum type, const GLchar* src) {
     shaderId = glCreateShader(type);
     if (shaderId == 0) {
         std::cout << "ERROR: shader type (" << type << ") does not exist" << std::endl;

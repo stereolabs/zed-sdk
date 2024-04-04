@@ -44,7 +44,6 @@ body_params = sl.BodyTrackingParameters()
 # Different model can be chosen, optimizing the runtime or the accuracy
 body_params.detection_model = sl.BODY_TRACKING_MODEL.HUMAN_BODY_FAST
 body_params.enable_tracking = True
-body_params.image_sync = True
 body_params.enable_segmentation = False
 # Optimize the person joints position, requires more computations
 body_params.enable_body_fitting = True
@@ -71,7 +70,7 @@ The object detection is now activated.
 
 ## Capture data
 
-The object confidence threshold can be adjusted at runtime to select only the revelant skeletons depending on the scene complexity. Since the parameters have been set to `image_sync`, for each `grab` call, the image will be fed into the AI module and will output the detections for each frames.
+The object confidence threshold can be adjusted at runtime to select only the revelant skeletons depending on the scene complexity. For each `grab` call, the image will be fed into the AI module and will output the detections for each frames.
 
 ```python
 bodies = sl.Bodies()

@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2023, STEREOLABS.
+// Copyright (c) 2024, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -155,8 +155,6 @@ int main(int argc, char **argv) {
 
     requested_low_res_w = min(720, (int)camera_config.resolution.width);
     Resolution pc_resolution(requested_low_res_w, requested_low_res_w / image_aspect_ratio);
-
-    std::cout << "Res " << display_resolution.width << " " << display_resolution.height << " " << pc_resolution.width << " " << pc_resolution.height << std::endl;
 
     auto camera_parameters = zed.getCameraInformation(pc_resolution).camera_configuration.calibration_parameters.left_cam;
     Mat point_cloud(pc_resolution, MAT_TYPE::F32_C4, MEM::GPU);

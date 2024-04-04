@@ -27,7 +27,7 @@ def main():
 
     # Create a InitParameters object and set configuration parameters
     init_params = sl.InitParameters()
-    init_params.sdk_verbose = False
+    init_params.sdk_verbose = 0
 
     # Open the camera
     err = zed.open(init_params)

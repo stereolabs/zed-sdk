@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2023, STEREOLABS.
+// Copyright (c) 2024, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -41,25 +41,49 @@ using namespace sl;
 void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix);
 void parseArgs(int argc, char **argv, InitParameters& param);
 
-#define SELECT_RECT 1
+struct ROIdata
+{
+    const int radius = 50;
+    cv::Point2i last_pt;
+    cv::Mat mask, seeds, image;
+    bool selectInProgress_frgrnd = false;
+    bool selectInProgress_backgrnd = false;
+    bool isInit = false;
+    cv::Mat im_bgr, frgrnd, bckgrnd;
 
-#if SELECT_RECT
+    void init(sl::Resolution resolution){
+        mask = cv::Mat(resolution.height, resolution.width, CV_8UC1);
+        mask.setTo(0);
+        seeds = cv::Mat(resolution.height, resolution.width, CV_8UC1);
+        seeds.setTo(cv::GrabCutClasses::GC_PR_BGD);
+        image = cv::Mat(resolution.height, resolution.width, CV_8UC4);
+        image.setTo(127);
+        isInit = false;
+        frgrnd.release();
+        bckgrnd.release();
+    }
 
-struct ROIdata {
-    // Current ROI, 0: means discard, other value will keep the pixel
-    cv::Mat ROI;
-    cv::Rect selection_rect;
-    cv::Point origin_rect;
-    bool selectInProgress = false;
-    bool selection = false;
+    void set(bool background, cv::Point current_pt){
+        cv::line(seeds, current_pt, last_pt, cv::Scalar(background ? cv::GrabCutClasses::GC_BGD: cv::GrabCutClasses::GC_PR_FGD), radius);
+        cv::line(image, current_pt, last_pt, cv::Scalar(background ? cv::Scalar::all(0) : cv::Scalar::all(255)), radius);
+        last_pt = current_pt;
+    }
 
-    void reset(bool full = true) {
-        selectInProgress = false;
-        selection_rect = cv::Rect(0, 0, 0, 0);
-        if (full) {
-            ROI.setTo(0);
-            selection = false;
-        }
+    void updateImage(cv::Mat &im){
+        cv::addWeighted(image, 0.5, im, 0.5, 0, im);
+    }
+
+    void compute(cv::Mat &cvImage){
+        cv::cvtColor(cvImage, im_bgr, cv::COLOR_BGRA2BGR);
+        cv::Mat seeds_cpy;
+        seeds.copyTo(seeds_cpy);
+        cv::grabCut(im_bgr, seeds_cpy, cv::Rect(0,0,im_bgr.cols, im_bgr.rows), frgrnd, bckgrnd, 1,isInit ? cv::GrabCutModes::GC_EVAL : cv::GrabCutModes::GC_INIT_WITH_MASK);
+
+        mask.setTo(255);
+        mask.setTo(0, seeds_cpy & 1);
+        cv::erode(mask, mask,cv::Mat(5,5,CV_8UC1));
+
+        isInit = true;
     }
 };
 
@@ -68,75 +92,38 @@ static void onMouse(int event, int x, int y, int, void* data) {
     switch (event) {
         case cv::EVENT_LBUTTONDOWN:
         {
-            pdata->origin_rect = cv::Point(x, y);
-            pdata->selectInProgress = true;
+            pdata->last_pt = cv::Point(x, y); 
+            pdata->selectInProgress_frgrnd = true;
             break;
         }
         case cv::EVENT_LBUTTONUP:
         {
-            pdata->selectInProgress = false;
-            // set ROI to valid for the given rectangle
-            cv::rectangle(pdata->ROI, pdata->selection_rect, cv::Scalar(250), -1);
-            pdata->selection = true;
+            pdata->selectInProgress_frgrnd = false;            
             break;
         }
+
         case cv::EVENT_RBUTTONDOWN:
         {
-            pdata->reset(false);
+            pdata->last_pt = cv::Point(x, y); 
+            pdata->selectInProgress_backgrnd = true;
             break;
         }
-    }
-
-    if (pdata->selectInProgress) {
-        pdata->selection_rect.x = MIN(x, pdata->origin_rect.x);
-        pdata->selection_rect.y = MIN(y, pdata->origin_rect.y);
-        pdata->selection_rect.width = abs(x - pdata->origin_rect.x) + 1;
-        pdata->selection_rect.height = abs(y - pdata->origin_rect.y) + 1;
-    }
-}
-#else
-
-struct ROIdata {
-    // Current ROI, 0: means discard, other value will keep the pixel
-    cv::Mat ROI;
-    std::vector<std::vector<cv::Point>> polygons;
-    std::vector<cv::Point> current_select;
-    bool selection = false;
-    bool selectInProgress = false;
-
-    void reset() {
-        polygons.clear();
-        ROI.setTo(0);
-        selection = true;
-        selectInProgress = false;
-    }
-};
-
-static void onMouse(int event, int x, int y, int, void* data) {
-    auto pdata = reinterpret_cast<ROIdata*> (data);
-    switch (event) {
-    case cv::EVENT_LBUTTONDOWN :
-        pdata->selectInProgress = true;
-        break;
-    case cv::EVENT_MOUSEMOVE:
-        if (pdata->selectInProgress)
-            pdata->current_select.push_back(cv::Point(x, y));
-        break;
-    case cv::EVENT_LBUTTONUP:
-        if (pdata->current_select.size() > 2) {
-            pdata->polygons.push_back(pdata->current_select);
-            pdata->current_select.clear();
+        case cv::EVENT_RBUTTONUP:
+        {
+            pdata->selectInProgress_backgrnd = false;            
+            break;
         }
-        pdata->selectInProgress = false;
-        break;
-    case cv::EVENT_RBUTTONDOWN:    
-        pdata->reset();
-        break;    
+
+        case cv::EVENT_MOUSEMOVE:
+        {
+            if(pdata->selectInProgress_backgrnd)
+                pdata->set(true, cv::Point(x, y));
+            
+            if(pdata->selectInProgress_frgrnd)
+                pdata->set(false, cv::Point(x, y));
+        }
     }
 }
-#endif
-
-void applyMask(cv::Mat& cvImage, ROIdata& data);
 
 int main(int argc, char **argv) {
 
@@ -144,7 +131,7 @@ int main(int argc, char **argv) {
     Camera zed;
 
     InitParameters init_parameters;
-    init_parameters.camera_resolution = RESOLUTION::AUTO;
+    init_parameters.depth_mode = sl::DEPTH_MODE::NEURAL;
     parseArgs(argc, argv, init_parameters);
 
     // Open the camera
@@ -161,27 +148,23 @@ int main(int argc, char **argv) {
     cv::namedWindow(ROIWndName, cv::WINDOW_NORMAL);
     cv::namedWindow(depthWndName, cv::WINDOW_NORMAL);
 
-#if SELECT_RECT
-    std::cout << "Draw some rectangles on the left image with a left click\n";
-#else
-    std::cout << "Draw some shapes on the left image with a left click\n";
-#endif
-    std::cout << "Press 'a' to apply the ROI\n"
+    std::cout << 
+        "Press LeftButton (and keep it pressed) to select foreground seeds\n"
+        "Press LeftRight (and keep it pressed) to select background seeds\n"
+        "Press 'a' to apply the ROI\n"
         "Press 'r' to reset the ROI\n"
         "Press 's' to save the ROI as image file to reload it later\n"
-        "Press 'l' to load the ROI from an image file" << std::endl;
+        << std::endl;
 
     auto resolution = zed.getCameraInformation().camera_configuration.resolution;
     // Create a Mat to store images
     Mat zed_image(resolution, MAT_TYPE::U8_C4);
     cv::Mat cvImage(resolution.height, resolution.width, CV_8UC4, zed_image.getPtr<sl::uchar1>(MEM::CPU));
-
     Mat zed_depth_image(resolution, MAT_TYPE::U8_C4);
     cv::Mat cvDepthImage(resolution.height, resolution.width, CV_8UC4, zed_depth_image.getPtr<sl::uchar1>(MEM::CPU));
 
     ROIdata roi_data;
-    roi_data.ROI = cv::Mat(resolution.height, resolution.width, CV_8UC1);
-    roi_data.reset();
+    roi_data.init(resolution);
 
     // set Mouse Callback to handle User inputs
     cv::setMouseCallback(imWndName, onMouse, &roi_data);
@@ -198,39 +181,32 @@ int main(int argc, char **argv) {
             zed.retrieveImage(zed_image, VIEW::LEFT);
             zed.retrieveImage(zed_depth_image, VIEW::DEPTH);
 
-            // Draw rectangle on the image
-            if (roi_data.selection)
-                applyMask(cvImage, roi_data);
+            roi_data.updateImage(cvImage);
 
             cv::imshow(imWndName, cvImage);
             //Display the image and the current global ROI
             cv::imshow(depthWndName, cvDepthImage);
-            cv::imshow(ROIWndName, roi_data.ROI);
+            cv::imshow(ROIWndName, roi_data.mask);
         }
 
-        key = cv::waitKey(15);
+        key = cv::waitKey(10);
 
         // Apply Current ROI
         if (key == 'a') {
-            Mat slROI(resolution, MAT_TYPE::U8_C1, roi_data.ROI.data, roi_data.ROI.step);
+            zed.retrieveImage(zed_image, VIEW::LEFT);
+            roi_data.compute(cvImage);
+            
+            Mat slROI(resolution, MAT_TYPE::U8_C1, roi_data.mask.data, roi_data.mask.step);
             zed.setRegionOfInterest(slROI);
         } else if (key == 'r') { //Reset ROI
             Mat emptyROI;
             zed.setRegionOfInterest(emptyROI);
             // clear user data
-            roi_data.reset();
         } else if (key == 's') {
             // Save the current Mask to be loaded in another app
-            cv::imwrite(mask_name, roi_data.ROI);
-        } else if (key == 'l') {
-            // Load the mask from a previously saved file
-            cv::Mat tmp = cv::imread(mask_name);
-            if (!tmp.empty()) {
-                roi_data.ROI = tmp;
-                Mat slROI(resolution, MAT_TYPE::U8_C1, roi_data.ROI.data, roi_data.ROI.step);
-                zed.setRegionOfInterest(slROI);
-            } else std::cout << mask_name << " could not be found" << std::endl;
-        }
+            cv::imwrite(mask_name, roi_data.mask);
+        }else if (key == 'r') 
+            roi_data.init(resolution);        
     }
 
     // Exit
@@ -293,88 +269,3 @@ void parseArgs(int argc, char **argv, InitParameters& param) {
         // Default
     }
 }
-
-
-#if SELECT_RECT
-void applyMask(cv::Mat& cvImage, ROIdata& data) {
-    auto res = cvImage.size();
-    const float darker = 0.8f; // make the image darker
-
-    for (int y = 0; y < res.height; y++) {
-        // line pointer
-        uchar * ptr_mask = (uchar *) ((data.ROI.data) + y * data.ROI.step);
-        sl::uchar4* ptr_image = (sl::uchar4*) (cvImage.data + y * cvImage.step);
-
-        for (int x = 0; x < res.width; x++) {
-            if (ptr_mask[x] == 0) {
-                auto &px = ptr_image[x];
-                // make the pixel darker without overflow
-                px.x = px.x * darker;
-                px.y = px.y * darker;
-                px.z = px.z * darker;
-            }
-        }
-    }
-
-    // DIsplay current selection
-    cv::rectangle(cvImage, data.selection_rect, cv::Scalar(255, 90, 0, 255), 3);
-}
-#else
-
-inline bool contains(std::vector<cv::Point>& poly, cv::Point2f test) {
-    int i, j;
-    bool c = false;
-    const int nvert = poly.size();
-    for (i = 0, j = nvert - 1; i < nvert; j = i++) {
-        if (((poly[i].y > test.y) != (poly[j].y > test.y)) &&
-            (test.x < (poly[j].x - poly[i].x) * (test.y - poly[i].y) / (poly[j].y - poly[i].y) + poly[i].x))
-            c = !c;
-    }
-    return c;
-}
-
-inline bool contains(std::vector<std::vector<cv::Point>>& polygons, cv::Point2f test) {
-    bool c = false;
-    for (auto& it : polygons) {
-        c = contains(it, test);
-        if (c) break;
-    }
-    return c;
-}
-
-void applyMask(cv::Mat& cvImage, ROIdata &data) {
-    // left_sl and mask must be at the same size
-    auto res = cvImage.size();
-    const float darker = 0.8f; // make the image darker
-    
-    // Convert P�lygons into real Mask
-#if 1 // manual check
-    for (int y = 0; y < res.height; y++) {
-        uchar* ptr_mask = (uchar*)((data.ROI.data) + y * data.ROI.step);
-        sl::uchar4* ptr_image = (sl::uchar4*)(cvImage.data+ y * cvImage.step);
-        for (int x = 0; x < res.width; x++) {
-            if (contains(data.polygons, cv::Point2f(x,y)))
-                ptr_mask[x] = 255;
-            else {
-                auto& px = ptr_image[x];
-                // make the pixel darker without overflow
-                px.x = px.x * darker;
-                px.y = px.y * darker;
-                px.z = px.z * darker;
-            }
-        }
-    }
-#else // same with open Function
-    cv::fillPoly(data.ROI, data.polygons, 255);
-#endif
-
-    // Display current selection
-    if (data.current_select.size() > 2) {
-        auto last = data.current_select.back();
-        for (auto& it : data.current_select) {
-            cv::line(cvImage, last, it, cv::Scalar(30, 130, 240), 1);
-            last = it;
-        }
-    }
-}
-#endif
