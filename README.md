@@ -32,7 +32,7 @@
 
 ---
 
-:tada: The **ZED SDK 4.0** is released! We support the [**ZED X**](https://www.stereolabs.com/zed-x/) and [**ZED X Mini**](https://www.stereolabs.com/zed-x/) cameras, added the **Fusion API** for multi-camera Body Tracking, and more! Please check the [Release Notes](https://www.stereolabs.com/developers/release/) of the latest version for more details.
+:tada: The **ZED SDK 4.1** is released! We support the [**ZED X**](https://www.stereolabs.com/zed-x/) and [**ZED X Mini**](https://www.stereolabs.com/zed-x/) cameras, added the **Fusion API** for multi-camera Body Tracking, and more! Please check the [Release Notes](https://www.stereolabs.com/developers/release/) of the latest version for more details.
 
 ## Overview
 
@@ -40,9 +40,9 @@ Depth Sensing | Object Detection | Body Tracking |
 :------------: |  :----------: | :-------------:  |
 [![Depth Sensing](https://user-images.githubusercontent.com/32394882/230639409-356b8dfa-df66-4bc2-84d8-a25fd0229779.gif)](https://www.stereolabs.com/docs/depth-sensing)  | [![Object Detection](https://user-images.githubusercontent.com/32394882/230630901-9d53502a-f3f9-45b6-bf57-027148bb18ad.gif)](https://www.stereolabs.com/docs/object-detection)  | [![Body Tracking](https://user-images.githubusercontent.com/32394882/230631989-24dd2b58-2c85-451b-a4ed-558d74d1b922.gif)](https://www.stereolabs.com/docs/body-tracking)  |
 
-Positional Tracking | Geo Tracking | Spatial Mapping |
+Positional Tracking | Global Localization | Spatial Mapping |
 :------------: |  :----------: | :-------------:  |
-[![Positional Tracking](https://user-images.githubusercontent.com/32394882/229093429-a445e8ae-7109-4995-bc1d-6a27a61bdb60.gif)](https://www.stereolabs.com/docs/positional-tracking/) | [![GeoTracking](https://user-images.githubusercontent.com/32394882/230602944-ed61e6dd-e485-4911-8a4c-d6c9e4fab0fd.gif)](/geotracking) | [![Spatial Mapping](https://user-images.githubusercontent.com/32394882/229099549-63ca7832-b7a2-42eb-9971-c1635d205b0c.gif)](https://www.stereolabs.com/docs/spatial-mapping) |
+[![Positional Tracking](https://user-images.githubusercontent.com/32394882/229093429-a445e8ae-7109-4995-bc1d-6a27a61bdb60.gif)](https://www.stereolabs.com/docs/positional-tracking/) | [![Global Localization](https://user-images.githubusercontent.com/32394882/230602944-ed61e6dd-e485-4911-8a4c-d6c9e4fab0fd.gif)](/global%20localization) | [![Spatial Mapping](https://user-images.githubusercontent.com/32394882/229099549-63ca7832-b7a2-42eb-9971-c1635d205b0c.gif)](https://www.stereolabs.com/docs/spatial-mapping) |
 
 Camera Control | Plane Detection | Multi Camera Fusion |
 :------------: |  :----------: | :-------------:  |
@@ -83,7 +83,7 @@ This repository contains ready-to-use and samples to start using the ZED SDK wit
 
 * [**Positional Tracking**](/positional%20tracking) - This sample shows how to use **positional tracking** and display the result with *OpenGL*.
 
-* [**GeoTracking**](/geotracking) - This sample shows how to fuse the ZED SDK's **positional tracking with GNSS data** for global positioning.
+* [**Global Localization**](/global%20localization) - This sample shows how to fuse the ZED SDK's **positional tracking with GNSS data** for global positioning.
 
 * [**Spatial Mapping**](/spatial%20mapping) - This sample shows how to capture **3D meshes** with the ZED and display it with *OpenGL*. Classic Mesh and Point Cloud fusion are available.
 
@@ -126,16 +126,6 @@ Thanks to its comprehensive API, ZED cameras can be interfaced with **multiple t
 | -------- | ------------------------- | ----------------- | ----- | ----- |
 | <div align="center"><a href="https://www.stereolabs.com/docs/pytorch"><img src="https://user-images.githubusercontent.com/32394882/229475918-1add790d-b10e-4529-a1d7-097f015a481f.png" width="70%" alt="" /></a></div>  | <div align="center"><a href="https://www.stereolabs.com/docs/yolo/"><img src="https://user-images.githubusercontent.com/32394882/230623781-3c87a5c9-b6af-4f93-bcc7-5ec381acf5d7.png" width="70%" alt="" /></a></div> | <div align="center"><a href="https://www.stereolabs.com/docs/matlab/"><img src="https://user-images.githubusercontent.com/32394882/229472074-4747f789-4ce6-4aef-b4f7-eab3bb77ab52.png" width="70%" alt="" /></a></div> | <div align="center"><a href="https://www.stereolabs.com/"><img src="https://user-images.githubusercontent.com/32394882/229472012-fe8d4458-219b-4825-8e87-9a3e9bc55e62.png" width="70%" alt="" /></a></div> | <div align="center"><a href="https://derivative.ca/UserGuide/ZED"><img src="https://user-images.githubusercontent.com/32394882/230623653-630e7bd2-1300-47ad-8133-39543470b2b1.png" width="70%" alt="" /></a></div>
 
-
-## ZED Hub
-
-Experience ZED like never before with [ZED Hub](https://hub.stereolabs.com), Stereolabs' IoT platform allowing **easy management of camera fleets** and **data aggregation**, fully managed on the cloud. Unlike competitors, ZED Hub offers **plug-and-play** functionality and dedicated features for your applications developed with the ZED SDK. ZED Hub simplifies the **integration of 3D perception**, offering **remote access** and **monitoring** to your cameras . Start for **Free** now!
-
-<br />
-
-<div align="center">
-  <img src="https://cdn2.stereolabs.com/assets/images/zed-hub/zed-hub-workflow.png" width="60%"/>
-</div>
 
 <br />
 
