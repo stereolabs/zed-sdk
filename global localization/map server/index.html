@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Global Localization - ZED SDK</title>
+
+    <link rel="shortcut icon" type="image/x-icon" href="/assets/favicon.ico" />
+
+    <!-- Leaflet imports -->
+    <link rel="stylesheet" href="/assets/leaflet/leaflet.css" />
+    <script src="/assets/leaflet/leaflet.js"></script>
+
+    <link rel="stylesheet" href="/assets/css/index.css" />
+  </head>
+  <body>
+    <div id="map" class="map-container">
+      <div id="legends" class="legends"></div>
+    </div>
+    <script>
+      const init_pos = [48.8566, 2.3522];
+
+      const map = L.map("map").setView(init_pos, 13);
+
+      const mainLayer = L.tileLayer(
+        "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+          attribution:
+            '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+          tileSize: 256,
+          maxNativeZoom: 19,
+          maxZoom: 22,
+        }
+      ).addTo(map);
+
+      const satelliteLayer = L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        {
+          attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
+          tileSize: 256,
+          maxNativeZoom: 19,
+          maxZoom: 22,
+        }
+      );
+
+      L.control
+        .layers({
+          Main: mainLayer,
+          Satellite: satelliteLayer,
+        })
+        .addTo(map);
+
+      L.control.scale().addTo(map);
+
+      // Creating icons for the marker
+      const colors = [
+        "#d9ff42",
+        "#f79a9a",
+        "#b2faff",
+        "#40a3ff",
+        "#ffffb0",
+        "#c1c2ad",
+        "#b28eff",
+        "#f19bff",
+        "#43ff3f",
+        "#ff6464",
+      ];
+      const icons = [];
+      const icons_intermediate = [];
+
+      const createCircleMarkerCanvas = (color, border) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 50;
+        canvas.height = canvas.width;
+        const ctx = canvas.getContext("2d");
+        const center = canvas.width / 2;
+
+        let radius = center;
+        if (border) {
+          // Draw black border
+          ctx.beginPath();
+          ctx.arc(center, center, radius, 0, 2 * Math.PI, false);
+          ctx.fillStyle = "#050505";
+          ctx.fill();
+
+          radius -= 7.5;
+        }
+        // Draw colored circle
+        ctx.beginPath();
+        ctx.arc(center, center, radius, 0, 2 * Math.PI, false);
+        ctx.fillStyle = color;
+        ctx.fill();
+
+        return canvas;
+      };
+
+      const createSquareMarkerCanvas = (color) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 50;
+        canvas.height = canvas.width;
+        const ctx = canvas.getContext("2d");
+        const strokeWidth = 7.5;
+
+        // Draw colored square
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        return canvas;
+      };
+
+      const createTriangleMarkerCanvas = (color) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 50;
+        canvas.height = canvas.width;
+        const ctx = canvas.getContext("2d");
+        const center = canvas.width / 2;
+        const strokeWidth = 15;
+
+        // Draw black border
+        ctx.beginPath();
+        ctx.moveTo(center, 0);
+        ctx.lineTo(canvas.width, canvas.height);
+        ctx.lineTo(0, canvas.height);
+        ctx.fillStyle = color;
+        ctx.fill();
+
+        return canvas;
+      };
+
+      const createCrossMarkerCanvas = (color) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 50;
+        canvas.height = canvas.width;
+        const ctx = canvas.getContext("2d");
+        const center = canvas.width / 2;
+        const lineLength =
+          (canvas.width * Math.sqrt(2) - 2 * ctx.lineWidth) / 2;
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 15;
+
+        ctx.beginPath();
+        ctx.moveTo(center - lineLength, center - lineLength);
+        ctx.lineTo(center + lineLength, center + lineLength);
+        ctx.stroke();
+        ctx.moveTo(center + lineLength, center - lineLength);
+        ctx.lineTo(center - lineLength, center + lineLength);
+        ctx.stroke();
+
+        return canvas;
+      };
+
+      colors.forEach((color, index) => {
+        // Create a canvas to draw the icon
+        let canvas = createCircleMarkerCanvas(color, true);
+        // Create the actual icon
+        canvas.toBlob(
+          (blob) =>
+            (icons[index] = L.icon({
+              iconUrl: URL.createObjectURL(blob),
+              iconSize: [20, 20], // size of the icon
+              iconAnchor: [10, 10], // point of the icon which will correspond to marker's location
+            }))
+        );
+
+        switch (index % 4) {
+          case 1:
+            canvas = createSquareMarkerCanvas(color);
+            break;
+          case 2:
+            canvas = createTriangleMarkerCanvas(color);
+            break;
+          case 3:
+            canvas = createCrossMarkerCanvas(color);
+            break;
+          default:
+            canvas = createCircleMarkerCanvas(color, false);
+        }
+
+        // Create the actual icon
+        canvas.toBlob(
+          (blob) =>
+            (icons_intermediate[index] = L.icon({
+              iconUrl: URL.createObjectURL(blob),
+              iconSize: [10, 10], // size of the icon
+              iconAnchor: [5, 5], // point of the icon which will correspond to marker's location
+            }))
+        );
+      });
+
+      // Initializing the marker and polyline (path) variable
+      const markers = [];
+      const polyline = [];
+      const polyline_icons = [];
+      const timestamps = [];
+      const files = [
+        {
+          name: "raw_data.txt",
+          legend: "Raw GNSS data",
+          requestInterval: 1000,
+        },
+        {
+          name: "data.txt",
+          legend: "Fused GNSS data",
+          requestInterval: 50,
+        },
+      ];
+
+      const createLegend = (index) => {
+        const legends = document.getElementById("legends");
+        // Create the checkbox
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.name = "name";
+        checkbox.checked = true;
+        checkbox.id = String(index);
+        const label = document.createElement("label");
+        label.htmlFor = checkbox.id;
+        label.className = "legend";
+        // Create the checkbox icon
+        const checkmark = document.createElement("div");
+        checkmark.className = "checkmark";
+        // Create the color indicator
+        const color = document.createElement("div");
+        color.className = "color";
+        color.style.background = colors[index % colors.length];
+        // Create the text
+        const text = document.createElement("div");
+        text.className = "text";
+        text.innerText = files[index].legend;
+
+        label.appendChild(checkbox);
+        label.appendChild(checkmark);
+        label.appendChild(color);
+        label.appendChild(text);
+        legends.appendChild(label);
+
+        // Add event listener
+        checkbox.addEventListener("change", (e) => {
+          if (e.target.checked) {
+            markers[index].addTo(map);
+            polyline[index].forEach((p) => p.addTo(map));
+            polyline_icons[index].forEach((pi) => pi.addTo(map));
+          } else {
+            markers[index].remove(map);
+            polyline[index].forEach((p) => p.remove(map));
+            polyline_icons[index].forEach((pi) => pi.remove(map));
+          }
+        });
+      };
+
+      const createMarker = (index, location) => {
+        // Create the marker if it does not exits
+        if (markers[index] == undefined) {
+          markers[index] = L.marker(location, {
+            icon: icons[index % icons.length],
+            zIndexOffset: 10,
+          }).addTo(map);
+          map.panTo(location);
+
+          // Add the legend
+          createLegend(index);
+        }
+
+        if (polyline[index] == undefined) polyline[index] = [];
+
+        // Initializing the path
+        polyline[index].push(
+          L.polyline([], {
+            color: colors[index % colors.length],
+            weight: 2,
+            opacity: 1,
+          }).addTo(map)
+        );
+      };
+
+      const createIntermediateMarker = (index, location) => {
+        if (polyline_icons[index] === undefined) polyline_icons[index] = [];
+
+        const icon = L.marker(location, {
+          icon: icons_intermediate[index % icons_intermediate.length],
+        });
+        if (document.getElementById(String(index))?.checked) icon.addTo(map);
+        polyline_icons[index].push(icon);
+      };
+
+      const requestData = (file, index) =>
+        // Fetching data
+        fetch(file)
+          .then((response) => {
+            return response.text();
+          })
+          .then((data) => {
+            const location = data.split(",").map((str) => Number(str));
+            if (
+              (location.length === 3 && timestamps[index] == undefined) ||
+              location[2] > timestamps[index]
+            ) {
+              if (
+                timestamps[index] == undefined ||
+                location[2] - timestamps[index] > 3000 // Last data is older than 3s old
+              ) {
+                createMarker(index, location);
+              }
+
+              timestamps[index] = location[2];
+
+              if(index == 0)
+              {
+                createIntermediateMarker(index, markers[index].getLatLng());
+              }
+              // Updating the marker
+              markers[index].setLatLng(location);
+
+              // Updating the polyline
+              polyline[index][polyline[index].length - 1].addLatLng(location);
+            }
+          })
+          .catch((error) => console.error(error));
+
+      files.forEach((file, index) =>
+        setInterval(() => requestData(file.name, index), file.requestInterval)
+      );
+    </script>
+  </body>
+</html>

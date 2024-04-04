@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2023, STEREOLABS.
+// Copyright (c) 2024, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -52,6 +52,7 @@ int main(int argc, char **argv) {
 	init_param.open_timeout_sec = 5.0f;
 	init_param.async_grab_camera_recovery = false;
 	init_param.grab_compute_capping_fps = 0;
+	init_param.enable_image_validity_check = false;
 
     // Open the camera
 	int state = sl_open_camera(camera_id, &init_param, 0,  "", "", 0, "", "", "");
@@ -78,7 +79,7 @@ int main(int argc, char **argv) {
 	tracking_param.set_as_static = false;
 	tracking_param.set_floor_as_origin = false;
 	tracking_param.set_gravity_as_origin = true;
-
+	tracking_param.mode = SL_POSITIONAL_TRACKING_MODE_GEN_1;
 
 	state = sl_enable_positional_tracking(camera_id, &tracking_param, "");
 	if (state != 0) {
@@ -90,7 +91,6 @@ int main(int argc, char **argv) {
 	bt_param.enable_segmentation = false;
 	bt_param.enable_tracking = true;
 	bt_param.enable_body_fitting = true;
-	bt_param.image_sync = true;
 	bt_param.max_range = 40;
 	bt_param.detection_model = SL_BODY_TRACKING_MODEL_HUMAN_BODY_MEDIUM;
 	bt_param.allow_reduced_precision_inference = false;

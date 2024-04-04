@@ -5,7 +5,7 @@
 #error "This sample should not be built in Debug mode, use RelWithDebInfo if you want to do step by step."
 #endif
 
-GLchar* VERTEX_SHADER =
+const GLchar* VERTEX_SHADER =
         "#version 330 core\n"
         "layout(location = 0) in vec3 in_Vertex;\n"
         "layout(location = 1) in vec4 in_Color;\n"
@@ -16,7 +16,7 @@ GLchar* VERTEX_SHADER =
         "	gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
         "}";
 
-GLchar* FRAGMENT_SHADER =
+const GLchar* FRAGMENT_SHADER =
         "#version 330 core\n"
         "in vec4 b_color;\n"
         "layout(location = 0) out vec4 out_Color;\n"
@@ -24,7 +24,7 @@ GLchar* FRAGMENT_SHADER =
         "   out_Color = b_color;\n"
         "}";
 
-GLchar* SK_VERTEX_SHADER =
+const GLchar* SK_VERTEX_SHADER =
         "#version 330 core\n"
         "layout(location = 0) in vec3 in_Vertex;\n"
         "layout(location = 1) in vec4 in_Color;\n"
@@ -41,7 +41,7 @@ GLchar* SK_VERTEX_SHADER =
         "	gl_Position =  u_mvpMatrix * vec4(in_Vertex, 1);\n"
         "}";
 
-GLchar* SK_FRAGMENT_SHADER =
+const GLchar* SK_FRAGMENT_SHADER =
         "#version 330 core\n"
         "in vec4 b_color;\n"
         "in vec3 b_position;\n"
@@ -731,7 +731,7 @@ sl::Transform Simple3DObject::getModelMatrix() const {
     return tmp;
 }
 
-Shader::Shader(GLchar* vs, GLchar* fs) {
+Shader::Shader(const GLchar* vs, const GLchar* fs) {
     if (!compile(verterxId_, GL_VERTEX_SHADER, vs)) {
         std::cout << "ERROR: while compiling vertex shader" << std::endl;
     }
@@ -779,7 +779,7 @@ GLuint Shader::getProgramId() {
     return programId_;
 }
 
-bool Shader::compile(GLuint &shaderId, GLenum type, GLchar* src) {
+bool Shader::compile(GLuint &shaderId, GLenum type, const GLchar* src) {
     shaderId = glCreateShader(type);
     if (shaderId == 0) {
         std::cout << "ERROR: shader type (" << type << ") does not exist" << std::endl;

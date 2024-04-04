@@ -78,14 +78,14 @@ class Shader {
 public:
 
     Shader() {}
-    Shader(GLchar* vs, GLchar* fs);
+    Shader(const GLchar* vs, const GLchar* fs);
     ~Shader();
     GLuint getProgramId();
 
     static const GLint ATTRIB_VERTICES_POS = 0;
     static const GLint ATTRIB_COLOR_POS = 1;
 private:
-    bool compile(GLuint &shaderId, GLenum type, GLchar* src);
+    bool compile(GLuint &shaderId, GLenum type, const GLchar* src);
     GLuint verterxId_;
     GLuint fragmentId_;
     GLuint programId_;
@@ -157,7 +157,7 @@ public:
     void exit();
     bool isAvailable();
     void init(int argc, char **argv, sl::MODEL camera_model);
-    void updateData(sl::Transform zed_rt, std::string str_t, std::string str_r, sl::POSITIONAL_TRACKING_STATE state);
+    void updateData(sl::Transform zed_rt, std::string str_t, std::string str_r, sl::PositionalTrackingStatus state);
 
 private:
     // Rendering loop method called each frame by glutDisplayFunc
@@ -213,8 +213,7 @@ private:
 
     std::string txtR;
     std::string txtT;
-    sl::POSITIONAL_TRACKING_STATE trackState;
-    const std::string str_tracking = "POSITIONAL TRACKING : ";
+    sl::PositionalTrackingStatus trackState;
 
     sl::float3 bckgrnd_clr;
 

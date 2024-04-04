@@ -8,6 +8,6 @@
  
 ![](positional_tracking.jpg)
 
-### Geo Tracking
+### Global Localization
 
-If you have GNSS sensor, you can fuse its data with your ZED positional tracking to improve outdoor positionning, to do so check ou [Geo Tracking sample](../../geotracking/geotracking/)
+If you have GNSS sensor, you can fuse its data with your ZED positional tracking to improve outdoor positioning, to do so check ou [Global Localization sample](../../global%20localization/live/)

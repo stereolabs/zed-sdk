@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2023, STEREOLABS.
+// Copyright (c) 2024, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -49,7 +49,8 @@ int main(int argc, char **argv) {
     Camera zed;
     InitParameters init_parameters;
     init_parameters.input.setFromSVOFile(argv[1]);
-    init_parameters.depth_mode = sl::DEPTH_MODE::PERFORMANCE;
+    init_parameters.depth_mode = sl::DEPTH_MODE::NONE;
+    init_parameters.sdk_verbose = 1;
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
@@ -76,6 +77,8 @@ int main(int argc, char **argv) {
     print("[Info] SVO contains " +to_string(nb_frames)+" frames");
 
     // Start SVO playback
+
+    // zed.setSVOPosition(zed.getSVONumberOfFrames() - 120);
 
      while (key != 'q') {
         returned_state = zed.grab();
@@ -106,6 +109,7 @@ int main(int argc, char **argv) {
         {
             print("SVO end has been reached. Looping back to 0\n");
             zed.setSVOPosition(0);
+            break;
         }
         else {
             print("Grab ZED : ", returned_state);

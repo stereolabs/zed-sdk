@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2023, STEREOLABS.
+// Copyright (c) 2024, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -56,8 +56,6 @@ int main(int argc, char** argv) {
     detection_parameters.detection_model = BODY_TRACKING_MODEL::HUMAN_BODY_MEDIUM;
     // Body format
     detection_parameters.body_format = BODY_FORMAT::BODY_38;
-    // run detection for every Camera grab
-    detection_parameters.image_sync = true;
     // track detects object across time and space
     detection_parameters.enable_tracking = true;
     // Optimize the person joints position, requires more computations

@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2023, STEREOLABS.
+// Copyright (c) 2024, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -52,6 +52,7 @@ int main(int argc, char **argv) {
 	init_param.open_timeout_sec = 5.0f;
 	init_param.async_grab_camera_recovery = false;
 	init_param.grab_compute_capping_fps = 0;
+	init_param.enable_image_validity_check = false;
 
 	// Open the camera
 	int state = sl_open_camera(camera_id, &init_param, 0, "", "", 0, "", "", "");
@@ -67,6 +68,7 @@ int main(int argc, char **argv) {
 	tracking_param.enable_imu_fusion = true;
 	tracking_param.enable_pose_smothing = false;
 	tracking_param.depth_min_range = -1;
+	tracking_param.mode = SL_POSITIONAL_TRACKING_MODE_GEN_1;
 
 	struct SL_Vector3  position;
 	position = (struct SL_Vector3) { .x = 0, .y = 0, .z = 0 };
@@ -84,7 +86,6 @@ int main(int argc, char **argv) {
 	struct SL_ObjectDetectionParameters objs_param;
 	objs_param.enable_segmentation = false;
 	objs_param.enable_tracking = true;
-	objs_param.image_sync = true;
 	objs_param.max_range = 40;
 	objs_param.detection_model = SL_OBJECT_DETECTION_MODEL_MULTI_CLASS_BOX_MEDIUM;
 

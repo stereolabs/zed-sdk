@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2023, STEREOLABS.
+// Copyright (c) 2024, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -37,7 +37,7 @@ using namespace sl;
 
 #define BUILD_MESH 1
 
-void parse_args(int argc, char **argv,InitParameters& param);
+void parse_args(int argc, char **argv,InitParameters& param, sl::Mat &roi);
 
 void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, std::string msg_suffix = "");
 
@@ -50,7 +50,9 @@ int main(int argc, char **argv) {
     init_parameters.coordinate_units = UNIT::METER;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
     init_parameters.depth_maximum_distance = 8.;
-    parse_args(argc, argv, init_parameters);
+
+    sl::Mat roi;
+    parse_args(argc, argv, init_parameters, roi);
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
@@ -59,6 +61,11 @@ int main(int argc, char **argv) {
         print("Open Camera", returned_state, "\nExit program.");
         zed.close();
         return EXIT_FAILURE;
+    }
+
+    if(roi.isInit()){
+        auto state = zed.setRegionOfInterest(roi, {sl::MODULE::POSITIONAL_TRACKING, sl::MODULE::SPATIAL_MAPPING});
+        std::cout<<"Applied ROI "<<state<<"\n";
     }
 
     /* Print shortcuts*/
@@ -179,16 +186,18 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-void parse_args(int argc, char **argv,InitParameters& param)
+void parse_args(int argc, char **argv,InitParameters& param, sl::Mat &roi)
 {
-    if (argc > 1 && string(argv[1]).find(".svo")!=string::npos) {
-        // SVO input mode
-        param.input.setFromSVOFile(argv[1]);
-        param.svo_real_time_mode=true;
+    if(argc == 1) return;
+    for(int id = 1; id < argc; id ++) {
+        std::string arg(argv[id]);
+        if(arg.find(".svo")!=string::npos) {
+            // SVO input mode
+            param.input.setFromSVOFile(arg.c_str());
+            param.svo_real_time_mode=true;
+            cout<<"[Sample] Using SVO File input: "<<arg<<endl;
+        }
 
-        cout<<"[Sample] Using SVO File input: "<<argv[1]<<endl;
-    } else if (argc > 1 && string(argv[1]).find(".svo")==string::npos) {
-        string arg = string(argv[1]);
         unsigned int a,b,c,d,port;
         if (sscanf(arg.c_str(),"%u.%u.%u.%u:%d", &a, &b, &c, &d,&port) == 5) {
             // Stream input mode - IP + port
@@ -219,9 +228,10 @@ void parse_args(int argc, char **argv,InitParameters& param)
         }else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;
+        }else if ((arg.find(".png") != string::npos) || ((arg.find(".jpg") != string::npos))) {
+            roi.read(arg.c_str());
+            cout << "[Sample] Using Region of intererest from "<< arg << endl;
         }
-    } else {
-        // Default
     }
 }
 

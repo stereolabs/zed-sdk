@@ -26,4 +26,4 @@ You can find it in [the camera controls folder](export/sensors/)
 
 ## KML GNSS export 
 This sample allows you to export the GNSS data retrieved from the SDK, and also the positional tracking data fused by the SDK from GNSS and odometry.
-You can find it in [the geotracking folder](../geotracking/export/)
+You can find it in [the global localization folder](../global%20localization/export/)

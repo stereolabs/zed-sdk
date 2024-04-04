@@ -33,7 +33,7 @@ IF(NOT WIN32)
         message("!! Building with -g !!")
         add_definitions(-g)
     ENDIF()
-ENDIF()
+    ENDIF()
     
 ADD_EXECUTABLE(${PROJECT_NAME} include/utils.hpp src/main.cpp)
 

@@ -30,7 +30,7 @@ public:
 
     Shader() {
     }
-    Shader(GLchar* vs, GLchar* fs);
+    Shader(const GLchar* vs, const GLchar* fs);
     ~Shader();
     GLuint getProgramId();
 
@@ -38,7 +38,7 @@ public:
     static const GLint ATTRIB_COLOR_POS = 1;
     static const GLint ATTRIB_NORMAL = 2;
 private:
-    bool compile(GLuint &shaderId, GLenum type, GLchar* src);
+    bool compile(GLuint &shaderId, GLenum type, const GLchar* src);
     GLuint verterxId_;
     GLuint fragmentId_;
     GLuint programId_;

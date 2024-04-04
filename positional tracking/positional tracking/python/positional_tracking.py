@@ -23,7 +23,6 @@
     and displays it in a OpenGL window.
 """
 
-import sys
 import ogl_viewer.tracking_viewer as gl
 import pyzed.sl as sl
 import argparse
@@ -31,10 +30,10 @@ import time
 
 
 def parse_args(init):
-    if len(opt.input_svo_file)>0 and opt.input_svo_file.endswith(".svo"):
+    if len(opt.input_svo_file) > 0 and opt.input_svo_file.endswith(".svo"):
         init.set_from_svo_file(opt.input_svo_file)
         print("[Sample] Using SVO File input: {0}".format(opt.input_svo_file))
-    elif len(opt.ip_address)>0 :
+    elif len(opt.ip_address) > 0 :
         ip_str = opt.ip_address
         if ip_str.replace(':','').replace('.','').isdigit() and len(ip_str.split('.'))==4 and len(ip_str.split(':'))==2:
             init.set_from_stream(ip_str.split(':')[0],int(ip_str.split(':')[1]))
@@ -79,49 +78,76 @@ def main():
         print("Camera Open", status, "Exit program.")
         exit(1)
 
+    if len(opt.roi_mask_file) > 0:
+        mask_roi = sl.Mat()
+        err = mask_roi.read(opt.roi_mask_file)
+        if err == sl.ERROR_CODE.SUCCESS:
+            zed.set_region_of_interest(mask_roi, [sl.MODULE.ALL])
+        else:
+            print(f"Error loading Region of Interest file {opt.roi_mask_file}. Please check the path.")
+
     tracking_params = sl.PositionalTrackingParameters() #set parameters for Positional Tracking
-    tracking_params.enable_imu_fusion = True 
+    tracking_params.enable_imu_fusion = True
+    tracking_params.mode = sl.POSITIONAL_TRACKING_MODE.GEN_1
     status = zed.enable_positional_tracking(tracking_params) #enable Positional Tracking
     if status != sl.ERROR_CODE.SUCCESS:
-        print("Enable Positional Tracking : "+repr(status)+". Exit program.")
+        print("[Sample] Enable Positional Tracking : "+repr(status)+". Exit program.")
         zed.close()
         exit()
 
     runtime = sl.RuntimeParameters()
     camera_pose = sl.Pose()
 
+    # If there is a part of the image containing a static zone, the tracking accuracy will be significantly impacted
+    # The region of interest auto detection is a feature that can be used to remove such zone by masking the irrelevant area of the image.
+    # The region of interest can be loaded from a file :
+    roi = sl.Mat()
+    roi_name = "roi_mask.png"
+    #roi.read(roi_name)
+    #zed.set_region_of_interest(roi, [sl.MODULE.POSITIONAL_TRACKING])
+    # or alternatively auto detected at runtime:
+    roi_param = sl.RegionOfInterestParameters()
+
+    if opt.roi_mask_file == "":
+        roi_param.auto_apply_module = {sl.MODULE.DEPTH, sl.MODULE.POSITIONAL_TRACKING}
+        zed.start_region_of_interest_auto_detection(roi_param)
+        print("[Sample]  Region Of Interest auto detection is running.")
+
     camera_info = zed.get_camera_information()
     # Create OpenGL viewer
     viewer = gl.GLViewer()
     viewer.init(camera_info.camera_model)
-    if opt.imu_only:
-        sensors_data = sl.SensorsData()
     py_translation = sl.Translation()
     pose_data = sl.Transform()
 
     text_translation = ""
     text_rotation = ""
-    file = open('output_trajectory.csv', 'w')
-    file.write('tx, ty, tz \n')
+
+    roi_state = sl.REGION_OF_INTEREST_AUTO_DETECTION_STATE.NOT_ENABLED
+
     while viewer.is_available():
         if zed.grab(runtime) == sl.ERROR_CODE.SUCCESS:
             tracking_state = zed.get_position(camera_pose,sl.REFERENCE_FRAME.WORLD) #Get the position of the camera in a fixed reference frame (the World Frame)
-            if opt.imu_only :
-                if zed.get_sensors_data(sensors_data, sl.TIME_REFERENCE.IMAGE) == sl.ERROR_CODE.SUCCESS:
-                    rotation = sensors_data.get_imu_data().get_pose().get_euler_angles()
-                    text_rotation = str((round(rotation[0], 2), round(rotation[1], 2), round(rotation[2], 2)))
-                    viewer.updateData(sensors_data.get_imu_data().get_pose(), text_translation, text_rotation, tracking_state)
-            else : 
-                if tracking_state == sl.POSITIONAL_TRACKING_STATE.OK:
-                    #Get rotation and translation and displays it
-                    rotation = camera_pose.get_rotation_vector()
-                    translation = camera_pose.get_translation(py_translation)
-                    text_rotation = str((round(rotation[0], 2), round(rotation[1], 2), round(rotation[2], 2)))
-                    text_translation = str((round(translation.get()[0], 2), round(translation.get()[1], 2), round(translation.get()[2], 2)))
-                    pose_data = camera_pose.pose_data(sl.Transform())
-                    file.write(str(translation.get()[0])+", "+str(translation.get()[1])+", "+str(translation.get()[2])+"\n")
-                # Update rotation, translation and tracking state values in the OpenGL window
-                viewer.updateData(pose_data, text_translation, text_rotation, tracking_state)
+            tracking_status = zed.get_positional_tracking_status()
+
+            #Get rotation and translation and displays it
+            if tracking_state == sl.POSITIONAL_TRACKING_STATE.OK:
+                rotation = camera_pose.get_rotation_vector()
+                translation = camera_pose.get_translation(py_translation)
+                text_rotation = str((round(rotation[0], 2), round(rotation[1], 2), round(rotation[2], 2)))
+                text_translation = str((round(translation.get()[0], 2), round(translation.get()[1], 2), round(translation.get()[2], 2)))
+
+            pose_data = camera_pose.pose_data(sl.Transform())
+            # Update rotation, translation and tracking state values in the OpenGL window
+            viewer.updateData(pose_data, text_translation, text_rotation, tracking_status)
+
+            # If the region of interest auto detection is running, the resulting mask can be saved and reloaded for later use
+            if opt.roi_mask_file == "" and roi_state == sl.REGION_OF_INTEREST_AUTO_DETECTION_STATE.RUNNING and zed.get_region_of_interest_auto_detection_status() == sl.REGION_OF_INTEREST_AUTO_DETECTION_STATE.READY:
+                print("Region Of Interest detection done! Saving into {}".format(roi_name))
+                zed.get_region_of_interest(roi, sl.Resolution(0,0), sl.MODULE.POSITIONAL_TRACKING)
+                roi.write(roi_name)
+
+            roi_state = zed.get_region_of_interest_auto_detection_status()
         else : 
             time.sleep(0.001)
     viewer.exit()
@@ -132,7 +158,7 @@ if __name__ == "__main__":
     parser.add_argument('--input_svo_file', type=str, help='Path to an .svo file, if you want to replay it',default = '')
     parser.add_argument('--ip_address', type=str, help='IP Adress, in format a.b.c.d:port or a.b.c.d, if you have a streaming setup', default = '')
     parser.add_argument('--resolution', type=str, help='Resolution, can be either HD2K, HD1200, HD1080, HD720, SVGA or VGA', default = '')
-    parser.add_argument('--imu_only', action = 'store_true', help = 'Either the tracking should be done with imu data only (that will remove translation estimation)' )
+    parser.add_argument('--roi_mask_file', type=str, help='Path to a Region of Interest mask file', default = '')
     opt = parser.parse_args()
     if (len(opt.input_svo_file)>0 and len(opt.ip_address)>0):
         print("Specify only input_svo_file or ip_address, or none to use wired camera, not both. Exit program")
