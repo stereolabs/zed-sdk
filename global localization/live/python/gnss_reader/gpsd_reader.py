@@ -46,6 +46,46 @@ class GPSDReader:
                 current_gnss_data.longitude_std =  0.001
                 current_gnss_data.latitude_std = 0.001
                 current_gnss_data.altitude_std = 1.0
+
+                gpsd_mode = gpsd_data["mode"]
+                sl_mode = sl.GNSS_MODE.UNKNOWN
+
+                if gpsd_mode == 0:  # MODE_NOT_SEEN
+                    sl_mode = sl.GNSS_MODE.UNKNOWN
+                elif gpsd_mode == 1:  # MODE_NO_FIX
+                    sl_mode = sl.GNSS_MODE.NO_FIX
+                elif gpsd_mode == 2:  # MODE_2D
+                    sl_mode = sl.GNSS_MODE.FIX_2D
+                elif gpsd_mode == 3:  # MODE_3D
+                    sl_mode = sl.GNSS_MODE.FIX_3D
+
+                sl_status = sl.GNSS_STATUS.UNKNOWN
+                if 'status' in gpsd_data:
+                    gpsd_status = cgpsd_data["status"]
+                    if gpsd_status == 0:  # STATUS_UNK
+                        sl_status = sl.GNSS_STATUS.UNKNOWN
+                    elif gpsd_status == 1:  # STATUS_GPS
+                        sl_status = sl.GNSS_STATUS.SINGLE
+                    elif gpsd_status == 2:  # STATUS_DGPS
+                        sl_status = sl.GNSS_STATUS.DGNSS
+                    elif gpsd_status == 3:  # STATUS_RTK_FIX
+                        sl_status = sl.GNSS_STATUS.RTK_FIX
+                    elif gpsd_status == 4:  # STATUS_RTK_FLT
+                        sl_status = sl.GNSS_STATUS.RTK_FLOAT
+                    elif gpsd_status == 5:  # STATUS_DR
+                        sl_status = sl.GNSS_STATUS.SINGLE
+                    elif gpsd_status == 6:  # STATUS_GNSSDR
+                        sl_status = sl.GNSS_STATUS.DGNSS
+                    elif gpsd_status == 7:  # STATUS_TIME
+                        sl_status = sl.GNSS_STATUS.UNKNOWN
+                    elif gpsd_status == 8:  # STATUS_SIM
+                        sl_status = sl.GNSS_STATUS.UNKNOWN
+                    elif gpsd_status == 9:  # STATUS_PPS_FIX
+                        sl_status = sl.GNSS_STATUS.SINGLE
+
+
+                current_gnss_data.gnss_mode = sl_mode.value
+                current_gnss_data.gnss_status = sl_status.value
                 
                 position_covariance = [
                     gpsd_data["eph"] * gpsd_data["eph"],
