@@ -106,12 +106,16 @@ class GPSDReader:
                 return current_gnss_data
             elif "class" in gpsd_data and gpsd_data["class"] == "SKY":
                 nb_low_snr = 0
-                for satellite in gpsd_data['satellites']:
-                    if satellite['used'] and satellite['ss'] < 16:
-                        nb_low_snr += 1
-                if nb_low_snr > 0:
-                    print("[Warning] Low SNR (<16) on {} satellite(s) (using {} out of {} visible)".format(nb_low_snr, gpsd_data['uSat'], gpsd_data['nSat']))
-                return self.getNextGNSSValue()
+                if 'satellites' in gpsd_data:
+                    for satellite in gpsd_data['satellites']:
+                        if satellite['used'] and satellite['ss'] < 16:
+                            nb_low_snr += 1
+                    if nb_low_snr > 0:
+                        if 'uSat' in gpsd_data and 'nSat' in gpsd_data:
+                            print("[Warning] Low SNR (<16) on {} satellite(s) (using {} out of {} visible)".format(nb_low_snr, gpsd_data['uSat'], gpsd_data['nSat']))
+                        else:
+                            print("[Warning] Low SNR (", nb_low_snr, "< 16 )")
+                    return self.getNextGNSSValue()
             else:  
                 print("Fix lost: GNSS reinitialization")
                 self.initialize()

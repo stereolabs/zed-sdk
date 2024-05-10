@@ -23,8 +23,8 @@ def convert_gnss_data_2_json(gnss_data: sl.GNSSData) -> json:
     gnss_measure["latitude_std"] = np.sqrt(position_covariance[1 * 3 + 1])
     gnss_measure["altitude_std"] = np.sqrt(position_covariance[2 * 3 + 2])
 
-    gnss_measure["mode"] = gnss_data.gnss_mode
-    gnss_measure["status"] = gnss_data.gnss_status
+    gnss_measure["mode"] = gnss_data.gnss_mode.value
+    gnss_measure["status"] = gnss_data.gnss_status.value
 
     return gnss_measure
 
@@ -40,9 +40,10 @@ class GNSSSaver:
         if self._zed is not None:
             data = sl.SVOData()
             data.key = "GNSS_json"
-            data.set_content(convert_gnss_data_2_json(gnss_data))
+            data.set_string_content(json.dumps(convert_gnss_data_2_json(gnss_data)))
+            data.timestamp_ns = gnss_data.ts
 
-            self._zed.ingest_data_in_svo(data)
+            self._zed.ingest_data_into_svo(data)
 
         else:
             self.all_gnss_data.append(gnss_data)

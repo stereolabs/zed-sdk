@@ -66,7 +66,7 @@ class GPSDReader:
 
             sl_status = sl.GNSS_STATUS.UNKNOWN
             if 'status' in gpsd_data:
-                gpsd_status = cgpsd_data["status"]
+                gpsd_status = gpsd_data["status"]
                 if gpsd_status == 0:  # STATUS_UNK
                     sl_status = sl.GNSS_STATUS.UNKNOWN
                 elif gpsd_status == 1:  # STATUS_GPS

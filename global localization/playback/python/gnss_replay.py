@@ -37,21 +37,88 @@ class GNSSReplay:
                     gnss_data_point_json = json.loads(d.get_content_as_string())
                     gnss_data_point_formatted = {}
 
-                    latitude = gnss_data_point_json["Geopoint"]["Latitude"]
-                    longitude = gnss_data_point_json["Geopoint"]["Longitude"]
-                    altitude = gnss_data_point_json["Geopoint"]["Altitude"]
+                    #  We handle 2 formats:
+                    #  * 
+                    #  * {
+                    #         "coordinates": {
+                    #             "latitude": XXX,
+                    #             "longitude": XXX,
+                    #             "altitude": XXX
+                    #         },
+                    #         "ts": 1694263390000000,
+                    #         "latitude_std": 0.51,
+                    #         "longitude_std": 0.51,
+                    #         "altitude_std": 0.73,
+                    #         "position_covariance": [
+                    #             0.2601,
+                    #             0,
+                    #             0,
+                    #             0,
+                    #             0.2601,
+                    #             0,
+                    #             0,
+                    #             0,
+                    #             0.5328999999999999
+                    #         ]
+                    #     },
+                    #  *********
+                    #  * Or
+                    #  * this one will be converted to the format above
+                    #     {
+                    #         "Eph": 0.467,
+                    #         "EpochTimeStamp": 1694266998000000,
+                    #         "Epv": 0.776,
+                    #         "Geopoint": {
+                    #             "Altitude": XXX,
+                    #             "Latitude": XXX,
+                    #             "Longitude": XXX
+                    #         },
+                    #         "Position": [
+                    #             [
+                    #                 XXX,
+                    #                 XXX,
+                    #                 XXX
+                    #             ]
+                    #         ],
+                    #         "Velocity": [
+                    #             [
+                    #                 -0.63,
+                    #                 0.25,
+                    #                 0.53
+                    #             ]
+                    #         ]
+                    #     }
+
+
+                    if 'Geopoint' in gnss_data_point_json:
+                        latitude = gnss_data_point_json["Geopoint"]["Latitude"]
+                        longitude = gnss_data_point_json["Geopoint"]["Longitude"]
+                        altitude = gnss_data_point_json["Geopoint"]["Altitude"]
+
+                        gnss_data_point_formatted["ts"] = gnss_data_point_json["EpochTimeStamp"]
+
+                        latitude_std = gnss_data_point_json["Eph"]
+                        longitude_std = gnss_data_point_json["Eph"]
+                        altitude_std = gnss_data_point_json["Epv"]
+
+                    else:
+                        latitude = gnss_data_point_json["coordinates"]["latitude"]
+                        longitude = gnss_data_point_json["coordinates"]["longitude"]
+                        altitude = gnss_data_point_json["coordinates"]["altitude"]
+
+
+                        gnss_data_point_formatted["ts"] = gnss_data_point_json["ts"]
+
+                        latitude_std = gnss_data_point_json["latitude_std"]
+                        longitude_std = gnss_data_point_json["longitude_std"]
+                        altitude_std = gnss_data_point_json["altitude_std"]
+
 
                     gnss_data_point_formatted["coordinates"] = {
                         "latitude": latitude,
                         "longitude": longitude,
                         "altitude": altitude
                     }
-
-                    gnss_data_point_formatted["ts"] = gnss_data_point_json["EpochTimeStamp"]
-
-                    latitude_std = gnss_data_point_json["Eph"]
-                    longitude_std = gnss_data_point_json["Eph"]
-                    altitude_std = gnss_data_point_json["Epv"]
 
                     gnss_data_point_formatted["latitude_std"] = latitude_std
                     gnss_data_point_formatted["longitude_std"] = longitude_std
@@ -60,8 +127,8 @@ class GNSSReplay:
                     gnss_data_point_formatted["position_covariance"] = {
                         longitude_std + longitude_std, 0, 0, 0, latitude_std + latitude_std, 0, 0, 0,
                         altitude_std + altitude_std
-                    }
-
+                    }                
+            
                     if "mode" in gnss_data_point_json:
                         gnss_data_point_formatted["mode"] = gnss_data_point_json["mode"]
                     if "status" in gnss_data_point_json:
