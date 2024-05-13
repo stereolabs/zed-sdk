@@ -39,7 +39,7 @@ import util
 
 is_jetson = False
 
-use_faceme = True
+use_faceme = False
 
 SHOW_OBJECT = True
 
