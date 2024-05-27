@@ -10,13 +10,13 @@ class GenericDisplay:
     def __del__(self):
         closeAllKMLFiles()
 
-    def init(self,camera_model):
+    def init(self, camera_model):
         self.glviewer = GLViewer()
         self.glviewer.init(camera_model)
         # Replace this part with the appropriate connection to your IoT system
 
-    def updatePoseData(self, zed_rt,str_t,str_r, state):
-        self.glviewer.updateData(zed_rt,str_t,str_r, state)
+    def updatePoseData(self, zed_rt, str_t, str_r, state):
+        self.glviewer.updateData(zed_rt, str_t, str_r, state)
 
     def isAvailable(self):
         return self.glviewer.is_available()
@@ -41,10 +41,8 @@ class GenericDisplay:
                             current_timestamp.get_milliseconds()))
 
             gnss_data = {}
-            gnss_data["longitude"] = geo_pose.latlng_coordinates.get_latitude(
-                False)
-            gnss_data["latitude"] = geo_pose.latlng_coordinates.get_latitude(
-                False)
+            gnss_data["longitude"] = geo_pose.latlng_coordinates.get_latitude(False)
+            gnss_data["latitude"] = geo_pose.latlng_coordinates.get_latitude(False)
             gnss_data["altitude"] = geo_pose.latlng_coordinates.get_altitude()
             saveKMLData("fused_position.kml", gnss_data)
 
@@ -58,7 +56,7 @@ if __name__ == "__main__":
 
     try:
         while True:
-            # Votre logique ici...
+            # Your logic here...
             pass
     except KeyboardInterrupt:
         pass

@@ -414,7 +414,7 @@ class GLViewer:
         start_w = 20
         start_h = h_wnd - 40
 
-        if(self.trackState == sl.POSITIONAL_TRACKING_STATE.OK):
+        if(self.trackState != sl.POSITIONAL_TRACKING_FUSION_STATUS.UNAVAILABLE):
             glColor3f(0.2, 0.65, 0.2)
         else:
             glColor3f(0.85, 0.2, 0.2)

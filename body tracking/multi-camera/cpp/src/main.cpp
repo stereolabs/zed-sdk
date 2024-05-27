@@ -150,9 +150,6 @@ int main(int argc, char **argv) {
     std::map<sl::CameraIdentifier, sl::Mat> pointClouds;
     sl::Resolution low_res(512,360);
 
-    bool new_data = false;
-    sl::Timestamp ts_new_data = sl::Timestamp(0);
-
     // run the fusion as long as the viewer is available.
     while (viewer.isAvailable()) {
         // run the fusion process (which gather data from all camera, sync them and process them)
@@ -177,7 +174,8 @@ int main(int argc, char **argv) {
         }
         // update the 3D view
         viewer.updateBodies(fused_bodies, camera_raw_data, metrics);
-        std::this_thread::sleep_for(std::chrono::microseconds(10));
+                
+        sl::sleep_ms(10);
     }
 
     viewer.exit();

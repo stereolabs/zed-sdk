@@ -17,8 +17,6 @@ bool ClientPublisher::open(sl::InputType input) {
     sl::InitParameters init_parameters;
     init_parameters.depth_mode = sl::DEPTH_MODE::ULTRA;
     init_parameters.input = input;
-    if (input.getType() == sl::InputType::INPUT_TYPE::SVO_FILE)
-        init_parameters.svo_real_time_mode = true;
     init_parameters.coordinate_units = sl::UNIT::METER;
     init_parameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
     auto state = zed.open(init_parameters);
@@ -94,11 +92,11 @@ void ClientPublisher::work()
             // just be sure to run the bodies detection
             zed.retrieveBodies(bodies, body_runtime_parameters);
         }
+        sl::sleep_ms(2);
     }
 }
 
 void ClientPublisher::setStartSVOPosition(unsigned pos) {
     zed.setSVOPosition(pos);
-    zed.grab();
 }
 

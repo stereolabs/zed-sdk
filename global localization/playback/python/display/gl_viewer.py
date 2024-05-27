@@ -414,7 +414,11 @@ class GLViewer:
         start_w = 20
         start_h = h_wnd - 40
 
-        glColor3f(0.2, 0.65, 0.2)
+        if(self.trackState == sl.POSITIONAL_TRACKING_STATE.OK):
+            glColor3f(0.2, 0.65, 0.2)
+        else:
+            glColor3f(0.85, 0.2, 0.2)
+
         glRasterPos2i(start_w, start_h)
 
         safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18,  "POSITIONAL TRACKING : " + str(self.trackState))
