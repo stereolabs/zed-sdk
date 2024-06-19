@@ -29,7 +29,7 @@ The object confidence threshold can be adjusted at runtime to select only the re
 
 A confidence of 20 is better suited for outdoor, long range environment while indoor closer range scene will need a confidence closer to 50 or more to avoid false positive.
 
-Since the parameters have been set to `image_sync`, for each `grab` call, the image will be fed into the AI module and will output the detections for each frames.
+For each `grab` call, the image will be fed into the AI module and will output the detections for each frames.
 
 ## Disable modules and exit
 

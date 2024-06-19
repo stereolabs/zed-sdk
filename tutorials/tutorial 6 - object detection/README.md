@@ -25,7 +25,7 @@ Then we can start the module, it will load the model. This operation can take a 
 
 ## Capture data
 
-The object confidence threshold can be adjusted at runtime to select only the revelant objects depending on the scene complexity. Since the parameters have been set to `image_sync`, for each `grab` call, the image will be fed into the AI module and will output the detections for each frames.
+The object confidence threshold can be adjusted at runtime to select only the revelant objects depending on the scene complexity. For each `grab` call, the image will be fed into the AI module and will output the detections for each frames.
 
 ## Disable modules and exit
 

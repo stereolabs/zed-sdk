@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2023, STEREOLABS.
+// Copyright (c) 2024, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -58,6 +58,10 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
+    PositionalTrackingParameters tracking_parameters;
+    tracking_parameters.mode = sl::POSITIONAL_TRACKING_MODE::GEN_2;
+    zed.enablePositionalTracking(tracking_parameters);
+
     cv::String imWndName = "Image";
     cv::String depthWndName = "Depth";
     cv::String ROIWndName = "ROI";
@@ -79,13 +83,12 @@ int main(int argc, char **argv) {
     cv::Mat cvDepthImage(resolution.height, resolution.width, CV_8UC4, zed_depth_image.getPtr<sl::uchar1>(MEM::CPU));
 
     std::string mask_name = "Mask.png";
-
     Mat mask_roi(resolution, MAT_TYPE::U8_C1);
     cv::Mat cvMaskROI(resolution.height, resolution.width, CV_8UC1, mask_roi.getPtr<sl::uchar1>(MEM::CPU));
 
     bool roi_running = false;
     sl::RegionOfInterestParameters roi_param;
-    roi_param.auto_apply = true;
+    //roi_param.auto_apply_module = {sl::MODULE::ALL};
     roi_param.depth_far_threshold_meters = 2.5;
     roi_param.image_height_ratio_cutoff = 0.5;
     zed.startRegionOfInterestAutoDetection(roi_param);

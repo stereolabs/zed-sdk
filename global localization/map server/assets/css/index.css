@@ -1,0 +1,133 @@
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+.map-container {
+  height: 100%;
+  width: 100%;
+}
+
+/* Radio button */
+input[type="radio"] {
+  position: relative;
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  border: 1px solid #6b6b6b;
+  border-radius: 50%;
+}
+
+input[type="radio"]:after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #6b6b6b;
+}
+
+input[type="radio"]:hover {
+  border-color: #c2c2c2;
+}
+
+input[type="radio"]:hover:after {
+  background-color: #c2c2c2;
+}
+
+input[type="radio"]:checked {
+  border-color: #d9ff42;
+}
+
+input[type="radio"]:checked:after {
+  background-color: #d9ff42;
+}
+
+input[type="radio"]:hover:checked {
+  border-color: #8a9d3f;
+}
+
+input[type="radio"]:hover:checked:after {
+  background-color: #8a9d3f;
+}
+
+/* Legends */
+.legends {
+  display: none;
+}
+
+.legends:has(> label) {
+  display: block;
+  position: absolute;
+  z-index: 1000;
+  bottom: 0;
+  left: 0;
+  margin-bottom: 45px;
+  margin-left: 5px;
+  background: #fff;
+  border-radius: 2px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  background-clip: padding-box;
+}
+
+.legend {
+  display: flex;
+  margin: 10px;
+}
+
+/* Checkbox */
+.legend input {
+  opacity: 0;
+  height: 0;
+  width: 0;
+}
+
+.legend .checkmark {
+  position: relative;
+  margin: 3px 0;
+  height: 12px;
+  width: 12px;
+  border: 1px solid #6b6b6b;
+}
+
+.legend .checkmark:after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 6px;
+  height: 6px;
+  background-color: #6b6b6b;
+}
+
+.legend:hover input ~ .checkmark {
+  border-color: #c2c2c2;
+}
+
+.legend:hover input ~ .checkmark:after {
+  background-color: #c2c2c2;
+}
+
+.legend input:checked ~ .checkmark {
+  border-color: #d9ff42;
+}
+
+.legend input:checked ~ .checkmark:after {
+  background-color: #d9ff42;
+}
+
+.legend:hover input:checked ~ .checkmark {
+  border-color: #8a9d3f;
+}
+
+.legend:hover input:checked ~ .checkmark:after {
+  background-color: #8a9d3f;
+}
+.legend .color {
+  height: 5px;
+  width: 18px;
+  margin: auto 10px;
+}

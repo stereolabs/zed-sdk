@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2023, STEREOLABS.
+// Copyright (c) 2024, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -100,6 +100,7 @@ int main(int argc, char **argv) {
     init_parameters.camera_resolution= sl::RESOLUTION::AUTO;
     init_parameters.depth_mode = sl::DEPTH_MODE::NONE; // no depth computation required here
     init_parameters.async_grab_camera_recovery = true;
+    init_parameters.enable_image_validity_check = true;
     parseArgs(argc,argv, init_parameters);
 
     // Open the camera
@@ -137,9 +138,13 @@ int main(int argc, char **argv) {
     while (key != 'q') {
         // Check that a new image is successfully acquired
         returned_state = zed.grab();
-        if (returned_state == ERROR_CODE::SUCCESS) {
+        if (returned_state != ERROR_CODE::SUCCESS)
+            std::cout << "returned_state " << returned_state << std::endl;
+        int current_value=10;
+        zed.getCameraSettings(VIDEO_SETTINGS::EXPOSURE, current_value);
+        if (1/*returned_state == ERROR_CODE::SUCCESS)*/) {
             // Retrieve left image
-            zed.retrieveImage(zed_image, VIEW::LEFT);
+            zed.retrieveImage(zed_image, VIEW::SIDE_BY_SIDE);
 
             // Convert sl::Mat to cv::Mat (share buffer)
             cv::Mat cvImage = cv::Mat((int) zed_image.getHeight(), (int) zed_image.getWidth(), CV_8UC4, zed_image.getPtr<sl::uchar1>(sl::MEM::CPU));

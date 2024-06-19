@@ -55,7 +55,7 @@ def main():
     init = sl.InitParameters()
     init.camera_resolution = sl.RESOLUTION.AUTO
     init.depth_mode = sl.DEPTH_MODE.NONE
-    init.sdk_verbose = True
+    init.sdk_verbose = 1
     parse_args(init)
     cam = sl.Camera()
     status = cam.open(init)

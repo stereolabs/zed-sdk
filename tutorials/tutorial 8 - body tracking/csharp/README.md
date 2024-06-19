@@ -72,7 +72,7 @@ The object detection is now activated.
 
 ## Capture data
 
-The object confidence threshold can be adjusted at runtime to select only the revelant persons depending on the scene complexity. Since the parameters have been set to `image_sync`, for each `grab` call, the image will be fed into the AI module and will output the detections for each frames.
+The object confidence threshold can be adjusted at runtime to select only the revelant persons depending on the scene complexity. For each `grab` call, the image will be fed into the AI module and will output the detections for each frames.
 
 ```C#
 // Detection runtime parameters

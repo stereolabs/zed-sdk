@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2023, STEREOLABS.
+// Copyright (c) 2024, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -52,7 +52,6 @@ int main(int argc, char** argv) {
     // Define the Objects detection module parameters
     ObjectDetectionParameters detection_parameters;
     // run detection for every Camera grab
-    detection_parameters.image_sync = true;
     // track detects object accross time and space
     detection_parameters.enable_tracking = true;
     // compute a binary mask for each object aligned on the left image

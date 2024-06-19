@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2023, STEREOLABS.
+// Copyright (c) 2024, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -50,7 +50,8 @@ int main(int argc, char **argv) {
     Camera zed;
     InitParameters init_parameters;
     init_parameters.camera_resolution = RESOLUTION::AUTO;
-    init_parameters.depth_mode = DEPTH_MODE::ULTRA;
+    init_parameters.depth_mode = isJetson ? DEPTH_MODE::PERFORMANCE : DEPTH_MODE::ULTRA;
+    //init_parameters.depth_mode = DEPTH_MODE::ULTRA;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
 
     parseArgs(argc, argv, init_parameters);
@@ -78,7 +79,7 @@ int main(int argc, char **argv) {
     // Enable the Body tracking module
     BodyTrackingParameters body_tracker_params;
     body_tracker_params.enable_tracking = true; // track people across images flow
-    body_tracker_params.enable_body_fitting = true; // smooth skeletons moves
+    body_tracker_params.enable_body_fitting = false; // smooth skeletons moves
     body_tracker_params.body_format = sl::BODY_FORMAT::BODY_34;
     body_tracker_params.detection_model = isJetson ? BODY_TRACKING_MODEL::HUMAN_BODY_FAST : BODY_TRACKING_MODEL::HUMAN_BODY_ACCURATE;
     //body_tracker_params.allow_reduced_precision_inference = true;
@@ -111,7 +112,7 @@ int main(int argc, char **argv) {
 
     // Configure object detection runtime parameters
     BodyTrackingRuntimeParameters body_tracker_parameters_rt;
-    body_tracker_parameters_rt.detection_confidence_threshold = 60;
+    body_tracker_parameters_rt.detection_confidence_threshold = 40;
     body_tracker_parameters_rt.skeleton_smoothing = 0.7;
     
     // Create ZED Bodies filled in the main loop

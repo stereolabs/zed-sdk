@@ -17,3 +17,8 @@ add_subdirectory("tutorial 5 - spatial mapping/${TYPE}")
 add_subdirectory("tutorial 6 - object detection/${TYPE}")
 add_subdirectory("tutorial 7 - sensor data/${TYPE}")
 add_subdirectory("tutorial 8 - body tracking/${TYPE}")
+
+
+if(${BUILD_CPP})
+add_subdirectory("tutorial 9 - global localization/${TYPE}")
+endif()

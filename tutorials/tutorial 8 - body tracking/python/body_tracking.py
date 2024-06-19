@@ -44,7 +44,6 @@ def main():
     # Different model can be chosen, optimizing the runtime or the accuracy
     body_params.detection_model = sl.BODY_TRACKING_MODEL.HUMAN_BODY_FAST
     body_params.enable_tracking = True
-    body_params.image_sync = True
     body_params.enable_segmentation = False
     # Optimize the person joints position, requires more computations
     body_params.enable_body_fitting = True

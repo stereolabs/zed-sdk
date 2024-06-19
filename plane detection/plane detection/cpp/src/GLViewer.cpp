@@ -20,7 +20,7 @@ void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suff
     cout << endl;
 }
 
-GLchar* MESH_VERTEX_SHADER =
+const GLchar* MESH_VERTEX_SHADER =
 "#version 330 core\n"
 "layout(location = 0) in vec3 in_Vertex;\n"
 "layout(location = 1) in float in_dist;\n"
@@ -34,7 +34,7 @@ GLchar* MESH_VERTEX_SHADER =
 "   gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
 "}";
 
-GLchar* MESH_FRAGMENT_SHADER =
+const GLchar* MESH_FRAGMENT_SHADER =
 "#version 330 core\n"
 "in vec3 b_color;\n"
 "in float distance;\n"
@@ -43,7 +43,7 @@ GLchar* MESH_FRAGMENT_SHADER =
 "   color = vec4(b_color,distance);\n"
 "}";
 
-GLchar* IMAGE_FRAGMENT_SHADER =
+const GLchar* IMAGE_FRAGMENT_SHADER =
 "#version 330 core\n"
 " in vec2 UV;\n"
 " out vec4 color;\n"
@@ -56,7 +56,7 @@ GLchar* IMAGE_FRAGMENT_SHADER =
 "    color = vec4(rgbcolor,1);\n"
 "}";
 
-GLchar* IMAGE_VERTEX_SHADER =
+const GLchar* IMAGE_VERTEX_SHADER =
 "#version 330\n"
 "layout(location = 0) in vec3 vert;\n"
 "out vec2 UV;"
@@ -453,7 +453,7 @@ void GLViewer::printText() {
     }
 }
 
-Shader::Shader(GLchar* vs, GLchar* fs) {
+Shader::Shader(const GLchar* vs, const GLchar* fs) {
     if(!compile(verterxId_, GL_VERTEX_SHADER, vs)) {
         std::cout << "ERROR: while compiling vertex shader" << std::endl;
     }
@@ -500,7 +500,7 @@ GLuint Shader::getProgramId() {
     return programId_;
 }
 
-bool Shader::compile(GLuint &shaderId, GLenum type, GLchar* src) {
+bool Shader::compile(GLuint &shaderId, GLenum type, const GLchar* src) {
     shaderId = glCreateShader(type);
     if(shaderId == 0) {
         std::cout << "ERROR: shader type (" << type << ") does not exist" << std::endl;

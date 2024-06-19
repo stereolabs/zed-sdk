@@ -17,11 +17,13 @@ find_package(GLUT REQUIRED)
 find_package(GLEW REQUIRED)
 SET(OpenGL_GL_PREFERENCE GLVND)
 find_package(OpenGL REQUIRED)
+find_package(OpenCV REQUIRED)
  
 include_directories(${ZED_INCLUDE_DIRS})
 include_directories(${GLEW_INCLUDE_DIRS})
 include_directories(${GLUT_INCLUDE_DIR})
 include_directories(${CUDA_INCLUDE_DIRS})
+include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 link_directories(${ZED_LIBRARY_DIR})
@@ -35,6 +37,20 @@ FILE(GLOB_RECURSE HDR_FILES include/*.hpp)
 
 ADD_EXECUTABLE(${PROJECT_NAME} ${HDR_FILES} ${SRC_FILES})
 
+IF(NOT WIN32)
+    IF (BUILD_WITH_SANITIZER)
+        message("!! Building with address sanitizer and -g !!")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address -Wall -Wextra -g")
+        set (CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=address -Wall -Wextra -g")
+        add_definitions(-g -fsanitize=address -fno-omit-frame-pointer -static-libasan -Wall -Wextra)
+    ENDIF()
+
+    IF (BUILD_WITH_DEBUGINFOS)
+        message("!! Building with -g !!")
+        add_definitions(-g)
+    ENDIF()
+    ENDIF()
+
 if (LINK_SHARED_ZED)
     SET(ZED_LIBS ${ZED_LIBRARIES} ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY})
 else()
@@ -44,6 +60,7 @@ endif()
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} 
                         ${ZED_LIBS} 
                         ${OPENGL_LIBRARIES}
+                        ${OpenCV_LIBRARIES}
                         ${GLUT_LIBRARIES}
                         ${GLEW_LIBRARIES})
 
