@@ -128,70 +128,72 @@ def main():
             image, pose.pose_data(), tracking_state, mapping_state
         )
 
-        if change_state:
-            if not mapping_activated:
-                init_pose = sl.Transform()
-                zed.reset_positional_tracking(init_pose)
+        if not change_state:
+            continue
 
-                # Configure spatial mapping parameters
-                # spatial_mapping_parameters.resolution_meter = sl.SpatialMappingParameters().get_resolution_preset(sl.MAPPING_RESOLUTION.MEDIUM)
-                spatial_mapping_parameters.resolution_meter = (
-                    sl.SpatialMappingParameters().get_resolution_preset(
-                        sl.MAPPING_RESOLUTION.HIGH
-                    )
+        if not mapping_activated:
+            init_pose = sl.Transform()
+            zed.reset_positional_tracking(init_pose)
+
+            # Configure spatial mapping parameters
+            # spatial_mapping_parameters.resolution_meter = sl.SpatialMappingParameters().get_resolution_preset(sl.MAPPING_RESOLUTION.MEDIUM)
+            spatial_mapping_parameters.resolution_meter = (
+                sl.SpatialMappingParameters().get_resolution_preset(
+                    sl.MAPPING_RESOLUTION.HIGH
                 )
-                spatial_mapping_parameters.use_chunk_only = True
-                spatial_mapping_parameters.save_texture = (
-                    True  # Set to True to apply texture over the created mesh
+            )
+            spatial_mapping_parameters.use_chunk_only = True
+            spatial_mapping_parameters.save_texture = (
+                True  # Set to True to apply texture over the created mesh
+            )
+            if opt.build_mesh:
+                spatial_mapping_parameters.map_type = sl.SPATIAL_MAP_TYPE.MESH
+            else:
+                spatial_mapping_parameters.map_type = (
+                    sl.SPATIAL_MAP_TYPE.FUSED_POINT_CLOUD
                 )
-                if opt.build_mesh:
-                    spatial_mapping_parameters.map_type = sl.SPATIAL_MAP_TYPE.MESH
-                else:
-                    spatial_mapping_parameters.map_type = (
-                        sl.SPATIAL_MAP_TYPE.FUSED_POINT_CLOUD
-                    )
 
-                # Enable spatial mapping
-                zed.enable_spatial_mapping(spatial_mapping_parameters)
+            # Enable spatial mapping
+            zed.enable_spatial_mapping(spatial_mapping_parameters)
 
-                # Clear previous mesh data
-                pymesh.clear()
+            # Clear previous mesh data
+            pymesh.clear()
+            viewer.clear_current_mesh()
+
+            # Start timer
+            last_call = time.time()
+
+            mapping_activated = True
+        else:
+            # Extract whole mesh
+            zed.extract_whole_spatial_map(pymesh)
+
+            if opt.build_mesh:
+                filter_params = sl.MeshFilterParameters()
+                filter_params.set(sl.MESH_FILTER.MEDIUM)
+                # Filter the extracted mesh
+                pymesh.filter(filter_params, True)
                 viewer.clear_current_mesh()
 
-                # Start timer
-                last_call = time.time()
-
-                mapping_activated = True
-            else:
-                # Extract whole mesh
-                zed.extract_whole_spatial_map(pymesh)
-
-                if opt.build_mesh:
-                    filter_params = sl.MeshFilterParameters()
-                    filter_params.set(sl.MESH_FILTER.MEDIUM)
-                    # Filter the extracted mesh
-                    pymesh.filter(filter_params, True)
-                    viewer.clear_current_mesh()
-
-                    # If textures have been saved during spatial mapping, apply them to the mesh
-                    if spatial_mapping_parameters.save_texture:
-                        print(
-                            "Save texture set to : {}".format(
-                                spatial_mapping_parameters.save_texture
-                            )
+                # If textures have been saved during spatial mapping, apply them to the mesh
+                if spatial_mapping_parameters.save_texture:
+                    print(
+                        "Save texture set to : {}".format(
+                            spatial_mapping_parameters.save_texture
                         )
-                        pymesh.apply_texture(sl.MESH_TEXTURE_FORMAT.RGBA)
+                    )
+                    pymesh.apply_texture(sl.MESH_TEXTURE_FORMAT.RGBA)
 
-                # Save mesh as an obj file
-                filepath = "mesh_gen.obj"
-                status = pymesh.save(filepath)
-                if status:
-                    print("Mesh saved under " + filepath)
-                else:
-                    print("Failed to save the mesh under " + filepath)
+            # Save mesh as an obj file
+            filepath = "mesh_gen.obj"
+            status = pymesh.save(filepath)
+            if status:
+                print("Mesh saved under " + filepath)
+            else:
+                print("Failed to save the mesh under " + filepath)
 
-                mapping_state = sl.SPATIAL_MAPPING_STATE.NOT_ENABLED
-                mapping_activated = False
+            mapping_state = sl.SPATIAL_MAPPING_STATE.NOT_ENABLED
+            mapping_activated = False
 
     image.free(memory_type=sl.MEM.CPU)
     pymesh.clear()
