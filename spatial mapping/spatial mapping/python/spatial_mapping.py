@@ -58,27 +58,21 @@ def main():
         exit()
 
     if opt.build_mesh:
-        spatial_mapping_parameters = sl.SpatialMappingParameters(
-            resolution=sl.MAPPING_RESOLUTION.MEDIUM,
-            mapping_range=sl.MAPPING_RANGE.MEDIUM,
-            max_memory_usage=2048,
-            save_texture=False,
-            use_chunk_only=True,
-            reverse_vertex_order=False,
-            map_type=sl.SPATIAL_MAP_TYPE.MESH,
-        )
+        map_type = sl.SPATIAL_MAP_TYPE.MESH
         pymesh = sl.Mesh()
     else:
-        spatial_mapping_parameters = sl.SpatialMappingParameters(
-            resolution=sl.MAPPING_RESOLUTION.MEDIUM,
-            mapping_range=sl.MAPPING_RANGE.MEDIUM,
-            max_memory_usage=2048,
-            save_texture=False,
-            use_chunk_only=True,
-            reverse_vertex_order=False,
-            map_type=sl.SPATIAL_MAP_TYPE.FUSED_POINT_CLOUD,
-        )
+        map_type = sl.SPATIAL_MAP_TYPE.FUSED_POINT_CLOUD
         pymesh = sl.FusedPointCloud()
+
+    spatial_mapping_parameters = sl.SpatialMappingParameters(
+        resolution=sl.MAPPING_RESOLUTION.MEDIUM,
+        mapping_range=sl.MAPPING_RANGE.MEDIUM,
+        max_memory_usage=2048,
+        save_texture=False,
+        use_chunk_only=True,
+        reverse_vertex_order=False,
+        map_type=map_type,
+    )
 
     tracking_state = sl.POSITIONAL_TRACKING_STATE.OFF
     mapping_state = sl.SPATIAL_MAPPING_STATE.NOT_ENABLED
