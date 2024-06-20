@@ -30,6 +30,7 @@ import pyzed.sl as sl
 import ogl_viewer.viewer as gl
 import argparse
 
+import inspect
 
 def main():
     init = sl.InitParameters()
@@ -64,21 +65,62 @@ def main():
         map_type = sl.SPATIAL_MAP_TYPE.FUSED_POINT_CLOUD
         pymesh = sl.FusedPointCloud()
 
+    view_conditions = True
+
+    if view_conditions:
+        print(sl.MAPPING_RESOLUTION)
+        for k, v in inspect.getmembers(sl.MAPPING_RESOLUTION):
+            if k.find("__") == -1:
+                print(f"{k}: {v}")
+
+        print(sl.MAPPING_RANGE)
+        for k, v in inspect.getmembers(sl.MAPPING_RANGE):
+            if k.find("__") == -1:
+                print(f"{k}: {v}")
+
+        print(sl.SPATIAL_MAP_TYPE)
+        for k, v in inspect.getmembers(sl.SPATIAL_MAP_TYPE):
+            if k.find("__") == -1:
+                print(f"{k}: {v}")
+
+    if 1:
+        resolution = sl.MAPPING_RESOLUTION.HIGH
+        mapping_range = sl.MAPPING_RANGE.AUTO
+    else:
+        resolution = sl.MAPPING_RESOLUTION.MEDIUM
+        mapping_range = sl.MAPPING_RANGE.MEDIUM
+
     spatial_mapping_parameters = sl.SpatialMappingParameters(
-        resolution=sl.MAPPING_RESOLUTION.MEDIUM,
-        mapping_range=sl.MAPPING_RANGE.MEDIUM,
-        max_memory_usage=2048,
+        resolution=resolution,
+        mapping_range=mapping_range,
+        max_memory_usage=8192,
         save_texture=False,
         use_chunk_only=True,
         reverse_vertex_order=False,
         map_type=map_type,
     )
 
+    spatial_mapping_parameters.resolution_meter = 0.01
+
+    if view_conditions:
+        print(f"{type(spatial_mapping_parameters)=}")
+        for k, v in inspect.getmembers(spatial_mapping_parameters):
+            if k.find("__") == -1:
+                print(f"{k}: {v}")
+
     tracking_state = sl.POSITIONAL_TRACKING_STATE.OFF
     mapping_state = sl.SPATIAL_MAPPING_STATE.NOT_ENABLED
 
     runtime_parameters = sl.RuntimeParameters()
-    runtime_parameters.confidence_threshold = 50
+    runtime_parameters.confidence_threshold = 80
+    runtime_parameters.remove_saturated_areas = False
+    runtime_parameters.enable_fill_mode = True
+
+    if view_conditions:
+        print(type(runtime_parameters))
+        for k, v in inspect.getmembers(runtime_parameters):
+            if k.find("__") == -1:
+                print(f"{k}: {v}")
 
     mapping_activated = False
 
