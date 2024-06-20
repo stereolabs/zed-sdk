@@ -19,5 +19,5 @@ for k, v in inspect.getmembers(zed):
         print(f"\t{inspect.getdoc(v2)}")
 
 for k, v in  inspect.getmembers(zed):
-    if k.find("region") > -1:
+    if k.find("region") > -1 or k.find("Region") > -1 or k.find("ROI") > -1 :
         print(f"{inspect.getdoc(v)}")
