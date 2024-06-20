@@ -66,3 +66,13 @@ Camera.get_region_of_interest_auto_detection_status(self) -> REGION_OF_INTEREST_
 Camera.set_region_of_interest(self, Mat py_mat: Mat, modules=[MODULE.ALL]) -> ERROR_CODE
 Camera.start_region_of_interest_auto_detection(self, roi_param=RegionOfInterestParameters()) -> ERROR_CODE
 ```
+
+## SEE
+depth sensing/automatic region of interest/python/automatic_region_of_interest.py
+
+setRegionOfInterest() not working with object or body tracking? SDK 4.0 #596
+https://github.com/stereolabs/zed-sdk/issues/596
+
+
+Spatial Mapping: Fused point cloud for a dynamic scene #543
+https://github.com/stereolabs/zed-sdk/issues/543
