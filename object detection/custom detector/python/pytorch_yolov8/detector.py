@@ -123,6 +123,7 @@ def main():
     obj_param = sl.ObjectDetectionParameters()
     obj_param.detection_model = sl.OBJECT_DETECTION_MODEL.CUSTOM_BOX_OBJECTS
     obj_param.enable_tracking = True
+    obj_param.enable_segmentation = False  # designed to give person pixel mask with internal OD
     zed.enable_object_detection(obj_param)
 
     objects = sl.Objects()
@@ -190,7 +191,7 @@ def main():
 
             cv2.imshow("ZED | 2D View and Birds View", global_image)
             key = cv2.waitKey(10)
-            if key == 27:
+            if key == 27 or key == ord('q') or key == ord('Q'):
                 exit_signal = True
         else:
             exit_signal = True
@@ -203,7 +204,7 @@ def main():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', type=str, default='yolov8m.pt', help='model.pt path(s)')
-    parser.add_argument('--svo', type=str, default=None, help='optional svo file')
+    parser.add_argument('--svo', type=str, default=None, help='optional svo file, if not passed, use the plugged camera instead')
     parser.add_argument('--img_size', type=int, default=416, help='inference size (pixels)')
     parser.add_argument('--conf_thres', type=float, default=0.4, help='object confidence threshold')
     opt = parser.parse_args()

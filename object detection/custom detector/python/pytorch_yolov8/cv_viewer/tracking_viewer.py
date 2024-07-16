@@ -54,10 +54,11 @@ def render_2D(left_display, img_scale, objects, is_tracking_on):
             # Scaled ROI
             roi_height = int(top_right_corner[0] - top_left_corner[0])
             roi_width = int(bottom_left_corner[1] - top_left_corner[1])
-            overlay_roi = overlay[int(top_left_corner[1]):int(top_left_corner[1] + roi_width)
-            , int(top_left_corner[0]):int(top_left_corner[0] + roi_height)]
+            overlay_roi = overlay[int(top_left_corner[1]):int(top_left_corner[1] + roi_width),
+                                  int(top_left_corner[0]):int(top_left_corner[0] + roi_height)]
 
-            overlay_roi[:, :, :] = base_color
+            if obj.mask.is_init():
+                overlay_roi[obj.mask.numpy() != 0] = base_color
 
             # Display Object label as text
             position_image = get_image_position(obj.bounding_box_2d, img_scale)

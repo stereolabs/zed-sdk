@@ -11,6 +11,7 @@
     <!-- Leaflet imports -->
     <link rel="stylesheet" href="/assets/leaflet/leaflet.css" />
     <script src="/assets/leaflet/leaflet.js"></script>
+    <script src="/assets/leaflet-elipse/l.ellipse.js"></script>
 
     <link rel="stylesheet" href="/assets/css/index.css" />
   </head>
@@ -19,6 +20,12 @@
       <div id="legends" class="legends"></div>
     </div>
     <script>
+      function isNumeric(str) {
+        if (typeof str != "string") return false // we only process strings!  
+        return !isNaN(str) && // use type coercion to parse the _entirety_ of the string (`parseFloat` alone does not do this)...
+              !isNaN(parseFloat(str)) // ...and ensure strings of whitespace fail
+      }
+
       const init_pos = [48.8566, 2.3522];
 
       const map = L.map("map").setView(init_pos, 13);
@@ -251,13 +258,15 @@
       };
 
       const createMarker = (index, location) => {
+        // Create location coordinates:
+        coordinates = [location[0], location[1]]
         // Create the marker if it does not exits
         if (markers[index] == undefined) {
-          markers[index] = L.marker(location, {
+          markers[index] = L.marker(coordinates, {
             icon: icons[index % icons.length],
             zIndexOffset: 10,
           }).addTo(map);
-          map.panTo(location);
+          map.panTo(coordinates);
 
           // Add the legend
           createLegend(index);
@@ -275,14 +284,56 @@
         );
       };
 
-      const createIntermediateMarker = (index, location) => {
+      const createIntermediateMarker = (index, location, optional_covariance, optional_gnss_status) => {
         if (polyline_icons[index] === undefined) polyline_icons[index] = [];
+        coordinates = [location[0], location[1]]
+        console.log("index ",index, " coordinates ", coordinates, " location ",location)
 
-        const icon = L.marker(location, {
+        const icon = L.marker(coordinates, {
           icon: icons_intermediate[index % icons_intermediate.length],
+          zIndexOffset: 100
         });
         if (document.getElementById(String(index))?.checked) icon.addTo(map);
         polyline_icons[index].push(icon);
+        if(index == 0){
+          let gnss_status = location[3 + 3]
+          let gnss_longitude_std = location[3 + 0]
+          let gnss_latitude_std = location[3 + 1]
+          let gnss_altitude = location[3 + 2]
+          // Add GNSS status information
+          icon.bindTooltip(gnss_status, {permanent: false, offset: [0, 0], direction: "top", className: "gnss-status"})
+          let current_map_zoom = map.getZoom()
+          if(current_map_zoom < 22)
+            icon.getTooltip()._contentNode.style.display = "none"
+          // Add GNSS covariance information:
+          let circle_cov = L.ellipse(markers[index].getLatLng(), [location[3 + 1], location[3 + 0]], 90, {color: colors[index]})
+          circle_cov.addTo(map)
+          polyline_icons[index].push(circle_cov)
+          // Add GNSS information popup
+          // icon.on("click", function onClick(){
+          //     // Create static variable that control if popup was open
+          //     if(this.popupOpen == undefined)
+          //       this.popupOpen = false
+          //     // If not open yet, open popup
+          //     if(this.popupOpen === false){
+          //       let GNSS_text_popup = "<h1>GNSS information</h1><br/>"
+          //       GNSS_text_popup += "Fix status: " + gnss_status + " <br/>"
+          //       GNSS_text_popup += "Covariance: long: " + gnss_longitude_std + " m, lat: " + gnss_latitude_std + ", alt: " + gnss_altitude + " m<br/>"
+          //       this.GNSS_infos_popup = L.popup(coordinates, {content:GNSS_text_popup}).close()
+          //       this.GNSS_infos_popup.addTo(map)
+          //       this.popupOpen = true
+          //     }
+          //     else{
+          //       this.GNSS_infos_popup.closePopup()
+          //       this.popupOpen = false
+          //     }
+
+          //     // Handle case were user close popup by itself
+          //     this.GNSS_infos_popup.on('remove', ()=>{
+          //       this.popupOpen = false
+          //     });
+          //   })
+        }
       };
 
       const requestData = (file, index) =>
@@ -292,9 +343,13 @@
             return response.text();
           })
           .then((data) => {
-            const location = data.split(",").map((str) => Number(str));
+            const location = data.split(",").map((str) => {
+              if(isNumeric(str))
+                return Number(str)
+              return str
+            });
             if (
-              (location.length === 3 && timestamps[index] == undefined) ||
+              (location.length === 3 || location.length === 7 && timestamps[index] == undefined) ||
               location[2] > timestamps[index]
             ) {
               if (
@@ -304,17 +359,21 @@
                 createMarker(index, location);
               }
 
+
               timestamps[index] = location[2];
 
               if(index == 0)
               {
-                createIntermediateMarker(index, markers[index].getLatLng());
+                createIntermediateMarker(index, location);
               }
+              coordinates = [location[0], location[1]]
               // Updating the marker
-              markers[index].setLatLng(location);
+              markers[index].setLatLng(coordinates);
 
               // Updating the polyline
-              polyline[index][polyline[index].length - 1].addLatLng(location);
+              polyline[index][polyline[index].length - 1].addLatLng(coordinates);
+
+              
             }
           })
           .catch((error) => console.error(error));
@@ -322,6 +381,28 @@
       files.forEach((file, index) =>
         setInterval(() => requestData(file.name, index), file.requestInterval)
       );
+
+      map.on("zoom", ()=>{
+        let zoom_level = map.getZoom()
+        // Get all popup:
+        let all_gnss_status = document.querySelectorAll(".gnss-status")
+ 
+        let should_display = true;
+        if(zoom_level >= 22)
+          should_display = true
+        else
+          should_display = false
+        for(let i=0; i<all_gnss_status.length; i++){
+          if(should_display){
+            console.log("Element ",all_gnss_status[i]," set to block")
+            all_gnss_status[i].style.display = "block"
+          }
+          else{
+            console.log("Element ",all_gnss_status[i]," set to none")
+            all_gnss_status[i].style.display = "none"
+          }
+        }
+      })
     </script>
   </body>
 </html>

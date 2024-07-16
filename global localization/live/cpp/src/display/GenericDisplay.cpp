@@ -39,7 +39,15 @@ void GenericDisplay::updateRawGeoPoseData(sl::GNSSData geo_data)
     data << longitude;
     data << ",";
     data << geo_data.ts.getMilliseconds();
-    data << "\n";
+    data << ",";
+    data << geo_data.longitude_std;
+    data << ",";
+    data << geo_data.latitude_std;
+    data << ",";
+    data << geo_data.altitude_std;
+    data << ",";
+    data << geo_data.gnss_status;
+    data.flush(); // flush will do the same thing than "\n" but without additional character
     data.close();
 }
 
@@ -54,7 +62,7 @@ void GenericDisplay::updateGeoPoseData(sl::GeoPose geo_pose, sl::Timestamp curre
     data << geo_pose.latlng_coordinates.getLongitude(false);
     data << ",";
     data << current_timestamp.getMilliseconds();
-    data << "\n";
+    data.flush(); // flush will do the same thing than "\n" but without additional character
     data.close();
 
     // Save the pose in a .kml file

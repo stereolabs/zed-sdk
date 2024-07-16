@@ -15,6 +15,42 @@ using namespace nvinfer1;
 #define NMS_THRESH 0.4
 #define CONF_THRESH 0.3
 
+static void draw_objects(cv::Mat const& image,
+                         cv::Mat &res,
+                         sl::Objects const& objs,
+                         std::vector<std::vector<int>> const& colors)
+{
+    res = image.clone();
+    cv::Mat mask{image.clone()};
+    for (sl::ObjectData const& obj : objs.object_list) {
+        size_t const idx_color{obj.id % colors.size()};
+        cv::Scalar const color{cv::Scalar(colors[idx_color][0U], colors[idx_color][1U], colors[idx_color][2U])};
+
+        cv::Rect const rect{static_cast<int>(obj.bounding_box_2d[0U].x),
+                            static_cast<int>(obj.bounding_box_2d[0U].y),
+                            static_cast<int>(obj.bounding_box_2d[1U].x - obj.bounding_box_2d[0U].x),
+                            static_cast<int>(obj.bounding_box_2d[2U].y - obj.bounding_box_2d[0U].y)};
+        cv::rectangle(res, rect, color, 2);
+
+        char text[256U];
+        sprintf(text, "Class %d - %.1f%%", obj.raw_label, obj.confidence);
+        if (obj.mask.isInit() && obj.mask.getWidth() > 0U && obj.mask.getHeight() > 0U) {
+            const cv::Mat obj_mask = slMat2cvMat(obj.mask);
+            mask(rect).setTo(color, obj_mask);
+        }
+
+        int baseLine{0};
+        cv::Size const label_size{cv::getTextSize(text, cv::FONT_HERSHEY_SIMPLEX, 0.4, 1, &baseLine)};
+
+        int const x{rect.x};
+        int const y{std::min(rect.y + 1, res.rows)};
+
+        cv::rectangle(res, cv::Rect(x, y, label_size.width, label_size.height + baseLine), {0, 0, 255}, -1);
+        cv::putText(res, text, cv::Point(x, y + label_size.height), cv::FONT_HERSHEY_SIMPLEX, 0.4, {255, 255, 255}, 1);
+    }
+    cv::addWeighted(res, 0.5, mask, 0.8, 1, res);
+}
+
 void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suffix) {
     std::cout << "[Sample] ";
     if (err_code != sl::ERROR_CODE::SUCCESS)
@@ -74,7 +110,7 @@ int main(int argc, char** argv) {
     init_parameters.depth_mode = sl::DEPTH_MODE::ULTRA;
     init_parameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
 
-    if (argc > 1) {
+    if (argc > 2) {
         std::string zed_opt = argv[2];
         if (zed_opt.find(".svo") != std::string::npos)
             init_parameters.input.setFromSVOFile(zed_opt.c_str());
@@ -89,7 +125,7 @@ int main(int argc, char** argv) {
     // Custom OD
     sl::ObjectDetectionParameters detection_parameters;
     detection_parameters.enable_tracking = true;
-    detection_parameters.enable_segmentation = false; // designed to give person pixel mask
+    detection_parameters.enable_segmentation = false; // designed to give person pixel mask with internal OD
     detection_parameters.detection_model = sl::OBJECT_DETECTION_MODEL::CUSTOM_BOX_OBJECTS;
     returned_state = zed.enableObjectDetection(detection_parameters);
     if (returned_state != sl::ERROR_CODE::SUCCESS) {
@@ -156,23 +192,20 @@ int main(int argc, char** argv) {
             // Send the custom detected boxes to the ZED
             zed.ingestCustomBoxObjects(objects_in);
 
-
-            // Displaying 'raw' objects
-            for (size_t j = 0; j < detections.size(); j++) {
-                cv::Rect r = get_rect(detections[j].box);
-                cv::rectangle(left_cv, r, cv::Scalar(0x27, 0xC1, 0x36), 2);
-                cv::putText(left_cv, std::to_string((int) detections[j].label), cv::Point(r.x, r.y - 1), cv::FONT_HERSHEY_PLAIN, 1.2, cv::Scalar(0xFF, 0xFF, 0xFF), 2);
-            }
-            cv::imshow("Objects", left_cv);
-            cv::waitKey(10);
-
-
             // Retrieve the tracked objects, with 2D and 3D attributes
             zed.retrieveObjects(objects, objectTracker_parameters_rt);
+
             // GL Viewer
             zed.retrieveMeasure(point_cloud, sl::MEASURE::XYZRGBA, sl::MEM::GPU, pc_resolution);
             zed.getPosition(cam_w_pose, sl::REFERENCE_FRAME::WORLD);
             viewer.updateData(point_cloud, objects.object_list, cam_w_pose.pose_data);
+
+            // Displaying the SDK objects
+            draw_objects(left_cv, left_cv, objects, CLASS_COLORS);
+            cv::imshow("ZED retrieved Objects", left_cv);
+            int const key{cv::waitKey(10)};
+            if (key == 'q' || key == 'Q' || key == 27)
+                break;
         }
     }
 

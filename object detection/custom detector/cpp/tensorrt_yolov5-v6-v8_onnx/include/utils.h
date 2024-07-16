@@ -29,18 +29,26 @@ static inline cv::Mat preprocess_img(cv::Mat& img, int input_w, int input_h) {
     return out;
 }
 
-float const id_colors[5][3] = {
-    { 232.0f, 176.0f, 59.0f},
-    { 175.0f, 208.0f, 25.0f},
-    { 102.0f, 205.0f, 105.0f},
-    { 185.0f, 0.0f, 255.0f},
-    { 99.0f, 107.0f, 252.0f}
-};
+std::vector<std::vector<int>> const CLASS_COLORS = {
+    {0, 114, 189},   {217, 83, 25},   {237, 177, 32},  {126, 47, 142},  {119, 172, 48},  {77, 190, 238},
+    {162, 20, 47},   {76, 76, 76},    {153, 153, 153}, {255, 0, 0},     {255, 128, 0},   {191, 191, 0},
+    {0, 255, 0},     {0, 0, 255},     {170, 0, 255},   {85, 85, 0},     {85, 170, 0},    {85, 255, 0},
+    {170, 85, 0},    {170, 170, 0},   {170, 255, 0},   {255, 85, 0},    {255, 170, 0},   {255, 255, 0},
+    {0, 85, 128},    {0, 170, 128},   {0, 255, 128},   {85, 0, 128},    {85, 85, 128},   {85, 170, 128},
+    {85, 255, 128},  {170, 0, 128},   {170, 85, 128},  {170, 170, 128}, {170, 255, 128}, {255, 0, 128},
+    {255, 85, 128},  {255, 170, 128}, {255, 255, 128}, {0, 85, 255},    {0, 170, 255},   {0, 255, 255},
+    {85, 0, 255},    {85, 85, 255},   {85, 170, 255},  {85, 255, 255},  {170, 0, 255},   {170, 85, 255},
+    {170, 170, 255}, {170, 255, 255}, {255, 0, 255},   {255, 85, 255},  {255, 170, 255}, {85, 0, 0},
+    {128, 0, 0},     {170, 0, 0},     {212, 0, 0},     {255, 0, 0},     {0, 43, 0},      {0, 85, 0},
+    {0, 128, 0},     {0, 170, 0},     {0, 212, 0},     {0, 255, 0},     {0, 0, 43},      {0, 0, 85},
+    {0, 0, 128},     {0, 0, 170},     {0, 0, 212},     {0, 0, 255},     {0, 0, 0},       {36, 36, 36},
+    {73, 73, 73},    {109, 109, 109}, {146, 146, 146}, {182, 182, 182}, {219, 219, 219}, {0, 114, 189},
+    {80, 183, 189},  {128, 128, 0}};
 
 inline cv::Scalar generateColorID_u(int idx) {
     if (idx < 0) return cv::Scalar(236, 184, 36, 255);
-    int color_idx = idx % 5;
-    return cv::Scalar(id_colors[color_idx][0], id_colors[color_idx][1], id_colors[color_idx][2], 255);
+    int color_idx = idx % CLASS_COLORS.size();
+    return cv::Scalar(CLASS_COLORS[color_idx][0], CLASS_COLORS[color_idx][1], CLASS_COLORS[color_idx][2], 255);
 }
 
 inline sl::float4 generateColorID_f(int idx) {
@@ -102,7 +110,7 @@ inline void drawVerticalLine(
     cv::line(left_display, pt4, end_pt, clr, thickness);
 }
 
-inline cv::Mat slMat2cvMat(sl::Mat& input) {
+inline cv::Mat slMat2cvMat(sl::Mat const& input) {
     // Mapping between MAT_TYPE and CV_TYPE
     int cv_type = -1;
     switch (input.getDataType()) {

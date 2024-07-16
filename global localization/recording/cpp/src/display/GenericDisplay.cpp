@@ -34,12 +34,21 @@ void GenericDisplay::updateRawGeoPoseData(sl::GNSSData geo_data)
     ofstream data;
     data.open ("../../../map server/raw_data.txt");
     data << std::fixed << std::setprecision(17);
+    data << std::fixed << std::setprecision(17);
     data << latitude;
     data << ",";
     data << longitude;
     data << ",";
     data << geo_data.ts.getMilliseconds();
-    data << "\n";
+    data << ",";
+    data << geo_data.longitude_std;
+    data << ",";
+    data << geo_data.latitude_std;
+    data << ",";
+    data << geo_data.altitude_std;
+    data << ",";
+    data << geo_data.gnss_status;
+    data.flush(); // flush will do the same thing than "\n" but without additional character
     data.close();
 }
 

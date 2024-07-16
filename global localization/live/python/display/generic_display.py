@@ -26,7 +26,8 @@ class GenericDisplay:
             # Replace this part with the appropriate sending of data to your IoT system
             latitude, longitude, _ = geo_data.get_coordinates(False)
             f = open('../../map server/raw_data.txt', 'w')
-            f.write("{},{},{}".format(latitude, longitude, geo_data.ts.get_milliseconds()))
+            f.write("{},{},{},{},{},{},{}".format(latitude, longitude, geo_data.ts.get_milliseconds(),geo_data.longitude_std, geo_data.latitude_std,geo_data.altitude_std, str(geo_data.gnss_status)))
+            f.flush()
 
         except ImportError:
             print("An exception was raised: the raw geo-pose data was not sent.")
@@ -39,7 +40,7 @@ class GenericDisplay:
                     .format(geo_pose.latlng_coordinates.get_latitude(False),
                             geo_pose.latlng_coordinates.get_longitude(False),
                             current_timestamp.get_milliseconds()))
-
+            f.flush()
             gnss_data = {}
             gnss_data["longitude"] = geo_pose.latlng_coordinates.get_latitude(False)
             gnss_data["latitude"] = geo_pose.latlng_coordinates.get_latitude(False)
