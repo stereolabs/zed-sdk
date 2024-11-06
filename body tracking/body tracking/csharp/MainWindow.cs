@@ -94,7 +94,6 @@ namespace sl
             isTrackingON = bt_params.enableObjectTracking;
             bt_params.enableSegmentation = false;
             bt_params.enableBodyFitting = true; // smooth skeletons moves
-            bt_params.imageSync = true; // the body tracking is synchronized to the image
             bt_params.detectionModel = sl.BODY_TRACKING_MODEL.HUMAN_BODY_ACCURATE;
             bt_params.bodyFormat = sl.BODY_FORMAT.BODY_38;
 
@@ -125,7 +124,7 @@ namespace sl
             bt_runtime_parameters.detectionConfidenceThreshold = 20;
 
             window_name = "ZED| 2D View";
-            Cv2.NamedWindow(window_name, WindowMode.Normal);// Create Window
+            Cv2.NamedWindow(window_name);// Create Window
 
             // Create OpenGL window
             CreateWindow();
@@ -234,7 +233,7 @@ namespace sl
                     // Retrieve Objects
                     zedCamera.RetrieveBodies(ref bodies, ref bt_runtime_parameters);
 
-                    TrackingViewer.render_2D(ref imageLeftOcv, imgScale, ref bodies, isTrackingON, bt_params.bodyFormat);
+                    TrackingViewer.render_2D(ref imageLeftOcv, imgScale, ref bodies, isTrackingON, bt_params.bodyFormat, bt_params.enableSegmentation);
 
                     //Update GL View
                     viewer.update(pointCloud, bodies, camPose);

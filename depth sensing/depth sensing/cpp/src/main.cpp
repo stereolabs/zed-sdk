@@ -79,8 +79,8 @@ int main(int argc, char **argv) {
 
     RuntimeParameters runParameters;
     // Setting the depth confidence parameters
-    runParameters.confidence_threshold = 100;
-    runParameters.texture_confidence_threshold = 100;
+    //runParameters.confidence_threshold = 98;
+    //runParameters.texture_confidence_threshold = 100;
 
     // Allocation of 4 channels of float on GPU
     Mat point_cloud(res, MAT_TYPE::F32_C4, sl::MEM::GPU);
@@ -92,7 +92,7 @@ int main(int argc, char **argv) {
             // retrieve the current 3D coloread point cloud in GPU
             zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, res);
             viewer.updatePointCloud(point_cloud);
-
+            std::cout << "FPS: " << zed.getCurrentFPS() << std::endl;
             if(viewer.shouldSaveData()){
                 sl::Mat point_cloud_to_save;
                 zed.retrieveMeasure(point_cloud_to_save, MEASURE::XYZRGBA);

@@ -32,14 +32,14 @@ class GenericDisplay:
         except ImportError:
             print("An exception was raised: the raw geo-pose data was not sent.")
 
-    def updateGeoPoseData(self, geo_pose, current_timestamp):
+    def updateGeoPoseData(self, geo_pose):
         try:
             # Replace this part with the appropriate sending of data to your IoT system
             f = open('../../map server/data.txt', 'w')
             f.write("{},{},{}"
                     .format(geo_pose.latlng_coordinates.get_latitude(False),
                             geo_pose.latlng_coordinates.get_longitude(False),
-                            current_timestamp.get_milliseconds()))
+                            geo_pose.timestamp.get_milliseconds()))
             f.flush()
         except ImportError:
             print("An exception was raised: the geo-pose data was not sent.")

@@ -38,6 +38,7 @@ def main():
     
     init = sl.InitParameters()
     init.depth_mode = sl.DEPTH_MODE.NONE # Set configuration parameters for the ZED
+    init.async_image_retrieval = False; # This parameter can be used to record SVO in camera FPS even if the grab loop is running at a lower FPS (due to compute for ex.)
 
     status = cam.open(init) 
     if status != sl.ERROR_CODE.SUCCESS: 

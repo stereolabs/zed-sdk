@@ -115,6 +115,7 @@ int main(int argc, char** argv) {
         if (zed_opt.find(".svo") != std::string::npos)
             init_parameters.input.setFromSVOFile(zed_opt.c_str());
     }
+
     // Open the camera
     auto returned_state = zed.open(init_parameters);
     if (returned_state != sl::ERROR_CODE::SUCCESS) {
@@ -186,7 +187,7 @@ int main(int argc, char** argv) {
                 tmp.label = (int) it.label;
                 tmp.bounding_box_2d = cvt(it.box);
                 tmp.is_grounded = ((int) it.label == 0); // Only the first class (person) is grounded, that is moving on the floor plane
-                // others are tracked in full 3D space                
+                                                         // others are tracked in full 3D space
                 objects_in.push_back(tmp);
             }
             // Send the custom detected boxes to the ZED

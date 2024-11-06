@@ -52,7 +52,7 @@ void GenericDisplay::updateRawGeoPoseData(sl::GNSSData geo_data)
     data.close();
 }
 
-void GenericDisplay::updateGeoPoseData(sl::GeoPose geo_pose, sl::Timestamp current_timestamp)
+void GenericDisplay::updateGeoPoseData(sl::GeoPose geo_pose)
 {
     // Make the pose available for the Live Server
     ofstream data;
@@ -62,7 +62,7 @@ void GenericDisplay::updateGeoPoseData(sl::GeoPose geo_pose, sl::Timestamp curre
     data << ",";
     data << geo_pose.latlng_coordinates.getLongitude(false);
     data << ",";
-    data << current_timestamp.getMilliseconds();
+    data << geo_pose.timestamp.getMilliseconds();
     data << "\n";
     data.close();
 

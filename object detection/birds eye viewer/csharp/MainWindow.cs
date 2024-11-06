@@ -109,7 +109,6 @@ class MainWindow
         obj_det_params.enableObjectTracking = true; // the object detection will track objects across multiple images, instead of an image-by-image basis
         isTrackingON = obj_det_params.enableObjectTracking;
         obj_det_params.enableSegmentation = false;
-        obj_det_params.imageSync = true; // the object detection is synchronized to the image
         obj_det_params.detectionModel = sl.OBJECT_DETECTION_MODEL.MULTI_CLASS_BOX_ACCURATE;
 
         if (USE_BATCHING)

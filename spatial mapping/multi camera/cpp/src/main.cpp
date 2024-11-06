@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
     for (auto& it : configurations) {
         sl::CameraIdentifier uuid(it.serial_number);
         // to subscribe to a camera you must give its serial number, the way to communicate with it (shared memory or local network), and its world pose in the setup.        
-        auto state = fusion.subscribe(uuid, it.communication_parameters, it.pose);
+        auto state = fusion.subscribe(uuid, it.communication_parameters, it.pose, it.override_gravity);
         if (state != sl::FUSION_ERROR_CODE::SUCCESS)
             std::cout << "Unable to subscribe to " << std::to_string(uuid.sn) << " . " << state << std::endl;
         else

@@ -86,7 +86,7 @@ MeshObject::~MeshObject() {
 void MeshObject::alloc(){
     glGenVertexArrays(1, &vaoID_);
     glGenBuffers(3, vboID_);
-    shader.it = Shader(MESH_VERTEX_SHADER, MESH_FRAGMENT_SHADER);
+    shader.it.set(MESH_VERTEX_SHADER, MESH_FRAGMENT_SHADER);
     shader.MVP_Mat = glGetUniformLocation(shader.it.getProgramId(), "u_mvpMatrix");
     shader.shColorLoc = glGetUniformLocation(shader.it.getProgramId(), "u_color");
 }
@@ -454,6 +454,10 @@ void GLViewer::printText() {
 }
 
 Shader::Shader(const GLchar* vs, const GLchar* fs) {
+    set(vs, fs);
+}
+
+void Shader::set(const GLchar* vs, const GLchar* fs) {
     if(!compile(verterxId_, GL_VERTEX_SHADER, vs)) {
         std::cout << "ERROR: while compiling vertex shader" << std::endl;
     }
@@ -488,12 +492,12 @@ Shader::Shader(const GLchar* vs, const GLchar* fs) {
 }
 
 Shader::~Shader() {
-    if(verterxId_ != 0)
+    if (verterxId_ != 0 && glIsShader(verterxId_))
         glDeleteShader(verterxId_);
-    if(fragmentId_ != 0)
+    if (fragmentId_ != 0 && glIsShader(fragmentId_))
         glDeleteShader(fragmentId_);
-    if(programId_ != 0)
-        glDeleteShader(programId_);
+    if (programId_ != 0 && glIsProgram(programId_))
+        glDeleteProgram(programId_);
 }
 
 GLuint Shader::getProgramId() {
@@ -528,18 +532,19 @@ bool Shader::compile(GLuint &shaderId, GLenum type, const GLchar* src) {
     return true;
 }
 
-ImageHandler::ImageHandler() {}
+ImageHandler::ImageHandler() : imageTex(0) {}
 
 ImageHandler::~ImageHandler() {
     close();
 }
 
 void ImageHandler::close() {
-    glDeleteTextures(1, &imageTex);
+    if (imageTex != 0)
+        glDeleteTextures(1, &imageTex);
 }
 
 bool ImageHandler::initialize(sl::Resolution res) {
-    shader.it = Shader(IMAGE_VERTEX_SHADER, IMAGE_FRAGMENT_SHADER);
+    shader.it.set(IMAGE_VERTEX_SHADER, IMAGE_FRAGMENT_SHADER);
     texID = glGetUniformLocation(shader.it.getProgramId(), "texImage");
     static const GLfloat g_quad_vertex_buffer_data[] = {
         -1.0f, -1.0f, 0.0f,

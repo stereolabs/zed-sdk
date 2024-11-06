@@ -204,7 +204,7 @@ int main(int argc, char **argv) {
             auto current_geopose_status = fusion.getGeoPose(current_geopose);
             if (current_geopose_status == sl::GNSS_FUSION_STATUS::OK) {
                 // Display it on the Live Server:
-                viewer.updateGeoPoseData(current_geopose, zed.getTimestamp(sl::TIME_REFERENCE::CURRENT));
+                viewer.updateGeoPoseData(current_geopose);
 
                 sl::Transform current_calibration = fusion.getGeoTrackingCalibration();
             } 

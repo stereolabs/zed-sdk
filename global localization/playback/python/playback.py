@@ -156,7 +156,7 @@ def main():
             current_geopose_satus = fusion.get_geo_pose(current_geopose)
             if current_geopose_satus == sl.GNSS_FUSION_STATUS.OK:
                 # Display it on the Live Server
-                viewer.updateGeoPoseData(current_geopose, zed.get_timestamp(sl.TIME_REFERENCE.CURRENT))
+                viewer.updateGeoPoseData(current_geopose)
                 _, yaw_std, position_std = fusion.get_current_gnss_calibration_std()
                 if yaw_std != -1:
                     print("GNSS State : ", current_geopose_satus, " : calibration uncertainty yaw_std ", yaw_std,

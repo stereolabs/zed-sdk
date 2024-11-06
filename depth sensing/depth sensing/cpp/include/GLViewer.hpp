@@ -98,9 +98,19 @@ private:
 class Shader {
 public:
 
-    Shader() {}
+    Shader() : verterxId_(0), fragmentId_(0), programId_(0) {}
     Shader(const GLchar* vs, const GLchar* fs);
     ~Shader();
+
+    // Delete the move constructor and move assignment operator
+    Shader(Shader&&) = delete;
+    Shader& operator=(Shader&&) = delete;
+
+    // Delete the copy constructor and copy assignment operator
+    Shader(const Shader&) = delete;
+    Shader& operator=(const Shader&) = delete;
+
+    void set(const GLchar* vs, const GLchar* fs);
     GLuint getProgramId();
 
     static const GLint ATTRIB_VERTICES_POS = 0;
@@ -115,7 +125,7 @@ private:
 class Simple3DObject {
 public:
 
-    Simple3DObject() {}
+    Simple3DObject();
     Simple3DObject(sl::Translation position, bool isStatic);
     ~Simple3DObject();
 

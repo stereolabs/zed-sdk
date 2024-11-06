@@ -7,6 +7,7 @@ add_executable(${PROJECT_NAME}
 	MainWindow.cs
 	GLViewer.cs
 	TrackingViewer.cs
+	Utils.cs
 	App.config
 	packages.config
 	Properties/AssemblyInfo.cs

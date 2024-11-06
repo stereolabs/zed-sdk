@@ -143,7 +143,7 @@ int main(int argc, char **argv) {
             auto current_geopose_satus = fusion.getGeoPose(current_geopose);
             if (current_geopose_satus == sl::GNSS_FUSION_STATUS::OK) {
                 // Display it on the Live Server:
-                viewer.updateGeoPoseData(current_geopose, zed.getTimestamp(sl::TIME_REFERENCE::CURRENT));
+                viewer.updateGeoPoseData(current_geopose);
             } else {
                 // GNSS coordinate system to ZED coordinate system is not initialize yet
                 // The initialisation between the coordinates system is basically an optimization problem that

@@ -149,17 +149,17 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters param, bool isTr
     glEnable(GL_FRAMEBUFFER_SRGB);
 
     // Compile and create the shader for 3D objects
-    shader.it = Shader(VERTEX_SHADER, FRAGMENT_SHADER);
+    shader.it.set(VERTEX_SHADER, FRAGMENT_SHADER);
     shader.MVP_Mat = glGetUniformLocation(shader.it.getProgramId(), "u_mvpMatrix");
 
     // Create the rendering camera
     setRenderCameraProjection(param,0.5f,20);
 
     // Create the bounding box object
-	BBox_edges = Simple3DObject(sl::Translation(0, 0, 0), false);
+    BBox_edges.init(sl::Translation(0, 0, 0), false);
 	BBox_edges.setDrawingType(GL_LINES);
 
-	BBox_faces = Simple3DObject(sl::Translation(0, 0, 0), false);
+    BBox_faces.init(sl::Translation(0, 0, 0), false);
 	BBox_faces.setDrawingType(GL_QUADS);
 
     // Set background color (black)
@@ -371,24 +371,23 @@ void GLViewer::idle() {
     glutPostRedisplay();
 }
 
-Simple3DObject::Simple3DObject() {
-    is_init=false;
-}
-
-Simple3DObject::Simple3DObject(sl::Translation position, bool isStatic) : isStatic_(isStatic) {
-	vaoID_ = 0;
-	drawingType_ = GL_TRIANGLES;
-	position_ = position;
-	rotation_.setIdentity();
-}
+Simple3DObject::Simple3DObject() : vaoID_(0), is_init(false) {}
 
 Simple3DObject::~Simple3DObject() {
-    if (vaoID_ != 0) {
+    if (is_init) {
         glDeleteBuffers(4, vboID_);
         glDeleteVertexArrays(1, &vaoID_);
         vaoID_=0;
         is_init=false;
     }
+}
+
+void Simple3DObject::init(const sl::Translation& position, const bool isStatic) {
+    vaoID_ = 0;
+    drawingType_ = GL_TRIANGLES;
+    position_ = position;
+	isStatic_ = isStatic;
+    rotation_.setIdentity();
 }
 
 bool Simple3DObject::isInit()
@@ -871,6 +870,10 @@ sl::Transform Simple3DObject::getModelMatrix() const {
 }
 
 Shader::Shader(const GLchar* vs, const GLchar* fs) {
+    set(vs, fs);
+}
+
+void Shader::set(const GLchar* vs, const GLchar* fs) {
     if (!compile(verterxId_, GL_VERTEX_SHADER, vs)) {
         std::cout << "ERROR: while compiling vertex shader" << std::endl;
     }
@@ -906,12 +909,12 @@ Shader::Shader(const GLchar* vs, const GLchar* fs) {
 }
 
 Shader::~Shader() {
-    if (verterxId_ != 0)
+    if (verterxId_ != 0 && glIsShader(verterxId_))
         glDeleteShader(verterxId_);
-    if (fragmentId_ != 0)
+    if (fragmentId_ != 0 && glIsShader(fragmentId_))
         glDeleteShader(fragmentId_);
-    if (programId_ != 0)
-        glDeleteShader(programId_);
+    if (programId_ != 0 && glIsProgram(programId_))
+        glDeleteProgram(programId_);
 }
 
 GLuint Shader::getProgramId() {
@@ -971,18 +974,19 @@ const GLchar* IMAGE_VERTEX_SHADER =
         "}\n";
 
 
-ImageHandler::ImageHandler() {}
+ImageHandler::ImageHandler() : imageTex(0) {}
 
 ImageHandler::~ImageHandler() {
     close();
 }
 
 void ImageHandler::close() {
-    glDeleteTextures(1, &imageTex);
+    if (imageTex != 0)
+        glDeleteTextures(1, &imageTex);
 }
 
 bool ImageHandler::initialize(sl::Resolution res) {
-    shaderImage.it = Shader(IMAGE_VERTEX_SHADER,IMAGE_FRAGMENT_SHADER);
+    shaderImage.it.set(IMAGE_VERTEX_SHADER,IMAGE_FRAGMENT_SHADER);
     texID = glGetUniformLocation(shaderImage.it.getProgramId(), "texImage");
     static const GLfloat g_quad_vertex_buffer_data[] = {
         -1.0f, -1.0f, 0.0f,

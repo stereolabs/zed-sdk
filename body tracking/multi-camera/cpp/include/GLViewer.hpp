@@ -28,10 +28,19 @@
 class Shader {
 public:
 
-    Shader() {
-    }
+    Shader() : verterxId_(0), fragmentId_(0), programId_(0) {}
     Shader(const GLchar* vs, const GLchar* fs);
     ~Shader();
+
+    // Delete the move constructor and move assignment operator
+    Shader(Shader&&) = delete;
+    Shader& operator=(Shader&&) = delete;
+
+    // Delete the copy constructor and copy assignment operator
+    Shader(const Shader&) = delete;
+    Shader& operator=(const Shader&) = delete;
+
+    void set(const GLchar* vs, const GLchar* fs);
     GLuint getProgramId();
 
     static const GLint ATTRIB_VERTICES_POS = 0;
@@ -229,18 +238,21 @@ public:
     GLViewer();
     ~GLViewer();
     bool isAvailable();
+    bool isPlaying() const { return play; }
+
     void init(int argc, char **argv);
 
     void updateCamera(int, sl::Mat &, sl::Mat &);
+    void updateCamera(sl::Mat &);
 
-    void updateBodies(sl::Bodies &objs,std::map<sl::CameraIdentifier, sl::Bodies>& singldata, sl::FusionMetrics& metrics);
+    void updateBodies(sl::Bodies &objs,std::map<sl::CameraIdentifier, sl::Bodies>& singledata, sl::FusionMetrics& metrics);
     
     void setCameraPose(int, sl::Transform);
 
-    unsigned char getKey() {
-        auto ret_v = lastPressedKey;
-        lastPressedKey = ' ';
-        return ret_v;
+    int getKey() {
+        const int key = last_key;
+        last_key = -1;
+        return key;
     }
 
     void exit();
@@ -262,8 +274,9 @@ private:
     static void keyReleasedCallback(unsigned char c, int x, int y);
     static void idle();
 
-    void addSKeleton(sl::BodyData &, Simple3DObject &, sl::float3 clr_id, bool raw, sl::BODY_FORMAT format);
     void addSKeleton(sl::BodyData &, Simple3DObject &, sl::float3 clr_id, bool raw);
+
+    sl::float3 getColor(int, bool);
 
     bool available;
     bool drawBbox = false;
@@ -292,6 +305,7 @@ private:
     KEY_STATE keyStates_[256];
 
     std::mutex mtx;
+    std::mutex mtx_clr;
 
     ShaderData shader;
 
@@ -316,9 +330,11 @@ private:
     bool show_raw = false;
     bool draw_flat_color = false;
 
-    std::uniform_int_distribution<uint32_t> uint_dist360;
+    std::uniform_int_distribution<uint16_t> uint_dist360;
     std::mt19937 rng;
 
+    bool play = true;
+    int last_key = -1;
 };
 
 #endif /* __VIEWER_INCLUDE__ */

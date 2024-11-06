@@ -72,7 +72,7 @@ def torch_thread(weights, img_size, conf_thres=0.2, iou_thres=0.45):
         if run_signal:
             lock.acquire()
 
-            img = cv2.cvtColor(image_net, cv2.COLOR_BGRA2RGB)
+            img = cv2.cvtColor(image_net, cv2.COLOR_RGBA2RGB)
             # https://docs.ultralytics.com/modes/predict/#video-suffixes
             det = model.predict(img, save=False, imgsz=img_size, conf=conf_thres, iou=iou_thres)[0].cpu().numpy().boxes
 

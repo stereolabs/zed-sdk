@@ -35,7 +35,7 @@ void TrackingViewer::render_2D(cv::Mat &left_display, sl::float2 img_scale, std:
             // scaled ROI
             cv::Rect roi(top_left_corner, bottom_right_corner);
             // Use isInit() to check if mask is available
-            if (obj.mask.isInit()) {
+            if (obj.mask.isInit() && obj.mask.getWidth() > 0 && obj.mask.getHeight() > 0) {
                 // Here, obj.mask is the object segmentation mask inside the object bbox, computed on the native resolution
                 // The resize is needed to get the mask on the display resolution
                 cv::Mat tmp_mask;

@@ -6,6 +6,7 @@ using System.Numerics;
 using sl;
 
 using OpenCvSharp;
+using System.Windows.Media.Media3D;
 
 
 public class TrackingViewer
@@ -58,7 +59,7 @@ public class TrackingViewer
         return position;
     }
 
-    public static void render_2D(ref OpenCvSharp.Mat left_display, sl.float2 img_scale, ref sl.Bodies bodies, bool showOnlyOK, sl.BODY_FORMAT body_format)
+    public static void render_2D(ref OpenCvSharp.Mat left_display, sl.float2 img_scale, ref sl.Bodies bodies, bool showOnlyOK, sl.BODY_FORMAT body_format, bool render_mask)
     {
         OpenCvSharp.Mat overlay = left_display.Clone();
         OpenCvSharp.Rect roi_render = new OpenCvSharp.Rect(1, 1, left_display.Size().Width, left_display.Size().Height);
@@ -90,6 +91,29 @@ public class TrackingViewer
                         {
                             Cv2.Circle(left_display, cv_kp, 3, base_color, -1);
                             //Cv2.PutText(left_display, Array.IndexOf(bod.keypoints2D,kp).ToString(), cv_kp, HersheyFonts.HersheyPlain, 1, base_color);
+                        }
+                    }
+                }
+
+                if (render_mask)
+                {
+                    Point top_left_corner = Utils.cvt(bod.boundingBox2D[0], img_scale);
+                    Point top_right_corner = Utils.cvt(bod.boundingBox2D[1], img_scale);
+                    Point bottom_left_corner = Utils.cvt(bod.boundingBox2D[3], img_scale);
+                    var width = (int)Math.Abs(top_right_corner.X - top_left_corner.X);
+                    var height = (int)Math.Abs(bottom_left_corner.Y - top_left_corner.Y);
+                    // Scaled ROI
+                    OpenCvSharp.Rect roi = new OpenCvSharp.Rect(top_left_corner.X, top_left_corner.Y, width, height);
+                    sl.Mat mask = new sl.Mat(bod.mask);
+                    if (mask.IsInit())
+                    {
+                        sl.Mat m = new sl.Mat();
+                        mask.CopyTo(m);
+                        OpenCvSharp.Mat tmp_mask = new OpenCvSharp.Mat(mask.GetHeight(), mask.GetWidth(), OpenCvSharp.MatType.CV_8UC1, m.GetPtr());
+                        if (!tmp_mask.Empty())
+                        {
+                            var mask_resized = tmp_mask.Resize(roi.Size);
+                            overlay.SubMat(roi).SetTo(base_color, mask_resized);
                         }
                     }
                 }

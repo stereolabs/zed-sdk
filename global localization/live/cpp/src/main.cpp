@@ -125,7 +125,7 @@ int main(int argc, char **argv)
             if (current_geopose_satus == sl::GNSS_FUSION_STATUS::OK)
             {
                 // Display it on the Live Server:
-                viewer.updateGeoPoseData(current_geopose, zed.getTimestamp(sl::TIME_REFERENCE::CURRENT));
+                viewer.updateGeoPoseData(current_geopose);
             }
             else
             {

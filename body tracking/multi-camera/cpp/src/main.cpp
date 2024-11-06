@@ -50,6 +50,8 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
+    Trigger trigger;
+
     // Check if the ZED camera should run within the same process or if they are running on the edge.
     std::vector<ClientPublisher> clients(configurations.size());
     int id_ = 0;
@@ -58,7 +60,7 @@ int main(int argc, char **argv) {
         // if the ZED camera should run locally, then start a thread to handle it
         if(conf.communication_parameters.getType() == sl::CommunicationParameters::COMM_TYPE::INTRA_PROCESS){
             std::cout << "Try to open ZED " <<conf.serial_number << ".." << std::flush;
-            auto state = clients[id_].open(conf.input_type);
+            auto state = clients[id_].open(conf.input_type, &trigger);
             if (!state) {
                 std::cerr << "Could not open ZED: " << conf.input_type.getConfiguration() << ". Skipping..." << std::endl;
                 continue;
@@ -85,7 +87,6 @@ int main(int argc, char **argv) {
         }
     }
 
-
     // start camera threads
     for (auto &it: clients)
         it.start();
@@ -104,8 +105,8 @@ int main(int argc, char **argv) {
     std::vector<sl::CameraIdentifier> cameras;
     for (auto& it : configurations) {
         sl::CameraIdentifier uuid(it.serial_number);
-        // to subscribe to a camera you must give its serial number, the way to communicate with it (shared memory or local network), and its world pose in the setup.
-        auto state = fusion.subscribe(uuid, it.communication_parameters, it.pose);
+        // to subscribe to a camera you must give its serial number, the way to communicate with it (shared memory or local network), and its world pose in the setup.        
+        auto state = fusion.subscribe(uuid, it.communication_parameters, it.pose, it.override_gravity);
         if (state != sl::FUSION_ERROR_CODE::SUCCESS)
             std::cout << "Unable to subscribe to " << std::to_string(uuid.sn) << " . " << state << std::endl;
         else
@@ -129,18 +130,20 @@ int main(int argc, char **argv) {
     sl::BodyTrackingFusionRuntimeParameters body_tracking_runtime_parameters;
     // be sure that the detection skeleton is complete enough
     body_tracking_runtime_parameters.skeleton_minimum_allowed_keypoints = 7;
-
     // we can also want to retrieve skeleton seen by multiple camera, in this case at least half of them
     body_tracking_runtime_parameters.skeleton_minimum_allowed_camera = cameras.size() / 2.;
+
 
     // creation of a 3D viewer
     GLViewer viewer;
     viewer.init(argc, argv);
 
     std::cout << "Viewer Shortcuts\n" <<
-        "\t- 'r': swicth on/off for raw skeleton display\n" <<
-        "\t- 'p': swicth on/off for live point cloud display\n" <<
-        "\t- 'c': swicth on/off point cloud display with flat color\n" << std::endl;
+        "\t- 'q': quit the application\n" <<
+        "\t- 'p': play/pause the GLViewer\n" <<
+        "\t- 'r': switch on/off for raw skeleton display\n" <<
+        "\t- 's': switch on/off for live point cloud display\n" <<
+        "\t- 'c': switch on/off point cloud display with raw color\n" << std::endl;
 
     // fusion outputs
     sl::Bodies fused_bodies;
@@ -149,15 +152,19 @@ int main(int argc, char **argv) {
     std::map<sl::CameraIdentifier, sl::Mat> views;
     std::map<sl::CameraIdentifier, sl::Mat> pointClouds;
     sl::Resolution low_res(512,360);
+    sl::CameraIdentifier fused_camera(0);
 
     // run the fusion as long as the viewer is available.
     while (viewer.isAvailable()) {
+        trigger.notifyZED();
+
         // run the fusion process (which gather data from all camera, sync them and process them)
         if (fusion.process() == sl::FUSION_ERROR_CODE::SUCCESS) {
             // Retrieve fused body
             fusion.retrieveBodies(fused_bodies, body_tracking_runtime_parameters);
-            // for debug, you can retrieve the data send by each camera
-            for (auto& id : cameras) {
+
+            // for debug, you can retrieve the data sent by each camera
+            for (auto& id : cameras) { 
                 fusion.retrieveBodies(camera_raw_data[id], body_tracking_runtime_parameters, id);
                 sl::Pose pose;
                 if(fusion.getPosition(pose, sl::REFERENCE_FRAME::WORLD, id, sl::POSITION_TYPE::RAW) == sl::POSITIONAL_TRACKING_STATE::OK)
@@ -165,8 +172,9 @@ int main(int argc, char **argv) {
 
                 auto state_view = fusion.retrieveImage(views[id], id, low_res);
                 auto state_pc = fusion.retrieveMeasure(pointClouds[id], id, sl::MEASURE::XYZBGRA, low_res);
-                if(state_view == sl::FUSION_ERROR_CODE::SUCCESS && state_pc ==  sl::FUSION_ERROR_CODE::SUCCESS)
-                    viewer.updateCamera(id.sn, views[id], pointClouds[id]);                    
+
+                if (state_view == sl::FUSION_ERROR_CODE::SUCCESS && state_pc == sl::FUSION_ERROR_CODE::SUCCESS)
+                    viewer.updateCamera(id.sn, views[id], pointClouds[id]);
             }
 
             // get metrics about the fusion process for monitoring purposes
@@ -174,11 +182,16 @@ int main(int argc, char **argv) {
         }
         // update the 3D view
         viewer.updateBodies(fused_bodies, camera_raw_data, metrics);
-                
-        sl::sleep_ms(10);
+
+        while (!viewer.isPlaying() && viewer.isAvailable()) {
+            sl::sleep_ms(10);
+        }
     }
 
     viewer.exit();
+    
+    trigger.running = false;
+    trigger.notifyZED();
 
     for (auto &it: clients)
         it.stop();
