@@ -51,7 +51,7 @@ public:
      * @param geo_pose geopose to display
      * @param current_timestamp timestamp of the geopose to display
      */
-    void updateGeoPoseData(sl::GeoPose geo_pose, sl::Timestamp current_timestamp);
+    void updateGeoPoseData(sl::GeoPose geo_pose);
 
 protected:
     GLViewer opengl_viewer;

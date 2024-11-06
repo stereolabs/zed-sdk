@@ -32,7 +32,7 @@
 
 ---
 
-:tada: The **ZED SDK 4.1** is released! We support the [**ZED X**](https://www.stereolabs.com/zed-x/) and [**ZED X Mini**](https://www.stereolabs.com/zed-x/) cameras, added the **Fusion API** for multi-camera Body Tracking, and more! Please check the [Release Notes](https://www.stereolabs.com/developers/release/) of the latest version for more details.
+:tada: The **ZED SDK 4.2** is released! We support the [**ZED X**](https://www.stereolabs.com/zed-x/) and [**ZED X Mini**](https://www.stereolabs.com/zed-x/) cameras, added the **Fusion API** for multi-camera Body Tracking, and more! Please check the [Release Notes](https://www.stereolabs.com/developers/release/) of the latest version for more details.
 
 ## Overview
 

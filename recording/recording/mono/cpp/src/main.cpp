@@ -49,6 +49,7 @@ int main(int argc, char **argv) {
     // Set configuration parameters for the ZED
     InitParameters init_parameters;
     init_parameters.depth_mode = DEPTH_MODE::NONE;
+    init_parameters.async_image_retrieval = false; //This parameter can be used to record SVO in camera FPS even if the grab loop is running at a lower FPS (due to compute for ex.)
     parseArgs(argc,argv,init_parameters);
 
     // Open the camera
@@ -61,7 +62,7 @@ int main(int argc, char **argv) {
     // Enable recording with the filename specified in argument
     RecordingParameters recording_parameters;
     recording_parameters.video_filename.set(argv[1]);
-    recording_parameters.compression_mode = SVO_COMPRESSION_MODE::H264;
+    recording_parameters.compression_mode = SVO_COMPRESSION_MODE::H265;
     returned_state = zed.enableRecording(recording_parameters);
     if (returned_state != ERROR_CODE::SUCCESS) {
         print("Recording ZED : ", returned_state);
@@ -72,15 +73,12 @@ int main(int argc, char **argv) {
     // Start recording SVO, stop with Ctrl-C command
     print("SVO is Recording, use Ctrl-C to stop." );
     SetCtrlHandler();
-    int frames_recorded = 0;
     sl::RecordingStatus rec_status;
     while (!exit_app) {
         if (zed.grab() == ERROR_CODE::SUCCESS) {
             // Each new frame is added to the SVO file
             rec_status = zed.getRecordingStatus();
-            if (rec_status.status)
-                frames_recorded++;
-            print("Frame count: " +to_string(frames_recorded));
+            printf(" NFrames SVO: %d  / %d\n",rec_status.number_frames_ingested,rec_status.number_frames_encoded);
         }
         else
             break;

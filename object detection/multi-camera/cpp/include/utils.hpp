@@ -2,13 +2,54 @@
 
 #include <sl/Camera.hpp>
 
+inline bool renderObject(const sl::ObjectData& i, const bool isTrackingON) {
+    if (isTrackingON)
+        return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK);
+    else
+        return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK || i.tracking_state == sl::OBJECT_TRACKING_STATE::OFF);
+}
+
+float const id_colors[5][3] = {
+    { 232.0f, 176.0f ,59.0f },
+    { 175.0f, 208.0f ,25.0f },
+    { 102.0f, 205.0f ,105.0f},
+    { 185.0f, 0.0f   ,255.0f},
+    { 99.0f, 107.0f  ,252.0f}
+};
+
+inline sl::float4 generateColorID_u(int idx) {
+    if (idx < 0) return sl::float4(236, 184, 36, 255);
+    int color_idx = idx % 5;
+    return sl::float4(id_colors[color_idx][0], id_colors[color_idx][1], id_colors[color_idx][2], 255);
+}
+
+inline sl::float4 generateColorID_f(int idx) {
+    auto clr_u = generateColorID_u(idx);
+    return sl::float4(static_cast<float>(clr_u[0]) / 255.f, static_cast<float>(clr_u[1]) / 255.f, static_cast<float>(clr_u[2]) / 255.f, 1.f);
+}
+
+float const class_colors[6][3] = {
+    { 44.0f, 117.0f, 255.0f}, // PEOPLE
+    { 255.0f, 0.0f, 255.0f}, // VEHICLE
+    { 0.0f, 0.0f, 255.0f},
+    { 0.0f, 255.0f, 255.0f},
+    { 0.0f, 255.0f, 0.0f},
+    { 255.0f, 255.0f, 255.0f}
+};
+
+inline sl::float4 getColorClass(int idx) {
+    idx = std::min(5, idx);
+    sl::float4 clr(class_colors[idx][0], class_colors[idx][1], class_colors[idx][2], 1.f);
+    return clr / 255.f;
+}
+
 /**
 * @brief Compute the start frame of each SVO for playback to be synced
 *
 * @param svo_files Map camera index to SVO file path
 * @return Map camera index to starting SVO frame for synced playback
 */
-std::map<int, int> syncDATA(std::map<int, std::string> svo_files) {
+static std::map<int, int> syncDATA(std::map<int, std::string> svo_files) {
     std::map<int, int> output; // map of camera index and frame index of the starting point for each
 
     // Open all SVO

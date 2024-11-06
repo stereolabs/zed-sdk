@@ -145,10 +145,10 @@ void GLViewer::init(int argc, char **argv) {
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 
     // Compile and create the shader for 3D objects
-    shaderSK.it = Shader(SK_VERTEX_SHADER, SK_FRAGMENT_SHADER);
+    shaderSK.it.set(SK_VERTEX_SHADER, SK_FRAGMENT_SHADER);
     shaderSK.MVP_Mat = glGetUniformLocation(shaderSK.it.getProgramId(), "u_mvpMatrix");
 
-    shaderLine.it = Shader(VERTEX_SHADER, FRAGMENT_SHADER);
+    shaderLine.it.set(VERTEX_SHADER, FRAGMENT_SHADER);
     shaderLine.MVP_Mat = glGetUniformLocation(shaderLine.it.getProgramId(), "u_mvpMatrix");
 
     // Create the camera
@@ -373,8 +373,7 @@ void GLViewer::idle() {
     glutPostRedisplay();
 }
 
-Simple3DObject::Simple3DObject() {
-}
+Simple3DObject::Simple3DObject() : vaoID_(0) {}
 
 Simple3DObject::~Simple3DObject() {
     if (vaoID_ != 0) {
@@ -721,6 +720,10 @@ sl::Transform Simple3DObject::getModelMatrix() const {
 }
 
 Shader::Shader(const GLchar* vs, const GLchar* fs) {
+    set(vs, fs);
+}
+
+void Shader::set(const GLchar* vs, const GLchar* fs) {
     if (!compile(verterxId_, GL_VERTEX_SHADER, vs)) {
         std::cout << "ERROR: while compiling vertex shader" << std::endl;
     }
@@ -756,12 +759,12 @@ Shader::Shader(const GLchar* vs, const GLchar* fs) {
 }
 
 Shader::~Shader() {
-    if (verterxId_ != 0)
+    if (verterxId_ != 0 && glIsShader(verterxId_))
         glDeleteShader(verterxId_);
-    if (fragmentId_ != 0)
+    if (fragmentId_ != 0 && glIsShader(fragmentId_))
         glDeleteShader(fragmentId_);
-    if (programId_ != 0)
-        glDeleteShader(programId_);
+    if (programId_ != 0 && glIsProgram(programId_))
+        glDeleteProgram(programId_);
 }
 
 GLuint Shader::getProgramId() {

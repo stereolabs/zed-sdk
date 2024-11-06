@@ -147,10 +147,10 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters &param) {
 	floorFind = false;
 
 	// Compile and create the shader
-	shader.it = Shader(VERTEX_SHADER, FRAGMENT_SHADER);
+	shader.it.set(VERTEX_SHADER, FRAGMENT_SHADER);
 	shader.MVP_Mat = glGetUniformLocation(shader.it.getProgramId(), "u_mvpMatrix");
 
-	shaderLine.it = Shader(VERTEX_SHADER, FRAGMENT_SHADER);
+	shaderLine.it.set(VERTEX_SHADER, FRAGMENT_SHADER);
 	shaderLine.MVP_Mat = glGetUniformLocation(shaderLine.it.getProgramId(), "u_mvpMatrix");
 
 	// Create the camera
@@ -527,6 +527,10 @@ sl::Transform Simple3DObject::getModelMatrix() const {
 }
 
 Shader::Shader(const GLchar* vs, const GLchar* fs) {
+	set(vs, fs);
+}
+
+void Shader::set(const GLchar* vs, const GLchar* fs) {
 	if (!compile(verterxId_, GL_VERTEX_SHADER, vs)) {
 		std::cout << "ERROR: while compiling vertex shader" << std::endl;
 	}
@@ -562,12 +566,12 @@ Shader::Shader(const GLchar* vs, const GLchar* fs) {
 }
 
 Shader::~Shader() {
-	if (verterxId_ != 0)
+	if (verterxId_ != 0 && glIsShader(verterxId_))
 		glDeleteShader(verterxId_);
-	if (fragmentId_ != 0)
+	if (fragmentId_ != 0 && glIsShader(fragmentId_))
 		glDeleteShader(fragmentId_);
-	if (programId_ != 0)
-		glDeleteShader(programId_);
+	if (programId_ != 0 && glIsProgram(programId_))
+		glDeleteProgram(programId_);
 }
 
 GLuint Shader::getProgramId() {
@@ -651,7 +655,7 @@ void PointCloud::initialize(sl::Resolution res) {
 
 	checkError(cudaGraphicsGLRegisterBuffer(&bufferCudaID_, bufferGLID_, cudaGraphicsRegisterFlagsWriteDiscard));
 
-	shader.it = Shader(POINTCLOUD_VERTEX_SHADER, POINTCLOUD_FRAGMENT_SHADER);
+	shader.it.set(POINTCLOUD_VERTEX_SHADER, POINTCLOUD_FRAGMENT_SHADER);
 	shader.MVP_Mat = glGetUniformLocation(shader.it.getProgramId(), "u_mvpMatrix");
 
 	matGPU_.alloc(res, sl::MAT_TYPE::F32_C4, sl::MEM::GPU);
@@ -858,7 +862,7 @@ const GLchar* IMAGE_FRAGMENT_SHADER =
 "	color = vec4(texture(texImage, scaler).zyxw);\n"
 "}";
 
-ImageHandler::ImageHandler():init(false) {}
+ImageHandler::ImageHandler() : vaoID_(0), init(false) {}
 
 ImageHandler::~ImageHandler() {
 	close();
@@ -868,15 +872,17 @@ void ImageHandler::close() {
 	if (init) {
 		init = false;
 		glDeleteTextures(1, &imageTex);
-		glDeleteBuffers(3, vboID_);
-		glDeleteVertexArrays(1, &vaoID_);
+		if (vaoID_ != 0) {
+			glDeleteVertexArrays(1, &vaoID_);
+			glDeleteBuffers(3, vboID_);
+		}
 	}
 }
 
 bool ImageHandler::initialize(sl::Resolution res) {
 	glEnable(GL_TEXTURE_2D);
 	glDisable(GL_DEPTH_TEST);
-	shader = Shader(IMAGE_VERTEX_SHADER, IMAGE_FRAGMENT_SHADER);
+	shader.set(IMAGE_VERTEX_SHADER, IMAGE_FRAGMENT_SHADER);
 	texID = glGetUniformLocation(shader.getProgramId(), "texImage");
 
 	glGenVertexArrays(1, &vaoID_);

@@ -124,13 +124,13 @@ void GLViewer::init(int argc, char **argv, sl::Mat &image, sl::Mat & pointcloud,
     pc_render.initialize(pointcloud);
     camera_viewer.initialize(image);
 
-    shader.it = Shader((GLchar*) MESH_VERTEX_SHADER, (GLchar*) MESH_FRAGMENT_SHADER);
+    shader.it.set((GLchar*) MESH_VERTEX_SHADER, (GLchar*) MESH_FRAGMENT_SHADER);
     shader.MVPM = glGetUniformLocation(shader.it.getProgramId(), "u_mvpMatrix");
 
-    shader_mesh.it = Shader((GLchar*) MESH_VERTEX_SHADER, (GLchar*) MESH_FRAGMENT_SHADER);
+    shader_mesh.it.set((GLchar*) MESH_VERTEX_SHADER, (GLchar*) MESH_FRAGMENT_SHADER);
     shader_mesh.MVPM = glGetUniformLocation(shader_mesh.it.getProgramId(), "u_mvpMatrix");
 
-    shader_fpc.it = Shader((GLchar*) POINTCLOUD_VERTEX_SHADER, (GLchar*) POINTCLOUD_FRAGMENT_SHADER);
+    shader_fpc.it.set((GLchar*) POINTCLOUD_VERTEX_SHADER, (GLchar*) POINTCLOUD_FRAGMENT_SHADER);
     shader_fpc.MVPM = glGetUniformLocation(shader_fpc.it.getProgramId(), "u_mvpMatrix");
 
     camera_ = CameraGL(sl::Translation(0, 2, 2.000), sl::Translation(0, 0, -0.1));
@@ -530,6 +530,10 @@ void MeshObject::draw(bool draw_wire) {
 }
 
 Shader::Shader(const GLchar* vs, const GLchar* fs) {
+    set(vs, fs);
+}
+
+void Shader::set(const GLchar* vs, const GLchar* fs) {
     if (!compile(verterxId_, GL_VERTEX_SHADER, vs)) {
         std::cout << "ERROR: while compiling vertex shader" << std::endl;
     }
@@ -565,12 +569,12 @@ Shader::Shader(const GLchar* vs, const GLchar* fs) {
 }
 
 Shader::~Shader() {
-    if (verterxId_ != 0)
+    if (verterxId_ != 0 && glIsShader(verterxId_))
         glDeleteShader(verterxId_);
-    if (fragmentId_ != 0)
+    if (fragmentId_ != 0 && glIsShader(fragmentId_))
         glDeleteShader(fragmentId_);
-    if (programId_ != 0)
-        glDeleteShader(programId_);
+    if (programId_ != 0 && glIsProgram(programId_))
+        glDeleteProgram(programId_);
 }
 
 GLuint Shader::getProgramId() {
@@ -642,7 +646,7 @@ void PointCloud::initialize(sl::Mat &ref) {
     if (err != cudaSuccess)
         std::cerr << "Error: CUDA GetMappedPointer (" << err << ")" << std::endl;
 
-    shader_ = Shader(POINTCLOUD_VERTEX_SHADER, POINTCLOUD_FRAGMENT_SHADER);
+    shader_.set(POINTCLOUD_VERTEX_SHADER, POINTCLOUD_FRAGMENT_SHADER);
     shMVPMatrixLoc_ = glGetUniformLocation(shader_.getProgramId(), "u_mvpMatrix");
 }
 
@@ -893,7 +897,7 @@ bool CameraViewer::initialize(sl::Mat &im) {
     faces.push_back(sl::uint3(0,2,3));
 
     ref = im;
-	shader = Shader(VERTEX_SHADER_TEXTURE, FRAGMENT_SHADER_TEXTURE);
+	shader.set(VERTEX_SHADER_TEXTURE, FRAGMENT_SHADER_TEXTURE);
     shMVPMatrixLocTex_ = glGetUniformLocation(shader.getProgramId(), "u_mvpMatrix");
 
 	glGenVertexArrays(1, &vaoID_);

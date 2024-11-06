@@ -124,7 +124,7 @@ def main():
             current_geopose = sl.GeoPose()
             current_geopose_satus = fusion.get_geo_pose(current_geopose)
             if current_geopose_satus == sl.GNSS_FUSION_STATUS.OK:
-                viewer.updateGeoPoseData(current_geopose, zed.get_timestamp(sl.TIME_REFERENCE.CURRENT))
+                viewer.updateGeoPoseData(current_geopose)
             """
             else:
                 GNSS coordinate system to ZED coordinate system is not initialize yet

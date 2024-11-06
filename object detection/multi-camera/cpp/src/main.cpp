@@ -45,6 +45,8 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
+    Trigger trigger;
+
     // Check if the ZED camera should run within the same process or if they are running on the edge.
     std::vector<ClientPublisher> clients(configurations.size());
     int id_ = 0;
@@ -55,7 +57,7 @@ int main(int argc, char **argv)
         if (conf.communication_parameters.getType() == sl::CommunicationParameters::COMM_TYPE::INTRA_PROCESS)
         {
             std::cout << "Try to open ZED " << conf.serial_number << ".." << std::flush;
-            auto state = clients[id_].open(conf.input_type);
+            auto state = clients[id_].open(conf.input_type, &trigger);
             if (!state)
             {
                 std::cerr << "Could not open ZED: " << conf.input_type.getConfiguration() << ". Skipping..." << std::endl;
@@ -105,7 +107,7 @@ int main(int argc, char **argv)
     {
         sl::CameraIdentifier uuid(it.serial_number);
         // to subscribe to a camera you must give its serial number, the way to communicate with it (shared memory or local network), and its world pose in the setup.
-        auto state = fusion.subscribe(uuid, it.communication_parameters, it.pose);
+        auto state = fusion.subscribe(uuid, it.communication_parameters, it.pose, it.override_gravity);
         if (state != sl::FUSION_ERROR_CODE::SUCCESS)
             std::cout << "Unable to subscribe to " << std::to_string(uuid.sn) << " . " << state << std::endl;
         else
@@ -119,72 +121,87 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    // as this sample shows how to fuse body detection from the multi camera setup
-    // we enable the Body Tracking module with its options
+    fusion.enablePositionalTracking();
+
+    // As this sample shows how to do object detection with a multi camera setup, we enable the same model accross cameras
+    // and only create one group in fusion
+
+    // Enable object detection
     sl::ObjectDetectionFusionParameters od_fusion_params;
-    od_fusion_params.enable_tracking = true;
+    od_fusion_params.enable_tracking = false; // We do tracking per camera then fuse only in fusion.
+                                              // This takes more resources than tracking in Fusion only but yields more accurate tracking.
     std::cout << "Enabling Fused Object detection" << std::endl;
-    fusion.enableObjectDetection(od_fusion_params);
-    std::cout << "OK" << std::endl;
+    const sl::FUSION_ERROR_CODE err = fusion.enableObjectDetection(od_fusion_params);
+    if (err != sl::FUSION_ERROR_CODE::SUCCESS)
+    {
+        std::cout << "Error: " << err << std::endl;
+        return EXIT_FAILURE;
+    }
 
     // creation of a 3D viewer
     GLViewer viewer;
-    viewer.init(argc, argv);
+    viewer.init(argc, argv, cameras);
 
     std::cout << "Viewer Shortcuts\n"
-              << "\t- 'r': swicth on/off for raw skeleton display\n"
-              << "\t- 'p': swicth on/off for live point cloud display\n"
-              << "\t- 'c': swicth on/off point cloud display with flat color\n"
+              << "\t- 'q': quit the application\n"
+              << "\t- 'p': play/pause the GLViewer\n"
+              << "\t- 'f': swicth on/off for fused bbox display\n"
+              << "\t- 'r': swicth on/off for raw bbox display\n"
+              << "\t- 's': swicth on/off for live point cloud display\n"
+              << "\t- 'c': swicth on/off point cloud display with raw color\n"
               << std::endl;
 
     // fusion outputs
-    sl::Objects fused_objects;
-    std::map<sl::CameraIdentifier, sl::Objects> camera_raw_data;
+    std::unordered_map<sl::String /*Group name*/, sl::Objects> fused_objects;
+    std::unordered_map<sl::CameraIdentifier, std::unordered_map<unsigned int /* instance id */, sl::Objects>> camera_raw_data;
     sl::FusionMetrics metrics;
     std::map<sl::CameraIdentifier, sl::Mat> views;
     std::map<sl::CameraIdentifier, sl::Mat> pointClouds;
     sl::Resolution low_res(512, 360);
 
-    bool new_data = false;
-    sl::Timestamp ts_new_data = sl::Timestamp(0);
-
     // run the fusion as long as the viewer is available.
     while (viewer.isAvailable())
     {
+        trigger.notifyZED();
+
         // run the fusion process (which gather data from all camera, sync them and process them)
         if (fusion.process() == sl::FUSION_ERROR_CODE::SUCCESS)
         {
-            // Retrieve fused body
+            // Retrieve all the fused objects
             fusion.retrieveObjects(fused_objects);
-            // for debug, you can retrieve the data send by each camera
-            for (auto &id : cameras)
+            // for debug, you can retrieve the data sent by each camera
+            for (const sl::CameraIdentifier &id : cameras)
             {
-                // fusion.retrieveObjects(camera_raw_data[id], id);
+                // Retrieve all the raw objects of a given camera
+                fusion.retrieveObjects(camera_raw_data[id], id);
                 sl::Pose pose;
-                if (fusion.getPosition(pose, sl::REFERENCE_FRAME::WORLD, id, sl::POSITION_TYPE::RAW) == sl::POSITIONAL_TRACKING_STATE::OK)
+                if (fusion.getPosition(pose, sl::REFERENCE_FRAME::WORLD, id) == sl::POSITIONAL_TRACKING_STATE::OK)
                     viewer.setCameraPose(id.sn, pose.pose_data);
 
                 auto state_view = fusion.retrieveImage(views[id], id, low_res);
                 auto state_pc = fusion.retrieveMeasure(pointClouds[id], id, sl::MEASURE::XYZBGRA, low_res);
+
                 if (state_view == sl::FUSION_ERROR_CODE::SUCCESS && state_pc == sl::FUSION_ERROR_CODE::SUCCESS)
                 {
-                    // viewer.updateObjectsRaw(camera_raw_data[id]);
+                    viewer.updateCamera(id.sn, views[id], pointClouds[id]);
                 }
-                // viewer.updateObjects(fused_objects, camera_raw_data, metrics);
             }
 
             // get metrics about the fusion process for monitoring purposes
             fusion.getProcessMetrics(metrics);
         }
-                        
-        viewer.updateObjects(fused_objects, camera_raw_data, metrics);
-        if(fused_objects.object_list.size())
-        std::cout << "Objects detected from fusion " << " : " << fused_objects.object_list.size() << std::endl;
 
-        std::this_thread::sleep_for(std::chrono::microseconds(10));
+        // Update the viewer with the fused objects and the raw objects
+        viewer.updateObjects(fused_objects, camera_raw_data, metrics);
+
+        while (!viewer.isPlaying() && viewer.isAvailable())
+            sl::sleep_ms(10);
     }
 
     viewer.exit();
+
+    trigger.running = false;
+    trigger.notifyZED();
 
     for (auto &it : clients)
         it.stop();

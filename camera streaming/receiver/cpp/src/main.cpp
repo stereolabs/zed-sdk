@@ -113,21 +113,6 @@ void setStreamParameter(InitParameters& init_p, string& argument) {
 }
 
 int main(int argc, char **argv) {
-
-#if 0
-    auto streaming_devices = Camera::getStreamingDeviceList();
-    int nb_streaming_zed = streaming_devices.size();
-
-    print("Detect: " + to_string(nb_streaming_zed) + " ZED in streaming");
-    if (nb_streaming_zed == 0) {
-        print("No streaming ZED detected, have you take a look to the sample 'ZED Streaming Sender' ?");
-        return 0;
-    }
-
-    for (auto& it : streaming_devices)
-        cout << "* ZED: " << it.serial_number << ", IP: " << it.ip << ", port : " << it.port << ", bitrate : " << it.current_bitrate << "\n";
-#endif
-
     Camera zed;
     // Set configuration parameters for the ZED
     InitParameters init_parameters;

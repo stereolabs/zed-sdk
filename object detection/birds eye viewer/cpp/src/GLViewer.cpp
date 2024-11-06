@@ -123,10 +123,10 @@ void GLViewer::init(int argc, char **argv, sl::CameraParameters &param, bool isT
     isTrackingON_ = isTrackingON;
 
     // Compile and create the shader
-    shader.it = Shader(VERTEX_SHADER, FRAGMENT_SHADER);
+    shader.it.set(VERTEX_SHADER, FRAGMENT_SHADER);
     shader.MVP_Mat = glGetUniformLocation(shader.it.getProgramId(), "u_mvpMatrix");
 
-    shaderLine.it = Shader(VERTEX_SHADER, FRAGMENT_SHADER);
+    shaderLine.it.set(VERTEX_SHADER, FRAGMENT_SHADER);
     shaderLine.MVP_Mat = glGetUniformLocation(shaderLine.it.getProgramId(), "u_mvpMatrix");
 
     // Create the camera
@@ -731,6 +731,10 @@ sl::Transform Simple3DObject::getModelMatrix() const {
 }
 
 Shader::Shader(const GLchar* vs, const GLchar* fs) {
+    set(vs, fs);
+}
+
+void Shader::set(const GLchar* vs, const GLchar* fs) {
     if (!compile(verterxId_, GL_VERTEX_SHADER, vs)) {
         std::cout << "ERROR: while compiling vertex shader" << std::endl;
     }
@@ -766,12 +770,12 @@ Shader::Shader(const GLchar* vs, const GLchar* fs) {
 }
 
 Shader::~Shader() {
-    if (verterxId_ != 0)
+    if (verterxId_ != 0 && glIsShader(verterxId_))
         glDeleteShader(verterxId_);
-    if (fragmentId_ != 0)
+    if (fragmentId_ != 0 && glIsShader(fragmentId_))
         glDeleteShader(fragmentId_);
-    if (programId_ != 0)
-        glDeleteShader(programId_);
+    if (programId_ != 0 && glIsProgram(programId_))
+        glDeleteProgram(programId_);
 }
 
 GLuint Shader::getProgramId() {
@@ -855,7 +859,7 @@ void PointCloud::initialize(sl::Resolution res) {
 
     checkError(cudaGraphicsGLRegisterBuffer(&bufferCudaID_, bufferGLID_, cudaGraphicsRegisterFlagsWriteDiscard));
 
-    shader.it = Shader(POINTCLOUD_VERTEX_SHADER, POINTCLOUD_FRAGMENT_SHADER);
+    shader.it.set(POINTCLOUD_VERTEX_SHADER, POINTCLOUD_FRAGMENT_SHADER);
     shader.MVP_Mat = glGetUniformLocation(shader.it.getProgramId(), "u_mvpMatrix");
 
     matGPU_.alloc(res, sl::MAT_TYPE::F32_C4, sl::MEM::GPU);

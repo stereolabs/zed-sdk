@@ -142,7 +142,7 @@ int main(int argc, char **argv) {
             std::cout << "returned_state " << returned_state << std::endl;
         int current_value=10;
         zed.getCameraSettings(VIDEO_SETTINGS::EXPOSURE, current_value);
-        if (1/*returned_state == ERROR_CODE::SUCCESS)*/) {
+        if (returned_state == ERROR_CODE::SUCCESS) {
             // Retrieve left image
             zed.retrieveImage(zed_image, VIEW::SIDE_BY_SIDE);
 
