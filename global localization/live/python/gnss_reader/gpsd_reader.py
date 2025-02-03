@@ -25,8 +25,8 @@ class GPSDReader:
         print("Successfully connected to GPSD")
         print("Waiting for GNSS fix")
         received_fix = False
+        self.gnss_getter = self.client.dict_stream(convert_datetime=True, filter=["TPV", "SKY"])
         while not received_fix:
-            self.gnss_getter = self.client.dict_stream(convert_datetime=True, filter=["TPV", "SKY"])
             gpsd_data = next(self.gnss_getter)
             if "class" in gpsd_data and gpsd_data["class"] == "TPV" and "mode" in gpsd_data and gpsd_data["mode"] >=2:
                 received_fix = True
