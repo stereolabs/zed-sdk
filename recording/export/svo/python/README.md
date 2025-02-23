@@ -12,7 +12,7 @@ It can also convert a SVO in the following png image sequences: LEFT+RIGHT, LEFT
 
 To run the program, use the following command in your terminal:
 ```bash
-python export_svo.py --mode <mode> --input_svo_file <input_svo_file> --output_avi_file <output_avi_file> --output_path_dir <output_path_dir>
+python svo_export.py --mode <mode> --input_svo_file <input_svo_file> --output_avi_file <output_avi_file> --output_path_dir <output_path_dir>
 ```
 
 Arguments: 
@@ -28,11 +28,11 @@ Arguments:
  - Export .svo file to LEFT+DEPTH_16BIT image sequence
 Examples : 
 ```
-python export_svo.py --mode 0 --input_svo_file <input_svo_file> --output_avi_file <output_avi_file> 
-python export_svo.py --mode 1 --input_svo_file <input_svo_file> --output_avi_file <output_avi_file> 
-python export_svo.py --mode 2 --input_svo_file <input_svo_file> --output_path_dir <output_path_dir> 
-python export_svo.py --mode 3 --input_svo_file <input_svo_file> --output_path_dir <output_path_dir> 
-python export_svo.py --mode 4 --input_svo_file <input_svo_file> --output_path_dir <output_path_dir> 
+python svo_export.py --mode 0 --input_svo_file <input_svo_file> --output_avi_file <output_avi_file> 
+python svo_export.py --mode 1 --input_svo_file <input_svo_file> --output_avi_file <output_avi_file> 
+python svo_export.py --mode 2 --input_svo_file <input_svo_file> --output_path_dir <output_path_dir> 
+python svo_export.py --mode 3 --input_svo_file <input_svo_file> --output_path_dir <output_path_dir> 
+python svo_export.py --mode 4 --input_svo_file <input_svo_file> --output_path_dir <output_path_dir> 
 ```
 
 ## Support
