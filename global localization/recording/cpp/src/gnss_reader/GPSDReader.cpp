@@ -6,7 +6,10 @@ GPSDReader::GPSDReader() {
 
 GPSDReader::~GPSDReader() {
     continue_to_grab = false;
-    grab_gnss_data.join();
+    
+    if(grab_gnss_data.joinable())
+        grab_gnss_data.join();
+    
 #ifdef GPSD_FOUND
 
 #else
@@ -16,6 +19,9 @@ GPSDReader::~GPSDReader() {
 
 void GPSDReader::initialize() {
     std::cout << "initialize " << std::endl;
+    if(grab_gnss_data.joinable())
+        grab_gnss_data.join();
+    continue_to_grab = true;
     grab_gnss_data = std::thread(&GPSDReader::grabGNSSData, this);
 #ifdef GPSD_FOUND
     std::cout << "Create new object" << std::endl;
@@ -139,7 +145,8 @@ sl::GNSSData GPSDReader::getNextGNSSValue() {
         current_gnss_data.gnss_mode = sl_mode;
         return current_gnss_data;
     } else {
-        std::cout << "Fix lost: reinit GNSS" << std::endl;
+        std::cout << "Fix lost: reinit GNSS "<< (int) gpsd_data->fix.mode << std::endl;
+        continue_to_grab = false;
         initialize();
         return getNextGNSSValue();
     }
