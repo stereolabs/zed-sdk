@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
     // Enable SVO recording:
     std::string svo_path = "ZED_SN" + std::to_string(zed.getCameraInformation().serial_number) + "_" + getCurrentDatetime() + ".svo2";
     sl::String path_output(svo_path.c_str());
-    auto returned_state = zed.enableRecording(sl::RecordingParameters(path_output, sl::SVO_COMPRESSION_MODE::H264_LOSSLESS));
+    auto returned_state = zed.enableRecording(sl::RecordingParameters(path_output, sl::SVO_COMPRESSION_MODE::H265_LOSSLESS));
     if (returned_state != sl::ERROR_CODE::SUCCESS) {
         std::cerr << "Recording ZED : " << returned_state << std::endl;
         zed.close();
@@ -92,10 +92,10 @@ int main(int argc, char **argv) {
 
     GNSSSaver gnss_data_saver(&zed);
     while (!exit_app) {
-
-        // Get camera data and save it into SVO:
-        zed.grab();
-
+        sl::ERROR_CODE err = zed.grab();
+        if(err != sl::ERROR_CODE::SUCCESS)
+            std::cout << "ZED has error: " << err << std::endl;
+            
         // Get GNSS data:
         sl::GNSSData input_gnss;
         if (gnss_reader.grab(input_gnss) == sl::ERROR_CODE::SUCCESS) {
