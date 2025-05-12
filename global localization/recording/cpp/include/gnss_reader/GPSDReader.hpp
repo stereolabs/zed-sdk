@@ -21,7 +21,7 @@ public:
      * @brief Initialize the GNSS sensor and is waiting for the first GNSS fix.
      *
      */
-    virtual void initialize();
+    virtual void initialize(bool* exit_gnss_record_flag);
     /**
      * @brief read next GNSS measurement. This function block until a GNSS measurement is retrieved.
      *
@@ -39,6 +39,7 @@ protected:
     bool is_initialized=false;
     std::mutex is_initialized_mtx;
     sl::GNSSData current_gnss_data;
+    bool*  exit_gnss_record;
 #ifdef GPSD_FOUND
     std::unique_ptr<gpsmm> gnss_getter;    
 #endif
