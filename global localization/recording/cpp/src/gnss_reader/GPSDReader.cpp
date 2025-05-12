@@ -17,11 +17,12 @@ GPSDReader::~GPSDReader() {
 #endif
 }
 
-void GPSDReader::initialize() {
+void GPSDReader::initialize(bool* exit_gnss_record_flag) {
     std::cout << "initialize " << std::endl;
     if(grab_gnss_data.joinable())
         grab_gnss_data.join();
     continue_to_grab = true;
+    this->exit_gnss_record = exit_gnss_record_flag;
     grab_gnss_data = std::thread(&GPSDReader::grabGNSSData, this);
 #ifdef GPSD_FOUND
     std::cout << "Create new object" << std::endl;
@@ -35,7 +36,7 @@ void GPSDReader::initialize() {
 
     bool received_fix = false;
     struct gps_data_t *gpsd_data;
-    while (!received_fix) {
+    while (!received_fix && !*this->exit_gnss_record) {
         if (!gnss_getter->waiting(0))
             continue;
         if ((gpsd_data = gnss_getter->read()) == NULL) {
@@ -145,10 +146,8 @@ sl::GNSSData GPSDReader::getNextGNSSValue() {
         current_gnss_data.gnss_mode = sl_mode;
         return current_gnss_data;
     } else {
-        std::cout << "Fix lost: reinit GNSS "<< (int) gpsd_data->fix.mode << std::endl;
-        continue_to_grab = false;
-        initialize();
-        return getNextGNSSValue();
+        std::cout << "Fix lost : "<< (int) gpsd_data->fix.mode << std::endl;
+        return sl::GNSSData();
     }
 #else
     std::cerr << "[library not found] GPSD library was not found ... please install it before using this sample" << std::endl;
@@ -167,7 +166,7 @@ sl::ERROR_CODE GPSDReader::grab(sl::GNSSData & current_data) {
 }
 
 void GPSDReader::grabGNSSData() {
-    while (1) {
+    while (!*exit_gnss_record) {
         is_initialized_mtx.lock();
         if (is_initialized) {
             is_initialized_mtx.unlock();
@@ -176,7 +175,7 @@ void GPSDReader::grabGNSSData() {
         is_initialized_mtx.unlock();
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
-    while (continue_to_grab) {
+    while (continue_to_grab && !*exit_gnss_record) {
 #ifdef GPSD_FOUND
         current_gnss_data = getNextGNSSValue();
         new_data = true;

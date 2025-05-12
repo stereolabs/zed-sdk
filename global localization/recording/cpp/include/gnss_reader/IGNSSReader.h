@@ -14,7 +14,7 @@ class IGNSSReader{
          * @brief Initialize the GNSS sensor and is waiting for the first GNSS fix.
          * 
          */
-        virtual void initialize() = 0;
+        virtual void initialize(bool* exit_gnss_record_flag) = 0;
         /**
          * @brief read next GNSS measurement. This function block until a GNSS measurement is retrieved.
          * 
