@@ -22,33 +22,27 @@
  ** This sample shows how to use global localization on real-world map    **
  **************************************************************************/
 
-#include <iostream>
-#include <future>
-#include <atomic>
 #include <sl/Camera.hpp>
-#include <sl/Fusion.hpp>
-#include "display/GenericDisplay.h"
+
 #include "gnss_reader/IGNSSReader.h"
 #include "gnss_reader/GPSDReader.hpp"
 #include "exporter/KMLExporter.h"
 #include "exporter/GNSSSaver.h"
 
 bool exit_app = false;
-bool exit_gnss = false;
+
 // Handle the CTRL-C keyboard signal
 #ifdef _WIN32
 #include <Windows.h>
 
 void CtrlHandler(DWORD fdwCtrlType) {
     exit_app = (fdwCtrlType == CTRL_C_EVENT);
-    exit_gnss = exit_app;
 }
 #else
 #include <signal.h>
 void nix_exit_handler(int s) {
     std::cout << "Receive CTRL + C will stop application" << std::endl;
     exit_app = true;
-    exit_gnss = true;
 }
 #endif
 
@@ -92,12 +86,16 @@ int main(int argc, char **argv) {
 
     // Enable GNSS data producing:
     GPSDReader gnss_reader;
-    gnss_reader.initialize(&exit_gnss);
+    gnss_reader.initialize(&exit_app);
 
     std::cout << "Start grabbing data... Global localization data will be displayed on the Live Server" << std::endl;
 
     GNSSSaver gnss_data_saver(&zed);
     while (!exit_app) {
+
+        // Get camera data and save it into SVO:
+        zed.grab();
+
         // Get GNSS data:
         sl::GNSSData input_gnss;
         if (gnss_reader.grab(input_gnss) == sl::ERROR_CODE::SUCCESS) {

@@ -56,14 +56,21 @@ void GPSDReader::initialize(bool* exit_gnss_record_flag) {
 }
 
 sl::GNSSData GPSDReader::getNextGNSSValue() {
+    sl::GNSSData current_gnss_data;
 #ifdef GPSD_FOUND
     // 0. Check if GNSS is initialized:
     // 1. Get GNSS datas:
     struct gps_data_t *gpsd_data;
-    while ((gpsd_data = gnss_getter->read()) == NULL)
-        ;
+
+    if (!gnss_getter->waiting(500000)) { // 500 ms timeout
+        return current_gnss_data;
+    }
+   
+    gpsd_data = gnss_getter->read();
+    if(gpsd_data == NULL) 
+        return current_gnss_data;
+
     if (gpsd_data->fix.mode >= MODE_2D) {
-        sl::GNSSData current_gnss_data;
         // Fill out coordinates:
         current_gnss_data.setCoordinates(gpsd_data->fix.latitude, gpsd_data->fix.longitude, gpsd_data->fix.altMSL, false);
         // Fill out default standard deviation:
@@ -81,79 +88,65 @@ sl::GNSSData GPSDReader::getNextGNSSValue() {
         auto current_gnss_timestamp = current_ts_gps + current_tns_gps;
         current_gnss_data.ts.setMicroseconds(current_gnss_timestamp);
 
-
-        int gpsd_mode = gpsd_data->fix.mode;
-        sl::GNSS_MODE sl_mode = sl::GNSS_MODE::UNKNOWN;
-
-        switch (gpsd_mode) {
+        switch (gpsd_data->fix.mode) {
             case 0: // MODE_NOT_SEEN
-                sl_mode = sl::GNSS_MODE::UNKNOWN;
+                current_gnss_data.gnss_mode = sl::GNSS_MODE::UNKNOWN;
                 break;
             case 1: // MODE_NO_FIX
-                sl_mode = sl::GNSS_MODE::NO_FIX;
+                current_gnss_data.gnss_mode = sl::GNSS_MODE::NO_FIX;
                 break;
             case 2: // MODE_2D
-                sl_mode = sl::GNSS_MODE::FIX_2D;
+                current_gnss_data.gnss_mode = sl::GNSS_MODE::FIX_2D;
                 break;
             case 3: // MODE_3D
-                sl_mode = sl::GNSS_MODE::FIX_3D;
+                current_gnss_data.gnss_mode = sl::GNSS_MODE::FIX_3D;
                 break;
             default:
-                sl_mode = sl::GNSS_MODE::UNKNOWN;
+                current_gnss_data.gnss_mode = sl::GNSS_MODE::UNKNOWN;
                 break;
         }
 
-        int gpsd_status = gpsd_data->fix.status;
-        sl::GNSS_STATUS sl_status = sl::GNSS_STATUS::UNKNOWN;
-
-        switch (gpsd_status) {
+        switch (gpsd_data->fix.status) {
             case 0: // STATUS_UNK
-                sl_status = sl::GNSS_STATUS::UNKNOWN;
+                current_gnss_data.gnss_status = sl::GNSS_STATUS::UNKNOWN;
                 break;
             case 1: // STATUS_GPS
-                sl_status = sl::GNSS_STATUS::SINGLE;
+                current_gnss_data.gnss_status = sl::GNSS_STATUS::SINGLE;
                 break;
             case 2: // STATUS_DGPS
-                sl_status = sl::GNSS_STATUS::DGNSS;
+                current_gnss_data.gnss_status = sl::GNSS_STATUS::DGNSS;
                 break;
             case 3: // STATUS_RTK_FIX
-                sl_status = sl::GNSS_STATUS::RTK_FIX;
+                current_gnss_data.gnss_status = sl::GNSS_STATUS::RTK_FIX;
                 break;
             case 4: // STATUS_RTK_FLT
-                sl_status = sl::GNSS_STATUS::RTK_FLOAT;
+                current_gnss_data.gnss_status = sl::GNSS_STATUS::RTK_FLOAT;
                 break;
             case 5: // STATUS_DR
-                sl_status = sl::GNSS_STATUS::SINGLE;
+                current_gnss_data.gnss_status = sl::GNSS_STATUS::SINGLE;
                 break;
             case 6: // STATUS_GNSSDR
-                sl_status = sl::GNSS_STATUS::DGNSS;
+                current_gnss_data.gnss_status = sl::GNSS_STATUS::DGNSS;
                 break;
             case 7: // STATUS_TIME
-                sl_status = sl::GNSS_STATUS::UNKNOWN;
+                current_gnss_data.gnss_status = sl::GNSS_STATUS::UNKNOWN;
                 break;
             case 8: // STATUS_SIM
-                sl_status = sl::GNSS_STATUS::UNKNOWN;
+                current_gnss_data.gnss_status = sl::GNSS_STATUS::UNKNOWN;
                 break;
             case 9: // STATUS_PPS_FIX
-                sl_status = sl::GNSS_STATUS::SINGLE;
+                current_gnss_data.gnss_status = sl::GNSS_STATUS::SINGLE;
                 break;
             default:
-                sl_status = sl::GNSS_STATUS::UNKNOWN;
+                current_gnss_data.gnss_status = sl::GNSS_STATUS::UNKNOWN;
                 break;
         }
-
-        current_gnss_data.gnss_status = sl_status;
-        current_gnss_data.gnss_mode = sl_mode;
-        return current_gnss_data;
-    } else {
-        std::cout << "Fix lost : "<< (int) gpsd_data->fix.mode << std::endl;
-        return sl::GNSSData();
     }
 #else
     std::cerr << "[library not found] GPSD library was not found ... please install it before using this sample" << std::endl;
 #endif
 
-    return sl::GNSSData();
+    return current_gnss_data;
 }
 
 sl::ERROR_CODE GPSDReader::grab(sl::GNSSData & current_data) {
@@ -173,12 +166,12 @@ void GPSDReader::grabGNSSData() {
             break;
         }
         is_initialized_mtx.unlock();
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     while (continue_to_grab && !*exit_gnss_record) {
 #ifdef GPSD_FOUND
         current_gnss_data = getNextGNSSValue();
-        new_data = true;
+        new_data = current_gnss_data.ts.data_ns > 0;
 #endif
     }
 

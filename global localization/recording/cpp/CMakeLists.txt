@@ -5,14 +5,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_BUILD_TYPE "Release")
 
-
 find_package(ZED 4 REQUIRED)
 find_package(CUDA REQUIRED)
-
-find_package(GLUT REQUIRED)
-find_package(GLEW REQUIRED)
-SET(OpenGL_GL_PREFERENCE GLVND)
-find_package(OpenGL REQUIRED)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 find_package(GPS)
@@ -46,10 +40,7 @@ ENDIF()
 # Include external lib header:
 include_directories(${ZED_INCLUDE_DIRS})
 include_directories(${CUDA_INCLUDE_DIRS})
-include_directories(${GLEW_INCLUDE_DIRS})
-include_directories(${GLUT_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-
 
 FILE(GLOB_RECURSE SRC_FILES src/*.cpp)
 FILE(GLOB_RECURSE HDR_FILES include/*.hpp)
@@ -57,7 +48,7 @@ FILE(GLOB_RECURSE HDR_FILES include/*.hpp)
 # Add execuable and link
 ADD_EXECUTABLE(${PROJECT_NAME} ${HDR_FILES} ${SRC_FILES})
 
-set(LIBS ${ZED_LIBRARIES} ${OpenCV_LIBRARIES} ${OPENGL_LIBRARIES} ${GLUT_LIBRARIES} ${GLEW_LIBRARIES})
+set(LIBS ${ZED_LIBRARIES})
 
 if(GPS_FOUND)
     list(APPEND LIBS ${GPS_LIBRARIES})
