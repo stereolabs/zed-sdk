@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
     // Open the camera
     sl::Camera zed;
     sl::InitParameters init_params;
-    init_params.depth_mode = sl::DEPTH_MODE::ULTRA;
+    init_params.depth_mode = sl::DEPTH_MODE::NEURAL;
     init_params.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
     init_params.coordinate_units = sl::UNIT::METER;
     init_params.input.setFromSVOFile(svo_name.c_str());
@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
 
     // Enable positional tracking:
     sl::PositionalTrackingParameters pose_tracking_params;
-    pose_tracking_params.mode = sl::POSITIONAL_TRACKING_MODE::GEN_2;
+    pose_tracking_params.mode = sl::POSITIONAL_TRACKING_MODE::GEN_1;
     pose_tracking_params.enable_area_memory = false;
     auto positional_init = zed.enablePositionalTracking(pose_tracking_params);
     if (positional_init != sl::ERROR_CODE::SUCCESS) {
