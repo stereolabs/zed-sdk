@@ -1,7 +1,6 @@
 using sl;
 using System;
 using System.Threading;
-using static Khronos.Platform;
 
 class ClientPublisher
 {
@@ -32,7 +31,7 @@ class ClientPublisher
         sl.InitParameters initParameters = new sl.InitParameters();
         initParameters.resolution = sl.RESOLUTION.AUTO;
         initParameters.cameraFPS = 30;
-        initParameters.depthMode = sl.DEPTH_MODE.ULTRA;
+        initParameters.depthMode = sl.DEPTH_MODE.NEURAL;
         initParameters.coordinateUnits = sl.UNIT.METER;
         initParameters.coordinateSystem = COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP;
         initParameters.sdkVerbose = 1;
@@ -68,7 +67,6 @@ class ClientPublisher
             Environment.Exit(-1);
         }
 
-
         if (zedCamera.CameraModel == MODEL.ZED)
         {
             Console.WriteLine(" ERROR : not compatible camera model");
@@ -91,7 +89,7 @@ class ClientPublisher
         bodyTrackingParameters.enableSegmentation = false;
         bodyTrackingParameters.enableBodyFitting = false; // smooth skeletons moves
         bodyTrackingParameters.detectionModel = sl.BODY_TRACKING_MODEL.HUMAN_BODY_MEDIUM;
-        bodyTrackingParameters.bodyFormat = sl.BODY_FORMAT.BODY_38;
+        bodyTrackingParameters.bodyFormat = sl.BODY_FORMAT.BODY_18;
         bodyTrackingParameters.allowReducedPrecisionInference = true;
         err = zedCamera.EnableBodyTracking(ref bodyTrackingParameters);
 

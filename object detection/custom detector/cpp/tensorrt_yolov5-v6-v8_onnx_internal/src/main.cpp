@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
     sl::Camera zed;
     sl::InitParameters init_parameters;
     init_parameters.sdk_verbose = true;
-    init_parameters.depth_mode = sl::DEPTH_MODE::ULTRA;
+    init_parameters.depth_mode = sl::DEPTH_MODE::NEURAL;
     init_parameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
 
     if (argc > 2) {
@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
     constexpr bool enable_tracking = true;
     sl::ObjectDetectionParameters detection_parameters;
     detection_parameters.enable_tracking = enable_tracking;
-    detection_parameters.enable_segmentation = false;
+    detection_parameters.enable_segmentation = true;
     detection_parameters.detection_model = sl::OBJECT_DETECTION_MODEL::CUSTOM_YOLOLIKE_BOX_OBJECTS;
     detection_parameters.custom_onnx_file.set(argv[1U]);
     detection_parameters.custom_onnx_dynamic_input_shape = sl::Resolution(320, 320); // Provide resolution for dynamic shape model
@@ -118,17 +118,23 @@ int main(int argc, char** argv) {
     const sl::Resolution display_resolution = zed.getCameraInformation().camera_configuration.resolution;
     sl::Mat left_sl, point_cloud;
     cv::Mat left_cv;
-    sl::CustomObjectDetectionRuntimeParameters objectTracker_parameters_rt;
+    sl::CustomObjectDetectionRuntimeParameters customObjectTracker_rt;
     // All classes parameters
-    objectTracker_parameters_rt.object_detection_properties.detection_confidence_threshold = 20.f;
-    // objectTracker_parameters_rt.object_detection_properties.is_static = true;
-    // objectTracker_parameters_rt.object_detection_properties.tracking_timeout = 100.f;
-    // // Per classes paramters override
-    // objectTracker_parameters_rt.object_class_detection_properties[0U].detection_confidence_threshold = 80.f;
-    // objectTracker_parameters_rt.object_class_detection_properties[1U].min_box_width_normalized = 0.01f;
-    // objectTracker_parameters_rt.object_class_detection_properties[1U].max_box_width_normalized = 0.5f;
-    // objectTracker_parameters_rt.object_class_detection_properties[1U].min_box_height_normalized = 0.01f;
-    // objectTracker_parameters_rt.object_class_detection_properties[1U].max_box_height_normalized = 0.5f;
+    customObjectTracker_rt.object_detection_properties.detection_confidence_threshold = 20.f; // Set all classes threshold to 20
+    printf("Custom Object Detection runtime parameters: confidence threshold set to %2.1f for all classes\n", customObjectTracker_rt.object_detection_properties.detection_confidence_threshold);
+    // Per classes parameters override
+    customObjectTracker_rt.object_class_detection_properties[0U].detection_confidence_threshold = 60.f; // Set custom model's label 0 threshold to 60
+    customObjectTracker_rt.object_class_detection_properties[0U].native_mapped_class = sl::OBJECT_SUBCLASS::PERSON; // Map custom model's label 0 to nativ PERSON subclass
+    customObjectTracker_rt.object_class_detection_properties[1U].min_box_width_normalized = 0.01f;  // Min box width for custom model's label 1
+    customObjectTracker_rt.object_class_detection_properties[1U].max_box_width_normalized = 0.5f;   // Max box width for custom model's label 1
+    customObjectTracker_rt.object_class_detection_properties[1U].min_box_height_normalized = 0.01f; // Min box height for custom model's label 1
+    customObjectTracker_rt.object_class_detection_properties[1U].max_box_height_normalized = 0.5f;  // Max box height for custom model's label 1
+    printf("Custom Object Detection runtime parameters: Label 0, confidence threshold set to %2.1f\n", customObjectTracker_rt.object_class_detection_properties[0U].detection_confidence_threshold);
+    printf("Custom Object Detection runtime parameters: Label 0, mapped to native SUBCLASS %s\n", toString(customObjectTracker_rt.object_class_detection_properties[0U].native_mapped_class).get());
+    printf("Custom Object Detection runtime parameters: Label 1, min box width set to %.2f\n", customObjectTracker_rt.object_class_detection_properties[1U].min_box_width_normalized);
+    printf("Custom Object Detection runtime parameters: Label 1, max box width set to %.2f\n", customObjectTracker_rt.object_class_detection_properties[1U].max_box_width_normalized);
+    printf("Custom Object Detection runtime parameters: Label 1, min box height set to %.2f\n", customObjectTracker_rt.object_class_detection_properties[1U].min_box_height_normalized);
+    printf("Custom Object Detection runtime parameters: Label 1, max box height set to %.2f\n", customObjectTracker_rt.object_class_detection_properties[1U].max_box_height_normalized);
 
     sl::Objects objects;
     sl::Pose cam_w_pose;
@@ -137,23 +143,23 @@ int main(int argc, char** argv) {
     // Main loop
     while (viewer.isAvailable()) {
         if (zed.grab() == sl::ERROR_CODE::SUCCESS) {
-
             // Get image for display
             zed.retrieveImage(left_sl, sl::VIEW::LEFT);
             left_cv = slMat2cvMat(left_sl);
 
-            // Retrieve the tracked objects, with 2D and 3D attributes
-            zed.retrieveObjects(objects, objectTracker_parameters_rt);
-
             // GL Viewer
             zed.retrieveMeasure(point_cloud, sl::MEASURE::XYZRGBA, sl::MEM::GPU, pc_resolution);
             zed.getPosition(cam_w_pose, sl::REFERENCE_FRAME::WORLD);
-            viewer.updateData(point_cloud, objects.object_list, cam_w_pose.pose_data, objectTracker_parameters_rt);
+
+            // Retrieve the tracked objects, with 2D and 3D attributes
+            zed.retrieveCustomObjects(objects, customObjectTracker_rt);
+
+            viewer.updateData(point_cloud, objects.object_list, cam_w_pose.pose_data, customObjectTracker_rt);
 
             // Displaying the SDK objects
             draw_objects(left_cv, left_cv, objects, CLASS_COLORS, enable_tracking);
             cv::imshow("ZED retrieved Objects", left_cv);
-            int const key{cv::waitKey(10)};
+            int const key{cv::waitKey(1)};
             if (key == 'q' || key == 'Q' || key == 27)
                 break;
         }

@@ -17,16 +17,16 @@ bool ClientPublisher::open(const sl::InputType& input, Trigger* ref) {
     p_trigger = ref;
 
     sl::InitParameters init_parameters;
-    init_parameters.depth_mode = sl::DEPTH_MODE::ULTRA;
+    init_parameters.depth_mode = sl::DEPTH_MODE::NEURAL;
     init_parameters.input = input;
     init_parameters.coordinate_units = sl::UNIT::METER;
-    init_parameters.depth_stabilization = 5;
+    init_parameters.depth_stabilization = 30;
     auto state = zed.open(init_parameters);
     if (state != sl::ERROR_CODE::SUCCESS)
     {
         std::cout << "Error: " << state << std::endl;
         return false;
-    } 
+    }
 
     serial = zed.getCameraInformation().serial_number;
     p_trigger->states[serial] = false;
@@ -79,18 +79,15 @@ void ClientPublisher::work()
 
     sl::Objects objects;
 
-    // in this sample we use a dummy thread to process the ZED data.
+    // In this sample we use a dummy thread to process the ZED data.
     // you can replace it by your own application and use the ZED like you use to, retrieve its images, depth, sensors data and so on.
-    // as long as you call the grab function and the retrieveObjects (which runs the detection) the camera will be able to seamlessly transmit the data to the fusion module.
+    // As long as you call the grab method, since the camera is subscribed to fusion it will run the detection and
+    // the camera will be able to seamlessly transmit the data to the fusion module.
     while (p_trigger->running) {
         std::unique_lock<std::mutex> lk(mtx);
         p_trigger->cv.wait(lk);
         if (p_trigger->running) {
             if (zed.grab(rt) == sl::ERROR_CODE::SUCCESS) {
-                /*
-                Your App
-                */
-                zed.retrieveObjects(objects, sl::ObjectDetectionRuntimeParameters());
             }
         }
         p_trigger->states[serial] = true;

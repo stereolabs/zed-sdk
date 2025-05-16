@@ -16,20 +16,19 @@ using namespace nvinfer1;
 #define CONF_THRESH 0.3
 
 static void draw_objects(cv::Mat const& image,
-                         cv::Mat &res,
-                         sl::Objects const& objs,
-                         std::vector<std::vector<int>> const& colors)
-{
+        cv::Mat &res,
+        sl::Objects const& objs,
+        std::vector<std::vector<int>> const& colors) {
     res = image.clone();
     cv::Mat mask{image.clone()};
     for (sl::ObjectData const& obj : objs.object_list) {
         size_t const idx_color{obj.id % colors.size()};
         cv::Scalar const color{cv::Scalar(colors[idx_color][0U], colors[idx_color][1U], colors[idx_color][2U])};
 
-        cv::Rect const rect{static_cast<int>(obj.bounding_box_2d[0U].x),
-                            static_cast<int>(obj.bounding_box_2d[0U].y),
-                            static_cast<int>(obj.bounding_box_2d[1U].x - obj.bounding_box_2d[0U].x),
-                            static_cast<int>(obj.bounding_box_2d[2U].y - obj.bounding_box_2d[0U].y)};
+        cv::Rect const rect{static_cast<int> (obj.bounding_box_2d[0U].x),
+            static_cast<int> (obj.bounding_box_2d[0U].y),
+            static_cast<int> (obj.bounding_box_2d[1U].x - obj.bounding_box_2d[0U].x),
+            static_cast<int> (obj.bounding_box_2d[2U].y - obj.bounding_box_2d[0U].y)};
         cv::rectangle(res, rect, color, 2);
 
         char text[256U];
@@ -45,8 +44,8 @@ static void draw_objects(cv::Mat const& image,
         int const x{rect.x};
         int const y{std::min(rect.y + 1, res.rows)};
 
-        cv::rectangle(res, cv::Rect(x, y, label_size.width, label_size.height + baseLine), {0, 0, 255}, -1);
-        cv::putText(res, text, cv::Point(x, y + label_size.height), cv::FONT_HERSHEY_SIMPLEX, 0.4, {255, 255, 255}, 1);
+        cv::rectangle(res, cv::Rect(x, y, label_size.width, label_size.height + baseLine),{0, 0, 255}, -1);
+        cv::putText(res, text, cv::Point(x, y + label_size.height), cv::FONT_HERSHEY_SIMPLEX, 0.4,{255, 255, 255}, 1);
     }
     cv::addWeighted(res, 0.5, mask, 0.8, 1, res);
 }
@@ -83,7 +82,7 @@ int main(int argc, char** argv) {
         std::cout << "Usage: \n 1. ./yolo_onnx_zed -s yolov8s.onnx yolov8s.engine\n 2. ./yolo_onnx_zed -s yolov8s.onnx yolov8s.engine images:1x3x512x512\n 3. ./yolo_onnx_zed yolov8s.engine <SVO path>" << std::endl;
         return 0;
     }
-    
+
     // Check Optim engine first
     if (std::string(argv[1]) == "-s" && (argc >= 4)) {
         std::string onnx_path = std::string(argv[2]);
@@ -107,7 +106,7 @@ int main(int argc, char** argv) {
     sl::Camera zed;
     sl::InitParameters init_parameters;
     init_parameters.sdk_verbose = true;
-    init_parameters.depth_mode = sl::DEPTH_MODE::ULTRA;
+    init_parameters.depth_mode = sl::DEPTH_MODE::NEURAL;
     init_parameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
 
     if (argc > 2) {
@@ -115,7 +114,6 @@ int main(int argc, char** argv) {
         if (zed_opt.find(".svo") != std::string::npos)
             init_parameters.input.setFromSVOFile(zed_opt.c_str());
     }
-
     // Open the camera
     auto returned_state = zed.open(init_parameters);
     if (returned_state != sl::ERROR_CODE::SUCCESS) {
@@ -160,20 +158,24 @@ int main(int argc, char** argv) {
     auto display_resolution = zed.getCameraInformation().camera_configuration.resolution;
     sl::Mat left_sl, point_cloud;
     cv::Mat left_cv;
-    sl::ObjectDetectionRuntimeParameters objectTracker_parameters_rt;
+    sl::CustomObjectDetectionRuntimeParameters customObjectTracker_rt;
     sl::Objects objects;
     sl::Pose cam_w_pose;
     cam_w_pose.pose_data.setIdentity();
+    auto zed_cuda_stream = zed.getCUDAStream();
 
+    // Main loop
+    int key = -1;
     while (viewer.isAvailable()) {
         if (zed.grab() == sl::ERROR_CODE::SUCCESS) {
+            // Get image for inference, in GPU
+            zed.retrieveImage(left_sl, sl::VIEW::LEFT, sl::MEM::GPU, sl::Resolution(0, 0), detector.stream);
 
-            // Get image for inference
-            zed.retrieveImage(left_sl, sl::VIEW::LEFT);
-
-            // Running inference
+            // Format input and run the inference
             auto detections = detector.run(left_sl, display_resolution.height, display_resolution.width, CONF_THRESH);
 
+            // Get the CPU image for display
+            left_sl.updateCPUfromGPU(zed_cuda_stream);
             // Get image for display
             left_cv = slMat2cvMat(left_sl);
 
@@ -187,14 +189,14 @@ int main(int argc, char** argv) {
                 tmp.label = (int) it.label;
                 tmp.bounding_box_2d = cvt(it.box);
                 tmp.is_grounded = ((int) it.label == 0); // Only the first class (person) is grounded, that is moving on the floor plane
-                                                         // others are tracked in full 3D space
+                // others are tracked in full 3D space
                 objects_in.push_back(tmp);
             }
             // Send the custom detected boxes to the ZED
             zed.ingestCustomBoxObjects(objects_in);
 
             // Retrieve the tracked objects, with 2D and 3D attributes
-            zed.retrieveObjects(objects, objectTracker_parameters_rt);
+            zed.retrieveCustomObjects(objects, customObjectTracker_rt);
 
             // GL Viewer
             zed.retrieveMeasure(point_cloud, sl::MEASURE::XYZRGBA, sl::MEM::GPU, pc_resolution);
@@ -204,7 +206,22 @@ int main(int argc, char** argv) {
             // Displaying the SDK objects
             draw_objects(left_cv, left_cv, objects, CLASS_COLORS);
             cv::imshow("ZED retrieved Objects", left_cv);
-            int const key{cv::waitKey(10)};
+
+            const int cv_key = cv::waitKey(1);
+            const int gl_key = viewer.getKey();
+            key = (gl_key == -1) ? cv_key : gl_key;
+            if (key == 'p' || key == 32) {
+                viewer.setPlaying(!viewer.isPlaying());
+            }
+            while ((key == -1) && !viewer.isPlaying() && viewer.isAvailable()) {
+                const int cv_key = cv::waitKey(1);
+                const int gl_key = viewer.getKey();
+                key = (gl_key == -1) ? cv_key : gl_key;
+                if (key == 'p' || key == 32) {
+                    viewer.setPlaying(!viewer.isPlaying());
+                }
+            }
+
             if (key == 'q' || key == 'Q' || key == 27)
                 break;
         }

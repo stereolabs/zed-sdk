@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -67,15 +67,17 @@ int main(int argc, char **argv) {
     print("Streaming on port " + to_string(stream_params.port));
 
     SetCtrlHandler();
+    int fcount = 0;
 
     while (!exit_app) {
-        if (zed.grab() != ERROR_CODE::SUCCESS)
-            sleep_ms(1);
+        if (zed.grab() == ERROR_CODE::SUCCESS)
+            fcount++;
+
+        sleep_ms(2);
     }
 
     // disable Streaming
     zed.disableStreaming();
-
     // close the Camera
     zed.close();
     return EXIT_SUCCESS;
@@ -132,7 +134,17 @@ int parseArgs(int argc, char **argv, sl::InitParameters& param) {
         }else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;
-        } else
+        }
+        else if (arg.find("IN0") != string::npos) {
+            param.input.setFromCameraID(0);
+        }
+        else if (arg.find("IN1") != string::npos) {
+            param.input.setFromCameraID(1);
+        }
+        else if (arg.find("IN2") != string::npos) {
+            param.input.setFromCameraID(2);
+        }
+        else
             return 1;
     } else {
         // Default

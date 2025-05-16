@@ -34,15 +34,14 @@ def handler(signal_received, frame):
 
 signal(SIGINT, handler)
 
-def main():
-    
+def main(opt):
     init = sl.InitParametersOne()
 
     status = cam.open(init) 
     if status != sl.ERROR_CODE.SUCCESS: 
         print("Camera Open", status, "Exit program.")
         exit(1)
-        
+
     recording_param = sl.RecordingParameters(opt.output_svo_file, sl.SVO_COMPRESSION_MODE.H265) # Enable recording with the filename specified in argument
     err = cam.enable_recording(recording_param)
     if err != sl.ERROR_CODE.SUCCESS:
@@ -68,4 +67,4 @@ if __name__ == "__main__":
     if not opt.output_svo_file.endswith(".svo") and not opt.output_svo_file.endswith(".svo2"): 
         print("--output_svo_file parameter should be a .svo file but is not : ",opt.output_svo_file,"Exit program.")
         exit()
-    main()
+    main(opt)

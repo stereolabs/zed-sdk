@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
     // Create ZED objects
     Camera zed;
     InitParameters init_parameters;
-    init_parameters.depth_mode = DEPTH_MODE::ULTRA;
+    init_parameters.depth_mode = DEPTH_MODE::NEURAL;
     init_parameters.depth_maximum_distance = 10.0f * 1000.0f;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
     init_parameters.sdk_verbose = 1;
@@ -184,7 +184,7 @@ int main(int argc, char **argv) {
 
             body_tracking_parameters_rt.detection_confidence_threshold = body_detection_confidence;
             returned_state = zed.retrieveBodies(skeletons, body_tracking_parameters_rt, body_tracking_parameters.instance_module_id);
-                     
+
 #if ENABLE_GUI
             zed.retrieveImage(image_left, VIEW::LEFT, MEM::CPU, display_resolution);
             zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, pc_resolution);
@@ -203,7 +203,7 @@ int main(int argc, char **argv) {
 
             if (is_playback && zed.getSVOPosition() == zed.getSVONumberOfFrames())
                 quit = true;
-        }        
+        }
 
 #if ENABLE_GUI
         gl_viewer_available = viewer.isAvailable();

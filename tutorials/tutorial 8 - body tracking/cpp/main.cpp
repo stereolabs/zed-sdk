@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
     Camera zed;
     InitParameters init_parameters;
     init_parameters.camera_resolution = RESOLUTION::AUTO;
-    init_parameters.depth_mode = DEPTH_MODE::PERFORMANCE;
+    init_parameters.depth_mode = DEPTH_MODE::NEURAL;
     init_parameters.coordinate_units = UNIT::METER;
     init_parameters.sdk_verbose = true;
 
@@ -56,12 +56,12 @@ int main(int argc, char** argv) {
     detection_parameters.detection_model = BODY_TRACKING_MODEL::HUMAN_BODY_MEDIUM;
     // Body format
     detection_parameters.body_format = BODY_FORMAT::BODY_38;
-    // track detects object across time and space
+    // Track the detected bodies across time and space
     detection_parameters.enable_tracking = true;
     // Optimize the person joints position, requires more computations
     detection_parameters.enable_body_fitting = true;
 
-    // If you want to have object tracking you need to enable positional tracking first
+    // If you want to have body tracking you need to enable positional tracking first
     if (detection_parameters.enable_tracking)
         zed.enablePositionalTracking();
 
@@ -78,20 +78,20 @@ int main(int argc, char** argv) {
     // For indoor scene or closer range, a higher confidence limits the risk of false positives and increase the precision (~50+)
     detection_parameters_rt.detection_confidence_threshold = 40;
     // detection output
-    Bodies objects;
+    Bodies bodies;
     cout << setprecision(3);
 
     int nb_detection = 0;
     while (nb_detection < 100) {
 
         if (zed.grab() == ERROR_CODE::SUCCESS) {
-            zed.retrieveBodies(objects, detection_parameters_rt);
+            zed.retrieveBodies(bodies, detection_parameters_rt);
 
-            if (objects.is_new) {
-                cout << objects.body_list.size() << " Person(s) detected\n\n";
-                if (!objects.body_list.empty()) {
+            if (bodies.is_new) {
+                cout << bodies.body_list.size() << " Person(s) detected\n\n";
+                if (!bodies.body_list.empty()) {
 
-                    auto first_object = objects.body_list.front();
+                    auto first_object = bodies.body_list.front();
 
                     cout << "First Person attributes :\n";
                     cout << " Confidence (" << first_object.confidence << "/100)\n";
@@ -127,6 +127,7 @@ int main(int argc, char** argv) {
             }
         }
     }
+    zed.disableBodyTracking();
     zed.close();
     return EXIT_SUCCESS;
 }

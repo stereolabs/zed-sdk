@@ -23,17 +23,15 @@
         }                                                                                                              \
     } while (0)
 
-class Logger: public nvinfer1::ILogger {
+class Logger : public nvinfer1::ILogger {
 public:
     nvinfer1::ILogger::Severity reportableSeverity;
 
-    explicit Logger(nvinfer1::ILogger::Severity severity = nvinfer1::ILogger::Severity::kINFO):
-        reportableSeverity(severity)
-    {
+    explicit Logger(nvinfer1::ILogger::Severity severity = nvinfer1::ILogger::Severity::kINFO) :
+    reportableSeverity(severity) {
     }
 
-    void log(nvinfer1::ILogger::Severity severity, const char* msg) noexcept override
-    {
+    void log(nvinfer1::ILogger::Severity severity, const char* msg) noexcept override {
         if (severity > reportableSeverity) {
             return;
         }
@@ -58,8 +56,7 @@ public:
     }
 };
 
-inline int get_size_by_dims(const nvinfer1::Dims& dims)
-{
+inline int get_size_by_dims(const nvinfer1::Dims& dims) {
     int size = 1;
     for (int i = 0; i < dims.nbDims; i++) {
         size *= dims.d[i];
@@ -67,8 +64,7 @@ inline int get_size_by_dims(const nvinfer1::Dims& dims)
     return size;
 }
 
-inline int type_to_size(const nvinfer1::DataType& dataType)
-{
+inline int type_to_size(const nvinfer1::DataType& dataType) {
     switch (dataType) {
         case nvinfer1::DataType::kFLOAT:
             return 4;
@@ -85,21 +81,18 @@ inline int type_to_size(const nvinfer1::DataType& dataType)
     }
 }
 
-inline static float clamp(float val, float min, float max)
-{
+inline static float clamp(float val, float min, float max) {
     return val > min ? (val < max ? val : max) : min;
 }
 
-inline bool IsPathExist(const std::string& path)
-{
+inline bool IsPathExist(const std::string& path) {
     if (access(path.c_str(), 0) == F_OK) {
         return true;
     }
     return false;
 }
 
-inline bool IsFile(const std::string& path)
-{
+inline bool IsFile(const std::string& path) {
     if (!IsPathExist(path)) {
         printf("%s:%d %s not exist\n", __FILE__, __LINE__, path.c_str());
         return false;
@@ -108,8 +101,7 @@ inline bool IsFile(const std::string& path)
     return (stat(path.c_str(), &buffer) == 0 && S_ISREG(buffer.st_mode));
 }
 
-inline bool IsFolder(const std::string& path)
-{
+inline bool IsFolder(const std::string& path) {
     if (!IsPathExist(path)) {
         return false;
     }
@@ -118,26 +110,27 @@ inline bool IsFolder(const std::string& path)
 }
 
 namespace seg {
-struct Binding {
-    size_t         size  = 1;
-    size_t         dsize = 1;
-    nvinfer1::Dims dims;
-    std::string    name;
-};
 
-struct Object {
-    cv::Rect_<float> rect;
-    int              label = 0;
-    float            prob  = 0.0;
-    cv::Mat          boxMask;
-};
+    struct Binding {
+        size_t size = 1;
+        size_t dsize = 1;
+        nvinfer1::Dims dims;
+        std::string name;
+    };
 
-struct PreParam {
-    float ratio  = 1.0f;
-    float dw     = 0.0f;
-    float dh     = 0.0f;
-    float height = 0;
-    float width  = 0;
-};
-}  // namespace seg
+    struct Object {
+        cv::Rect_<float> rect;
+        int label = 0;
+        float prob = 0.0;
+        cv::Mat boxMask;
+    };
+
+    struct PreParam {
+        float ratio = 1.0f;
+        float dw = 0.0f;
+        float dh = 0.0f;
+        float height = 0;
+        float width = 0;
+    };
+} // namespace seg
 #endif  // SEGMENT_NORMAL_COMMON_HPP

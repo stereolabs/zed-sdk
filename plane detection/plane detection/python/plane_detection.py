@@ -30,9 +30,9 @@ import argparse
 
 
 
-def main():
+def main(opt):
     init = sl.InitParameters()
-    parse_args(init)
+    parse_args(init, opt)
     init.coordinate_units = sl.UNIT.METER
     init.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP  # OpenGL coordinate system
     # Create a camera object
@@ -110,7 +110,7 @@ def main():
     zed.disable_positional_tracking()
     zed.close()
 
-def parse_args(init):
+def parse_args(init, opt):
     if len(opt.input_svo_file)>0 and opt.input_svo_file.endswith(".svo"):
         init.set_from_svo_file(opt.input_svo_file)
         print("[Sample] Using SVO File input: {0}".format(opt.input_svo_file))
@@ -156,5 +156,4 @@ if __name__ == "__main__":
     if (len(opt.input_svo_file)>0 and len(opt.ip_address)>0):
         print("Specify only input_svo_file or ip_address, not both. Exit program")
         exit()
-    main() 
-    
+    main(opt)

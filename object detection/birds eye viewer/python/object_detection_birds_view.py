@@ -39,20 +39,20 @@ is_jetson = False
 if platform.uname().machine.startswith('aarch64'):
     is_jetson = True
 
-def main():
+def main(opt):
     zed = sl.Camera()
-    
+
     # Create a InitParameters object and set configuration parameters
     init_params = sl.InitParameters()
     init_params.coordinate_units = sl.UNIT.METER
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP  
-    init_params.depth_mode = sl.DEPTH_MODE.ULTRA
+    init_params.depth_mode = sl.DEPTH_MODE.NEURAL
     init_params.depth_maximum_distance = 10.0
-    parse_args(init_params)
-    
+    parse_args(init_params, opt)
+
     is_playback = len(opt.input_svo_file)>0 # Defines if an SVO is used
-        
-    
+
+
     status = zed.open(init_params)
     if status != sl.ERROR_CODE.SUCCESS:
         print("Camera Open : "+repr(status)+". Exit program.")
@@ -205,10 +205,7 @@ def main():
     zed.disable_object_detection()
     zed.close()
 
-    
-    
-    
-def parse_args(init):
+def parse_args(init, opt):
     if len(opt.input_svo_file)>0 and (opt.input_svo_file.endswith(".svo") or opt.input_svo_file.endswith(".svo2")):
         init.set_from_svo_file(opt.input_svo_file)
         print("[Sample] Using SVO File input: {0}".format(opt.input_svo_file))
@@ -255,7 +252,6 @@ def printHelp():
     print("* Clear Filters:                   'c'")
     print("* Exit:                            'q'")
 
-       
 if __name__ == "__main__":    
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_svo_file', type=str, help='Path to an .svo file',default = '')
@@ -267,5 +263,4 @@ if __name__ == "__main__":
     if (len(opt.input_svo_file)>0 and len(opt.ip_address)>0):
         print("Specify only input_svo_file or ip_address, not both. Exit program")
         exit()
-    main() 
-    
+    main(opt)

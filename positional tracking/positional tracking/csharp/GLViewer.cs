@@ -52,7 +52,8 @@ namespace sl
             floor_grid.setDrawingType(PrimitiveType.Lines);
 
             zedModel.init();
-            zedModel.setDrawingType(PrimitiveType.Triangles);
+            createFrustrum(ref zedModel);
+
             zedPath.init();
 
             float limit = 20;
@@ -84,33 +85,6 @@ namespace sl
             floor_grid.pushToGPU();
             zedPath.setDrawingType(PrimitiveType.LineStrip);
 
-            Model3D model = new Model3D();
-
-            switch (cameraModel)
-            {
-                case MODEL.ZED:
-                    model = new Model3D_ZED();
-                    break;
-                case MODEL.ZED2:
-                    model = new Model3D_ZED2();
-                    break;
-                case MODEL.ZED2i:
-                    model = new Model3D_ZED2();
-                    break;
-                case MODEL.ZED_M:
-                    model = new Model3D_ZED();
-                    break;
-                default:
-                    model = new Model3D_ZED2();
-                    break;
-            }
-
-            foreach(ModelPart part in model.part)
-            {
-                fillZED(part.nb_triangles, model.vertices, part.triangles, part.color, ref zedModel);
-            }
-
-            zedModel.pushToGPU();
             updateZEDposition = false;
 
             available = true;
@@ -124,19 +98,35 @@ namespace sl
             updateZEDposition = true;
         }
 
-        void fillZED(int nb_tri, double[] vertices, List<int> triangles, float3 color, ref Simple3DObject zed_camera)
-        {
-            for (int p = 0; p < nb_tri * 3; p = p + 3)
-            {
-                int index = triangles[p] - 1;
-                float4 clr = new float4();
-                clr.x = color.x; clr.y = color.y; clr.z = color.z; clr.w = 1;
-                zed_camera.addPoint(new float3((float)vertices[index * 3], (float)vertices[index * 3 + 1], (float)vertices[index * 3 + 2]), clr);
-                index = triangles[p + 1] - 1;
-                zed_camera.addPoint(new float3((float)vertices[index * 3], (float)vertices[index * 3 + 1], (float)vertices[index * 3 + 2]), clr);
-                index = triangles[p + 2] - 1;
-                zed_camera.addPoint(new float3((float)vertices[index * 3], (float)vertices[index * 3 + 1], (float)vertices[index * 3 + 2]), clr);
-            }
+        void createFrustrum(ref Simple3DObject obj) {
+            float Z_ = -0.25f;
+            float Y_ = Z_ * (float)Math.Tan(95.0f * Math.PI / 180.0f / 2.0f);
+            float X_ = Y_ * 16.0f/9.0f;
+
+            float3 A, B, C, D, E;
+            A = new float3(0, 0, 0);
+            B = new float3(X_, Y_, Z_);
+            C = new float3(-X_, Y_, Z_);
+            D = new float3(-X_, -Y_, Z_);
+            E = new float3(X_, -Y_, Z_);
+
+            float4 lime_clr = new float4() ;
+            lime_clr.x = 217 / 255.0f;
+            lime_clr.y = 255 / 255.0f;
+            lime_clr.z = 66 / 255.0f;
+            lime_clr.w = 1.0f;
+
+            obj.addLine(A, B, lime_clr);
+            obj.addLine(A, C, lime_clr);
+            obj.addLine(A, D, lime_clr);
+            obj.addLine(A, E, lime_clr);
+
+            obj.addLine(B, C, lime_clr);
+            obj.addLine(C, D, lime_clr);
+            obj.addLine(D, E, lime_clr);
+            obj.addLine(E, B, lime_clr);
+            obj.setDrawingType(PrimitiveType.Lines);
+            obj.pushToGPU();
         }
 
         void addVert(ref Simple3DObject obj, float i_f, float limit, float height, float4 clr)

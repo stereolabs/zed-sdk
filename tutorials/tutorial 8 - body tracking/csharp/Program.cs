@@ -13,7 +13,7 @@ namespace sl
         {
             // Set Initialization parameters
             InitParameters init_params = new InitParameters();
-            init_params.resolution = RESOLUTION.HD720;
+            init_params.resolution = RESOLUTION.HD1080;
             init_params.coordinateUnits = UNIT.METER;
             init_params.sdkVerbose = 1;
 
@@ -47,8 +47,6 @@ namespace sl
             body_tracking_parameters.bodyFormat = sl.BODY_FORMAT.BODY_38;
             // track detects object across time and space
             body_tracking_parameters.enableObjectTracking = true;
-            // run detection for every Camera grab
-            body_tracking_parameters.imageSync = true;
             err = zedCamera.EnableBodyTracking(ref body_tracking_parameters);
             if (err != ERROR_CODE.SUCCESS)
             {

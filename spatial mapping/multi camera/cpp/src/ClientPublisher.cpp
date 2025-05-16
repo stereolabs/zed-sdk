@@ -2,7 +2,7 @@
 
 ClientPublisher::ClientPublisher() : running(false)
 {
-    init_parameters.depth_mode = sl::DEPTH_MODE::ULTRA;
+    init_parameters.depth_mode = sl::DEPTH_MODE::NEURAL;
 }
 
 ClientPublisher::~ClientPublisher()
@@ -59,9 +59,9 @@ void ClientPublisher::stop()
 
 void ClientPublisher::work()
 {
-    // in this sample we use a dummy thread to process the ZED data.
+    // In this sample we use a dummy thread to process the ZED data.
     // you can replace it by your own application and use the ZED like you use to, retrieve its images, depth, sensors data and so on.
-    // as long as you call the grab function and the retrieveBodies (wich run the detection) the camera will be able to seamlessly transmit the data to the fusion module.
+    // As long as you call the grab function the camera will be able to seamlessly transmit the data to the fusion module.
 
     // Setup runtime parameters
     sl::RuntimeParameters runtime_parameters;
@@ -70,14 +70,12 @@ void ClientPublisher::work()
 
     while (running) {
         if (zed.grab(runtime_parameters) == sl::ERROR_CODE::SUCCESS) {
-           
         }
     }
 }
 
 void ClientPublisher::setStartSVOPosition(unsigned pos) {
     zed.setSVOPosition(pos);
-    zed.grab();
 }
 
 

@@ -1,6 +1,6 @@
 ########################################################################
 #
-# Copyright (c) 2024, STEREOLABS.
+# Copyright (c) 2025, STEREOLABS.
 #
 # All rights reserved.
 #
@@ -122,8 +122,8 @@ def main():
             # Get position into the GNSS coordinate system - this needs a initialization between CAMERA 
             # and GNSS. When the initialization is finish the getGeoPose will return sl.POSITIONAL_TRACKING_STATE.OK
             current_geopose = sl.GeoPose()
-            current_geopose_satus = fusion.get_geo_pose(current_geopose)
-            if current_geopose_satus == sl.GNSS_FUSION_STATUS.OK:
+            current_geopose_status = fusion.get_geo_pose(current_geopose)
+            if current_geopose_status == sl.GNSS_FUSION_STATUS.OK:
                 viewer.updateGeoPoseData(current_geopose)
             """
             else:

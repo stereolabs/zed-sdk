@@ -8,21 +8,11 @@
 #include <math.h>
 #include <sl/Camera.hpp>
 
-std::vector<std::vector<int>> const CLASS_COLORS = {
-    {0, 114, 189},   {217, 83, 25},   {237, 177, 32},  {126, 47, 142},  {119, 172, 48},  {77, 190, 238},
-    {162, 20, 47},   {76, 76, 76},    {153, 153, 153}, {255, 0, 0},     {255, 128, 0},   {191, 191, 0},
-    {0, 255, 0},     {0, 0, 255},     {170, 0, 255},   {85, 85, 0},     {85, 170, 0},    {85, 255, 0},
-    {170, 85, 0},    {170, 170, 0},   {170, 255, 0},   {255, 85, 0},    {255, 170, 0},   {255, 255, 0},
-    {0, 85, 128},    {0, 170, 128},   {0, 255, 128},   {85, 0, 128},    {85, 85, 128},   {85, 170, 128},
-    {85, 255, 128},  {170, 0, 128},   {170, 85, 128},  {170, 170, 128}, {170, 255, 128}, {255, 0, 128},
-    {255, 85, 128},  {255, 170, 128}, {255, 255, 128}, {0, 85, 255},    {0, 170, 255},   {0, 255, 255},
-    {85, 0, 255},    {85, 85, 255},   {85, 170, 255},  {85, 255, 255},  {170, 0, 255},   {170, 85, 255},
-    {170, 170, 255}, {170, 255, 255}, {255, 0, 255},   {255, 85, 255},  {255, 170, 255}, {85, 0, 0},
-    {128, 0, 0},     {170, 0, 0},     {212, 0, 0},     {255, 0, 0},     {0, 43, 0},      {0, 85, 0},
-    {0, 128, 0},     {0, 170, 0},     {0, 212, 0},     {0, 255, 0},     {0, 0, 43},      {0, 0, 85},
-    {0, 0, 128},     {0, 0, 170},     {0, 0, 212},     {0, 0, 255},     {0, 0, 0},       {36, 36, 36},
-    {73, 73, 73},    {109, 109, 109}, {146, 146, 146}, {182, 182, 182}, {219, 219, 219}, {0, 114, 189},
-    {80, 183, 189},  {128, 128, 0}};
+const std::vector<std::vector<int>> CLASS_COLORS = {
+    {153, 154, 251}, {232, 176, 59},
+    {175, 208, 25}, {102, 205, 105},
+    {185, 0, 255}, {99, 107, 252}
+};
 
 inline cv::Scalar generateColorID_u(int const idx) {
     if (idx < 0) return cv::Scalar(236, 184, 36, 255);
@@ -154,6 +144,28 @@ inline std::vector<std::string> split_str(std::string const& s, std::string cons
 
     res.push_back(s.substr(pos_start));
     return res;
+} 
+
+inline void drawContours(const cv::Mat& mask, cv::Mat& target_img, const cv::Scalar& color, const cv::Point_<unsigned int>& roi_shift) {
+    
+    cv::Mat mask_binary;
+    mask.copyTo(mask_binary);
+    mask_binary.setTo(255, mask_binary > 0);
+
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(mask_binary, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    // Offset the contour coordinates to align with target img roi
+    for (size_t i = 0; i < contours.size(); ++i) {
+        std::vector<cv::Point> approx;
+        cv::approxPolyDP(contours[i], approx, 0.01, true);
+        for (size_t j = 0; j < approx.size(); ++j) {
+            approx[j].x += roi_shift.x;
+            approx[j].y += roi_shift.y;
+        }
+        contours[i] = approx;
+    }
+    cv::drawContours(target_img, contours, -1, color, 2, cv::LINE_AA);
 }
 
 #endif  // TRTX_YOLOV8SEG_UTILS_H_

@@ -14,7 +14,7 @@ namespace sl
             init_params.resolution = RESOLUTION.HD720;
             init_params.cameraFPS = 60;
             init_params.coordinateUnits = UNIT.METER;
-            init_params.depthMode = DEPTH_MODE.PERFORMANCE;
+            init_params.depthMode = DEPTH_MODE.NEURAL;
 
             Camera zedCamera = new Camera(0);
             // Open the camera

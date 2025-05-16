@@ -54,7 +54,7 @@ def main():
     runtime_parameters = sl.RuntimeParameters()
     
     can_compute_imu = zed.get_camera_information().camera_model != sl.MODEL.ZED
-    while i < 1000:
+    while i < 100:
         if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
             # Get the pose of the left eye of the camera with reference to the world frame
             zed.get_position(zed_pose, sl.REFERENCE_FRAME.WORLD)

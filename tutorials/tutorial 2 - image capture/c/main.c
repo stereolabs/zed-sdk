@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -39,8 +39,8 @@ int main(int argc, char **argv) {
 	init_param.camera_disable_self_calib = false;
 	init_param.enable_image_enhancement = true;
 	init_param.svo_real_time_mode = true;
-	init_param.depth_mode = SL_DEPTH_MODE_PERFORMANCE;
-	init_param.depth_stabilization = 1;
+	init_param.depth_mode = SL_DEPTH_MODE_NEURAL;
+	init_param.depth_stabilization = 30;
 	init_param.depth_maximum_distance = 40;
 	init_param.depth_minimum_distance = -1;
 	init_param.coordinate_unit = SL_UNIT_METER;

@@ -85,7 +85,7 @@ if __name__ == "__main__":
     init_params = sl.InitParameters()
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
     init_params.coordinate_units = sl.UNIT.METER
-    init_params.depth_mode = sl.DEPTH_MODE.ULTRA
+    init_params.depth_mode = sl.DEPTH_MODE.NEURAL
     zed = sl.Camera()
     error_code = zed.open(init_params)
     if(error_code != sl.ERROR_CODE.SUCCESS):

@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -18,10 +18,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-/*************************************************************************
- ** This sample demonstrates how to use the ZED for positional tracking  **
- ** and display camera motion in an OpenGL window. 		                **
- **************************************************************************/
+/**********************************************************************************
+ ** This sample demonstrates how to capture a live 3D reconstruction of a scene  **
+ ** as a fused point cloud and display the result in an OpenGL window.           **
+ **********************************************************************************/
 
 // ZED includes
 #include <sl/Camera.hpp>
@@ -29,187 +29,178 @@
 // Sample includes
 #include "GLViewer.hpp"
 
-// Using std namespace
+#include <opencv2/opencv.hpp>
+
+// Using std and sl namespaces
 using namespace std;
 using namespace sl;
 
-#define IMU_ONLY 0
+void parse_args(int argc, char **argv,InitParameters& param, sl::Mat &roi);
 
-inline std::string setTxt(sl::float3 value) {
-    std::stringstream stream;
-    stream << std::fixed << std::setprecision(2) << value;
-    return stream.str();
-}
+void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, std::string msg_suffix = "");
 
-std::string parseArgs(int argc, char **argv, sl::InitParameters &param);
-
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
 
     Camera zed;
     // Set configuration parameters for the ZED
     InitParameters init_parameters;
+    init_parameters.depth_mode = DEPTH_MODE::NEURAL;
     init_parameters.coordinate_units = UNIT::METER;
-    init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
-    init_parameters.sdk_verbose = true;
-    auto mask_path = parseArgs(argc, argv, init_parameters);
+    init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
+
+    sl::Mat roi;
+    parse_args(argc, argv, init_parameters, roi);
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS)
-    {
-        print("Camera Open", returned_state, "Exit program.");
+
+    if (returned_state > ERROR_CODE::SUCCESS) {// Quit if an error occurred
+        print("Open Camera", returned_state, "\nExit program.");
+        zed.close();
         return EXIT_FAILURE;
     }
 
-    // Load optional region of interest to exclude irrelevant area of the image
-    if(!mask_path.empty()) {
-        sl::Mat mask_roi;
-        auto err = mask_roi.read(mask_path.c_str());
-        if(err == sl::ERROR_CODE::SUCCESS)
-            zed.setRegionOfInterest(mask_roi, {MODULE::ALL});
-        else
-            std::cout << "Error loading Region of Interest file: " << err << std::endl;
+    if(roi.isInit()){
+        auto state = zed.setRegionOfInterest(roi, {sl::MODULE::POSITIONAL_TRACKING});
+        std::cout<<"Applied ROI "<<state<<"\n";
+    }else{
+        // If the region of interest is not loaded from a file, the auto detection can be enabled
+        if(0){
+            sl::RegionOfInterestParameters roi_param;
+            roi_param.auto_apply_module = {sl::MODULE::DEPTH, sl::MODULE::POSITIONAL_TRACKING};
+            zed.startRegionOfInterestAutoDetection(roi_param);
+            print("Region Of Interest auto detection is running.");
+        }
     }
 
-    auto camera_model = zed.getCameraInformation().camera_model;
+    REGION_OF_INTEREST_AUTO_DETECTION_STATE roi_state = REGION_OF_INTEREST_AUTO_DETECTION_STATE::NOT_ENABLED;
 
-    // Create text for GUI
-    std::string text_rotation, text_translation;
+    /* Print shortcuts*/
+    std::cout<<"Shortcuts\n";
+    std::cout<<"\t- 'l' to enable/disable current live point cloud display\n";
+    std::cout<<"\t- 'm' to enable/disable landmark display\n";
+    std::cout<<"\t- 'd' to switch background color from dark to light\n";
+    std::cout<<"\t- 'f' to follow the camera\n";
+    std::cout<<"\t- 'Shift' for soft mouse control / 'alt' for regular control / 'Ctrl' for strong control \n";
+    std::cout<<"\t- 'space' to switch camera view\n";
 
-    // Set parameters for Positional Tracking
-    PositionalTrackingParameters positional_tracking_param;  
-    positional_tracking_param.enable_imu_fusion = true;
-    positional_tracking_param.mode = sl::POSITIONAL_TRACKING_MODE::GEN_1;
-    // positional_tracking_param.enable_area_memory = true;
-    // enable Positional Tracking
-    returned_state = zed.enablePositionalTracking(positional_tracking_param);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    auto camera_infos = zed.getCameraInformation();
+
+    // Setup and start positional tracking
+    Pose pose;
+    POSITIONAL_TRACKING_STATE tracking_state = POSITIONAL_TRACKING_STATE::OFF;
+
+    sl::PositionalTrackingParameters ptp;
+    ptp.mode = sl::POSITIONAL_TRACKING_MODE::GEN_3;
+    returned_state = zed.enablePositionalTracking(ptp);
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("Enabling positional tracking failed: ", returned_state);
         zed.close();
         return EXIT_FAILURE;
     }
 
+    // Setup runtime parameters
+    RuntimeParameters runtime_parameters;
+    // Use low depth confidence to avoid introducing noise in the constructed model
+    runtime_parameters.confidence_threshold = 30;
 
-    // If there is a part of the image containing a static zone, the tracking accuracy will be significantly impacted
-    // The region of interest auto detection is a feature that can be used to remove such zone by masking the irrelevant area of the image.
-    // The region of interest can be loaded from a file :
+    auto resolution = camera_infos.camera_configuration.resolution;
 
-    sl::Mat roi;
-    sl::String roi_name = "roi_mask.jpg";
-    // roi.read(roi_name);
-    // zed.setRegionOfInterest(roi, {sl::MODULE::POSITIONAL_TRACKING});
+    // Define display resolution and check that it fit at least the image resolution
     
-    // or alternatively auto detected at runtime :    
-    sl::RegionOfInterestParameters roi_param;
+    sl::Resolution display_resolution = zed.getRetrieveMeasureResolution();
 
-    if(mask_path.empty()) {
-        roi_param.auto_apply_module = {sl::MODULE::DEPTH, sl::MODULE::POSITIONAL_TRACKING};
-        zed.startRegionOfInterestAutoDetection(roi_param);
-        print("Region Of Interest auto detection is running.");
-    }
-
-    Pose camera_path;
-    POSITIONAL_TRACKING_STATE tracking_state;
-#if IMU_ONLY
-    SensorsData sensors_data;
-#endif
-
-    REGION_OF_INTEREST_AUTO_DETECTION_STATE roi_state = REGION_OF_INTEREST_AUTO_DETECTION_STATE::NOT_ENABLED;
-
+    Mat image(display_resolution, MAT_TYPE::U8_C4, sl::MEM::GPU);
+    Mat point_cloud(display_resolution, MAT_TYPE::F32_C4, sl::MEM::GPU);
+    
+    // Point cloud viewer
     GLViewer viewer;
-    // Initialize OpenGL viewer
-    viewer.init(argc, argv, camera_model);
 
-    while (viewer.isAvailable())
-    {
-        if (zed.grab() == ERROR_CODE::SUCCESS)
-        {
-            // Get the position of the camera in a fixed reference frame (the World Frame)
-            tracking_state = zed.getPosition(camera_path, REFERENCE_FRAME::WORLD);
+    viewer.init(argc, argv, image, point_cloud, zed.getCUDAStream());
 
-            sl::PositionalTrackingStatus PositionalTrackingStatus = zed.getPositionalTrackingStatus();
-            
+    std::map<uint64_t, sl::Landmark> map_lm;
+    std::vector<sl::float3> map_lm_tracked;
+    std::vector<sl::Landmark2D> map_lm2d;
+    auto last_lm_update = sl::getCurrentTimeStamp().getSeconds();
 
-#if IMU_ONLY
-            PositionalTrackingStatus.odometry_status = sl::ODOMETRY_STATUS::OK;
-            PositionalTrackingStatus.spatial_memory_status = sl::SPATIAL_MEMORY_STATUS::OK;
-            PositionalTrackingStatus.tracking_fusion_status = sl::POSITIONAL_TRACKING_FUSION_STATUS::INERTIAL;
-            if (zed.getSensorsData(sensors_data, TIME_REFERENCE::IMAGE) == sl::ERROR_CODE::SUCCESS)
-            {
-                text_rotation = setTxt(sensors_data.imu.pose.getEulerAngles()); // only rotation is computed for IMU
-                viewer.updateData(sensors_data.imu.pose, text_translation, text_rotation, PositionalTrackingStatus);
-            }
-#else
-            if (tracking_state == POSITIONAL_TRACKING_STATE::OK)
-            {
-                // Get rotation and translation and displays it
-                text_rotation = setTxt(camera_path.getEulerAngles());
-                text_translation = setTxt(camera_path.getTranslation());
-            }
+    // Start the main loop
+    while (viewer.isAvailable()) {
+        // Grab a new image
+        sl::ERROR_CODE grab_result = zed.grab(runtime_parameters);
 
-            // Update rotation, translation and tracking state values in the OpenGL window
-            viewer.updateData(camera_path.pose_data, text_translation, text_rotation, PositionalTrackingStatus);
-#endif
+        switch (grab_result) {
+            case sl::ERROR_CODE::SUCCESS:
+            case sl::ERROR_CODE::CORRUPTED_FRAME:
+                // Retrieve the left image
+                zed.retrieveImage(image, VIEW::LEFT, MEM::GPU, display_resolution);
+                zed.retrieveMeasure(point_cloud, MEASURE::XYZBGRA, MEM::GPU, display_resolution);
+                // Retrieve the camera pose data
+                zed.getPosition(pose);
 
-            // If the region of interest auto detection is running, the resulting mask can be saved and reloaded for later use
-            if(mask_path.empty() && roi_state == sl::REGION_OF_INTEREST_AUTO_DETECTION_STATE::RUNNING && 
-                    zed.getRegionOfInterestAutoDetectionStatus() == sl::REGION_OF_INTEREST_AUTO_DETECTION_STATE::READY) {
-                std::cout << "Region Of Interest detection done! Saving into " << roi_name << std::endl;
-                zed.getRegionOfInterest(roi, sl::Resolution(0,0), sl::MODULE::POSITIONAL_TRACKING);
-                roi.write(roi_name);
-            } 
-            roi_state = zed.getRegionOfInterestAutoDetectionStatus();
+                viewer.updateCameraPose(pose.pose_data, zed.getPositionalTrackingStatus());
+
+                if(sl::getCurrentTimeStamp().getSeconds() - last_lm_update > 1) {
+                    zed.getPositionalTrackingLandmarks(map_lm);
+                    viewer.pushLM(map_lm);
+                    last_lm_update = sl::getCurrentTimeStamp().getSeconds();
+                }
+
+                if(map_lm.size()){
+                    zed.getPositionalTrackingLandmarks2D(map_lm2d);
+                    map_lm_tracked.clear();
+                    for(auto &it: map_lm2d){
+                        if(map_lm.find(it.id) != map_lm.end())
+                            map_lm_tracked.push_back(map_lm[it.id].position);
+                    }
+                    if(map_lm_tracked.size()) viewer.pushTrackedLM(map_lm_tracked);
+                }
+
+                // If the region of interest auto detection is running, the resulting mask can be saved and reloaded for later use
+                if(roi_state == sl::REGION_OF_INTEREST_AUTO_DETECTION_STATE::RUNNING &&
+                        zed.getRegionOfInterestAutoDetectionStatus() == sl::REGION_OF_INTEREST_AUTO_DETECTION_STATE::READY) {
+                    sl::String roi_name = "roi_mask.jpg";
+                    std::cout << "Region Of Interest detection done! Saving into " << roi_name << std::endl;
+                    zed.getRegionOfInterest(roi, sl::Resolution(0,0), sl::MODULE::POSITIONAL_TRACKING);
+                    roi.write(roi_name);
+                }
+                roi_state = zed.getRegionOfInterestAutoDetectionStatus();
+                break;
+            default:
+                break;
         }
-        else
-            sleep_ms(1);
     }
 
-    zed.disablePositionalTracking();
-
+    // Free allocated memory before closing the camera
+    image.free();
+    point_cloud.free();
+    // Close the ZED
     zed.close();
-    return EXIT_SUCCESS;
+
+    return 0;
 }
 
-inline int findImageExtension(int argc, char **argv) {
-    int arg_idx=-1;
-    int arg_idx_search = 0;
-    if (argc > 2) arg_idx_search=2;
-    else if(argc > 1) arg_idx_search=1;
-
-    if(arg_idx_search > 0 && (string(argv[arg_idx_search]).find(".png") != string::npos || 
-        string(argv[arg_idx_search]).find(".jpg") != string::npos))
-        arg_idx = arg_idx_search;
-    return arg_idx;
-}
-
-std::string parseArgs(int argc, char **argv, sl::InitParameters &param)
-{   
-    int mask_arg = findImageExtension(argc, argv);
-    std::string mask_path;
-
-    if (argc > 1 && string(argv[1]).find(".svo") != string::npos)
-    {
-        // SVO input mode
-        param.input.setFromSVOFile(argv[1]);
-        cout << "[Sample] Using SVO File input: " << argv[1] << endl;
-    }
-    else if (argc > 1 && string(argv[1]).find(".svo") == string::npos)
-    {
-        string arg = string(argv[1]);
-        unsigned int a, b, c, d, port;
-        if (sscanf(arg.c_str(), "%u.%u.%u.%u:%d", &a, &b, &c, &d, &port) == 5)
-        {
-            // Stream input mode - IP + port
-            string ip_adress = to_string(a) + "." + to_string(b) + "." + to_string(c) + "." + to_string(d);
-            param.input.setFromStream(sl::String(ip_adress.c_str()), port);
-            cout << "[Sample] Using Stream input, IP : " << ip_adress << ", port : " << port << endl;
+void parse_args(int argc, char **argv,InitParameters& param, sl::Mat &roi)
+{
+    if(argc == 1) return;
+    for(int id = 1; id < argc; id ++) {
+        std::string arg(argv[id]);
+        if(arg.find(".svo")!=string::npos) {
+            // SVO input mode
+            param.input.setFromSVOFile(arg.c_str());
+            cout<<"[Sample] Using SVO File input: "<<arg<<endl;
         }
-        else if (sscanf(arg.c_str(), "%u.%u.%u.%u", &a, &b, &c, &d) == 4)
-        {
+
+        unsigned int a,b,c,d,port;
+        if (sscanf(arg.c_str(),"%u.%u.%u.%u:%d", &a, &b, &c, &d,&port) == 5) {
+            // Stream input mode - IP + port
+            string ip_adress = to_string(a)+"."+to_string(b)+"."+to_string(c)+"."+to_string(d);
+            param.input.setFromStream(String(ip_adress.c_str()),port);
+            cout<<"[Sample] Using Stream input, IP : "<<ip_adress<<", port : "<<port<<endl;
+        }
+        else  if (sscanf(arg.c_str(),"%u.%u.%u.%u", &a, &b, &c, &d) == 4) {
             // Stream input mode - IP only
-            param.input.setFromStream(sl::String(argv[1]));
-            cout << "[Sample] Using Stream input, IP : " << argv[1] << endl;
+            param.input.setFromStream(String(argv[1]));
+            cout<<"[Sample] Using Stream input, IP : "<<argv[1]<<endl;
         }
         else if (arg.find("HD2K") != string::npos) {
             param.camera_resolution = RESOLUTION::HD2K;
@@ -229,13 +220,25 @@ std::string parseArgs(int argc, char **argv, sl::InitParameters &param)
         }else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;
+        }else if ((arg.find(".png") != string::npos) || ((arg.find(".jpg") != string::npos))) {
+            roi.read(arg.c_str());
+            cout << "[Sample] Using Region of intererest from "<< arg << endl;
         }
     }
-    
-    if (mask_arg > 0) {
-        mask_path = string(argv[mask_arg]);
-        cout << "[Sample] Using Region of Interest from file : " << mask_path << endl;
-    }
+}
 
-    return mask_path;
+void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suffix) {
+    cout <<"[Sample]";
+    if (err_code != sl::ERROR_CODE::SUCCESS)
+        cout << "[Error] ";
+    else
+        cout<<" ";
+    cout << msg_prefix << " ";
+    if (err_code != sl::ERROR_CODE::SUCCESS) {
+        cout << " | " << toString(err_code) << " : ";
+        cout << toVerbose(err_code);
+    }
+    if (!msg_suffix.empty())
+        cout << " " << msg_suffix;
+    cout << endl;
 }

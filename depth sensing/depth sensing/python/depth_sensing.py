@@ -28,7 +28,7 @@ import ogl_viewer.viewer as gl
 import pyzed.sl as sl
 import argparse
 
-def parse_args(init):
+def parse_args(init, opt):
     if len(opt.input_svo_file)>0 and opt.input_svo_file.endswith(".svo"):
         init.set_from_svo_file(opt.input_svo_file)
         print("[Sample] Using SVO File input: {0}".format(opt.input_svo_file))
@@ -67,13 +67,13 @@ def parse_args(init):
 
 
 
-def main():
+def main(opt):
     print("Running Depth Sensing sample ... Press 'Esc' to quit\nPress 's' to save the point cloud")
 
-    init = sl.InitParameters(depth_mode=sl.DEPTH_MODE.ULTRA,
+    init = sl.InitParameters(depth_mode=sl.DEPTH_MODE.NEURAL,
                                  coordinate_units=sl.UNIT.METER,
                                  coordinate_system=sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP)
-    parse_args(init)
+    parse_args(init, opt)
     zed = sl.Camera()
     status = zed.open(init)
     if status != sl.ERROR_CODE.SUCCESS:
@@ -84,10 +84,9 @@ def main():
     res.width = 720
     res.height = 404
 
-    camera_model = zed.get_camera_information().camera_model
     # Create OpenGL viewer
     viewer = gl.GLViewer()
-    viewer.init(1, sys.argv, camera_model, res)
+    viewer.init(1, sys.argv, res)
 
     point_cloud = sl.Mat(res.width, res.height, sl.MAT_TYPE.F32_C4, sl.MEM.CPU)
 
@@ -118,4 +117,4 @@ if __name__ == "__main__":
     if len(opt.input_svo_file)>0 and len(opt.ip_address)>0:
         print("Specify only input_svo_file or ip_address, or none to use wired camera, not both. Exit program")
         exit()
-    main() 
+    main(opt)

@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -36,7 +36,7 @@ struct SkeletonHandler {
     std::vector<FbxNode*> joints;
 };
 
-SkeletonHandler CreateSkeleton(FbxScene* pScene);
+SkeletonHandler CreateSkeleton(FbxScene* pScene, const std::vector<std::vector<int>> & childrenIdx, const std::vector<sl::float3> & local_joints_translations);
 #endif
 
 int main(int argc, char **argv) {
@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
     // The FBX Scene axis and unit are right handed, Y-Up and Centimeter. Do not change these parameters.
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
     init_parameters.coordinate_units = UNIT::CENTIMETER;
-    init_parameters.depth_mode = sl::DEPTH_MODE::ULTRA;
+    init_parameters.depth_mode = sl::DEPTH_MODE::NEURAL;
 
     parseArgs(argc, argv, init_parameters);
 
@@ -73,16 +73,16 @@ int main(int argc, char **argv) {
     }
 
     // Enable the Objects detection module
-    sl::BodyTrackingParameters boyd_tracking_parameters;
+    sl::BodyTrackingParameters body_tracking_parameters;
     // Tracking is mandatory, do not disable it.
-    boyd_tracking_parameters.enable_tracking = true; 
-    boyd_tracking_parameters.enable_body_fitting = true;
-    // Do not change this parameter, the FBX export expects 34 bones, it is not compatible with 18
-    boyd_tracking_parameters.body_format = sl::BODY_FORMAT::BODY_34;
+    body_tracking_parameters.enable_tracking = true;
+    body_tracking_parameters.enable_body_fitting = true;
+	// Compatible with body_34 or body_38 formats
+    body_tracking_parameters.body_format = sl::BODY_FORMAT::BODY_38;
    
     // Only HUMAN_BODY_X models are compatible.
-    boyd_tracking_parameters.detection_model = sl::BODY_TRACKING_MODEL::HUMAN_BODY_FAST;
-    returned_state = zed.enableBodyTracking(boyd_tracking_parameters);
+    body_tracking_parameters.detection_model = sl::BODY_TRACKING_MODEL::HUMAN_BODY_ACCURATE;
+    returned_state = zed.enableBodyTracking(body_tracking_parameters);
     if (returned_state != sl::ERROR_CODE::SUCCESS) {
         std::cout << "Error enable OD" << returned_state << ", exit program.\n";
         zed.close();
@@ -128,7 +128,23 @@ int main(int argc, char **argv) {
 
 #ifdef FBX_EXPORT
     // Create skeleton hierarchy
-    SkeletonHandler skeleton = CreateSkeleton(fbx_scene);
+    SkeletonHandler skeleton;
+    
+    if (body_tracking_parameters.body_format == sl::BODY_FORMAT::BODY_34)
+    {
+        skeleton = CreateSkeleton(fbx_scene, childrenIdx34, local_joints_translations_body34);
+
+    }
+    else if (body_tracking_parameters.body_format == sl::BODY_FORMAT::BODY_38)
+    {
+        skeleton = CreateSkeleton(fbx_scene, childrenIdx38, local_joints_translations_body38);
+    }
+    else
+    {
+		std::cout << "Unsupported body format" << std::endl;
+		return EXIT_FAILURE;
+    }
+
     FbxNode* root_node = fbx_scene->GetRootNode();
     // Add skeleton in the Scene
     root_node->AddChild(skeleton.root);
@@ -241,31 +257,52 @@ int main(int argc, char **argv) {
 }
 
 #ifdef FBX_EXPORT
-// Create Skeleton node hierarchy based on sl::BODY_FORMAT::POSE_34 body format.
-SkeletonHandler CreateSkeleton(FbxScene* pScene) {
+// Create Skeleton node hierarchy based on sl::BODY_FORMAT::POSE_34 or 38 body format.
+SkeletonHandler CreateSkeleton(FbxScene* pScene, const std::vector<std::vector<int>> & childrenIdx, const std::vector<sl::float3> & local_joints_translations) {
     FbxNode* reference_node = FbxNode::Create(pScene, ("Skeleton"));
     SkeletonHandler skeleton;
-    for (int i = 0; i < static_cast<int>(sl::BODY_PARTS_POSE_34::LAST); i++) {
-        FbxString joint_name;
-        joint_name =  sl::toString(static_cast<sl::BODY_PARTS_POSE_34>(i)).c_str();
-        FbxSkeleton* skeleton_node_attribute = FbxSkeleton::Create(pScene, joint_name);
-        skeleton_node_attribute->SetSkeletonType(FbxSkeleton::eLimbNode);
-        skeleton_node_attribute->Size.Set(1.0);
-        FbxNode* skeleton_node = FbxNode::Create(pScene, joint_name.Buffer());
-        skeleton_node->SetNodeAttribute(skeleton_node_attribute);
 
-        FbxDouble3 tr(local_joints_translations[i].x, local_joints_translations[i].y, local_joints_translations[i].z);
-        skeleton_node->LclTranslation.Set(tr);
+    if (childrenIdx.size() == 34)
+    {
+        for (int i = 0; i < static_cast<int>(sl::BODY_34_PARTS::LAST); i++) {
+            FbxString joint_name;
+            joint_name = sl::toString(static_cast<sl::BODY_34_PARTS>(i)).c_str();
+            FbxSkeleton* skeleton_node_attribute = FbxSkeleton::Create(pScene, joint_name);
+            skeleton_node_attribute->SetSkeletonType(FbxSkeleton::eLimbNode);
+            skeleton_node_attribute->Size.Set(1.0);
+            FbxNode* skeleton_node = FbxNode::Create(pScene, joint_name.Buffer());
+            skeleton_node->SetNodeAttribute(skeleton_node_attribute);
 
-        skeleton.joints.push_back(skeleton_node);
+            FbxDouble3 tr(local_joints_translations[i].x, local_joints_translations[i].y, local_joints_translations[i].z);
+            skeleton_node->LclTranslation.Set(tr);
+
+            skeleton.joints.push_back(skeleton_node);
+        }
+    }
+    else // 38
+    {
+        for (int i = 0; i < static_cast<int>(sl::BODY_38_PARTS::LAST); i++) {
+            FbxString joint_name;
+            joint_name = toSlString(static_cast<sl::BODY_38_PARTS>(i)).c_str();
+            FbxSkeleton* skeleton_node_attribute = FbxSkeleton::Create(pScene, joint_name);
+            skeleton_node_attribute->SetSkeletonType(FbxSkeleton::eLimbNode);
+            skeleton_node_attribute->Size.Set(1.0);
+            FbxNode* skeleton_node = FbxNode::Create(pScene, joint_name.Buffer());
+            skeleton_node->SetNodeAttribute(skeleton_node_attribute);
+
+            FbxDouble3 tr(local_joints_translations[i].x, local_joints_translations[i].y, local_joints_translations[i].z);
+            skeleton_node->LclTranslation.Set(tr);
+
+            skeleton.joints.push_back(skeleton_node);
+        }
     }
 
     reference_node->AddChild(skeleton.joints[0]);
 
     // Build skeleton node hierarchy. 
     for (int i = 0; i < skeleton.joints.size(); i++) {
-        for (int j = 0; j < childenIdx[i].size(); j++)        
-            skeleton.joints[i]->AddChild(skeleton.joints[childenIdx[i][j]]);        
+        for (int j = 0; j < childrenIdx[i].size(); j++)
+            skeleton.joints[i]->AddChild(skeleton.joints[childrenIdx[i][j]]);        
     }
 
     skeleton.root = reference_node;

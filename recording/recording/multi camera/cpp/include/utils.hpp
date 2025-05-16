@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -38,6 +38,7 @@ void nix_exit_handler(int s) {
 
 // Set the function to handle the CTRL-C
 void SetCtrlHandler() {
+    std::cout << "Press Ctrl+C to exit" << std::endl;
 #ifdef _WIN32
     SetConsoleCtrlHandler((PHANDLER_ROUTINE) CtrlHandler, TRUE);
 #else // unix

@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -50,10 +50,9 @@ class MainWindow
     {
         // Set configuration parameters
         InitParameters init_params = new InitParameters();
-        init_params.resolution = RESOLUTION.HD720;
+        init_params.resolution = RESOLUTION.AUTO;
         init_params.sdkVerbose = 1;
-        init_params.cameraFPS = 60;
-        init_params.depthMode = DEPTH_MODE.ULTRA;
+        init_params.depthMode = DEPTH_MODE.NEURAL;
         init_params.coordinateUnits = UNIT.METER;
         init_params.coordinateSystem = COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP;
 
@@ -79,7 +78,7 @@ class MainWindow
         int Height = zedCamera.ImageHeight;
         int Width = zedCamera.ImageWidth;
 
-        res = new Resolution((uint)Width, (uint)Height);
+        res = new Resolution(Width, Height);
 
         // If there is a part of the image containing a static zone, the tracking accuracy will be significantly impacted
         // The region of interest auto detection is a feature that can be used to remove such zone by masking the irrelevant area of the image.
@@ -200,10 +199,10 @@ class MainWindow
         {
             trackingState = zedCamera.GetPosition(ref cam_pose, REFERENCE_FRAME.WORLD);
 
-            // if (trackingState == POSITIONAL_TRACKING_STATE.OK && timer% 30 == 0)
-            // {
-            //    Console.WriteLine("Translation : " + cam_pose.translation + ", Rotation : " + cam_pose.rotation);
-            // }
+            if (trackingState == POSITIONAL_TRACKING_STATE.OK && timer% 30 == 0)
+            {
+               Console.WriteLine("Translation : " + cam_pose.translation + ", Rotation : " + cam_pose.rotation);
+            }
 
             //Update GL View
             viewer.updateData(cam_pose);

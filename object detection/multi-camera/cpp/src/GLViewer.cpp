@@ -1227,11 +1227,12 @@ bool CameraViewer::initialize(sl::Mat& im, sl::float3 clr) {
     cam_4.y = (height - cy) * Z_ * fy_;
     cam_4 *= toOGL;
 
-    frustum.addFace(cam_0, cam_1, cam_2, sl::float4(clr.b, clr.g, clr.r, 1.f));
-    frustum.addFace(cam_0, cam_2, cam_3, sl::float4(clr.b, clr.g, clr.r, 1.f));
-    frustum.addFace(cam_0, cam_3, cam_4, sl::float4(clr.b, clr.g, clr.r, 1.f));
-    frustum.addFace(cam_0, cam_4, cam_1, sl::float4(clr.b, clr.g, clr.r, 1.f));
-    frustum.setDrawingType(GL_TRIANGLES);
+    auto clr4f = sl::float4(clr.b, clr.g, clr.r, 1.f);
+    frustum.addLine(cam_0, cam_1, clr4f);
+    frustum.addLine(cam_0, cam_2, clr4f);
+    frustum.addLine(cam_0, cam_3, clr4f);
+    frustum.addLine(cam_0, cam_4, clr4f);
+    frustum.setDrawingType(GL_LINES);
 
     frustum.pushToGPU();
 

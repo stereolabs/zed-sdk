@@ -30,7 +30,7 @@ import cv_viewer.tracking_viewer as cv_viewer
 import numpy as np
 import argparse
 
-def parse_args(init):
+def parse_args(init, opt):
     if len(opt.input_svo_file)>0 and opt.input_svo_file.endswith(".svo"):
         init.set_from_svo_file(opt.input_svo_file)
         print("[Sample] Using SVO File input: {0}".format(opt.input_svo_file))
@@ -69,7 +69,7 @@ def parse_args(init):
 
 
 
-def main():
+def main(opt):
     print("Running Body Tracking sample ... Press 'q' to quit, or 'm' to pause or restart")
 
     # Create a Camera object
@@ -79,10 +79,10 @@ def main():
     init_params = sl.InitParameters()
     init_params.camera_resolution = sl.RESOLUTION.HD1080  # Use HD1080 video mode
     init_params.coordinate_units = sl.UNIT.METER          # Set coordinate units
-    init_params.depth_mode = sl.DEPTH_MODE.ULTRA
+    init_params.depth_mode = sl.DEPTH_MODE.NEURAL
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
     
-    parse_args(init_params)
+    parse_args(init_params, opt)
 
     # Open the camera
     err = zed.open(init_params)
@@ -161,4 +161,4 @@ if __name__ == '__main__':
     if len(opt.input_svo_file)>0 and len(opt.ip_address)>0:
         print("Specify only input_svo_file or ip_address, or none to use wired camera, not both. Exit program")
         exit()
-    main() 
+    main(opt) 

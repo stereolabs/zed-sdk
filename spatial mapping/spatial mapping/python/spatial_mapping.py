@@ -31,13 +31,13 @@ import ogl_viewer.viewer as gl
 import argparse
 
 
-def main():
+def main(opt):
     init = sl.InitParameters()
     init.depth_mode = sl.DEPTH_MODE.NEURAL
     init.coordinate_units = sl.UNIT.METER
     init.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP # OpenGL's coordinate system is right_handed    
     init.depth_maximum_distance = 8.
-    parse_args(init)
+    parse_args(init, opt)
     zed = sl.Camera()
     status = zed.open(init)
     if status != sl.ERROR_CODE.SUCCESS:
@@ -72,14 +72,15 @@ def main():
     mapping_activated = False
 
     image = sl.Mat()  
-    point_cloud = sl.Mat()                
-    pose = sl.Pose() 
+    point_cloud = sl.Mat()
+    pose = sl.Pose()
 
     viewer = gl.GLViewer()
-    
+
     viewer.init(zed.get_camera_information().camera_configuration.calibration_parameters.left_cam, pymesh, int(opt.build_mesh))
     print("Press on 'Space' to enable / disable spatial mapping")
     print("Disable the spatial mapping after enabling it will output a .obj mesh file")
+    last_call = time.time()
     while viewer.is_available():
         # Grab an image, a RuntimeParameters object must be given to grab()
         if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
@@ -91,16 +92,16 @@ def main():
             if mapping_activated:
                 mapping_state = zed.get_spatial_mapping_state()
                 # Compute elapsed time since the last call of Camera.request_spatial_map_async()
-                duration = time.time() - last_call  
+                duration = time.time() - last_call
                 # Ask for a mesh update if 500ms elapsed since last request
                 if(duration > .5 and viewer.chunks_updated()):
                     zed.request_spatial_map_async()
                     last_call = time.time()
-                
+
                 if zed.get_spatial_map_request_status_async() == sl.ERROR_CODE.SUCCESS:
                     zed.retrieve_spatial_map_async(pymesh)
                     viewer.update_chunks()
-                
+
             change_state = viewer.update_view(image, pose.pose_data(), tracking_state, mapping_state)
 
             if change_state:
@@ -171,7 +172,7 @@ def main():
     zed.close()
    
           
-def parse_args(init):
+def parse_args(init, opt):
     if len(opt.input_svo_file)>0 and opt.input_svo_file.endswith(".svo"):
         init.set_from_svo_file(opt.input_svo_file)
         print("[Sample] Using SVO File input: {0}".format(opt.input_svo_file))
@@ -209,9 +210,6 @@ def parse_args(init):
         print("[Sample] Using default resolution")
 
 
-
-        
-         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_svo_file', type=str, help='Path to an .svo file, if you want to replay it',default = '')
@@ -222,5 +220,4 @@ if __name__ == "__main__":
     if len(opt.input_svo_file)>0 and len(opt.ip_address)>0:
         print("Specify only input_svo_file or ip_address, or none to use wired camera, not both. Exit program")
         exit()
-    main() 
-    
+    main(opt)

@@ -13,7 +13,7 @@ We assume that you have followed previous tutorials (opening the ZED and image c
 ## Create a camera
 
 As in other tutorials, we create, configure and open the ZED.
-We set the ZED in HD720 mode at 60fps and enable depth in ULTRA mode. The ZED SDK provides different depth modes: PERFORMANCE, ULTRA, QUALITY. For more information, see online documentation.
+We set the ZED in HD720 mode at 60fps and enable depth in NEURAL mode. The ZED SDK provides different depth modes: NEURAL_PLUS, NEURAL, NEURAL_LIGHT. For more information, see online documentation.
 
 ```python
 # Create a ZED camera
@@ -21,7 +21,7 @@ zed = sl.Camera()
 
 # Create configuration parameters
 init_params = sl.InitParameters()
-init_params.depth_mode = sl.DEPTH_MODE.ULTRA  # Use ULTRA depth mode
+init_params.depth_mode = sl.DEPTH_MODE.NEURAL  # Use NEURAL depth mode
 init_params.coordinate_units = sl.UNIT.MILLIMETER  # Use meter units (for depth measurements)
 
 
@@ -31,7 +31,7 @@ if (err!=sl.ERROR_CODE.SUCCESS):
   exit(-1)
 ```
 
-<i>Note: Default parameter for depth mode is DEPTH_MODE.PERFORMANCE </i>
+<i>Note: Default parameter for depth mode is DEPTH_MODE.NEURAL </i>
 
 ## Capture data
 

@@ -30,7 +30,7 @@ def main():
 
     # Create a InitParameters object and set configuration parameters
     init_params = sl.InitParameters()
-    init_params.depth_mode = sl.DEPTH_MODE.ULTRA  # Use ULTRA depth mode
+    init_params.depth_mode = sl.DEPTH_MODE.NEURAL  # Use NEURAL depth mode
     init_params.coordinate_units = sl.UNIT.MILLIMETER  # Use meter units (for depth measurements)
 
     # Open the camera

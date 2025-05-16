@@ -11,7 +11,6 @@ import array
 from enum import IntEnum
 
 from cv_viewer.utils import *
-import ogl_viewer.zed_model as zm
 import pyzed.sl as sl
 
 VERTEX_SHADER = """
@@ -83,12 +82,17 @@ class Shader:
 
         if glGetProgramiv(self.program_id, GL_LINK_STATUS) != GL_TRUE:
             info = glGetProgramInfoLog(self.program_id)
-            glDeleteProgram(self.program_id)
-            glDeleteShader(vertex_id)
-            glDeleteShader(fragment_id)
+            if (self.program_id is not None) and (self.program_id > 0) and glIsProgram(self.program_id):
+                glDeleteProgram(self.program_id)
+            if (vertex_id is not None) and (vertex_id > 0) and glIsShader(vertex_id):
+                glDeleteShader(vertex_id)
+            if (fragment_id is not None) and (fragment_id > 0) and glIsShader(fragment_id):
+                glDeleteShader(fragment_id)
             raise RuntimeError('Error linking program: %s' % (info))
-        glDeleteShader(vertex_id)
-        glDeleteShader(fragment_id)
+        if (vertex_id is not None) and (vertex_id > 0) and glIsShader(vertex_id):
+            glDeleteShader(vertex_id)
+        if (fragment_id is not None) and (fragment_id > 0) and glIsShader(fragment_id):
+            glDeleteShader(fragment_id)
 
     def compile(self, _type, _src):
         try:
@@ -101,11 +105,13 @@ class Shader:
             glCompileShader(shader_id)
             if glGetShaderiv(shader_id, GL_COMPILE_STATUS) != GL_TRUE:
                 info = glGetShaderInfoLog(shader_id)
-                glDeleteShader(shader_id)
+                if (shader_id is not None) and (shader_id > 0) and glIsShader(shader_id):
+                    glDeleteShader(shader_id)
                 raise RuntimeError('Shader compilation failed: %s' % (info))
             return shader_id
         except:
-            glDeleteShader(shader_id)
+            if (shader_id is not None) and (shader_id > 0) and glIsShader(shader_id):
+                glDeleteShader(shader_id)
             raise
 
     def get_program_id(self):
@@ -424,64 +430,30 @@ class GLViewer:
 
         self.bckgrnd_clr = np.array([223 / 255., 230 / 255., 233 / 255.])
 
-        if camera_model == sl.MODEL.ZED:
-            for i in range(0, zm.NB_ALLUMINIUM_TRIANGLES * 3, 3):
-                for j in range(3):
-                    index = int(zm.alluminium_triangles[i + j] - 1)
-                    self.zedModel.add_point_clr(
-                        [zm.vertices[index * 3], zm.vertices[index * 3 + 1], zm.vertices[index * 3 + 2]],
-                        [zm.ALLUMINIUM_COLOR.r, zm.ALLUMINIUM_COLOR.g, zm.ALLUMINIUM_COLOR.b])
+        # Create the camera model
+        Z_ = -0.15
+        Y_ = Z_ * math.tan(95. * M_PI / 180. / 2.)
+        X_ = Y_ * 16./9.
 
-            for i in range(0, zm.NB_DARK_TRIANGLES * 3, 3):
-                for j in range(3):
-                    index = int(zm.dark_triangles[i + j] - 1)
-                    self.zedModel.add_point_clr(
-                        [zm.vertices[index * 3], zm.vertices[index * 3 + 1], zm.vertices[index * 3 + 2]],
-                        [zm.DARK_COLOR.r, zm.DARK_COLOR.g, zm.DARK_COLOR.b])
-        elif camera_model == sl.MODEL.ZED_M:
-            for i in range(0, zm.NB_AL_ZEDM_TRI * 3, 3):
-                for j in range(3):
-                    index = int(zm.al_triangles_m[i + j] - 1)
-                    self.zedModel.add_point_clr(
-                        [zm.vertices_m[index * 3], zm.vertices_m[index * 3 + 1], zm.vertices_m[index * 3 + 2]],
-                        [zm.ALLUMINIUM_COLOR.r, zm.ALLUMINIUM_COLOR.g, zm.ALLUMINIUM_COLOR.b])
+        A = np.array([0, 0, 0])
+        B = np.array([X_, Y_, Z_])
+        C = np.array([-X_, Y_, Z_])
+        D = np.array([-X_, -Y_, Z_])
+        E = np.array([X_, -Y_, Z_])
 
-            for i in range(0, zm.NB_DARK_ZEDM_TRI * 3, 3):
-                for j in range(3):
-                    index = int(zm.dark_triangles_m[i + j] - 1)
-                    self.zedModel.add_point_clr(
-                        [zm.vertices_m[index * 3], zm.vertices_m[index * 3 + 1], zm.vertices_m[index * 3 + 2]],
-                        [zm.DARK_COLOR.r, zm.DARK_COLOR.g, zm.DARK_COLOR.b])
+        lime_clr = np.array([217 / 255, 255/255, 66/255])
 
-            for i in range(0, zm.NB_GRAY_ZEDM_TRI * 3, 3):
-                for j in range(3):
-                    index = int(zm.gray_triangles_m[i + j] - 1)
-                    self.zedModel.add_point_clr(
-                        [zm.vertices_m[index * 3], zm.vertices_m[index * 3 + 1], zm.vertices_m[index * 3 + 2]],
-                        [zm.GRAY_COLOR.r, zm.GRAY_COLOR.g, zm.GRAY_COLOR.b])
+        self.zedModel.add_line(A, B, lime_clr)
+        self.zedModel.add_line(A, C, lime_clr)
+        self.zedModel.add_line(A, D, lime_clr)
+        self.zedModel.add_line(A, E, lime_clr)
 
-            for i in range(0, zm.NB_YELLOW_ZEDM_TRI * 3, 3):
-                for j in range(3):
-                    index = int(zm.yellow_triangles_m[i + j] - 1)
-                    self.zedModel.add_point_clr(
-                        [zm.vertices_m[index * 3], zm.vertices_m[index * 3 + 1], zm.vertices_m[index * 3 + 2]],
-                        [zm.YELLOW_COLOR.r, zm.YELLOW_COLOR.g, zm.YELLOW_COLOR.b])
+        self.zedModel.add_line(B, C, lime_clr)
+        self.zedModel.add_line(C, D, lime_clr)
+        self.zedModel.add_line(D, E, lime_clr)
+        self.zedModel.add_line(E, B, lime_clr)
 
-        elif camera_model == sl.MODEL.ZED2:
-            for i in range(0, zm.NB_ALLUMINIUM_TRIANGLES * 3, 3):
-                for j in range(3):
-                    index = int(zm.alluminium_triangles[i + j] - 1)
-                    self.zedModel.add_point_clr(
-                        [zm.vertices[index * 3], zm.vertices[index * 3 + 1], zm.vertices[index * 3 + 2]],
-                        [zm.DARK_COLOR.r, zm.DARK_COLOR.g, zm.DARK_COLOR.b])
-
-            for i in range(0, zm.NB_DARK_TRIANGLES * 3, 3):
-                for j in range(3):
-                    index = int(zm.dark_triangles[i + j] - 1)
-                    self.zedModel.add_point_clr(
-                        [zm.vertices[index * 3], zm.vertices[index * 3 + 1], zm.vertices[index * 3 + 2]],
-                        [zm.GRAY_COLOR.r, zm.GRAY_COLOR.g, zm.GRAY_COLOR.b])
-        self.zedModel.set_drawing_type(GL_TRIANGLES)
+        self.zedModel.set_drawing_type(GL_LINES)
         self.zedModel.push_to_GPU()
 
         self.point_cloud.init(res)

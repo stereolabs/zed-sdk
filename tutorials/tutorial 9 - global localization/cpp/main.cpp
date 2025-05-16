@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -44,7 +44,7 @@ int main(int argc, char **argv)
     //////////////////////////////
     // Open camera:
     sl::InitParameters init_params;
-    init_params.depth_mode = sl::DEPTH_MODE::ULTRA;
+    init_params.depth_mode = sl::DEPTH_MODE::NEURAL;
     init_params.coordinate_system = sl::COORDINATE_SYSTEM::IMAGE;
     init_params.coordinate_units = sl::UNIT::METER;
     init_params.camera_resolution = sl::RESOLUTION::AUTO;

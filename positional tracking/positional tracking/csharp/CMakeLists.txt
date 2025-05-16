@@ -6,7 +6,6 @@ add_executable(${PROJECT_NAME}
   	Program.cs
 	MainWindow.cs
 	GLViewer.cs
-	ZEDModel.cs
 	App.config
 	packages.config
 	Properties/AssemblyInfo.cs
@@ -42,5 +41,5 @@ set(CMAKE_SUPPRESS_REGENERATION true)
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_PACKAGE_REFERENCES 
 	"OpenGL.Net_0.8.4"
 	"OpenGL.Net.CoreUI_0.8.4"
-	"Stereolabs.zed_4.*"
+	"Stereolabs.zed_5.*"
 ) 

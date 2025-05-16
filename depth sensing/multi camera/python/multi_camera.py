@@ -20,6 +20,12 @@
 
 """
     Multi cameras sample showing how to open multiple ZED in one program
+
+DISCLAIMER:
+This multi-camera sample uses Python threads, but due to the Global Interpreter Lock (GIL),
+threads do not run in true parallel, which may limit performance with multiple cameras.
+For best results, consider running one process per camera or using the C++ API.
+Future SDK releases may handle camera threading internally, eliminating this limitation.
 """
 
 import pyzed.sl as sl
@@ -58,7 +64,7 @@ def grab_run(index):
             timestamp_list[index] = zed_list[index].get_timestamp(sl.TIME_REFERENCE.CURRENT).data_ns
         time.sleep(0.001) #1ms
     zed_list[index].close()
-	
+
 def main():
     global stop_signal
     global zed_list
@@ -67,6 +73,13 @@ def main():
     global timestamp_list
     global thread_list
     signal.signal(signal.SIGINT, signal_handler)
+
+    print("""DISCLAIMER:
+  This multi-camera sample uses Python threads, but due to the Global Interpreter Lock (GIL),
+  threads do not run in true parallel, which may limit performance with multiple cameras.
+  For best results, consider running one process per camera or using the C++ API.
+  Future SDK releases may handle camera threading internally, eliminating this limitation.
+""")
 
     print("Running...")
     init = sl.InitParameters()

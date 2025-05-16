@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -33,8 +33,7 @@
 using namespace std;
 using namespace sl;
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     if (argc < 2) {
         cout << "No arguments provided, a SVO name is expected.\n";
         return EXIT_FAILURE;
@@ -44,14 +43,13 @@ int main(int argc, char **argv)
     CameraOne zed;
 
     InitParametersOne init_parameters;
-    init_parameters.sdk_verbose = true;    
+    init_parameters.sdk_verbose = true;
     init_parameters.input.setFromSVOFile(argv[1]);
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS)
-    {
-        print("Camera Open", returned_state, "Exit program.");
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        print("Camera Open", returned_state, " Exit program.");
         return EXIT_FAILURE;
     }
 
@@ -63,19 +61,15 @@ int main(int argc, char **argv)
 
     // Capture new images until 'q' is pressed
     char key = ' ';
-    while (key != 'q')
-    {
+    while (key != 'q') {
         // Check that a new image is successfully acquired
         returned_state = zed.grab();
-        if (returned_state == ERROR_CODE::SUCCESS)
-        {
+        if (returned_state == ERROR_CODE::SUCCESS) {
             // Retrieve  image
             zed.retrieveImage(zed_image);
             // Display the image
             cv::imshow("ZED-One", slMat2cvMat(zed_image));
-        }
-        else
-        {
+        } else {
             print("Grab", returned_state);
             break;
         }

@@ -66,6 +66,10 @@ const GLchar* FRAGMENT_SHADER_TEXTURE =
         "    gl_FragColor = vec4(texture(texture_sampler, UV).bgr, 1.0);\n"
         "}\n";
 
+float const to_f = 1.f/ 255.f;
+const sl::float3 clr_lime(217*to_f,255*to_f,66*to_f);
+const sl::float3 clr_iron(194*to_f,194*to_f,194*to_f);
+const sl::float3 clr_pearl(242*to_f,242*to_f,242*to_f);
 
 GLViewer* currentInstance_ = nullptr;
 
@@ -77,27 +81,22 @@ GLViewer::GLViewer() : available(false) {
 }
 
 GLViewer::~GLViewer() {
+    for (auto& pc : point_clouds)
+    {
+        pc.second.close();
+    }
 }
 
 void GLViewer::exit() {
     if (currentInstance_) {
         available = false;
-        for (auto& pc : point_clouds)
-        {
-            pc.second.close();
-        }
     }
 }
 
 bool GLViewer::isAvailable() {
-    if (currentInstance_ && available) {
+    if (currentInstance_ ) 
         glutMainLoopEvent();
-    }
     return available;
-}
-
-void CloseFunc(void) {
-    if (currentInstance_) currentInstance_->exit();
 }
 
 void addVert(Simple3DObject &obj, float i_f, float limit, float height, sl::float4 &clr) {
@@ -120,7 +119,7 @@ void GLViewer::init(int argc, char **argv) {
     glutInitWindowPosition(wnd_w * 0.05, wnd_h * 0.05);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
 
-    glutCreateWindow("ZED| 3D View");
+    glutCreateWindow("ZED| Fusion Depth Sensing");
 
     GLenum err = glewInit();
     if (GLEW_OK != err)
@@ -134,7 +133,7 @@ void GLViewer::init(int argc, char **argv) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 #ifndef JETSON_STYLE
-    glEnable(GL_POINT_SMOOTH);
+    glEnable(GL_LINE_SMOOTH);
 #endif
 
     // Compile and create the shader for 3D objects
@@ -145,12 +144,11 @@ void GLViewer::init(int argc, char **argv) {
     camera_ = CameraGL(sl::Translation(0, 2, 10), sl::Translation(0, 0, -1));
 
     // Create the skeletons objects
-    skeletons.setDrawingType(GL_LINES);
     floor_grid.setDrawingType(GL_LINES);
+    baselink.setDrawingType(GL_LINES);
 
     // Set background color (black)
     bckgrnd_clr = sl::float4(0.2f, 0.19f, 0.2f, 1.0f);
-
 
     float limit = 20.0f;
     sl::float4 clr_grid(80, 80, 80, 255);
@@ -167,6 +165,8 @@ void GLViewer::init(int argc, char **argv) {
     rng.seed(42);
     uint_dist360 = std::uniform_int_distribution<uint16_t>(0, 360);
 
+    colors[0] = clr_lime;
+
     // Map glut function on this class methods
     glutDisplayFunc(GLViewer::drawCallback);
     glutMouseFunc(GLViewer::mouseButtonCallback);
@@ -174,7 +174,6 @@ void GLViewer::init(int argc, char **argv) {
     glutReshapeFunc(GLViewer::reshapeCallback);
     glutKeyboardFunc(GLViewer::keyPressedCallback);
     glutKeyboardUpFunc(GLViewer::keyReleasedCallback);
-    glutCloseFunc(CloseFunc);
 
     available = true;
 }
@@ -226,45 +225,34 @@ sl::float3 newColor(float hh) {
     return clr;
 }
 
-sl::float3 GLViewer::getColor(int id, bool for_skeleton){
-    const std::lock_guard<std::mutex> lock(mtx_clr);
-    if(for_skeleton){
-        if (colors_sk.find(id) == colors_sk.end()) {
-            float hh = uint_dist360(rng) / 60.f;
-            colors_sk[id] = newColor(hh);
-        }
-        return colors_sk[id];
-    }else{
-        if (colors.find(id) == colors.end()) {
-            int h_ = uint_dist360(rng);
-            float hh =  h_ / 60.f;
-            colors[id] = newColor(hh);
-        }
-        return colors[id];
+sl::float3 GLViewer::getColor(int id){
+    if (colors.find(id) == colors.end()) {
+        int h_ = uint_dist360(rng);
+        float hh =  h_ / 60.f;
+        colors[id] = newColor(hh);
     }
+    return colors[id];    
 }
 
 void GLViewer::updateCamera(int id, sl::Mat &view, sl::Mat &pc){
     const std::lock_guard<std::mutex> lock(mtx);
-    auto clr = getColor(id, false);
+    auto clr = getColor(id);
     if(view.isInit() && viewers.find(id) == viewers.end())
         viewers[id].initialize(view, clr);
 
     if(pc.isInit() && point_clouds.find(id) == point_clouds.end())
         point_clouds[id].initialize(pc, clr);
-    
 }
 
 void GLViewer::updateCamera(sl::Mat &pc){
     const std::lock_guard<std::mutex> lock(mtx);
     int id = 0;
-    auto clr = getColor(id, false);
-    
+    auto clr = getColor(id);
+
     // we need to release old pc and initialize new one because fused point cloud don't have the same number of points for each process
     // I used close but it crashed in draw. Not yet investigated
-    point_clouds[id].initialize(pc, clr);
+    point_clouds[0].initialize(pc, clr);
 }
-
 
 void GLViewer::setRenderCameraProjection(sl::CameraParameters params, float znear, float zfar) {
     // Just slightly up the ZED camera FOV to make a small black border
@@ -313,54 +301,12 @@ void GLViewer::render() {
 
 void GLViewer::setCameraPose(int id, sl::Transform pose) {
     const std::lock_guard<std::mutex> lock(mtx);
-    getColor(id, false);
+    getColor(id);
     poses[id] = pose;
 }
 
-inline bool renderBody(const sl::BodyData& i, const bool isTrackingON) {
-    if (isTrackingON)
-        return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK);
-    else
-        return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK || i.tracking_state == sl::OBJECT_TRACKING_STATE::OFF);
-}
-
-template<typename T>
-void createSKPrimitive(sl::BodyData& body, const std::vector<std::pair<T, T>>& map, Simple3DObject& skp, sl::float3 clr_id, bool raw) {
-    const float cylinder_thickness = raw ? 0.01f : 0.025f;
-
-    for (auto& limb : map) {
-        sl::float3 kp_1 = body.keypoint[getIdx(limb.first)];
-        sl::float3 kp_2 = body.keypoint[getIdx(limb.second)];
-        if (std::isfinite(kp_1.norm()) && std::isfinite(kp_2.norm()))
-            skp.addLine(kp_1, kp_2, clr_id);
-    }
-}
-
-void GLViewer::addSKeleton(sl::BodyData& obj, Simple3DObject& simpleObj, sl::float3 clr_id, bool raw) {
-    switch (obj.keypoint.size()) {
-    case 18:
-        createSKPrimitive(obj, sl::BODY_18_BONES, simpleObj, clr_id, raw);
-        break;
-    case 34:
-        createSKPrimitive(obj, sl::BODY_34_BONES, simpleObj, clr_id, raw);
-        break;
-    case 38:
-        createSKPrimitive(obj, sl::BODY_38_BONES, simpleObj, clr_id, raw);
-        break;
-    }
-}
-
-void GLViewer::updateBodies(sl::Bodies &bodies, std::map<sl::CameraIdentifier, sl::Bodies>& singledata, sl::FusionMetrics& metrics) {
+void GLViewer::updateMetric(sl::FusionMetrics& metrics) {
     const std::lock_guard<std::mutex> lock(mtx);
-
-    if (bodies.is_new) {
-        skeletons.clear();
-        for(auto &it:bodies.body_list) {
-            auto clr = getColor(it.id, true);
-            if (renderBody(it, bodies.is_tracked))
-                addSKeleton(it, skeletons, clr, false);
-        }
-    }
 
     fusionStats.clear();
     int id = 0;
@@ -372,20 +318,9 @@ void GLViewer::updateBodies(sl::Bodies &bodies, std::map<sl::CameraIdentifier, s
     obj_str.position = sl::float3(10, (id * 30), 0);
     fusionStats.push_back(obj_str);
 
-    for (auto &it : singledata) {
-        auto clr = getColor(it.first.sn, false);
-        id++;
-        if (it.second.is_new) 
-        {
-            auto& sk_r = skeletons_raw[it.first.sn];
-            sk_r.clear();
-            sk_r.setDrawingType(GL_LINES);
-
-            for (auto& sk : it.second.body_list) {
-                if(renderBody(sk, it.second.is_tracked))
-                    addSKeleton(sk, sk_r, clr, true);
-            }
-        }
+    for (auto &it : metrics.camera_individual_stats) {
+        auto clr = getColor(it.first.sn);
+        id++;       
             
         ObjectClassName obj_str;
         obj_str.name_lineA = "CAM: " + std::to_string(it.first.sn) + " FPS: " + std::to_string(metrics.camera_individual_stats[it.first].received_fps);
@@ -396,10 +331,17 @@ void GLViewer::updateBodies(sl::Bodies &bodies, std::map<sl::CameraIdentifier, s
     }
 }
 
+void addFrameOrigin(Simple3DObject &obj,const sl::float3 &p_ref) {
+    float l = 0.25;
+    obj.addLine(p_ref + sl::float3(0,0,0),p_ref +  sl::float3(l,0,0), sl::float3(1,0,0));
+    obj.addLine(p_ref + sl::float3(0,0,0),p_ref +  sl::float3(0,l,0), sl::float3(0,1,0));
+    obj.addLine(p_ref + sl::float3(0,0,0),p_ref +  sl::float3(0,0,l), sl::float3(0,0,1));
+}
+
 void GLViewer::update() {
     
     if (keyStates_['q'] == KEY_STATE::UP || keyStates_['Q'] == KEY_STATE::UP || keyStates_[27] == KEY_STATE::UP) {
-        currentInstance_->exit();
+        currentInstance_->available = false;
         return;
     }
 
@@ -408,12 +350,6 @@ void GLViewer::update() {
 
     if (keyStates_['c'] == KEY_STATE::UP)
         currentInstance_->draw_flat_color = !currentInstance_->draw_flat_color;
-
-    if (keyStates_['s'] == KEY_STATE::UP)
-        currentInstance_->show_pc = !currentInstance_->show_pc;
-
-    if (keyStates_['p'] == KEY_STATE::UP || keyStates_['P'] == KEY_STATE::UP || keyStates_[32] == KEY_STATE::UP)
-        play = !play;
 
     // Rotate camera with mouse
     if (mouseButton_[MOUSE_BUTTON::LEFT]) {
@@ -440,10 +376,6 @@ void GLViewer::update() {
 
     camera_.update();
     const std::lock_guard<std::mutex> lock(mtx);
-    // Update point cloud buffers
-    skeletons.pushToGPU();
-    for(auto &it: skeletons_raw)
-        it.second.pushToGPU();
 
     // Update point cloud buffers
     for(auto &it: point_clouds)
@@ -451,6 +383,16 @@ void GLViewer::update() {
 
     for(auto &it: viewers)
         it.second.pushNewImage();
+
+    baselink.clear();
+    const auto pt_ref = poses[0].getTranslation();
+    addFrameOrigin(baselink, pt_ref);
+    for (auto& it : poses) {
+        if(it.first==0) continue;
+        baselink.addLine(pt_ref, clr_pearl, it.second.getTranslation(), colors[it.first]);
+    }
+    baselink.pushToGPU();
+
     clearInputs();
 }
 
@@ -467,11 +409,8 @@ void GLViewer::draw() {
     glUniformMatrix4fv(shader.MVP_Mat, 1, GL_TRUE, vpMatrix.m);
 
     floor_grid.draw();
-    skeletons.draw();
 
-    if (show_raw)
-        for (auto& it : skeletons_raw)
-            it.second.draw();
+    baselink.draw();
 
     for (auto& it : viewers) {
         sl::Transform pose_ = vpMatrix * poses[it.first];
@@ -484,9 +423,13 @@ void GLViewer::draw() {
     for (auto& it : poses) {
         sl::Transform vpMatrix_world = vpMatrix * it.second;
 
-        if(show_pc)
+        if(show_raw && it.first == 0){
             if(point_clouds.find(it.first) != point_clouds.end())
                 point_clouds[it.first].draw(vpMatrix_world, draw_flat_color);
+        }else if(!show_raw && it.first > 0){
+            if(point_clouds.find(it.first) != point_clouds.end())
+                point_clouds[it.first].draw(vpMatrix_world, draw_flat_color);
+        }        
 
         if (viewers.find(it.first) != viewers.end())
             viewers[it.first].draw(vpMatrix_world);
@@ -586,7 +529,8 @@ void GLViewer::idle() {
 Simple3DObject::Simple3DObject() {
     vaoID_ = 0;
     drawingType_ = GL_TRIANGLES;
-    isStatic_ = need_update = false;
+    isStatic_ = false;
+    need_update = false;
 }
 
 Simple3DObject::~Simple3DObject() {
@@ -607,6 +551,11 @@ void Simple3DObject::addPoint(sl::float3 pt, sl::float3 clr){
 void Simple3DObject::addLine(sl::float3 pt1, sl::float3 pt2, sl::float3 clr){
     addPoint(pt1, clr);
     addPoint(pt2, clr);
+}
+
+void Simple3DObject::addLine(sl::float3 pt1, sl::float3 clr, sl::float3 pt2, sl::float3 clr2){
+    addPoint(pt1, clr);
+    addPoint(pt2, clr2);
 }
 
 void Simple3DObject::addFace(sl::float3 p1, sl::float3 p2, sl::float3 p3, sl::float3 clr){
@@ -913,12 +862,19 @@ bool CameraViewer::initialize(sl::Mat &im, sl::float3 clr) {
     cam_4.y = (height - cy) * Z_ *fy_;
     cam_4 *= toOGL;
 
+    frustum.addPoint(cam_0, clr);
+    frustum.addPoint(cam_1, clr);
 
-    frustum.addFace(cam_0, cam_1, cam_2, clr);
-    frustum.addFace(cam_0, cam_2, cam_3, clr);
-    frustum.addFace(cam_0, cam_3, cam_4, clr);
-    frustum.addFace(cam_0, cam_4, cam_1, clr);    
-    frustum.setDrawingType(GL_TRIANGLES);
+    frustum.addPoint(cam_0, clr);
+    frustum.addPoint(cam_2, clr);
+
+    frustum.addPoint(cam_0, clr);
+    frustum.addPoint(cam_3, clr);
+    
+    frustum.addPoint(cam_0, clr);
+    frustum.addPoint(cam_4, clr);
+
+    frustum.setDrawingType(GL_LINES);
     frustum.pushToGPU();
     
     vert.push_back(cam_1);
@@ -935,6 +891,8 @@ bool CameraViewer::initialize(sl::Mat &im, sl::float3 clr) {
     faces.push_back(sl::uint3(0,2,3));
 
     ref = im;
+	if (!ref.isInit())  return true;
+
 	shader.set(VERTEX_SHADER_TEXTURE, FRAGMENT_SHADER_TEXTURE);
     shMVPMatrixLocTex_ = glGetUniformLocation(shader.getProgramId(), "u_mvpMatrix");
 

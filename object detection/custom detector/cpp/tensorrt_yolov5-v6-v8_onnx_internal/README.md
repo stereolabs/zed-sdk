@@ -18,7 +18,7 @@ A custom detector can be trained with the same architecture. These tutorials wal
 
 ## Workflow
 
-This sample is expecting a TensorRT engine, optimized from an ONNX model. The ONNX model can be exported from Pytorch using the original YOLO code. Please refer to the section corresponding to the needed version.
+This sample is expecting an ONNX exported using the original YOLO code. Please refer to the section corresponding to the needed version.
 
 ### Build the sample
 
@@ -36,3 +36,7 @@ This sample is expecting a TensorRT engine, optimized from an ONNX model. The ON
 # With an SVO file
 ./yolo_onnx_zed yolov8n.onnx ./foo.svo
 ```
+
+## Support
+
+If you need assistance go to our Community site at https://community.stereolabs.com/

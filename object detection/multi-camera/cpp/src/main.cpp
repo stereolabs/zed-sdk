@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -96,6 +96,9 @@ int main(int argc, char **argv)
     init_params.coordinate_units = UNIT;
     init_params.coordinate_system = COORDINATE_SYSTEM;
     init_params.verbose = true;
+    // set the maximum resolution to 512x360 to reduce the memory usage and increase the performance
+    sl::Resolution low_res(512,360);
+    init_params.maximum_working_resolution = low_res;
 
     // create and initialize it
     sl::Fusion fusion;
@@ -157,7 +160,6 @@ int main(int argc, char **argv)
     sl::FusionMetrics metrics;
     std::map<sl::CameraIdentifier, sl::Mat> views;
     std::map<sl::CameraIdentifier, sl::Mat> pointClouds;
-    sl::Resolution low_res(512, 360);
 
     // run the fusion as long as the viewer is available.
     while (viewer.isAvailable())
@@ -175,7 +177,7 @@ int main(int argc, char **argv)
                 // Retrieve all the raw objects of a given camera
                 fusion.retrieveObjects(camera_raw_data[id], id);
                 sl::Pose pose;
-                if (fusion.getPosition(pose, sl::REFERENCE_FRAME::WORLD, id) == sl::POSITIONAL_TRACKING_STATE::OK)
+                if (fusion.getPosition(pose, sl::REFERENCE_FRAME::WORLD, id, sl::POSITION_TYPE::RAW) == sl::POSITIONAL_TRACKING_STATE::OK)
                     viewer.setCameraPose(id.sn, pose.pose_data);
 
                 auto state_view = fusion.retrieveImage(views[id], id, low_res);

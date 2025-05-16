@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -25,11 +25,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Numerics;
 using System.Net;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using OpenGL;
 using OpenGL.CoreUI;
@@ -76,12 +72,10 @@ class MainWindow
     {
         // Set configuration parameters
         InitParameters init_params = new InitParameters();
-        init_params.resolution = RESOLUTION.HD1080;
-        init_params.depthMode = DEPTH_MODE.ULTRA;
+        init_params.resolution = RESOLUTION.AUTO;
+        init_params.depthMode = DEPTH_MODE.NEURAL;
         init_params.coordinateUnits = UNIT.METER;
         init_params.coordinateSystem = COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP;
-        init_params.depthMaximumDistance = 10f;
-        init_params.cameraDisableSelfCalib = true;
 
         maxDepthDistance = init_params.depthMaximumDistance;
         parseArgs(args, ref init_params);
@@ -140,8 +134,8 @@ class MainWindow
         int Height = zedCamera.ImageHeight;
         int Width = zedCamera.ImageWidth;
 
-        displayRes = new Resolution(Math.Min((uint)Width, 1280), Math.Min((uint)Height, 720));
-        Resolution tracksRes = new Resolution(400, (uint)displayRes.height);
+        displayRes = new Resolution(Math.Min(Width, 1280), Math.Min(Height, 720));
+        Resolution tracksRes = new Resolution(400, displayRes.height);
 
         // create a global image to store both image and tracks view
         globalImage = new OpenCvSharp.Mat((int)displayRes.height, (int)displayRes.width + (int)tracksRes.width, OpenCvSharp.MatType.CV_8UC4);
@@ -160,7 +154,7 @@ class MainWindow
         camWorldPose = new Pose();
         camCameraPose = new Pose();
         pointCloud = new sl.Mat();
-        pcRes = new Resolution(Math.Min((uint)Width, 720), Math.Min((uint)Height, 404));
+        pcRes = new Resolution(Math.Min(Width, 720), Math.Min(Height, 404));
         pointCloud.Create(pcRes, MAT_TYPE.MAT_32F_C4, MEM.CPU);
 
         // 2D tracks

@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -49,7 +49,7 @@ class Program
 
         InitParameters initParameters = new InitParameters()
         {
-            resolution = RESOLUTION.HD720,
+            resolution = RESOLUTION.AUTO,
             depthMode = DEPTH_MODE.NONE
         };
 
@@ -75,7 +75,7 @@ class Program
         printHelp();
 
         sl.Mat zedImage = new sl.Mat();
-        zedImage.Create(new Resolution((uint)zed.ImageWidth, (uint)zed.ImageHeight), MAT_TYPE.MAT_8U_C4);
+        zedImage.Create(new Resolution(zed.ImageWidth, zed.ImageHeight), MAT_TYPE.MAT_8U_C4);
 
         // Initialise camera setting
         switchCameraSettings();

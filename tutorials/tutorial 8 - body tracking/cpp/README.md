@@ -1,6 +1,6 @@
 # Tutorial 6: Body Tracking with the ZED 2
 
-This tutorial shows how to use the object detection module with the ZED 2.<br/>
+This tutorial shows how to use the body tracking module with the ZED 2.<br/>
 We assume that you have followed previous tutorials.
 
 ### Prerequisites
@@ -32,7 +32,7 @@ Open a terminal in the sample directory and execute the following command:
 # Code overview
 ## Create a camera
 
-As in previous tutorials, we create, configure and open the ZED 2. Please note that the ZED 1 is **not** compatible with the object detection module.
+As in previous tutorials, we create, configure and open the ZED 2. Please note that the ZED 1 is **not** compatible with the body tracking module.
 
 This module uses the GPU to perform deep neural networks computations. On platforms with limited amount of memory such as jetson Nano, it's advise to disable the GUI to improve the performances and avoid memory overflow.
 
@@ -41,7 +41,8 @@ This module uses the GPU to perform deep neural networks computations. On platfo
 Camera zed;
 InitParameters initParameters;
 initParameters.camera_resolution = RESOLUTION::AUTO;
-initParameters.depth_mode = DEPTH_MODE::PERFORMANCE;
+initParameters.depth_mode = DEPTH_MODE::NEURAL;
+init_parameters.coordinate_units = UNIT::METER;
 initParameters.sdk_verbose = true;
 
 // Open the camera
@@ -54,15 +55,21 @@ if (zed_error != ERROR_CODE::SUCCESS) {
 
 ## Enable Object detection
 
-We will define the object detection parameters. Notice that the object tracking needs the positional tracking to be able to track the objects in the world reference frame.
+We will define the bodies detection parameters. Notice that the body tracking needs the positional tracking to be able to track the bodies in the world reference frame.
 
 ```cpp
 // Define the Objects detection module parameters
-ObjectDetectionParameters detection_parameters;
-detection_parameters.enable_tracking = false;
-detection_parameters.enable_mask_output = false;
+BodyTrackingParameters detection_parameters;
+// Different model can be chosen, optimizing the runtime or the accuracy
+detection_parameters.detection_model = BODY_TRACKING_MODEL::HUMAN_BODY_MEDIUM;
+// Body format
+detection_parameters.body_format = BODY_FORMAT::BODY_38;
+// Track the detected bodies across time and space
+detection_parameters.enable_tracking = true;
+// Optimize the person joints position, requires more computations
+detection_parameters.enable_body_fitting = true;
 
-// Object tracking requires the positional tracking module
+// If you want to have body tracking you need to enable positional tracking first
 if (detection_parameters.enable_tracking)
 	zed.enablePositionalTracking();
 ```
@@ -70,35 +77,41 @@ if (detection_parameters.enable_tracking)
 Then we can start the module, it will load the model. This operation can take a few seconds. The first time the module is used, the model will be optimized for the hardware and will take more time. This operation is done only once.
 
 ```cpp
-std::cout << "Object Detection: Loading Module..." << std::endl;
-zed_error = zed.enableObjectDetection(detection_parameters);
-if (zed_error != ERROR_CODE::SUCCESS) {
-	std::cout << "Error " << zed_error << ", exit program.\n";
+cout << "Body Tracking: Loading Module..." << endl;
+returned_state = zed.enableBodyTracking(detection_parameters);
+if (returned_state != ERROR_CODE::SUCCESS) {
+	cout << "Error " << returned_state << ", exit program.\n";
 	zed.close();
-	return 1;
+	return EXIT_FAILURE;
 }
 ```
 
-The object detection is now activated.
+The body tracking is now activated.
 
 ## Capture data
 
-The object confidence threshold can be adjusted at runtime to select only the revelant persons depending on the scene complexity. For each `grab` call, the image will be fed into the AI module and will output the detections for each frames.
+The bodies confidence threshold can be adjusted at runtime to select only the revelant persons depending on the scene complexity. For each `grab` call, the image will be fed into the AI module and will output the detections for each frames.
 
 ```cpp
 // Detection runtime parameters
-ObjectDetectionRuntimeParameters detection_parameters_rt;
+BodyTrackingRuntimeParameters detection_parameters_rt;
+// For outdoor scene or long range, the confidence should be lowered to avoid missing detections (~20-30)
+// For indoor scene or closer range, a higher confidence limits the risk of false positives and increase the precision (~50+)
 detection_parameters_rt.detection_confidence_threshold = 40;
 
 // Detection output
-Objects objects;
+Bodies bodies;
 
-while (zed.grab() == ERROR_CODE::SUCCESS) {
-	zed_error = zed.retrieveObjects(objects, detection_parameters_rt);
+int nb_detection = 0;
+while (nb_detection < 100) {
 
-	if (objects.is_new) {
-		std::cout << objects.object_list.size() << " Person(s) detected ("
-				<< zed.getCurrentFPS() << " FPS)" << std::endl;
+	if (zed.grab() == ERROR_CODE::SUCCESS) {
+		zed.retrieveBodies(bodies, detection_parameters_rt);
+
+		if (bodies.is_new) {
+			cout << bodies.body_list.size() << " Person(s) detected\n\n";
+			// Do something with the bodies
+		}
 	}
 }
 ```
@@ -108,12 +121,12 @@ while (zed.grab() == ERROR_CODE::SUCCESS) {
 Once the program is over the modules can be disabled and the camera closed. This step is optional since the `zed.close()` will take care of disabling all the modules. This function is also called automatically by the destructor if necessary.<br/>
 
 ```cpp
-// Disable object detection and close the camera
-zed.disableObjectDetection();
+// Disable body tracking and close the camera
+zed.disableBodyTracking();
 zed.close();
 return 0;
 ```
 
 And this is it!<br/>
 
-You can now detect object in 3D with the ZED 2.
+You can now detect bodies in 3D with the ZED 2.

@@ -67,6 +67,7 @@ public:
 
     void addPoint(sl::float3 pt, sl::float3 clr);
     void addLine(sl::float3 pt1, sl::float3 pt2, sl::float3 clr);
+    void addLine(sl::float3 pt1, sl::float3 clr, sl::float3 pt2, sl::float3 clr2);
     void addFace(sl::float3 p1, sl::float3 p2, sl::float3 p3, sl::float3 clr);
     void pushToGPU();
     void clear();
@@ -223,7 +224,6 @@ private:
     std::vector<sl::float3> vert;
     std::vector<sl::float2> uv;
 };
-
 struct ObjectClassName {
     sl::float3 position;
     std::string name_lineA;
@@ -238,14 +238,13 @@ public:
     GLViewer();
     ~GLViewer();
     bool isAvailable();
-    bool isPlaying() const { return play; }
 
     void init(int argc, char **argv);
 
     void updateCamera(int, sl::Mat &, sl::Mat &);
     void updateCamera(sl::Mat &);
 
-    void updateBodies(sl::Bodies &objs,std::map<sl::CameraIdentifier, sl::Bodies>& singledata, sl::FusionMetrics& metrics);
+    void updateMetric(sl::FusionMetrics& metrics);
     
     void setCameraPose(int, sl::Transform);
 
@@ -274,12 +273,9 @@ private:
     static void keyReleasedCallback(unsigned char c, int x, int y);
     static void idle();
 
-    void addSKeleton(sl::BodyData &, Simple3DObject &, sl::float3 clr_id, bool raw);
-
-    sl::float3 getColor(int, bool);
+    sl::float3 getColor(int);
 
     bool available;
-    bool drawBbox = false;
 
     enum MOUSE_BUTTON {
         LEFT = 0,
@@ -316,24 +312,20 @@ private:
     std::map<int, CameraViewer> viewers;
     std::map<int, sl::Transform> poses;
     
-    std::map<int, Simple3DObject> skeletons_raw;
     std::map<int, sl::float3> colors;
-    std::map<int, sl::float3> colors_sk;
 
     std::vector<ObjectClassName> fusionStats;
 
     CameraGL camera_;
-    Simple3DObject skeletons;
     Simple3DObject floor_grid;
+    Simple3DObject baselink;
 
-    bool show_pc = true;
     bool show_raw = false;
     bool draw_flat_color = false;
 
     std::uniform_int_distribution<uint16_t> uint_dist360;
     std::mt19937 rng;
 
-    bool play = true;
     int last_key = -1;
 };
 

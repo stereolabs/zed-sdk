@@ -12,7 +12,7 @@ if (NOT LINK_SHARED_ZED AND MSVC)
     message(FATAL_ERROR "LINK_SHARED_ZED OFF : ZED SDK static libraries not available on Windows")
 endif()
 
-find_package(ZED 3 REQUIRED)
+find_package(ZED REQUIRED)
 find_package(CUDA ${ZED_CUDA_VERSION} REQUIRED)
 
 # change this according to your FBX install directory
@@ -22,7 +22,7 @@ else()
 	set(FBX_DIR "/usr/local/lib/FBX")
 endif()
 
-if(EXISTS FBX_DIR)
+if(EXISTS "${FBX_DIR}")
 	include("${FBX_DIR}/samples/CMakeSettings.txt")
 	include_directories("${FBX_ROOT}/include")
 	set(FBX_COMMON_DIR "${FBX_CMAKE_ROOT}/Common")
@@ -50,3 +50,8 @@ else()
 endif()
 
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${ZED_LIBS} ${FBXSDK_LIBRARY} ${FBX_REQUIRED_LIBS_DEPENDENCY})
+
+if(INSTALL_SAMPLES)
+    LIST(APPEND SAMPLE_LIST ${PROJECT_NAME})
+    SET(SAMPLE_LIST "${SAMPLE_LIST}" PARENT_SCOPE)
+endif()

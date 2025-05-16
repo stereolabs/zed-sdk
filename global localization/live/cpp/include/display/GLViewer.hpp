@@ -10,7 +10,6 @@
 #include <thread>         // std::thread
 #include <mutex>          // std::mutex
 
-#include "ZEDModel.hpp"    /* OpenGL Utility Toolkit header */
 #include <sl/Camera.hpp>
 #include <sl/Fusion.hpp>
 
@@ -24,8 +23,6 @@
 #define MOUSE_WHEEL_SENSITIVITY 0.065f
 #define MOUSE_T_SENSITIVITY 0.01f
 #define KEY_T_SENSITIVITY 0.01f
-
-
 
 //// UTILS //////
 using namespace std;

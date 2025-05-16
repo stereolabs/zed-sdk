@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -34,8 +34,14 @@
 #include "exporter/KMLExporter.h"
 #include "GNSSReplay.hpp"
 
+sl::COORDINATE_SYSTEM user_coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
+sl::UNIT user_unit = sl::UNIT::METER;
+
 std::vector<std::string> split(const std::string &s, const std::string &delimiter);
 cv::Mat slMat2cvMat(sl::Mat& input);
+
+sl::LatLng convert2Geo(const sl::Transform & position_in_world, const sl::Transform & gnss_vio_calibration, const sl::float3 & gnss_antenna_position, sl::Fusion & fusion_ref);
+sl::LatLng convert2Geo(const sl::float3 & position_in_world_frame, const sl::Transform & gnss_vio_calibration, const sl::float3 & gnss_antenna_position, sl::Fusion & fusion_ref);
 
 int main(int argc, char **argv) {
     if (argc < 2) {
@@ -73,9 +79,9 @@ int main(int argc, char **argv) {
     // Open the camera
     sl::Camera zed;
     sl::InitParameters init_params;
-    init_params.depth_mode = sl::DEPTH_MODE::ULTRA;
-    init_params.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
-    init_params.coordinate_units = sl::UNIT::METER;
+    init_params.depth_mode = sl::DEPTH_MODE::NEURAL;
+    init_params.coordinate_system = user_coordinate_system;
+    init_params.coordinate_units = user_unit;
     init_params.input.setFromSVOFile(svo_name.c_str());
     sl::ERROR_CODE camera_open_error = zed.open(init_params);
     if (camera_open_error != sl::ERROR_CODE::SUCCESS) {
@@ -135,7 +141,8 @@ int main(int argc, char **argv) {
     gnss_calibration_parameter.enable_reinitialization = false;
     gnss_calibration_parameter.enable_translation_uncertainty_target = false;
     gnss_calibration_parameter.gnss_vio_reinit_threshold = 5;
-    gnss_calibration_parameter.target_yaw_uncertainty = 1e-2;
+    gnss_calibration_parameter.target_yaw_uncertainty = 3e-2;
+    gnss_calibration_parameter.enable_rolling_calibration = true;
     // Set the antenna position relative to the camera system here:
     gnss_calibration_parameter.gnss_antenna_position = gnss_antenna_position;
     positional_tracking_fusion_parameters.gnss_calibration_parameters = gnss_calibration_parameter;
@@ -199,24 +206,50 @@ int main(int argc, char **argv) {
             viewer.updateRawGeoPoseData(input_gnss_sync);
 
             // Get position into the GNSS coordinate system - this needs a initialization between CAMERA 
-            // and GNSS. When the initialization is finish the getGeoPose will return sl::POSITIONAL_TRACKING_STATE::OK
-            sl::GeoPose current_geopose;
-            auto current_geopose_status = fusion.getGeoPose(current_geopose);
-            if (current_geopose_status == sl::GNSS_FUSION_STATUS::OK) {
+            // and GNSS. When the initialization is finish the getGeoPose will return sl::POSITIONAL_TRACKING_STATE::OK]
+            float yaw_std;
+            sl::float3 position_std;
+            auto current_geopose_status = fusion.getCurrentGNSSCalibrationSTD(yaw_std, position_std);
+
+            if(current_geopose_status == sl::GNSS_FUSION_STATUS::OK){
+                // There are 3-way to convert a Pose into a lat/lng/alt coordinate:
+                // 1. Use the API
+                // 2. Use the Camera2Geo function
+                // 3. Use the computation by the formula present in the documentation, this one also let you convert any 3D point into lat/lng/alt
+
+                const bool verbose_validation = false;
+
+                // 1. Use the API:
+                sl::GeoPose current_geopose;
+                current_geopose_status = fusion.getGeoPose(current_geopose);
+                double returned_lat, returned_lng, returned_alt;
+                current_geopose.latlng_coordinates.getCoordinates(returned_lat, returned_lng, returned_alt, false);
+                if(verbose_validation) std::cout << std::fixed << std::setprecision(12) << "Found by API         " << returned_lat << " " << returned_lng << " " << returned_alt << std::endl;
+
                 // Display it on the Live Server:
                 viewer.updateGeoPoseData(current_geopose);
+                
+                // 2. Use the Camera2Geo function:
+                sl::GeoPose geopose_by_camera2geo;
+                fusion.Camera2Geo(fused_position.pose_data, geopose_by_camera2geo);
+                double lat_camera2geo, lng_camera2geo, alt_camera2geo;
+                geopose_by_camera2geo.latlng_coordinates.getCoordinates(lat_camera2geo, lng_camera2geo, alt_camera2geo, false);
+                if(verbose_validation) std::cout << std::fixed << std::setprecision(12) << "Camera2Geo:          " << lat_camera2geo << " " << lng_camera2geo << " " << alt_camera2geo << std::endl;
 
+                // 3. Use the computation by the formula present in the documentation:
                 sl::Transform current_calibration = fusion.getGeoTrackingCalibration();
-            } 
-
-            if (0) {
+                auto position_in_world_frame = fused_position.pose_data.getTranslation();
+                sl::LatLng current_latlng = convert2Geo(position_in_world_frame, current_calibration, gnss_antenna_position, fusion);
+                double lat_converted, lng_converted, alt_converted;
+                current_latlng.getCoordinates(lat_converted, lng_converted, alt_converted, false);
+                if(verbose_validation) std::cout << std::fixed << std::setprecision(12) << "Found by computation " << lat_converted << " " << lng_converted << " " << alt_converted << std::endl;
+                
+            }
+            else{
                 // GNSS coordinate system to ZED coordinate system is not initialize yet
                 // The initialisation between the coordinates system is basically an optimization problem that
                 // Try to fit the ZED computed path with the GNSS computed path. In order to do it just move
                 // your system by the distance you specified in positional_tracking_fusion_parameters.gnss_initialisation_distance
-                float yaw_std;
-                sl::float3 position_std;
-                fusion.getCurrentGNSSCalibrationSTD(yaw_std, position_std);
 
                 if(yaw_std != -1.f)
                     std::cout << "GNSS State: " << current_geopose_status << ": calibration uncertainty yaw_std " << yaw_std << " rad position_std " << position_std[0] << " m, " << position_std[1] << " m, " << position_std[2] << " m\t\t\t\r";
@@ -259,4 +292,44 @@ cv::Mat slMat2cvMat(sl::Mat& input) {
 
     // Convert to OpenCV matrix
     return cv::Mat(input.getHeight(), input.getWidth(), cvType, input.getPtr<sl::uchar1>(sl::MEM::CPU));
+}
+
+sl::LatLng convert2Geo(const sl::Transform & pose_in_world, const sl::Transform & gnss_vio_calibration, const sl::float3 & gnss_antenna_position, sl::Fusion & fusion_ref){
+    // All computation assume that the position is expressed in IMAGE and in METER unit
+    sl::Transform position_in_IMAGE_and_meter = pose_in_world;
+    sl::convertCoordinateSystem(position_in_IMAGE_and_meter, user_coordinate_system, sl::COORDINATE_SYSTEM::IMAGE);
+    float unit_scale = sl::getUnitScale(user_unit, sl::UNIT::METER);
+    position_in_IMAGE_and_meter.setTranslation(position_in_IMAGE_and_meter.getTranslation() * unit_scale);
+
+    // Construct Tantenna and place it in IMAGE coordinate system:
+    sl::Transform antenna_transform = sl::Transform::identity();
+    antenna_transform.setTranslation(gnss_antenna_position);
+    sl::convertCoordinateSystem(antenna_transform, user_coordinate_system, sl::COORDINATE_SYSTEM::IMAGE);
+
+    // Apply formula present on documentation:
+    sl::Transform position_in_EDN = gnss_vio_calibration * position_in_IMAGE_and_meter * antenna_transform;
+    
+    // Convert position into ENU:
+    sl::Transform EDN_to_ENU_transform;
+    EDN_to_ENU_transform.setZeros();
+    EDN_to_ENU_transform(0, 0) = 1.f;
+    EDN_to_ENU_transform(1, 2) = -1.f;
+    EDN_to_ENU_transform(2, 1) = 1.f;
+    EDN_to_ENU_transform(3, 3) = 1.f;
+    sl::Transform position_in_ENU = sl::Transform::inverse(EDN_to_ENU_transform) * position_in_EDN * EDN_to_ENU_transform;
+
+    // Convert it into LatLng:
+    sl::ENU enu;
+    enu.east = position_in_ENU.getTranslation().x;
+    enu.north = position_in_ENU.getTranslation().y;
+    enu.up = position_in_ENU.getTranslation().z;
+    sl::LatLng latlng;
+    fusion_ref.ENU2Geo(enu, latlng);
+    return latlng;
+}
+
+sl::LatLng convert2Geo(const sl::float3 & position_in_world_frame, const sl::Transform & gnss_vio_calibration, const sl::float3 & gnss_antenna_position, sl::Fusion & fusion_ref){
+    sl::Transform pose_in_world;
+    pose_in_world.setTranslation(position_in_world_frame);
+    return convert2Geo(pose_in_world, gnss_vio_calibration, gnss_antenna_position, fusion_ref);
 }

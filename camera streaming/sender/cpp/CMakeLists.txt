@@ -11,7 +11,7 @@ if (NOT LINK_SHARED_ZED AND MSVC)
     message(FATAL_ERROR "LINK_SHARED_ZED OFF : ZED SDK static libraries not available on Windows")
 endif()
 
-find_package(ZED 3 REQUIRED)
+find_package(ZED REQUIRED)
 find_package(CUDA ${ZED_CUDA_VERSION} REQUIRED)
 
 include_directories(${CUDA_INCLUDE_DIRS})
@@ -21,6 +21,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 link_directories(${ZED_LIBRARY_DIR})
 link_directories(${CUDA_LIBRARY_DIRS})
 
+add_definitions(-g)
 ADD_EXECUTABLE(${PROJECT_NAME} include/utils.hpp src/main.cpp)
 
 if (LINK_SHARED_ZED)

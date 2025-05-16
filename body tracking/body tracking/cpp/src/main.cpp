@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -50,8 +50,7 @@ int main(int argc, char **argv) {
     Camera zed;
     InitParameters init_parameters;
     init_parameters.camera_resolution = RESOLUTION::AUTO;
-    init_parameters.depth_mode = isJetson ? DEPTH_MODE::PERFORMANCE : DEPTH_MODE::ULTRA;
-    //init_parameters.depth_mode = DEPTH_MODE::ULTRA;
+    init_parameters.depth_mode = isJetson ? DEPTH_MODE::NEURAL_LIGHT : DEPTH_MODE::NEURAL;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
 
     parseArgs(argc, argv, init_parameters);
@@ -81,6 +80,7 @@ int main(int argc, char **argv) {
     body_tracker_params.enable_tracking = true; // track people across images flow
     body_tracker_params.enable_body_fitting = false; // smooth skeletons moves
     body_tracker_params.body_format = sl::BODY_FORMAT::BODY_34;
+    body_tracker_params.enable_segmentation = true;
     body_tracker_params.detection_model = isJetson ? BODY_TRACKING_MODEL::HUMAN_BODY_FAST : BODY_TRACKING_MODEL::HUMAN_BODY_ACCURATE;
     //body_tracker_params.allow_reduced_precision_inference = true;
 

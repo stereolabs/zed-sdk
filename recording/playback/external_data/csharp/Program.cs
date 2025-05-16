@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -51,7 +51,7 @@ class Program
             inputType = INPUT_TYPE.SVO,
             pathSVO = args[0],
             svoRealTimeMode = false,
-            depthMode = DEPTH_MODE.PERFORMANCE,
+            depthMode = DEPTH_MODE.NEURAL,
             sdkVerbose = 1,
         };
 

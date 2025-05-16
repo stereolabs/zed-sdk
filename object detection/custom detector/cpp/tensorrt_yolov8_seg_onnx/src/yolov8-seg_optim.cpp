@@ -10,7 +10,10 @@
 #include "utils.h"
 #include "yolov8-seg_common.hpp"
 
-static Logger gLogger{nvinfer1::ILogger::Severity::kINFO};
+static Logger gLogger
+{
+    nvinfer1::ILogger::Severity::kINFO
+};
 
 int OptimDim::setFromString(std::string const& arg) {
     // "images:1x3x512x512"
@@ -29,16 +32,13 @@ int OptimDim::setFromString(std::string const& arg) {
     if (v.size() == 2U) {
         size.d[2U] = stoi(v[0U]);
         size.d[3U] = stoi(v[1U]);
-    }
-    else if (v.size() == 3U) {
+    } else if (v.size() == 3U) {
         size.d[2U] = stoi(v[1U]);
         size.d[3U] = stoi(v[2U]);
-    }
-    else if (v.size() == 4U) {
+    } else if (v.size() == 4U) {
         size.d[2U] = stoi(v[2U]);
         size.d[3U] = stoi(v[3U]);
-    }
-    else
+    } else
         return -1;
 
     if (size.d[2U] != size.d[3U])

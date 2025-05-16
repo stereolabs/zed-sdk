@@ -10,7 +10,6 @@
 #include <thread>         // std::thread
 #include <mutex>          // std::mutex
 
-#include "ZEDModel.hpp"    /* OpenGL Utility Toolkit header */
 #include <sl/Camera.hpp>
 #include <sl/Fusion.hpp>
 

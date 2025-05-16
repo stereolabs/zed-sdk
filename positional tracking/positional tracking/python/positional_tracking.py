@@ -29,7 +29,7 @@ import argparse
 import time 
 
 
-def parse_args(init):
+def parse_args(init, opt):
     if len(opt.input_svo_file) > 0 and opt.input_svo_file.endswith(".svo"):
         init.set_from_svo_file(opt.input_svo_file)
         print("[Sample] Using SVO File input: {0}".format(opt.input_svo_file))
@@ -65,13 +65,13 @@ def parse_args(init):
         print("[Sample] No valid resolution entered. Using default")
     else : 
         print("[Sample] Using default resolution")
-        
-def main():
+
+def main(opt):
     init_params = sl.InitParameters(camera_resolution=sl.RESOLUTION.HD720,
                                  coordinate_units=sl.UNIT.METER,
                                  coordinate_system=sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP)
-    parse_args(init_params)                              
-   
+    parse_args(init_params, opt)
+
     zed = sl.Camera()
     status = zed.open(init_params)
     if status != sl.ERROR_CODE.SUCCESS:
@@ -108,10 +108,11 @@ def main():
     # or alternatively auto detected at runtime:
     roi_param = sl.RegionOfInterestParameters()
 
-    if opt.roi_mask_file == "":
-        roi_param.auto_apply_module = {sl.MODULE.DEPTH, sl.MODULE.POSITIONAL_TRACKING}
-        zed.start_region_of_interest_auto_detection(roi_param)
-        print("[Sample]  Region Of Interest auto detection is running.")
+    # If the region of interest is not loaded from a file, the auto detection can be enabled
+    # if opt.roi_mask_file == "":
+    #     roi_param.auto_apply_module = {sl.MODULE.DEPTH, sl.MODULE.POSITIONAL_TRACKING}
+    #     zed.start_region_of_interest_auto_detection(roi_param)
+    #     print("[Sample]  Region Of Interest auto detection is running.")
 
     camera_info = zed.get_camera_information()
     # Create OpenGL viewer
@@ -163,5 +164,4 @@ if __name__ == "__main__":
     if (len(opt.input_svo_file)>0 and len(opt.ip_address)>0):
         print("Specify only input_svo_file or ip_address, or none to use wired camera, not both. Exit program")
         exit()
-    main() 
-    
+    main(opt)

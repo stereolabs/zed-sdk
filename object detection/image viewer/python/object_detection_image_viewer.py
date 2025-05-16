@@ -29,7 +29,7 @@ import argparse
 
 
 
-def parse_args(init):
+def parse_args(init, opt):
     if len(opt.input_svo_file)>0 and opt.input_svo_file.endswith(".svo"):
         init.set_from_svo_file(opt.input_svo_file)
         print("[Sample] Using SVO File input: {0}".format(opt.input_svo_file))
@@ -67,7 +67,7 @@ def parse_args(init):
         print("[Sample] Using default resolution")
 
 
-def main():
+def main(opt):
     # Create a Camera object
     zed = sl.Camera()
 
@@ -76,7 +76,7 @@ def main():
     init_params.coordinate_units = sl.UNIT.METER
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
 
-    parse_args(init_params)
+    parse_args(init_params, opt)
 
 
     # Open the camera
@@ -142,4 +142,4 @@ if __name__ == "__main__":
     if len(opt.input_svo_file)>0 and len(opt.ip_address)>0:
         print("Specify only input_svo_file or ip_address, or none to use wired camera, not both. Exit program")
         exit()
-    main() 
+    main(opt)

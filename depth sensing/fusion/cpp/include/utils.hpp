@@ -30,7 +30,6 @@ std::map<int, int> syncDATA(std::map<int, std::string> svo_files) {
         }
     }
 
-    //p_zeds.begin()->second->setSVOPosition(14000);
     // Compute the starting point, we have to take the latest one
     sl::Timestamp start_ts = 0;
     for (auto &it : p_zeds) {

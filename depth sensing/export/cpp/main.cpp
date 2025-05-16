@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
     Camera zed;
     // Set configuration parameters for the ZED
     InitParameters init_parameters;
-    init_parameters.depth_mode = DEPTH_MODE::ULTRA;    
+    init_parameters.depth_mode = DEPTH_MODE::NEURAL;    
     parseArgs(argc, argv, init_parameters);
 
     // Open the camera
