@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(CMAKE_BUILD_TYPE "Release")
 
 
-find_package(ZED 4 REQUIRED)
+find_package(ZED REQUIRED)
 find_package(CUDA REQUIRED)
 
 find_package(GLUT REQUIRED)
@@ -64,3 +64,8 @@ if(GPS_FOUND)
 endif()
 
 target_link_libraries(${PROJECT_NAME} ${LIBS} ${SPECIAL_OS_LIBS})
+
+if(INSTALL_SAMPLES)
+    LIST(APPEND SAMPLE_LIST ${PROJECT_NAME})
+    SET(SAMPLE_LIST "${SAMPLE_LIST}" PARENT_SCOPE)
+endif()

@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -31,6 +31,7 @@
 #include "gnss_reader/GPSDReader.hpp"
 #include "exporter/KMLExporter.h"
 #include "exporter/GNSSSaver.h"
+#include "utils.hpp"
 
 int main(int argc, char **argv) {
     // Open the camera

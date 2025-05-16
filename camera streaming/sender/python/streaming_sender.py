@@ -26,7 +26,7 @@ import pyzed.sl as sl
 import argparse
 from time import sleep
 
-def parse_args(init):
+def parse_args(init, opt):
     if ("HD2K" in opt.resolution):
         init.camera_resolution = sl.RESOLUTION.HD2K
         print("[Sample] Using Camera in resolution HD2K")
@@ -49,14 +49,14 @@ def parse_args(init):
         print("[Sample] No valid resolution entered. Using default")
     else : 
         print("[Sample] Using default resolution")
-        
-def main():
+
+def main(opt):
 
     init = sl.InitParameters()
     init.camera_resolution = sl.RESOLUTION.AUTO
     init.depth_mode = sl.DEPTH_MODE.NONE
     init.sdk_verbose = 1
-    parse_args(init)
+    parse_args(init, opt)
     cam = sl.Camera()
     status = cam.open(init)
     if status != sl.ERROR_CODE.SUCCESS: #Ensure the camera has opened succesfully
@@ -91,4 +91,4 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--resolution', type=str, help='Resolution, can be either HD2K, HD1200, HD1080, HD720, SVGA or VGA', default = '')
     opt = parser.parse_args()
-    main()
+    main(opt)

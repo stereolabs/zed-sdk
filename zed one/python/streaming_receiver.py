@@ -53,7 +53,7 @@ def on_mouse(event,x,y,flags,param):
         selection_rect.width = abs(x-origin_rect[0])+1
         selection_rect.height = abs(y-origin_rect[1])+1
 
-def main():
+def main(opt):
     init_parameters = sl.InitParametersOne()
     init_parameters.sdk_verbose = 1
     init_parameters.set_from_stream(opt.ip_address.split(':')[0],int(opt.ip_address.split(':')[1]))
@@ -68,7 +68,7 @@ def main():
     cv2.setMouseCallback(win_name,on_mouse)
     print_help()
     switch_camera_settings()
-    
+
     key = ''
     while key != 113:  # for 'q' key
         err = cam.grab() #Check that a new image is successfully acquired
@@ -185,10 +185,10 @@ def valid_ip_or_hostname(ip_or_hostname):
     except (socket.error, ValueError):
         raise argparse.ArgumentTypeError("Invalid IP address or hostname format. Use format a.b.c.d:p or hostname:p")
 
-  
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--ip_address', type=valid_ip_or_hostname, help='IP address or hostname of the sender. Should be in format a.b.c.d:p or hostname:p', required=True)
     opt = parser.parse_args()
-    main()
+    main(opt)
 

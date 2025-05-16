@@ -23,13 +23,12 @@
     This can be very useful to avoid noise from a vehicle bonnet or drone propellers for instance
 """
 
-import sys
-import pyzed.sl as sl
 import argparse
+
 import cv2
+import pyzed.sl as sl
 
-
-def parse_args(init):
+def parse_args(init, opt):
     if len(opt.input_svo_file)>0 and opt.input_svo_file.endswith(".svo"):
         init.set_from_svo_file(opt.input_svo_file)
         print("[Sample] Using SVO File input: {0}".format(opt.input_svo_file))
@@ -67,14 +66,14 @@ def parse_args(init):
         print("[Sample] Using default resolution")
 
 
-def main():
+def main(opt):
     # Create a ZED Camera object
     zed = sl.Camera()
 
     init_parameters = sl.InitParameters()
     init_parameters.camera_resolution = sl.RESOLUTION.AUTO
     init_parameters.depth_mode = sl.DEPTH_MODE.NEURAL
-    parse_args(init_parameters)
+    parse_args(init_parameters, opt)
 
     # Open the camera
     returned_state = zed.open(init_parameters)
@@ -105,14 +104,14 @@ def main():
 
     roi_running = False
     roi_param = sl.RegionOfInterestParameters()
-    roi_param.auto_apply = True
+    roi_param.auto_apply_module = [sl.MODULE.ALL]
     roi_param.depth_far_threshold_meters = 2.5
     roi_param.image_height_ratio_cutoff = 0.5
     zed.start_region_of_interest_auto_detection(roi_param)
 
     # Capture new images until 'q' is pressed
     key = ' '
-    while key != 'q' and key != 27:
+    while key != ord('q') and key != 27:
         # Check that a new image is successfully acquired
         returned_state = zed.grab()
         if returned_state == sl.ERROR_CODE.SUCCESS:
@@ -125,7 +124,7 @@ def main():
                 text = "Region of interest auto detection is running\r"
                 if status == sl.REGION_OF_INTEREST_AUTO_DETECTION_STATE.READY:
                     print(text, "Region of interest auto detection is done!   ")
-                    zed.getRegionOfInterest(mask_roi)
+                    zed.get_region_of_interest(mask_roi)
                     cvMaskROI = mask_roi.get_data()
                     cv2.imshow(ROIWndName, cvMaskROI)
 
@@ -139,19 +138,19 @@ def main():
         key = cv2.waitKey(15)
 
         # Apply Current ROI
-        if key == 'r': #Reset ROI
+        if key == ord('r'): #Reset ROI
             if not roi_running:
                 emptyROI = sl.Mat()
-                zed.setRegionOfInterest(emptyROI)
+                zed.set_region_of_interest(emptyROI)
             print("Resetting Auto ROI detection")
-            zed.startRegionOfInterestAutoDetection(roi_param)
-        elif key == 's' and mask_roi.is_init():
+            zed.start_region_of_interest_auto_detection(roi_param)
+        elif key == ord('s') and mask_roi.is_init():
             print("Saving ROI to", mask_name)
             mask_roi.write(mask_name)
-        elif key == 'l':
+        elif key == ord('l'):
             # Load the mask from a previously saved file
             tmp = cv2.imread(mask_name, cv2.IMREAD_GRAYSCALE)
-            if not tmp.empty():
+            if tmp is not None and not tmp.empty():
                 slROI = sl.Mat(sl.Resolution(tmp.cols, tmp.rows), sl.MAT_TYPE.U8_C1, tmp.data, tmp.step)
                 zed.set_region_of_interest(slROI)
             print(mask_name, "could not be found")
@@ -170,4 +169,4 @@ if __name__ == "__main__":
     if len(opt.input_svo_file)>0 and len(opt.ip_address)>0:
         print("Specify only input_svo_file or ip_address, or none to use wired camera, not both. Exit program")
         exit()
-    main()
+    main(opt)

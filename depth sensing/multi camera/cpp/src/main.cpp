@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -35,7 +35,7 @@ void zed_acquisition(Camera& zed, cv::Mat& image_low_res, bool& run, Timestamp& 
 int main(int argc, char** argv) {
     
 	InitParameters init_parameters;
-    init_parameters.depth_mode = DEPTH_MODE::PERFORMANCE;
+    init_parameters.depth_mode = DEPTH_MODE::NEURAL;
     init_parameters.camera_resolution = RESOLUTION::AUTO;
     
 	vector< DeviceProperties> devList = Camera::getDeviceList();
@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
     // try to open every detected cameras
     for (int z = 0; z < nb_detected_zed; z++) {
         init_parameters.input.setFromSerialNumber(devList[z].serial_number);
-        init_parameters.camera_fps = 30;
+        init_parameters.camera_fps = 60;
         ERROR_CODE err = zeds[z].open(init_parameters);
         if (err == ERROR_CODE::SUCCESS) {
             auto cam_info = zeds[z].getCameraInformation();
@@ -129,6 +129,7 @@ void zed_acquisition(Camera& zed, cv::Mat& image_low_res, bool& run, Timestamp& 
     const int w_low_res = image_low_res.cols / 2;
     const int h_low_res = image_low_res.rows;
     Resolution low_res(w_low_res, h_low_res);
+    Mat pt;
     while (run) {
         // grab current images and compute depth
         if (zed.grab() == ERROR_CODE::SUCCESS) {
@@ -139,6 +140,8 @@ void zed_acquisition(Camera& zed, cv::Mat& image_low_res, bool& run, Timestamp& 
             // copy Dpeth image to the right part of the side by side image
             cv::Mat(h_low_res, w_low_res, CV_8UC4, zed_image.getPtr<sl::uchar1>(MEM::CPU)).copyTo(image_low_res(cv::Rect(w_low_res, 0, w_low_res, h_low_res)));
             ts = zed.getTimestamp(TIME_REFERENCE::IMAGE);
+	        zed.retrieveMeasure(pt, sl::MEASURE::XYZRGBA, sl::MEM::CPU);
+	        std::cout << std::this_thread::get_id() << " " << zed.getCurrentFPS() << "\n";
         }
     }
 }

@@ -18,15 +18,6 @@
 
 #define SAFE_DELETE( res ) if( res!=NULL )  { delete res; res = NULL; }
 
-#if _WIN32
-#define MOUSE_R_SENSITIVITY 0.03f
-#define MOUSE_T_SENSITIVITY 0.05f
-#else
-#define MOUSE_R_SENSITIVITY 0.1f
-#define MOUSE_T_SENSITIVITY 0.1f
-#endif
-#define MOUSE_UZ_SENSITIVITY 0.5f
-
 class CameraGL {
 public:
 
@@ -116,6 +107,7 @@ public:
 
     static const GLint ATTRIB_VERTICES_POS = 0;
     static const GLint ATTRIB_COLOR_POS = 1;
+    
 private:
     bool compile(GLuint &shaderId, GLenum type, const GLchar* src);
     GLuint verterxId_;
@@ -128,10 +120,13 @@ public:
 
     Simple3DObject();
 
-
     ~Simple3DObject();
 
-    void addPoint(sl::float3 pt, sl::float3 clr);
+    inline bool isInit() {
+        return vaoID_ != 0;
+    }
+
+    void addPoint(sl::float3 pt, sl::float4 clr);
     void addFace(sl::float3 p1, sl::float3 p2, sl::float3 p3, sl::float3 clr);
     void pushToGPU();
     void clear();
@@ -146,10 +141,10 @@ public:
 
 private:
     std::vector<sl::float3> vertices_;
-    std::vector<sl::float3> colors_;
+    std::vector<sl::float4> colors_;
     std::vector<unsigned int> indices_;
 
-    bool isStatic_;
+    bool isStatic_ = false;
     bool need_update;
     GLenum drawingType_;
     GLuint vaoID_;
@@ -240,16 +235,18 @@ public:
     // Push a new Image + Z buffer and transform into a point cloud
     void pushNewImage(CUstream);
     // Draw the Image
-    void draw(sl::Transform vpMatrix);
+    void draw2D();
     // Close (disable update)
     void close();
 
     Simple3DObject frustum;
+    float aspect_ratio;
 private:
     sl::Mat ref;
 	cudaArray_t ArrIm;
     cudaGraphicsResource* cuda_gl_ressource;//cuda GL resource
     Shader shader;
+    Shader shader_im;
     GLuint shMVPMatrixLocTex_;
 
     GLuint texture;
@@ -278,7 +275,7 @@ public:
 
     void updateMap(sl::FusedPointCloud &);
     void updateMap(sl::Mesh &);
-
+    
 private:
     // Rendering loop method called each frame by glutDisplayFunc
     void render();
@@ -298,6 +295,7 @@ private:
     static void reshapeCallback(int width, int height);
     static void keyPressedCallback(unsigned char c, int x, int y);
     static void keyReleasedCallback(unsigned char c, int x, int y);
+    static void specialKeyReleasedCallback(int c, int x, int y);
     static void idle();
 
     bool available;
@@ -337,13 +335,18 @@ private:
 
     std::list<FpcObj> map_fpc;
     std::list<MeshObject> map_mesh;
+    Simple3DObject ZED_path;
 
     PointCloud pc_render;
     CameraViewer camera_viewer;
 
     CUstream strm;
 
-    float point_size = 2.f;
+    bool SPLIT_DISPLAY = true;
+    bool follow_cam = true;
+    sl::Resolution wnd_size;
+
+    float control_magnitude = 1.f;
 };
 
 #endif /* __VIEWER_INCLUDE__ */

@@ -108,7 +108,7 @@ def torch_thread_(weights: str, img_size: int, conf_thres: float = 0.2, iou_thre
             lock.acquire()
 
             # Run inference
-            img = cv2.cvtColor(image_net, cv2.COLOR_BGRA2RGB)
+            img = cv2.cvtColor(image_net, cv2.COLOR_RGBA2RGB)
             det = model.predict(img, save=False, retina_masks=True, imgsz=img_size, conf=conf_thres, iou=iou_thres, verbose=False)[0]
 
             # ZED CustomMasks format
@@ -132,7 +132,7 @@ def main_(args: argparse.Namespace):
         input_type.set_from_svo_file(args.svo)
     init_params = sl.InitParameters(input_t=input_type, svo_real_time_mode=True)
     init_params.coordinate_units = sl.UNIT.METER
-    init_params.depth_mode = sl.DEPTH_MODE.ULTRA  # QUALITY
+    init_params.depth_mode = sl.DEPTH_MODE.NEURAL  # QUALITY
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
     init_params.depth_maximum_distance = 50
 
@@ -178,13 +178,13 @@ def main_(args: argparse.Namespace):
     # Utilities for tracks view
     camera_config = camera_infos.camera_configuration
     tracks_resolution = sl.Resolution(400, display_resolution.height)
-    track_view_generator = cv_viewer.TrackingViewer(tracks_resolution, camera_config.fps, init_params.depth_maximum_distance)
+    track_view_generator = cv_viewer.TrackingViewer(tracks_resolution, camera_config.fps, init_params.depth_maximum_distance*1000, 1)
     track_view_generator.set_camera_calibration(camera_config.calibration_parameters)
     image_track_ocv = np.zeros((tracks_resolution.height, tracks_resolution.width, 4), np.uint8)
 
     # Prepare runtime retrieval
     runtime_params = sl.RuntimeParameters()
-    obj_runtime_param = sl.ObjectDetectionRuntimeParameters()
+    obj_runtime_param = sl.CustomObjectDetectionRuntimeParameters()
     cam_w_pose = sl.Pose()
     image_left_tmp = sl.Mat()
     objects = sl.Objects()
@@ -207,7 +207,7 @@ def main_(args: argparse.Namespace):
             # -- Ingest detections
             zed.ingest_custom_mask_objects(detections)
             lock.release()
-            zed.retrieve_objects(objects, obj_runtime_param)
+            zed.retrieve_custom_objects(objects, obj_runtime_param)
 
             # -- Display
             # Retrieve display data
@@ -220,15 +220,17 @@ def main_(args: argparse.Namespace):
             viewer.updateData(point_cloud_render, objects)
             # 2D rendering
             np.copyto(image_left_ocv, image_left.get_data())
-            cv_viewer.render_2D(image_left_ocv, image_scale, objects, obj_param.enable_tracking)
-            global_image = cv2.hconcat([image_left_ocv, image_track_ocv])
             # Tracking view
-            track_view_generator.generate_view(objects, cam_w_pose, image_track_ocv, objects.is_tracked)
-
+            track_view_generator.generate_view(objects, image_left_ocv,image_scale ,cam_w_pose, image_track_ocv, objects.is_tracked)
+            global_image = cv2.hconcat([image_left_ocv, image_track_ocv])
             cv2.imshow("ZED | 2D View and Birds View", global_image)
             key = cv2.waitKey(10)
             if key in (27, ord('q'), ord('Q')):
                 exit_signal = True
+            if key == 105: #for 'i' key 
+                track_view_generator.zoomIn()
+            if key == 111 : #for 'o' key
+                track_view_generator.zoomOut() 
         else:
             exit_signal = True
 
@@ -239,7 +241,7 @@ def main_(args: argparse.Namespace):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', type=str, default='yolov8m.pt', help='model.pt path(s)')
+    parser.add_argument('--weights', type=str, default='yolov8m-seg.pt', help='model.pt path')
     parser.add_argument('--svo', type=str, default=None, help='optional svo file')
     parser.add_argument('--img_size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--conf_thres', type=float, default=0.4, help='object confidence threshold')

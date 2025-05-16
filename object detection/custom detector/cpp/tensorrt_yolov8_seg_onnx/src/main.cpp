@@ -27,64 +27,75 @@ void print(std::string const& msg_prefix, sl::ERROR_CODE const err_code, std::st
 }
 
 static void draw_objects(cv::Mat const& image,
-                         cv::Mat &res,
-                         sl::Objects const& objs,
-                         std::vector<std::vector<int>> const& colors)
-{
+        cv::Mat &res,
+        sl::Objects const& objs,
+        std::vector<std::vector<int>> const& colors) {
     res = image.clone();
     cv::Mat mask{image.clone()};
     for (sl::ObjectData const& obj : objs.object_list) {
-        size_t const idx_color{obj.id % colors.size()};
+        const int line_thickness = 2;
+        size_t const idx_color{obj.raw_label % colors.size()};
         cv::Scalar const color{cv::Scalar(colors[idx_color][0U], colors[idx_color][1U], colors[idx_color][2U])};
 
         cv::Rect const rect{static_cast<int>(obj.bounding_box_2d[0U].x),
                             static_cast<int>(obj.bounding_box_2d[0U].y),
                             static_cast<int>(obj.bounding_box_2d[1U].x - obj.bounding_box_2d[0U].x),
                             static_cast<int>(obj.bounding_box_2d[2U].y - obj.bounding_box_2d[0U].y)};
-        cv::rectangle(res, rect, color, 2);
+
+        cv::Point_<unsigned int> top_left_corner{obj.bounding_box_2d[0].x, obj.bounding_box_2d[0].y};
+        cv::Point_<unsigned int> top_right_corner{obj.bounding_box_2d[1].x, obj.bounding_box_2d[1].y};
+        cv::Point_<unsigned int> bottom_right_corner{obj.bounding_box_2d[2].x, obj.bounding_box_2d[2].y};
+        cv::Point_<unsigned int> bottom_left_corner{obj.bounding_box_2d[3].x, obj.bounding_box_2d[3].y};
+
+        cv::line(res, top_left_corner, top_right_corner, color, line_thickness);
+        cv::line(res, bottom_left_corner, bottom_right_corner, color, line_thickness);
+
+        drawVerticalLine(res, bottom_left_corner, top_left_corner, color, line_thickness);
+        drawVerticalLine(res, bottom_right_corner, top_right_corner, color, line_thickness);
+
 
         char text[256U];
         sprintf(text, "Class %d - %.1f%%", obj.raw_label, obj.confidence);
         if (obj.mask.isInit() && obj.mask.getWidth() > 0U && obj.mask.getHeight() > 0U) {
             const cv::Mat obj_mask = slMat2cvMat(obj.mask);
             mask(rect).setTo(color, obj_mask);
+            drawContours(obj_mask, res, color, top_left_corner);           
         }
 
-        int baseLine{0};
-        cv::Size const label_size{cv::getTextSize(text, cv::FONT_HERSHEY_SIMPLEX, 0.4, 1, &baseLine)};
-
-        int const x{rect.x};
-        int const y{std::min(rect.y + 1, res.rows)};
-
-        cv::rectangle(res, cv::Rect(x, y, label_size.width, label_size.height + baseLine), {0, 0, 255}, -1);
-        cv::putText(res, text, cv::Point(x, y + label_size.height), cv::FONT_HERSHEY_SIMPLEX, 0.4, {255, 255, 255}, 1);
+        const cv::Point bbox_center{rect.x + rect.width / 2, rect.y + rect.height / 2};
+        const cv::Size label_size = cv::getTextSize(text, cv::FONT_HERSHEY_SIMPLEX, 0.4, 1, 0);
+        const cv::Point text_position{
+            bbox_center.x - label_size.width/2,
+            bbox_center.y - label_size.height/2
+        };
+        cv::putText(res, text, text_position, cv::FONT_HERSHEY_SIMPLEX, 0.4, {255, 255, 255}, 1);
     }
-    cv::addWeighted(res, 0.5, mask, 0.8, 1, res);
+    cv::addWeighted(res, 0.7, mask, 0.3, 1, res);
 }
 
 static std::vector<sl::uint2> convertCvRect2SdkBbox(cv::Rect_<float> const& bbox_in) {
     std::vector<sl::uint2> bbox_out;
-    bbox_out.push_back(sl::uint2(static_cast<unsigned int>(bbox_in.x),
-                                 static_cast<unsigned int>(bbox_in.y)));
-    bbox_out.push_back(sl::uint2(static_cast<unsigned int>(bbox_in.x + bbox_in.width),
-                                 static_cast<unsigned int>(bbox_in.y)));
-    bbox_out.push_back(sl::uint2(static_cast<unsigned int>(bbox_in.x + bbox_in.width),
-                                 static_cast<unsigned int>(bbox_in.y + bbox_in.height)));
-    bbox_out.push_back(sl::uint2(static_cast<unsigned int>(bbox_in.x),
-                                 static_cast<unsigned int>(bbox_in.y + bbox_in.height)));
+    bbox_out.push_back(sl::uint2(static_cast<unsigned int> (bbox_in.x),
+            static_cast<unsigned int> (bbox_in.y)));
+    bbox_out.push_back(sl::uint2(static_cast<unsigned int> (bbox_in.x + bbox_in.width),
+            static_cast<unsigned int> (bbox_in.y)));
+    bbox_out.push_back(sl::uint2(static_cast<unsigned int> (bbox_in.x + bbox_in.width),
+            static_cast<unsigned int> (bbox_in.y + bbox_in.height)));
+    bbox_out.push_back(sl::uint2(static_cast<unsigned int> (bbox_in.x),
+            static_cast<unsigned int> (bbox_in.y + bbox_in.height)));
     return bbox_out;
 }
 
 int main(int argc, char** argv) {
     if (argc == 1) {
         std::cout << "Usage:" << std::endl
-                  << "  1. ./yolov8_seg_onnx_zed -s yolov8s-seg.onnx yolov8s-seg.engine" << std::endl
-                  << "  2. ./yolov8_seg_onnx_zed -s yolov8s-seg.onnx yolov8s-seg.engine images:1x3x640x640" << std::endl
-                  << "  3. ./yolov8_seg_onnx_zed yolov8s-seg.engine <SVO path>" << std::endl
-                  << "  4. ./yolov8_seg_onnx_zed yolov8s-seg.engine" << std::endl;
+                << "  1. ./yolov8_seg_onnx_zed -s yolov8s-seg.onnx yolov8s-seg.engine" << std::endl
+                << "  2. ./yolov8_seg_onnx_zed -s yolov8s-seg.onnx yolov8s-seg.engine images:1x3x640x640" << std::endl
+                << "  3. ./yolov8_seg_onnx_zed yolov8s-seg.engine <SVO path>" << std::endl
+                << "  4. ./yolov8_seg_onnx_zed yolov8s-seg.engine" << std::endl;
         return 0;
     }
-    
+
     // Check Optim engine first
     if (std::string(argv[1U]) == "-s" && (argc >= 4)) {
         std::string const onnx_path{std::string(argv[2U])};
@@ -95,7 +106,7 @@ int main(int argc, char** argv) {
             std::string const optim_profile{std::string(argv[4U])};
             if (dyn_dim_profile.setFromString(optim_profile) != 0) {
                 std::cerr << "Invalid dynamic dimension argument '" << optim_profile << "',"
-                          << " expecting something like 'images:1x3x512x512'" << std::endl;
+                        << " expecting something like 'images:1x3x512x512'" << std::endl;
                 return -1;
             }
         }
@@ -141,8 +152,8 @@ int main(int argc, char** argv) {
 
     // Get camera configuration
     sl::CameraConfiguration const camera_config{zed.getCameraInformation().camera_configuration};
-    sl::Resolution const pc_resolution{std::min(camera_config.resolution.width, 720UL),
-                                       std::min(camera_config.resolution.height, 404UL)};
+    sl::Resolution const pc_resolution{std::min(camera_config.resolution.width, 720),
+        std::min(camera_config.resolution.height, 404)};
     sl::CameraConfiguration const camera_info{zed.getCameraInformation(pc_resolution).camera_configuration};
 
     // Create OpenGL Viewer
@@ -152,7 +163,7 @@ int main(int argc, char** argv) {
     // Creating the inference engine class
     std::string const engine_name{argv[1U]};
     YOLOv8_seg detector{engine_name};
-    detector.make_pipe(false);
+    detector.make_pipe();
 
     // Prepare detector input/output
     cv::Mat left_cv, pred_raw;
@@ -160,7 +171,6 @@ int main(int argc, char** argv) {
     int const seg_channels{32};
     float const score_thres{0.5F};
     float const iou_thres{0.65F};
-    std::vector<seg::Object> objs;
 
     // Prepare SDK input/output
     sl::Mat left_sl, point_cloud;
@@ -169,36 +179,39 @@ int main(int argc, char** argv) {
     sl::Pose cam_w_pose;
     cam_w_pose.pose_data.setIdentity();
     int key{0};
+    auto zed_cuda_stream = zed.getCUDAStream();
 
-    sl::CustomObjectDetectionRuntimeParameters cod_rt_param;
+    sl::CustomObjectDetectionRuntimeParameters customObjectTracker_rt;
 
     while (key != 'q' && key != 27) {
         if (zed.grab() == sl::ERROR_CODE::SUCCESS) {
+            std::vector<seg::Object> objs;
+
             // Get image for inference
-            zed.retrieveImage(left_sl, sl::VIEW::LEFT);
-            left_cv = slMat2cvMat(left_sl);
-            cv::cvtColor(left_cv, left_cv, cv::COLOR_BGRA2BGR);
+            zed.retrieveImage(left_sl, sl::VIEW::LEFT, sl::MEM::GPU, sl::Resolution(0, 0), detector.stream);
+            left_sl.updateCPUfromGPU(zed_cuda_stream); // get the mat in CPU in parallel
 
             // Running inference
-            detector.copy_from_Mat(left_cv);
+            detector.copy_from_Mat(left_sl);
             detector.infer();
 
             // Post process output
-            objs.clear();
             detector.postprocess(objs, score_thres, iou_thres, topk, seg_channels);
+
+            left_cv = slMat2cvMat(left_sl);
 
             // Preparing for ZED SDK ingesting
             std::vector<sl::CustomMaskObjectData> objects_in;
             objects_in.reserve(objs.size());
             for (seg::Object& obj : objs) {
                 objects_in.emplace_back();
-                sl::CustomMaskObjectData &tmp{objects_in.back()};
+                sl::CustomMaskObjectData & tmp{objects_in.back()};
                 tmp.unique_object_id = sl::generate_unique_id();
                 tmp.probability = obj.prob;
-                tmp.label       = obj.label;
+                tmp.label = obj.label;
                 tmp.bounding_box_2d = convertCvRect2SdkBbox(obj.rect);
                 tmp.is_grounded = (obj.label == 0); // Only the first class (person) is grounded, that is moving on the floor plane
-                                                    // others are tracked in full 3D space
+                // others are tracked in full 3D space
                 cvMat2slMat(obj.boxMask).copyTo(tmp.box_mask, sl::COPY_TYPE::CPU_CPU);
             }
 
@@ -206,7 +219,7 @@ int main(int argc, char** argv) {
             zed.ingestCustomMaskObjects(objects_in);
 
             // Retrieve the tracked objects, with 2D and 3D attributes
-            zed.retrieveObjects(objects, cod_rt_param);
+            zed.retrieveCustomObjects(objects, customObjectTracker_rt);
 
             // Draw raw prediction
             draw_objects(left_cv, pred_sdk, objects, CLASS_COLORS);
@@ -217,14 +230,14 @@ int main(int argc, char** argv) {
             zed.getPosition(cam_w_pose, sl::REFERENCE_FRAME::WORLD);
             viewer.updateData(point_cloud, objects.object_list, cam_w_pose.pose_data);
 
-            int const cv_key{cv::waitKey(10)};
+            int const cv_key{cv::waitKey(1)};
             int const gl_key{viewer.getKey()};
             key = (gl_key == -1) ? cv_key : gl_key;
             if (key == 'p' || key == 32) {
                 viewer.setPlaying(!viewer.isPlaying());
             }
             while ((key == -1) && !viewer.isPlaying() && viewer.isAvailable()) {
-                int const cv_key{cv::waitKey(10)};
+                int const cv_key{cv::waitKey(1)};
                 int const gl_key{viewer.getKey()};
                 key = (gl_key == -1) ? cv_key : gl_key;
                 if (key == 'p' || key == 32) {

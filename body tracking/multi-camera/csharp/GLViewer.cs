@@ -953,7 +953,7 @@ namespace sl
         // Decompose the 4th channel of the XYZRGBA buffer to retrieve the color of the point (1float to 4uint)
         "   uint vertexColor = floatBitsToUint(in_VertexRGBA.w); \n",
         "   vec3 clr_int = vec3((vertexColor & uint(0x000000FF)), (vertexColor & uint(0x0000FF00)) >> 8, (vertexColor & uint(0x00FF0000)) >> 16);\n",
-        "   b_color = vec4(clr_int.r / 255.0f, clr_int.g / 255.0f, clr_int.b / 255.0f, 1.f);",
+        "   b_color = vec4(clr_int.b / 255.0f, clr_int.g / 255.0f, clr_int.r / 255.0f, 1.f);",
         "	gl_Position = u_mvpMatrix * vec4(in_VertexRGBA.xyz, 1);\n",
         "}"
     };

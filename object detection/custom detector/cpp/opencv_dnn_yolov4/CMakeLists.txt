@@ -12,7 +12,7 @@ endif()
 
 SET(SPECIAL_OS_LIBS "")
 
-find_package(ZED 3 REQUIRED)
+find_package(ZED REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(GLUT REQUIRED)
 find_package(GLEW REQUIRED)

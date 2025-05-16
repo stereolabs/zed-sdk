@@ -28,6 +28,6 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DOTNET_REFERENCES
 
 set(CMAKE_SUPPRESS_REGENERATION true)
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_PACKAGE_REFERENCES 
-	"Stereolabs.zed_4.*"
+	"Stereolabs.zed_5.*"
 )
  

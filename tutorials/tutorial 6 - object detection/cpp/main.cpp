@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
     // Create ZED objects
     Camera zed;
     InitParameters init_parameters;
-    init_parameters.depth_mode = DEPTH_MODE::PERFORMANCE;
+    init_parameters.depth_mode = DEPTH_MODE::NEURAL;
     init_parameters.coordinate_units = UNIT::METER;
     init_parameters.sdk_verbose = true;
 
@@ -70,6 +70,9 @@ int main(int argc, char** argv) {
     }
     // detection runtime parameters
     ObjectDetectionRuntimeParameters detection_parameters_rt;
+    detection_parameters_rt.detection_confidence_threshold = 40;
+    zed.setObjectDetectionRuntimeParameters(detection_parameters_rt); // Can be set at any time
+
     // detection output
     Objects objects;
     cout << setprecision(3);
@@ -78,10 +81,11 @@ int main(int argc, char** argv) {
     while (nb_detection < 100) {
 
         if(zed.grab() == ERROR_CODE::SUCCESS){
-           zed.retrieveObjects(objects, detection_parameters_rt);
+           zed.retrieveObjects(objects);
 
             if (objects.is_new) {
-                cout << objects.object_list.size() << " Object(s) detected\n\n";
+                cout << objects.object_list.size() << " Object(s) detected ("
+                     << zed.getCurrentFPS() << " FPS)\n\n";
                 if (!objects.object_list.empty()) {
 
                     auto first_object = objects.object_list.front();
@@ -110,13 +114,13 @@ int main(int argc, char** argv) {
                     for (auto it : first_object.bounding_box)
                         cout << "    " << it << "\n";
 
-                    cout << "\nPress 'Enter' to continue...\n";
-                    cin.ignore();
                 }
                 nb_detection++;
             }
         }
     }
+    // Disable object detection and close the camera
+    zed.disableObjectDetection();
     zed.close();
     return EXIT_SUCCESS;
 }

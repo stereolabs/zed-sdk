@@ -39,7 +39,7 @@ set_property(TARGET ${PROJECT_NAME} PROPERTY VS_DOTNET_REFERENCES
 
 set(CMAKE_SUPPRESS_REGENERATION true)
 set_property(TARGET ${PROJECT_NAME} PROPERTY VS_PACKAGE_REFERENCES 
-	"Stereolabs.zed_4.*"
+	"Stereolabs.zed_5.*"
 	"OpenGL.Net_0.8.4"
 	"OpenGL.Net.CoreUI_0.8.4"
 	"OpenCvSharp4.Windows_4.5.0.20201013"

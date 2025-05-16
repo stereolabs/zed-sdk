@@ -1,6 +1,6 @@
 ########################################################################
 #
-# Copyright (c) 2024, STEREOLABS.
+# Copyright (c) 2025, STEREOLABS.
 #
 # All rights reserved.
 #
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     init_params = sl.InitParameters()
     init_params.coordinate_units = sl.UNIT.METER
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP  
-    init_params.depth_mode = sl.DEPTH_MODE.ULTRA
+    init_params.depth_mode = sl.DEPTH_MODE.NEURAL
     init_params.depth_maximum_distance = 20
     is_playback = False                             # Defines if an SVO is used
         

@@ -1,6 +1,6 @@
 ########################################################################
 #
-# Copyright (c) 2024, STEREOLABS.
+# Copyright (c) 2025, STEREOLABS.
 #
 # All rights reserved.
 #
@@ -33,13 +33,13 @@ import argparse
 import cv2
 
 
-def main():
+def main(opt):
     zed_pose = sl.Pose()
     py_translation = sl.Translation()
     text_translation = ""
     text_rotation = ""
 
-    init_params = sl.InitParameters(depth_mode=sl.DEPTH_MODE.ULTRA,
+    init_params = sl.InitParameters(depth_mode=sl.DEPTH_MODE.NEURAL,
                                     coordinate_units=sl.UNIT.METER,
                                     coordinate_system=sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP)
 
@@ -182,4 +182,4 @@ if __name__ == "__main__":
     parser.add_argument('--input_json_gps_file', type=str, help='Path to a .json file, containing gps data',
                         required=False)
     opt = parser.parse_args()
-    main()
+    main(opt)

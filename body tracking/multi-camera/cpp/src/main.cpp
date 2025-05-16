@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -97,6 +97,8 @@ int main(int argc, char **argv) {
     init_params.coordinate_system = COORDINATE_SYSTEM;
     init_params.verbose = true;
 
+    sl::Resolution low_res(512,360);
+    init_params.maximum_working_resolution = low_res;
     // create and initialize it
     sl::Fusion fusion;
     fusion.init(init_params);
@@ -140,9 +142,8 @@ int main(int argc, char **argv) {
 
     std::cout << "Viewer Shortcuts\n" <<
         "\t- 'q': quit the application\n" <<
-        "\t- 'p': play/pause the GLViewer\n" <<
         "\t- 'r': switch on/off for raw skeleton display\n" <<
-        "\t- 's': switch on/off for live point cloud display\n" <<
+        "\t- 'p': switch on/off for live point cloud display\n" <<
         "\t- 'c': switch on/off point cloud display with raw color\n" << std::endl;
 
     // fusion outputs
@@ -151,7 +152,6 @@ int main(int argc, char **argv) {
     sl::FusionMetrics metrics;
     std::map<sl::CameraIdentifier, sl::Mat> views;
     std::map<sl::CameraIdentifier, sl::Mat> pointClouds;
-    sl::Resolution low_res(512,360);
     sl::CameraIdentifier fused_camera(0);
 
     // run the fusion as long as the viewer is available.
@@ -182,13 +182,7 @@ int main(int argc, char **argv) {
         }
         // update the 3D view
         viewer.updateBodies(fused_bodies, camera_raw_data, metrics);
-
-        while (!viewer.isPlaying() && viewer.isAvailable()) {
-            sl::sleep_ms(10);
-        }
     }
-
-    viewer.exit();
     
     trigger.running = false;
     trigger.notifyZED();

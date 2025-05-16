@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -58,9 +58,8 @@ namespace sl
         {
             // Set configuration parameters
             InitParameters init_params = new InitParameters();
-            init_params.resolution = RESOLUTION.HD1080;
-            init_params.cameraFPS = 30;
-            init_params.depthMode = DEPTH_MODE.ULTRA;
+            init_params.resolution = RESOLUTION.AUTO;
+            init_params.depthMode = DEPTH_MODE.NEURAL;
             init_params.coordinateUnits = UNIT.METER;
             init_params.coordinateSystem = COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP;
 
@@ -106,18 +105,18 @@ namespace sl
             int Width = zedCamera.ImageWidth;
 
             imageLeft = new Mat();
-            displayRes = new Resolution(Math.Min((uint)Width, 1280), Math.Min((uint)Height, 720));
+            displayRes = new Resolution(Math.Min(Width, 1280), Math.Min(Height, 720));
             imgScale = new sl.float2((int)displayRes.width / (float)Width, (int)displayRes.height / (float)Height);
             imageLeft.Create(displayRes, MAT_TYPE.MAT_8U_C4, MEM.CPU);
 
             imageLeftOcv = new OpenCvSharp.Mat((int)displayRes.height, (int)displayRes.width, OpenCvSharp.MatType.CV_8UC4, imageLeft.GetPtr());
 
             pointCloud = new sl.Mat();
-            pcRes = new Resolution(Math.Min((uint)Width, 720), Math.Min((uint)Height, 404));
+            pcRes = new Resolution(Math.Min(Width, 720), Math.Min(Height, 404));
             pointCloud.Create(pcRes, MAT_TYPE.MAT_32F_C4, MEM.CPU);
 
             // Create OpenGL Viewer
-            viewer = new GLViewer(new Resolution((uint)Width, (uint)Height));
+            viewer = new GLViewer(new Resolution(Width, Height));
 
             // Configure object detection runtime parameters
             bt_runtime_parameters = new BodyTrackingRuntimeParameters();
@@ -232,6 +231,7 @@ namespace sl
 
                     // Retrieve Objects
                     zedCamera.RetrieveBodies(ref bodies, ref bt_runtime_parameters);
+                    return;
 
                     TrackingViewer.render_2D(ref imageLeftOcv, imgScale, ref bodies, isTrackingON, bt_params.bodyFormat, bt_params.enableSegmentation);
 

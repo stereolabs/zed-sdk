@@ -50,7 +50,7 @@ if __name__ == "__main__":
     init_params = sl.InitParameters()
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
     init_params.coordinate_units = sl.UNIT.METER
-    init_params.depth_mode = sl.DEPTH_MODE.ULTRA
+    init_params.depth_mode = sl.DEPTH_MODE.NEURAL
     init_params.camera_resolution = sl.RESOLUTION.HD1080
 
     communication_parameters = sl.CommunicationParameters()
@@ -75,7 +75,7 @@ if __name__ == "__main__":
         # local camera needs to be run form here, in the same process than the fusion
         else:
             init_params.input = conf.input_type
-            
+
             senders[conf.serial_number] = sl.Camera()
 
             init_params.set_from_serial_number(conf.serial_number)
@@ -117,7 +117,7 @@ if __name__ == "__main__":
     camera_identifiers = []
 
     fusion.init(init_fusion_parameters)
-        
+
     print("Cameras in this configuration : ", len(fusion_configurations))
 
     # warmup

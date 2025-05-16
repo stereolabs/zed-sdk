@@ -23,7 +23,7 @@ zed = sl.Camera()
 
 # Create a InitParameters object and set configuration parameters
 init_params = sl.InitParameters()
-init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE
+init_params.depth_mode = sl.DEPTH_MODE.NEURAL
 init_params.coordinate_units = sl.UNIT.METER
 init_params.sdk_verbose = 1
 
@@ -70,8 +70,11 @@ The object confidence threshold can be adjusted at runtime to select only the re
 objects = sl.Objects()
 # Detection runtime parameters
 obj_runtime_param = sl.ObjectDetectionRuntimeParameters()
+obj_runtime_param.detection_confidence_threshold = 40
+zed.set_object_detection_runtime_parameters(obj_runtime_param) # can be set at any time
+
 while zed.grab() == sl.ERROR_CODE.SUCCESS:
-    zed_error = zed.retrieve_objects(objects, obj_runtime_param);
+    zed_error = zed.retrieve_objects(objects)
     if objects.is_new :
         print(str(len(objects.object_list))+" Object(s) detected ("+str(zed.get_current_fps())+" FPS)")
 ```

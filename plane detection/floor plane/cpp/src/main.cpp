@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -43,14 +43,15 @@ int main(int argc, char** argv) {
     Camera zed;
     // Setup configuration parameters for the ZED    
     InitParameters init_parameters;
-    init_parameters.depth_mode = sl::DEPTH_MODE::PERFORMANCE;
+    init_parameters.depth_mode = sl::DEPTH_MODE::NEURAL;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL coordinates system
+    init_parameters.camera_disable_self_calib = true;
     parseArgs(argc,argv, init_parameters);
 
     // Open the camera
     ERROR_CODE zed_open_state = zed.open(init_parameters);
     if (zed_open_state != ERROR_CODE::SUCCESS) {
-        std::cout << "Camera Open" << zed_open_state << "\nExit program." << std::endl;;
+        std::cout << "Camera Open" << zed_open_state << "\nExit program." << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -69,9 +70,11 @@ int main(int argc, char** argv) {
     RuntimeParameters runtime_parameters;
     runtime_parameters.measure3D_reference_frame = REFERENCE_FRAME::WORLD;
 
+    bool floorFirstFind = false;
 #if AUTO_SEARCH
     PositionalTrackingParameters tracking_parameters;
     tracking_parameters.set_floor_as_origin = true;
+    tracking_parameters.set_gravity_as_origin = false;
     zed.enablePositionalTracking(tracking_parameters);
 #else
     Plane floor_plane;
@@ -88,6 +91,7 @@ int main(int argc, char** argv) {
                 if (zed.findFloorPlane(floor_plane, reset_tracking) == ERROR_CODE::SUCCESS) {
                     PositionalTrackingParameters tracking_parameters;
                     tracking_parameters.initial_world_transform = reset_tracking;
+                    tracking_parameters.set_gravity_as_origin = false;
                     zed.enablePositionalTracking(tracking_parameters);
                     tracking_state = POSITIONAL_TRACKING_STATE::OK;
                     std::cout << "\rFloor Plane found ! Set world reference and start point cloud retrieval" << std::endl;

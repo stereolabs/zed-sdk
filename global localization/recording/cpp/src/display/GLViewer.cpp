@@ -63,15 +63,34 @@ bool GLViewer::isAvailable() {
 
 void CloseFunc(void) { if(currentInstance_) currentInstance_->exit(); }
 
-void fillZED(int nb_tri, float *vertices, int *triangles, sl::float3 color, Simple3DObject *zed_camera) {
-    for (int p = 0; p < nb_tri * 3; p = p + 3) {
-        int index = triangles[p] - 1;
-        zed_camera->addPoint(vertices[index * 3], vertices[index * 3 + 1], vertices[index * 3 + 2], color.r, color.g, color.b);
-        index = triangles[p + 1] - 1;
-        zed_camera->addPoint(vertices[index * 3], vertices[index * 3 + 1], vertices[index * 3 + 2], color.r, color.g, color.b);
-        index = triangles[p + 2] - 1;
-        zed_camera->addPoint(vertices[index * 3], vertices[index * 3 + 1], vertices[index * 3 + 2], color.r, color.g, color.b);
-    }
+void createFrustrum(Simple3DObject &obj) {
+    float Z_ = -0.25f;
+    float Y_ = Z_ * tanf(95.f * M_PI / 180.f / 2.f);
+    float X_ = Y_ * 16./9.;
+
+    sl::float3 A, B, C, D, E;
+    A = sl::float3(0, 0, 0);
+    B = sl::float3(X_, Y_, Z_);
+    C = sl::float3(-X_, Y_, Z_);
+    D = sl::float3(-X_, -Y_, Z_);
+    E = sl::float3(X_, -Y_, Z_);
+    
+
+    sl::float3 lime_clr(217,255,66);
+    lime_clr /= 255.f;
+
+    obj.addLine(A, B, lime_clr);
+    obj.addLine(A, C, lime_clr);
+    obj.addLine(A, D, lime_clr);
+    obj.addLine(A, E, lime_clr);
+
+    obj.addLine(B, C, lime_clr);
+    obj.addLine(C, D, lime_clr);
+    obj.addLine(D, E, lime_clr);
+    obj.addLine(E, B, lime_clr);
+
+    obj.setDrawingType(GL_LINES);
+    obj.pushToGPU();
 }
 
 void addVert(Simple3DObject &obj, float i_f, float limit, sl::float3 &clr) {
@@ -145,13 +164,7 @@ void GLViewer::init(int argc, char **argv) {
 
     zedPath.setDrawingType(GL_LINE_STRIP);
 
-    Model3D *model = new Model3D_ZED;
-    if(model){
-        for (auto it: model->part)
-            fillZED(it.nb_triangles, model->vertices, it.triangles, it.color, &zedModel);
-        delete model;
-    }
-    zedModel.pushToGPU();
+    createFrustrum(zedModel);
 
     updateZEDposition = false;
 

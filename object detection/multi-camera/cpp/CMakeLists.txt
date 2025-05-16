@@ -10,7 +10,7 @@ if (NOT LINK_SHARED_ZED AND MSVC)
     message(FATAL_ERROR "LINK_SHARED_ZED OFF : ZED SDK static libraries not available on Windows")
 endif()
 
-find_package(ZED 4 REQUIRED)
+find_package(ZED REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(CUDA REQUIRED)
 find_package(GLUT REQUIRED)

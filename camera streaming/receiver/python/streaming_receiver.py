@@ -53,7 +53,7 @@ def on_mouse(event,x,y,flags,param):
         selection_rect.width = abs(x-origin_rect[0])+1
         selection_rect.height = abs(y-origin_rect[1])+1
 
-def main():
+def main(opt):
     init_parameters = sl.InitParameters()
     init_parameters.depth_mode = sl.DEPTH_MODE.NONE
     init_parameters.sdk_verbose = 1
@@ -204,5 +204,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--ip_address', type=valid_ip_or_hostname, help='IP address or hostname of the sender. Should be in format a.b.c.d:p or hostname:p', required=True)
     opt = parser.parse_args()
-    main()
+    main(opt)
 

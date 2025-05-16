@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -42,6 +42,7 @@ int main(int argc, char **argv) {
     init_parameters.depth_mode = DEPTH_MODE::NEURAL;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
     init_parameters.sdk_verbose = 1;
+    init_parameters.maximum_working_resolution = sl::Resolution(0, 0);
     auto mask_path = parseArgs(argc, argv, init_parameters);
 
     // Open the camera
@@ -61,10 +62,13 @@ int main(int argc, char **argv) {
             std::cout << "Error loading Region of Interest file: " << err << std::endl;
     }
 
-    auto camera_config = zed.getCameraInformation().camera_configuration;
-    float image_aspect_ratio = camera_config.resolution.width / (1.f * camera_config.resolution.height);
-    int requested_low_res_w = min(720, (int)camera_config.resolution.width);
-    sl::Resolution res(requested_low_res_w, requested_low_res_w / image_aspect_ratio);
+    auto camera_config = zed.getCameraInformation().camera_configuration;    
+    // Automatically set to the optimal resolution
+    sl::Resolution res(-1, -1); 
+    
+    Mat point_cloud;
+    zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, res);
+    res = point_cloud.getResolution();
 
     auto stream = zed.getCUDAStream();
 
@@ -82,8 +86,6 @@ int main(int argc, char **argv) {
     //runParameters.confidence_threshold = 98;
     //runParameters.texture_confidence_threshold = 100;
 
-    // Allocation of 4 channels of float on GPU
-    Mat point_cloud(res, MAT_TYPE::F32_C4, sl::MEM::GPU);
     std::cout << "Press on 's' for saving current .ply file" << std::endl;
     // Main Loop
     while (viewer.isAvailable()) {        
@@ -92,7 +94,7 @@ int main(int argc, char **argv) {
             // retrieve the current 3D coloread point cloud in GPU
             zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, res);
             viewer.updatePointCloud(point_cloud);
-            std::cout << "FPS: " << zed.getCurrentFPS() << std::endl;
+            std::cout << "FPS: " << zed.getCurrentFPS() << "\r" << std::flush;
             if(viewer.shouldSaveData()){
                 sl::Mat point_cloud_to_save;
                 zed.retrieveMeasure(point_cloud_to_save, MEASURE::XYZRGBA);

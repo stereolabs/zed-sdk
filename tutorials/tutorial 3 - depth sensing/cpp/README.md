@@ -33,7 +33,7 @@ Open a terminal in the sample directory and execute the following command:
 ## Create a camera
 
 As in other tutorials, we create, configure and open the ZED.
-We set the ZED in HD720 mode at 60fps and enable depth in PERFORMANCE mode. The ZED SDK provides different depth modes: PERFORMANCE, QUALITY, ULTRA. For more information, see online documentation.
+We set the ZED in HD720 mode at 60fps and enable depth in NEURAL mode. The ZED SDK provides different depth modes: NEURAL_PLUS, NEURAL, NEURAL_LIGHT. For more information, see online documentation.
 
 ```
 // Create a ZED camera
@@ -42,7 +42,7 @@ Camera zed;
 // Create configuration parameters
 InitParameters init_params;
 init_params.sdk_verbose = 1; // Enable the verbose mode
-init_params.depth_mode = DEPTH_MODE::PERFORMANCE; // Set the depth mode to performance (fastest)
+init_params.depth_mode = DEPTH_MODE::NEURAL; // Set the depth mode to NEURAL
 init_params.coordinate_units = UNIT::MILLIMETER; // Use millimeter units
 
 
@@ -54,7 +54,7 @@ if (err != ERROR_CODE::SUCCESS) {
 }
 ```
 
-<i>Note: Default parameter for depth mode is DEPTH_MODE::PERFORMANCE. In practice, it is not necessary to set the depth mode in InitParameters. </i>
+<i>Note: Default parameter for depth mode is DEPTH_MODE::NEURAL. In practice, it is not necessary to set the depth mode in InitParameters. </i>
 
 ## Capture data
 

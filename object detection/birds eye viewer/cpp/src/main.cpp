@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
     // Create ZED objects
     Camera zed;
     InitParameters init_parameters;
-    init_parameters.depth_mode = DEPTH_MODE::ULTRA;
+    init_parameters.depth_mode = isJetson ? DEPTH_MODE::NEURAL_LIGHT : DEPTH_MODE::NEURAL;
     init_parameters.depth_maximum_distance = 10.0f * 1000.0f;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
     init_parameters.sdk_verbose = 1;
@@ -113,8 +113,10 @@ int main(int argc, char **argv) {
 #if ENABLE_GUI
     
     float image_aspect_ratio = camera_config.resolution.width / (1.f * camera_config.resolution.height);
-    int requested_low_res_w = min(1280, (int)camera_config.resolution.width);
+    int requested_low_res_w = min(720, (int)camera_config.resolution.width);
     sl::Resolution display_resolution(requested_low_res_w, requested_low_res_w / image_aspect_ratio);
+
+    sl::Resolution pc_resolution = zed.getRetrieveMeasureResolution();
 
     Resolution tracks_resolution(400, display_resolution.height);
     // create a global image to store both image and tracks view
@@ -138,8 +140,6 @@ int main(int argc, char **argv) {
     cv::createTrackbar("Confidence", window_name, &detection_confidence, 100);
 
     char key = ' ';
-    requested_low_res_w = min(720, (int)camera_config.resolution.width);
-    sl::Resolution pc_resolution(requested_low_res_w, requested_low_res_w / image_aspect_ratio);
     auto camera_parameters = zed.getCameraInformation(pc_resolution).camera_configuration.calibration_parameters.left_cam;
     Mat point_cloud(pc_resolution, MAT_TYPE::F32_C4, MEM::GPU);
     GLViewer viewer;

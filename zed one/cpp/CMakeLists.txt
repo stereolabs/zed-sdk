@@ -15,7 +15,7 @@ if (NOT LINK_SHARED_ZED AND MSVC)
     message(FATAL_ERROR "LINK_SHARED_ZED OFF : ZED SDK static libraries not available on Windows")
 endif()
 
-find_package(ZED 4 REQUIRED)
+find_package(ZED REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(CUDA ${ZED_CUDA_VERSION} REQUIRED)
 
@@ -44,6 +44,12 @@ TARGET_LINK_LIBRARIES(ZED_One_streaming_sender ${ZED_LIBS} ${OpenCV_LIBRARIES})
 
 ADD_EXECUTABLE(ZED_One_streaming_receiver include/utils.hpp streaming_receiver.cpp)
 TARGET_LINK_LIBRARIES(ZED_One_streaming_receiver ${ZED_LIBS} ${OpenCV_LIBRARIES})
+
+ADD_EXECUTABLE(ZED_One_SVO_external_data_recording include/utils.hpp svo_external_data_record.cpp)
+TARGET_LINK_LIBRARIES(ZED_One_SVO_external_data_recording ${ZED_LIBS} ${OpenCV_LIBRARIES})
+
+ADD_EXECUTABLE(ZED_One_SVO_external_data_playback include/utils.hpp svo_external_data_playback.cpp)
+TARGET_LINK_LIBRARIES(ZED_One_SVO_external_data_playback ${ZED_LIBS} ${OpenCV_LIBRARIES})
 
 if(INSTALL_SAMPLES)
     LIST(APPEND SAMPLE_LIST ${PROJECT_NAME})

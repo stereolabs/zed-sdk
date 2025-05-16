@@ -77,22 +77,19 @@ GLViewer::GLViewer() : available(false) {
 }
 
 GLViewer::~GLViewer() {
+    for (auto& pc : point_clouds) {
+        pc.second.close();
+    }
 }
 
 void GLViewer::exit() {
-    if (currentInstance_) {
-        available = false;
-        for (auto& pc : point_clouds)
-        {
-            pc.second.close();
-        }
-    }
+    if (currentInstance_) 
+        available = false;    
 }
 
 bool GLViewer::isAvailable() {
-    if (currentInstance_ && available) {
+    if(available)
         glutMainLoopEvent();
-    }
     return available;
 }
 
@@ -134,7 +131,7 @@ void GLViewer::init(int argc, char **argv) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 #ifndef JETSON_STYLE
-    glEnable(GL_POINT_SMOOTH);
+    glEnable(GL_LINE_SMOOTH);
 #endif
 
     // Compile and create the shader for 3D objects
@@ -409,11 +406,8 @@ void GLViewer::update() {
     if (keyStates_['c'] == KEY_STATE::UP)
         currentInstance_->draw_flat_color = !currentInstance_->draw_flat_color;
 
-    if (keyStates_['s'] == KEY_STATE::UP)
+    if (keyStates_['p'] == KEY_STATE::UP)
         currentInstance_->show_pc = !currentInstance_->show_pc;
-
-    if (keyStates_['p'] == KEY_STATE::UP || keyStates_['P'] == KEY_STATE::UP || keyStates_[32] == KEY_STATE::UP)
-        play = !play;
 
     // Rotate camera with mouse
     if (mouseButton_[MOUSE_BUTTON::LEFT]) {
@@ -913,12 +907,19 @@ bool CameraViewer::initialize(sl::Mat &im, sl::float3 clr) {
     cam_4.y = (height - cy) * Z_ *fy_;
     cam_4 *= toOGL;
 
+    frustum.addPoint(cam_0, clr);
+    frustum.addPoint(cam_1, clr);
 
-    frustum.addFace(cam_0, cam_1, cam_2, clr);
-    frustum.addFace(cam_0, cam_2, cam_3, clr);
-    frustum.addFace(cam_0, cam_3, cam_4, clr);
-    frustum.addFace(cam_0, cam_4, cam_1, clr);    
-    frustum.setDrawingType(GL_TRIANGLES);
+    frustum.addPoint(cam_0, clr);
+    frustum.addPoint(cam_2, clr);
+
+    frustum.addPoint(cam_0, clr);
+    frustum.addPoint(cam_3, clr);
+    
+    frustum.addPoint(cam_0, clr);
+    frustum.addPoint(cam_4, clr);
+
+    frustum.setDrawingType(GL_LINES);
     frustum.pushToGPU();
     
     vert.push_back(cam_1);

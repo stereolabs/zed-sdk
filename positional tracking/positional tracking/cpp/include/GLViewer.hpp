@@ -1,78 +1,89 @@
-#pragma once
+#ifndef __VIEWER_INCLUDE__
+#define __VIEWER_INCLUDE__
 
-#ifndef __GL_VIEWER_HDR__
-#define __GL_VIEWER_HDR__
+#include <sl/Camera.hpp>
 
 #include <GL/glew.h>
 #include <GL/freeglut.h>
+#include <GL/gl.h>
+#include <GL/glut.h>   /* OpenGL Utility Toolkit header */
 
-#include <math.h>
-#include <thread>         // std::thread
-#include <mutex>          // std::mutex
+#include <list>
 
-#include "ZEDModel.hpp"    /* OpenGL Utility Toolkit header */
-#include <sl/Camera.hpp>
+#include <cuda_gl_interop.h>
 
 #ifndef M_PI
-#define M_PI 3.1416f
+#define M_PI 3.141592653f
 #endif
 
-#define SAFE_DELETE( res ) if( res!=NULL )  { delete res; res = NULL; }
-
-#define MOUSE_R_SENSITIVITY 0.005f
-#define MOUSE_WHEEL_SENSITIVITY 0.065f
-#define MOUSE_T_SENSITIVITY 0.01f
-#define KEY_T_SENSITIVITY 0.01f
-
-
-
-//// UTILS //////
-using namespace std;
-void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, std::string msg_suffix = "") ;
-
-/////////////////
 class CameraGL {
 public:
 
-    CameraGL();
+    CameraGL() {
+    }
+
+    enum DIRECTION {
+        UP, DOWN, LEFT, RIGHT, FORWARD, BACK
+    };
+
+    CameraGL(sl::Translation position, sl::Translation direction, sl::Translation vertical = sl::Translation(0, 1, 0));
     ~CameraGL();
 
     void update();
-    void setProjection(float im_ratio);
+    void setProjection(float horizontalFOV, float verticalFOV, float znear, float zfar);
     const sl::Transform& getViewProjectionMatrix() const;
+
+    float getHorizontalFOV() const;
+    float getVerticalFOV() const;
+
+    // Set an offset between the eye of the camera and its position
+    // Note: Useful to use the camera as a trackball camera with z>0 and x = 0, y = 0
+    // Note: coordinates are in local space
+    void setOffsetFromPosition(const sl::Translation& offset);
+    const sl::Translation& getOffsetFromPosition() const;
 
     void setDirection(const sl::Translation& direction, const sl::Translation &vertical);
     void translate(const sl::Translation& t);
     void setPosition(const sl::Translation& p);
+    void rotate(const sl::Orientation& rot);
     void rotate(const sl::Rotation& m);
+    void setRotation(const sl::Orientation& rot);
     void setRotation(const sl::Rotation& m);
 
+    const sl::Translation& getPosition() const;
     const sl::Translation& getForward() const;
     const sl::Translation& getRight() const;
     const sl::Translation& getUp() const;
     const sl::Translation& getVertical() const;
+    float getZNear() const;
+    float getZFar() const;
 
-private:
     static const sl::Translation ORIGINAL_FORWARD;
     static const sl::Translation ORIGINAL_UP;
     static const sl::Translation ORIGINAL_RIGHT;
 
     sl::Transform projection_;
+    //private:
     void updateVectors();
+    void updateView();
+    void updateVPMatrix();
 
+    sl::Translation offset_;
     sl::Translation position_;
     sl::Translation forward_;
     sl::Translation up_;
     sl::Translation right_;
     sl::Translation vertical_;
+
     sl::Orientation rotation_;
+
+    sl::Transform view_;
     sl::Transform vpMatrix_;
-
-    const float znear;
-    const float zfar;
-    const float horizontalFOV;
+    float horizontalFieldOfView_;
+    float verticalFieldOfView_;
+    float znear_;
+    float zfar_;
 };
-
 
 class Shader {
 public:
@@ -94,6 +105,8 @@ public:
 
     static const GLint ATTRIB_VERTICES_POS = 0;
     static const GLint ATTRIB_COLOR_POS = 1;
+    static const GLint ATTRIB_NORMAL_POS = 2;
+    
 private:
     bool compile(GLuint &shaderId, GLenum type, const GLchar* src);
     GLuint verterxId_;
@@ -105,70 +118,120 @@ class Simple3DObject {
 public:
 
     Simple3DObject();
-    Simple3DObject(sl::Translation position, bool isStatic);
+
     ~Simple3DObject();
 
-    void addPoint(float x, float y, float z, float r, float g, float b);
-    void addLine(sl::float3 p1, sl::float3 p2, sl::float3 clr);
-    void addPoint(sl::float3 position, sl::float3 color);
+    inline bool isInit() {
+        return vaoID_ != 0;
+    }
+
+    void addPoint(sl::float3 pt, sl::float4 clr);
+    void addFace(sl::float3 p1, sl::float3 p2, sl::float3 p3, sl::float3 clr);
     void pushToGPU();
     void clear();
+
+    void setStatic(bool _static) {
+        isStatic_ = _static;
+    }
 
     void setDrawingType(GLenum type);
 
     void draw();
 
-    void translate(const sl::Translation& t);
-    void setPosition(const sl::Translation& p);
-
-    void setRT(const sl::Transform& mRT);
-
-    void rotate(const sl::Orientation& rot);
-    void rotate(const sl::Rotation& m);
-    void setRotation(const sl::Orientation& rot);
-    void setRotation(const sl::Rotation& m);
-
-    const sl::Translation& getPosition() const;
-
-    sl::Transform getModelMatrix() const;
 private:
-    std::vector<float> vertices_;
-    std::vector<float> colors_;
+    std::vector<sl::float3> vertices_;
+    std::vector<sl::float4> colors_;
     std::vector<unsigned int> indices_;
 
-    bool isStatic_;
-
+    bool isStatic_ = false;
+    bool need_update;
     GLenum drawingType_;
-
     GLuint vaoID_;
-    /*
-    Vertex buffer IDs:
-    - [0]: Vertices coordinates;
-    - [1]: RGB color values;
-    - [2]: Indices;
-    */
     GLuint vboID_[3];
-
-    sl::Translation position_;
-    sl::Orientation rotation_;
-
 };
 
-struct ShaderData {
+class PointCloud {
+public:
+    PointCloud();
+    ~PointCloud();
+
+    // Initialize Opengl and Cuda buffers
+    // Warning: must be called in the Opengl thread
+    void initialize(sl::Mat&);
+    // Push a new point cloud
+    // Warning: can be called from any thread but the mutex "mutexData" must be locked
+    void pushNewPC(CUstream);
+    // Draw the point cloud
+    // Warning: must be called in the Opengl thread
+    void draw(const sl::Transform& vp);
+    // Close (disable update)
+    void close();
+
+private:
+    sl::Mat refMat;
+
+    Shader shader_;
+    GLuint shMVPMatrixLoc_;
+    size_t numBytes_;
+    float* xyzrgbaMappedBuf_;
+    GLuint bufferGLID_;
+    cudaGraphicsResource* bufferCudaID_;
+};
+
+struct ShaderObj {
     Shader it;
-    GLuint MVP_Mat;
+    GLuint MVPM;
+};
+
+class CameraViewer {
+public:
+    CameraViewer();
+    ~CameraViewer();
+
+    // Initialize Opengl and Cuda buffers
+    bool initialize(sl::Mat& image);
+    // Push a new Image + Z buffer and transform into a point cloud
+    void pushNewImage(CUstream);
+    // Draw the Image
+    void draw2D();
+    // Close (disable update)
+    void close();
+
+    Simple3DObject frustum;
+    float aspect_ratio;
+private:
+    sl::Mat ref;
+	cudaArray_t ArrIm;
+    cudaGraphicsResource* cuda_gl_ressource;//cuda GL resource
+    Shader shader;
+    Shader shader_im;
+    GLuint shMVPMatrixLocTex_;
+
+    GLuint texture;
+    GLuint vaoID_;
+    GLuint vboID_[3];
+
+    std::vector<sl::uint3> faces;
+    std::vector<sl::float3> vert;
+    std::vector<sl::float2> uv;
 };
 
 // This class manages input events, window and Opengl rendering pipeline
+
 class GLViewer {
 public:
     GLViewer();
     ~GLViewer();
-    void exit();
-    bool isAvailable();
-    void init(int argc, char **argv, sl::MODEL camera_model);
-    void updateData(sl::Transform zed_rt, std::string str_t, std::string str_r, sl::PositionalTrackingStatus state);
 
+    bool isAvailable();
+
+    void exit();
+
+    void init(int argc, char **argv, sl::Mat &, sl::Mat &, CUstream);
+    void updateCameraPose(sl::Transform, sl::PositionalTrackingStatus);
+    void pushTrackedLM(std::vector<sl::float3> &lm);
+    void pushLM(std::map<uint64_t, sl::Landmark> &lm);
+    
 private:
     // Rendering loop method called each frame by glutDisplayFunc
     void render();
@@ -180,7 +243,9 @@ private:
     void clearInputs();
 
     void printText();
-    
+
+    static GLViewer* currentInstance_;
+
     // Glut functions callbacks
     static void drawCallback();
     static void mouseButtonCallback(int button, int state, int x, int y);
@@ -188,6 +253,7 @@ private:
     static void reshapeCallback(int width, int height);
     static void keyPressedCallback(unsigned char c, int x, int y);
     static void keyReleasedCallback(unsigned char c, int x, int y);
+    static void specialKeyReleasedCallback(int c, int x, int y);
     static void idle();
 
     bool available;
@@ -212,24 +278,35 @@ private:
     int mouseMotion_[2];
     int previousMouseMotion_[2];
     KEY_STATE keyStates_[256];
-    
-    Simple3DObject floor_grid;
-    Simple3DObject zedModel;
-    Simple3DObject zedPath;
 
-    std::vector<sl::float3> vecPath;
-    std::mutex mtx;
-    bool updateZEDposition;
-
-    std::string txtR;
-    std::string txtT;
+    // follow camera
+    sl::Transform cam_pose;
     sl::PositionalTrackingStatus trackState;
 
-    sl::float3 bckgrnd_clr;
-
     CameraGL camera_;
-    ShaderData shaderLine;
-    ShaderData mainShader;
+
+    ShaderObj shader;
+
+    bool draw_live_point_cloud;
+    bool draw_landmark;
+    bool dark_background;
+    bool follow_cam;
+
+    Simple3DObject ZED_path;
+    Simple3DObject origin_axis;
+
+    PointCloud pc_render;
+    CameraViewer camera_viewer;
+
+    CUstream strm;
+
+    bool SPLIT_DISPLAY = true;
+    sl::Resolution wnd_size;
+
+    Simple3DObject lms_tracked;
+    Simple3DObject lms;
+
+    float control_magnitude = 1.f;
 };
 
-#endif /* __GL_VIEWER_HDR__ */
+#endif /* __VIEWER_INCLUDE__ */

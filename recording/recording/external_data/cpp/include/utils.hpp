@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -49,7 +49,7 @@ void SetCtrlHandler() {
 #endif
 }
 
-// Display progress bar
+// input_type progress bar
 void ProgressBar(float ratio, unsigned int w) {
    unsigned  int c = ratio * w;
     for (unsigned int x = 0; x < c; x++) std::cout << "=";

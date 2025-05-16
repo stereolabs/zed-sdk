@@ -20,7 +20,7 @@ We assume that you have followed previous tutorials (opening the ZED and image c
 ## Create a camera
 
 As in other tutorials, we create, configure and open the ZED.
-We set the ZED in HD720 mode at 60fps and enable depth in PERFORMANCE mode. The ZED SDK provides different depth modes: PERFORMANCE, QUALITY, ULTRA. For more information, see online documentation.
+We set the ZED in HD720 mode at 60fps and enable depth in NEURAL mode. The ZED SDK provides different depth modes: NEURAL_PLUS, NEURAL, NEURAL_LIGHT. For more information, see online documentation.
 
 ## Capture data
 

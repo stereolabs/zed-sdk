@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
 
     // Set configuration parameters
     InitParameters init_parameters;
-    init_parameters.depth_mode = DEPTH_MODE::ULTRA; // Use ULTRA depth mode
+    init_parameters.depth_mode = DEPTH_MODE::NEURAL; // Use NEURAL depth mode
     init_parameters.coordinate_units = UNIT::MILLIMETER; // Use millimeter units (for depth measurements)
 
     // Open the camera
@@ -44,16 +44,18 @@ int main(int argc, char **argv) {
     // Capture 50 images and depth, then stop
     int i = 0;
     sl::Mat image, depth, point_cloud;
+    // by default the Measures are lower resolution than the image, this forces the same size
+    sl::Resolution default_image_size = zed.getRetrieveMeasureResolution();
 
     while (i < 50) {
         // A new image is available if grab() returns ERROR_CODE::SUCCESS
         if (zed.grab() == ERROR_CODE::SUCCESS) {
             // Retrieve left image
-            zed.retrieveImage(image, VIEW::LEFT);
+            zed.retrieveImage(image, VIEW::LEFT, MEM::CPU, default_image_size);
             // Retrieve depth map. Depth is aligned on the left image
-            zed.retrieveMeasure(depth, MEASURE::DEPTH);
+            zed.retrieveMeasure(depth, MEASURE::DEPTH, MEM::CPU, default_image_size);
             // Retrieve colored point cloud. Point cloud is aligned on the left image.
-            zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA);
+            zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::CPU, default_image_size);
 
             // Get and print distance value in mm at the center of the image
             // We measure the distance camera - object using Euclidean distance

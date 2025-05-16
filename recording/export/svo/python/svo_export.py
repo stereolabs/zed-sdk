@@ -41,7 +41,7 @@ def progress_bar(percent_done, bar_length=50):
     sys.stdout.flush()
 
 
-def main():
+def main(opt):
     # Get input parameters
     svo_input_path = opt.input_svo_file
     output_dir = opt.output_path_dir
@@ -196,4 +196,4 @@ if __name__ == "__main__":
     if opt.mode >=2 and not os.path.isdir(opt.output_path_dir):
         print("--output_path_dir parameter should be an existing folder but is not : ",opt.output_path_dir,"Exit program.")
         exit()
-    main()
+    main(opt)

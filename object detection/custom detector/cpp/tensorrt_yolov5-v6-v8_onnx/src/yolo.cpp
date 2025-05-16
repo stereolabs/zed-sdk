@@ -121,7 +121,6 @@ Yolo::~Yolo() {
 
         // Release stream and buffers
         cudaStreamDestroy(stream);
-        CUDA_CHECK(cudaFree(d_input));
         CUDA_CHECK(cudaFree(d_output));
         // Destroy the engine
 
@@ -135,7 +134,6 @@ Yolo::~Yolo() {
         runtime->destroy();
 #endif
 
-        delete[] h_input;
         delete[] h_output;
     }
     is_init = false;
@@ -343,14 +341,12 @@ int Yolo::init(std::string engine_name) {
         }
     }
     output_size = out_dim * (out_class_number + out_box_struct_number);
-    h_input = new float[batch_size * 3 * input_height * input_width];
     h_output = new float[batch_size * output_size];
     // In order to bind the buffers, we need to know the names of the input and output tensors.
     // Note that indices are guaranteed to be less than IEngine::trt_name_engine_get_nb_binding()
     assert(inputIndex == 0);
     assert(outputIndex == 1);
     // Create GPU buffers on device
-    CUDA_CHECK(cudaMalloc(&d_input, batch_size * 3 * input_height * input_width * sizeof (float)));
     CUDA_CHECK(cudaMalloc(&d_output, batch_size * output_size * sizeof (float)));
     // Create stream
     CUDA_CHECK(cudaStreamCreate(&stream));
@@ -361,40 +357,22 @@ int Yolo::init(std::string engine_name) {
     return 0;
 }
 
-std::vector<BBoxInfo> Yolo::run(sl::Mat left_sl, int orig_image_h, int orig_image_w, float thres) {
+std::vector<BBoxInfo> Yolo::run(sl::Mat &left_sl, int orig_image_h, int orig_image_w, float thres) {
     std::vector<BBoxInfo> binfo;
 
-    size_t frame_s = input_height * input_width;
-
+    
     /////// Preparing inference
-    cv::Mat left_cv_rgba = slMat2cvMat(left_sl);
-    cv::cvtColor(left_cv_rgba, left_cv_rgb, cv::COLOR_BGRA2BGR);
-    if (left_cv_rgb.empty()) return binfo;
-    cv::Mat pr_img = preprocess_img(left_cv_rgb, input_width, input_height); // letterbox BGR to RGB
-    int i = 0;
-    int batch = 0;
-    for (int row = 0; row < input_height; ++row) {
-        uchar* uc_pixel = pr_img.data + row * pr_img.step;
-        for (int col = 0; col < input_width; ++col) {
-            h_input[batch * 3 * frame_s + i] = (float) uc_pixel[2] / 255.0;
-            h_input[batch * 3 * frame_s + i + frame_s] = (float) uc_pixel[1] / 255.0;
-            h_input[batch * 3 * frame_s + i + 2 * frame_s] = (float) uc_pixel[0] / 255.0;
-            uc_pixel += 3;
-            ++i;
-        }
-    }
-
-    /////// INFERENCE
-    // DMA input batch data to device, infer on the batch asynchronously, and DMA output back to host
-    CUDA_CHECK(cudaMemcpyAsync(d_input, h_input, batch_size * 3 * frame_s * sizeof (float), cudaMemcpyHostToDevice, stream));
+    // Converting image to YOLO input tensor
+    sl::blobFromImage(left_sl, blob, sl::Resolution(input_width, input_height), 1 / 255.f,
+            sl::float3(0, 0, 0), sl::float3(1, 1, 1), true, true, stream);
 
 #if (NV_TENSORRT_MAJOR < 8) || (NV_TENSORRT_MAJOR == 8 && NV_TENSORRT_MINOR < 5)
     std::vector<void*> d_buffers_nvinfer(2);
-    d_buffers_nvinfer[inputIndex] = d_input;
+    d_buffers_nvinfer[inputIndex] = blob.getPtr<float>(sl::MEM::GPU);
     d_buffers_nvinfer[outputIndex] = d_output;
     context->enqueueV2(&d_buffers_nvinfer[0], stream, nullptr);
 #else
-    context->setTensorAddress(input_binding_name.c_str(), d_input);
+    context->setTensorAddress(input_binding_name.c_str(), blob.getPtr<float>(sl::MEM::GPU));
     context->setTensorAddress(output_name.c_str(), d_output);
     context->enqueueV3(stream);
 #endif

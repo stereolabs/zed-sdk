@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -31,16 +31,16 @@ int main(int argc, char **argv) {
 	sl_create_camera(camera_id);
 
 	struct SL_InitParameters init_param;
-	init_param.camera_fps = 30;
-	init_param.resolution = SL_RESOLUTION_HD1080;
+	init_param.camera_fps = 0;
+	init_param.resolution = SL_RESOLUTION_AUTO;
 	init_param.input_type = SL_INPUT_TYPE_USB;
 	init_param.camera_device_id = camera_id;
 	init_param.camera_image_flip = SL_FLIP_MODE_AUTO;
 	init_param.camera_disable_self_calib = false;
 	init_param.enable_image_enhancement = true;
 	init_param.svo_real_time_mode = true;
-	init_param.depth_mode = SL_DEPTH_MODE_PERFORMANCE;
-	init_param.depth_stabilization = 1;
+	init_param.depth_mode = SL_DEPTH_MODE_NEURAL;
+	init_param.depth_stabilization = 30;
 	init_param.depth_maximum_distance = 40;
 	init_param.depth_minimum_distance = -1;
 	init_param.coordinate_unit = SL_UNIT_METER;
@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
 	struct SL_PositionalTrackingParameters tracking_param;
 	tracking_param.enable_area_memory = true;
 	tracking_param.enable_imu_fusion = true;
-	tracking_param.enable_pose_smothing = false;
+	tracking_param.enable_pose_smoothing = false;
 	tracking_param.depth_min_range = -1;
 
 	struct SL_Vector3  position;
@@ -79,7 +79,8 @@ int main(int argc, char **argv) {
 	tracking_param.set_as_static = false;
 	tracking_param.set_floor_as_origin = false;
 	tracking_param.set_gravity_as_origin = true;
-	tracking_param.mode = SL_POSITIONAL_TRACKING_MODE_GEN_1;
+	tracking_param.enable_imu_fusion = true;
+	tracking_param.mode = SL_POSITIONAL_TRACKING_MODE_GEN_2;
 
 	state = sl_enable_positional_tracking(camera_id, &tracking_param, "");
 	if (state != 0) {
@@ -98,11 +99,6 @@ int main(int argc, char **argv) {
 	int height = sl_get_height(camera_id);
 
 	bool zed_has_imu = sl_get_sensors_configuration(camera_id)->gyroscope_parameters.is_available;
-
-	//Create image ptr.
-	int* image_ptr;
-	// Init pointer.
-	image_ptr = sl_mat_create_new(width, height, SL_MAT_TYPE_U8_C4, SL_MEM_CPU);
 
 	// Capture 1000 frames and stop
 	int i = 0;

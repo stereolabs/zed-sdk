@@ -30,7 +30,7 @@ def main():
     # Create a InitParameters object and set configuration parameters
     init_params = sl.InitParameters()
     init_params.camera_resolution = sl.RESOLUTION.HD720  # Use HD720 video mode
-    init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE
+    init_params.depth_mode = sl.DEPTH_MODE.NEURAL
     init_params.coordinate_units = sl.UNIT.METER
     init_params.sdk_verbose = 1
 
@@ -97,8 +97,7 @@ def main():
                     keypoint = first_body.keypoint
                     for it in keypoint:
                         print("    " + str(it))
-                    input('\nPress enter to continue: ')
-        i+=1 
+        i+=1
     # Close the camera
     zed.disable_body_tracking()
     zed.close()

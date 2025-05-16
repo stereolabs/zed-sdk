@@ -15,7 +15,7 @@ bool ClientPublisher::open(sl::InputType input, Trigger* ref) {
     init_parameters.depth_mode = sl::DEPTH_MODE::NEURAL;
     init_parameters.input = input;
     init_parameters.coordinate_units = sl::UNIT::METER;
-    init_parameters.depth_stabilization = 10;
+    init_parameters.depth_stabilization = 30;
     auto state = zed.open(init_parameters);
     if (state != sl::ERROR_CODE::SUCCESS)
     {
@@ -68,24 +68,19 @@ void ClientPublisher::stop()
 }
 
 void ClientPublisher::work()
-{    
-    sl::Bodies bodies;
-    sl::BodyTrackingRuntimeParameters body_runtime_parameters;
-    body_runtime_parameters.detection_confidence_threshold = 40;
-
+{
     sl::RuntimeParameters rt;
     rt.confidence_threshold = 50;
 
-    // in this sample we use a dummy thread to process the ZED data.
+    // In this sample we use a dummy thread to process the ZED data.
     // you can replace it by your own application and use the ZED like you use to, retrieve its images, depth, sensors data and so on.
-    // as long as you call the grab function and the retrieveBodies (which runs the detection) the camera will be able to seamlessly transmit the data to the fusion module.
+    // As long as you call the grab method, since the camera is subscribed to fusion it will be able to seamlessly transmit the data to the fusion module.
     while (p_trigger->running) {
         std::unique_lock<std::mutex> lk(mtx);
         p_trigger->cv.wait(lk);
         if(p_trigger->running){
-         if(zed.grab(rt) == sl::ERROR_CODE::SUCCESS){
-            // just be sure to run the bodies detection
-         }
+            if (zed.grab(rt) == sl::ERROR_CODE::SUCCESS) {
+            }
         }
         p_trigger->states[serial] = true;
     }

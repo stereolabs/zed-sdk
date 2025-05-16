@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -72,6 +72,8 @@ int main(int argc, char **argv) {
     // Set configuration parameters.
     InitParameters init_parameters;
     init_parameters.depth_mode = DEPTH_MODE::NONE; // No depth computation required here.
+    //For Virtual ZED-X with Media Server
+    //init_parameters.input.setFromStream("127.0.0.1",34000);
 
     // Open the camera.
     auto returned_state = zed.open(init_parameters);
@@ -117,12 +119,13 @@ int main(int argc, char **argv) {
         // They do not run at the same rate: therefore, to not miss any new samples we iterate as fast as possible
         // and compare timestamps to determine when a given sensor's data has been updated.
         // NOTE: There is no need to acquire images with grab(). getSensorsData runs in a separate internal capture thread.
-        if (zed.getSensorsData(sensors_data, TIME_REFERENCE::CURRENT) == ERROR_CODE::SUCCESS) {
-
+        sl::ERROR_CODE r = zed.getSensorsData(sensors_data, TIME_REFERENCE::CURRENT);
+        if (r == ERROR_CODE::SUCCESS) {
             // Check if a new IMU sample is available. IMU is the sensor with the highest update frequency.
             if (ts.isNew(sensors_data.imu)) {
                 cout << "Sample " << count++ << "\n";
                 cout << " - IMU:\n";
+                cout << " \t Timestamp : {" << sensors_data.imu.timestamp.getMilliseconds() << "}\n";
                 cout << " \t Orientation: {" << sensors_data.imu.pose.getOrientation() << "}\n";
                 cout << " \t Acceleration: {" << sensors_data.imu.linear_acceleration << "} [m/sec^2]\n";
                 cout << " \t Angular Velocitiy: {" << sensors_data.imu.angular_velocity << "} [deg/sec]\n";
@@ -136,7 +139,10 @@ int main(int argc, char **argv) {
                     cout << " - Barometer\n \t Atmospheric pressure:" << sensors_data.barometer.pressure << " [hPa]\n";
             }
         }
+        else
+            std::cout<<"{getSensorsData} Error : "<<(int)r<<std::endl;
 
+        sl::sleep_ms(10);
         // Compute the elapsed time since the beginning of the main loop.
         elapse_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
     }

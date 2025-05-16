@@ -238,7 +238,6 @@ public:
     GLViewer();
     ~GLViewer();
     bool isAvailable();
-    bool isPlaying() const { return play; }
 
     void init(int argc, char **argv);
 
@@ -333,7 +332,6 @@ private:
     std::uniform_int_distribution<uint16_t> uint_dist360;
     std::mt19937 rng;
 
-    bool play = true;
     int last_key = -1;
 };
 

@@ -92,14 +92,23 @@ Simple3DObject createFrustum(sl::CameraParameters param) {
     cam_4.x = (0 - param.cx) * Z_ *fx_;
     cam_4.y = (param.image_size.height - param.cy) * Z_ *fy_;
 
-    sl::float3 clr(0.2f, 0.5f, 0.8f);
+    float const to_f = 1.f/ 255.f;
+    const sl::float4 clr_lime(217*to_f,255*to_f,66*to_f, 1.f);
 
-    it.addFace(cam_0, cam_1, cam_2, clr);
-    it.addFace(cam_0, cam_2, cam_3, clr);
-    it.addFace(cam_0, cam_3, cam_4, clr);
-    it.addFace(cam_0, cam_4, cam_1, clr);
+    it.addPoint(cam_0, clr_lime);
+    it.addPoint(cam_1, clr_lime);
+
+    it.addPoint(cam_0, clr_lime);
+    it.addPoint(cam_2, clr_lime);
+
+    it.addPoint(cam_0, clr_lime);
+    it.addPoint(cam_3, clr_lime);
+
+    it.addPoint(cam_0, clr_lime);
+    it.addPoint(cam_4, clr_lime);
+       
     
-    it.setDrawingType(GL_TRIANGLES);
+    it.setDrawingType(GL_LINES);
     return it;
 }
 
@@ -119,13 +128,6 @@ GLenum GLViewer::init(int argc, char **argv, sl::CameraParameters param, CUstrea
     if (GLEW_OK != err)
         return err;
 
-
-    glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
-    glEnable(GL_DEPTH_TEST);
-#ifndef JETSON_STYLE
-    glEnable(GL_POINT_SMOOTH);
-#endif
-
     pointCloud_.initialize(image_size, strm_);
 
     // Compile and create the shader
@@ -133,12 +135,16 @@ GLenum GLViewer::init(int argc, char **argv, sl::CameraParameters param, CUstrea
     shMVPMatrixLoc_ = glGetUniformLocation(shader_.getProgramId(), "u_mvpMatrix");
 
     // Create the camera
-    camera_ = CameraGL(sl::Translation(0, 0, 0), sl::Translation(0, 0, -100));
+    camera_ = CameraGL(sl::Translation(0, 2000, 3000), sl::Translation(0, 0, -100));
+
+    sl::Rotation rot;
+    rot.setEulerAngles(sl::float3(-25,0,0), false);
+    camera_.setRotation(rot);
 
     frustum = createFrustum(param);
     frustum.pushToGPU();
 
-    bckgrnd_clr = sl::float3(223, 230, 233);
+    bckgrnd_clr = sl::float3(59, 63, 69);
     bckgrnd_clr /= 255.f;
 
     // Map glut function on this class methods
@@ -149,6 +155,12 @@ GLenum GLViewer::init(int argc, char **argv, sl::CameraParameters param, CUstrea
     glutKeyboardFunc(GLViewer::keyPressedCallback);
     glutKeyboardUpFunc(GLViewer::keyReleasedCallback);
     glutCloseFunc(CloseFunc);
+    
+    
+    glEnable(GL_DEPTH_TEST);
+#ifndef JETSON_STYLE
+    glEnable(GL_LINE_SMOOTH);
+#endif
 
     available = true;
     return err;
@@ -608,7 +620,7 @@ CameraGL::CameraGL(sl::Translation position, sl::Translation direction, sl::Tran
     offset_ = sl::Translation(0, 0, 0);
     view_.setIdentity();
     updateView();
-    setProjection(70, 70, 200.f, 50000.f);
+    setProjection(90, 90, 200.f, 50000.f);
     updateVPMatrix();
 }
 

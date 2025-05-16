@@ -26,7 +26,7 @@ python streaming_sender.py
 ```
 Find the port displayed, and then type in the other : 
 ```bash
-python streaming_reciever.py --ip_address 127.0.0.1:port
+python streaming_receiver.py --ip_address 127.0.0.1:port
 ```
 
 ## Support

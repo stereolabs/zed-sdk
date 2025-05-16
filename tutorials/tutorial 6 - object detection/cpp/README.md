@@ -40,7 +40,7 @@ This module uses the GPU to perform deep neural networks computations. On platfo
 // Create ZED objects
 Camera zed;
 InitParameters initParameters;
-initParameters.depth_mode = DEPTH_MODE::PERFORMANCE;
+initParameters.depth_mode = DEPTH_MODE::NEURAL;
 initParameters.sdk_verbose = true;
 
 // Open the camera
@@ -88,16 +88,17 @@ The object confidence threshold can be adjusted at runtime to select only the re
 // Detection runtime parameters
 ObjectDetectionRuntimeParameters detection_parameters_rt;
 detection_parameters_rt.detection_confidence_threshold = 40;
+zed.setObjectDetectionRuntimeParameters(detection_parameters_rt); // Can be set at any time
 
 // Detection output
 Objects objects;
 
 while (zed.grab() == ERROR_CODE::SUCCESS) {
-	zed_error = zed.retrieveObjects(objects, detection_parameters_rt);
+	zed_error = zed.retrieveObjects(objects);
 
 	if (objects.is_new) {
-		std::cout << objects.object_list.size() << " Object(s) detected ("
-				<< zed.getCurrentFPS() << " FPS)" << std::endl;
+		cout << objects.object_list.size() << " Object(s) detected ("
+			 << zed.getCurrentFPS() << " FPS)\n\n";
 	}
 }
 ```

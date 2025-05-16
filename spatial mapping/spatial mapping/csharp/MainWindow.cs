@@ -1,6 +1,6 @@
 ﻿///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -27,15 +27,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Numerics;
 using System.Net;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using OpenGL;
 using OpenGL.CoreUI;
-using System.Diagnostics;
 
 namespace sl
 {
@@ -61,12 +57,10 @@ namespace sl
         {
             // Set configuration parameters
             InitParameters init_params = new InitParameters();
-            init_params.resolution = RESOLUTION.HD720;
-            init_params.cameraFPS = 60;
-            init_params.depthMode = DEPTH_MODE.ULTRA;
+            init_params.resolution = RESOLUTION.AUTO;
+            init_params.depthMode = DEPTH_MODE.NEURAL;
             init_params.coordinateUnits = UNIT.METER;
             init_params.coordinateSystem = COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP;
-            init_params.depthMaximumDistance = 15f;
 
             parseArgs(args, ref init_params);
             // Open the camera
@@ -115,11 +109,11 @@ namespace sl
             int Height = zedCamera.ImageHeight;
             int Width = zedCamera.ImageWidth;
 
-            Resolution res = new Resolution((uint)Width, (uint)Height);
+            Resolution res = new Resolution(Width, Height);
             zedMat.Create(res, MAT_TYPE.MAT_8U_C4, MEM.CPU);
 
             // Create OpenGL Viewer
-            viewer = new GLViewer(new Resolution((uint)Width, (uint)Height));
+            viewer = new GLViewer(new Resolution(Width, Height));
 
             Console.WriteLine("Hit SPACE BAR to start spatial mapping...");
 

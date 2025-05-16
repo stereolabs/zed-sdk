@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -24,9 +24,7 @@
   ************************************************************************/
   
 using System;
-using System.Runtime.InteropServices;
 using System.IO;
-using System.Numerics;
 using OpenCvSharp;
 using sl;
 

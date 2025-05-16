@@ -15,7 +15,7 @@ IF(NOT MSVC)
     SET(SPECIAL_OS_LIBS "pthread")
 ENDIF()
 
-find_package(ZED 3 REQUIRED)
+find_package(ZED REQUIRED)
 find_package(CUDA ${ZED_CUDA_VERSION} REQUIRED)
 
 include_directories(${CUDA_INCLUDE_DIRS})

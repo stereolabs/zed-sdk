@@ -102,3 +102,12 @@ void SetCtrlHandler() {
     sigaction(SIGINT, &sigIntHandler, NULL);
 #endif
 }
+
+// input_type progress bar
+void ProgressBar(float ratio, unsigned int w) {
+    unsigned  int c = ratio * w;
+     for (unsigned int x = 0; x < c; x++) std::cout << "=";
+     for (unsigned int x = c; x < w; x++) std::cout << " ";
+     std::cout << (unsigned int) (ratio * 100) << "% ";
+     std::cout << "\r" << std::flush;
+ }

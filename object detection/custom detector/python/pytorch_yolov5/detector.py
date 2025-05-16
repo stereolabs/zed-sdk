@@ -140,7 +140,7 @@ def main():
     # Create a InitParameters object and set configuration parameters
     init_params = sl.InitParameters(input_t=input_type, svo_real_time_mode=True)
     init_params.coordinate_units = sl.UNIT.METER
-    init_params.depth_mode = sl.DEPTH_MODE.ULTRA  # QUALITY
+    init_params.depth_mode = sl.DEPTH_MODE.NEURAL
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
     init_params.depth_maximum_distance = 50
 
@@ -166,7 +166,7 @@ def main():
     zed.enable_object_detection(obj_param)
 
     objects = sl.Objects()
-    obj_runtime_param = sl.ObjectDetectionRuntimeParameters()
+    obj_runtime_param = sl.CustomObjectDetectionRuntimeParameters()
 
     # Display
     camera_infos = zed.get_camera_information()
@@ -210,7 +210,7 @@ def main():
             # -- Ingest detections
             zed.ingest_custom_box_objects(detections)
             lock.release()
-            zed.retrieve_objects(objects, obj_runtime_param)
+            zed.retrieve_custom_objects(objects, obj_runtime_param)
 
             # -- Display
             # Retrieve display data

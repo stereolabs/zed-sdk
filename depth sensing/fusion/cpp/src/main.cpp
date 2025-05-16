@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -96,7 +96,9 @@ int main(int argc, char **argv) {
     init_params.coordinate_units = UNIT;
     init_params.coordinate_system = COORDINATE_SYSTEM;
     init_params.verbose = true;
-
+    // set the maximum resolution to 512x360 to reduce the memory usage and increase the performance
+    sl::Resolution low_res(512,360);
+    init_params.maximum_working_resolution = low_res;
     // create and initialize it
     sl::Fusion fusion;
     fusion.init(init_params);
@@ -127,19 +129,17 @@ int main(int argc, char **argv) {
 
     std::cout << "Viewer Shortcuts\n" <<
         "\t- 'q': quit the application\n" <<
-        "\t- 'p': play/pause the GLViewer\n" <<
-        "\t- 'r': switch on/off for raw skeleton display\n" <<
-        "\t- 's': switch on/off for live point cloud display\n" <<
+        "\t- 'r': switch on/off for raw data display\n" <<
         "\t- 'c': switch on/off point cloud display with raw color\n" << std::endl;
 
     // fusion outputs
-    sl::Bodies fused_bodies;
-    std::map<sl::CameraIdentifier, sl::Bodies> camera_raw_data;
     sl::FusionMetrics metrics;
     std::map<sl::CameraIdentifier, sl::Mat> views;
     std::map<sl::CameraIdentifier, sl::Mat> pointClouds;
-    sl::Resolution low_res(512,360);
     sl::CameraIdentifier fused_camera(0);
+
+    sl::Mat fused_pc;
+    sl::Pose pose;
 
     // run the fusion as long as the viewer is available.
     while (viewer.isAvailable()) {
@@ -151,7 +151,6 @@ int main(int argc, char **argv) {
             // for debug, you can retrieve the data sent by each camera
             for (auto& id : cameras) { 
                 
-                sl::Pose pose;
                 if(fusion.getPosition(pose, sl::REFERENCE_FRAME::WORLD, id) == sl::POSITIONAL_TRACKING_STATE::OK)
                     viewer.setCameraPose(id.sn, pose.pose_data);
 
@@ -162,19 +161,19 @@ int main(int argc, char **argv) {
                     viewer.updateCamera(id.sn, views[id], pointClouds[id]);
             }
 
+            if(fusion.getPosition(pose, sl::REFERENCE_FRAME::WORLD, 0) == sl::POSITIONAL_TRACKING_STATE::OK)
+                viewer.setCameraPose(0, pose.pose_data);
+
+            auto state_pc = fusion.retrieveMeasure(fused_pc, 0, sl::MEASURE::XYZBGRA, low_res);
+            viewer.updateCamera(fused_pc);
+
             // get metrics about the fusion process for monitoring purposes
             fusion.getProcessMetrics(metrics);
         }
         // update the 3D view
-        viewer.updateBodies(fused_bodies, camera_raw_data, metrics);
-
-        while (!viewer.isPlaying() && viewer.isAvailable()) {
-            sl::sleep_ms(10);
-        }
+        viewer.updateMetric(metrics);
     }
 
-    viewer.exit();
-    
     trigger.running = false;
     trigger.notifyZED();
 

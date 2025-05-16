@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
     Camera zed;
     InitParameters init_parameters;
     init_parameters.input.setFromSVOFile(argv[1]);
-    init_parameters.depth_mode = sl::DEPTH_MODE::PERFORMANCE;
+    init_parameters.depth_mode = sl::DEPTH_MODE::NEURAL;
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);

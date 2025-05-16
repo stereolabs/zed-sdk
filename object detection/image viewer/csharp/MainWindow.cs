@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -50,13 +50,11 @@ namespace sl
         {
             // Set configuration parameters
             InitParameters init_params = new InitParameters();
-            init_params.resolution = RESOLUTION.HD1080;
-            init_params.cameraFPS = 60;
-            init_params.depthMode = DEPTH_MODE.ULTRA;
+            init_params.resolution = RESOLUTION.AUTO;
+            init_params.depthMode = DEPTH_MODE.NEURAL;
             init_params.coordinateUnits = UNIT.METER;
             init_params.coordinateSystem = COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP;
-            init_params.depthMaximumDistance = 15f;
-
+            init_params.sdkVerbose = 1;
             parseArgs(args, ref init_params);
             // Open the camera
             zedCamera = new Camera(0);
@@ -81,7 +79,6 @@ namespace sl
             obj_det_params.enableObjectTracking = true; // the object detection will track objects across multiple images, instead of an image-by-image basis
             isTrackingON = obj_det_params.enableObjectTracking;
             obj_det_params.enableSegmentation = false;
-            obj_det_params.imageSync = true; // the object detection is synchronized to the image
             obj_det_params.detectionModel = sl.OBJECT_DETECTION_MODEL.MULTI_CLASS_BOX_ACCURATE;
 
             zedCamera.EnableObjectDetection(ref obj_det_params);
@@ -92,11 +89,11 @@ namespace sl
             int Height = zedCamera.ImageHeight;
             int Width = zedCamera.ImageWidth;
 
-            Resolution res = new Resolution((uint)Width, (uint)Height);
+            Resolution res = new Resolution(Width, Height);
             zedMat.Create(res, MAT_TYPE.MAT_8U_C4, MEM.CPU);
 
             // Create OpenGL Viewer
-            viewer = new GLViewer(new Resolution((uint)Width, (uint)Height));
+            viewer = new GLViewer(new Resolution(Width, Height));
 
             // Configure object detection runtime parameters
             obj_runtime_parameters = new ObjectDetectionRuntimeParameters();

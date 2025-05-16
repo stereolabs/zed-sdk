@@ -28,12 +28,12 @@ import cv2
 import argparse 
 import os 
 
-def main():
+def main(opt):
     filepath = opt.input_svo_file # Path to the .svo file to be playbacked
     input_type = sl.InputType()
     input_type.set_from_svo_file(filepath)  #Set init parameter to run from the .svo 
     init = sl.InitParameters(input_t=input_type, svo_real_time_mode=False)
-    init.depth_mode = sl.DEPTH_MODE.PERFORMANCE 
+    init.depth_mode = sl.DEPTH_MODE.NEURAL 
     cam = sl.Camera()
     status = cam.open(init)
     if status != sl.ERROR_CODE.SUCCESS: #Ensure the camera opened succesfully 
@@ -91,4 +91,4 @@ if __name__ == "__main__":
     if not os.path.isfile(opt.input_svo_file):
         print("--input_svo_file parameter should be an existing file but is not : ",opt.input_svo_file,"Exit program.")
         exit()
-    main()
+    main(opt)

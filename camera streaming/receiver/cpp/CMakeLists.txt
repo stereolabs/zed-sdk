@@ -11,7 +11,7 @@ if (NOT LINK_SHARED_ZED AND MSVC)
     message(FATAL_ERROR "LINK_SHARED_ZED OFF : ZED SDK static libraries not available on Windows")
 endif()
 
-find_package(ZED 3 REQUIRED)
+find_package(ZED REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(CUDA ${ZED_CUDA_VERSION} REQUIRED)
 
@@ -23,6 +23,7 @@ link_directories(${ZED_LIBRARY_DIR})
 link_directories(${OpenCV_LIBRARY_DIRS})
 link_directories(${CUDA_LIBRARY_DIRS})
 
+add_definitions(-g)
 ADD_EXECUTABLE(${PROJECT_NAME} src/main.cpp)
 
 if (LINK_SHARED_ZED)

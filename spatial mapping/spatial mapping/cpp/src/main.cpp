@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -37,9 +37,8 @@ using namespace sl;
 
 #define BUILD_MESH 1
 
-void parse_args(int argc, char **argv,InitParameters& param, sl::Mat &roi);
-
 void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, std::string msg_suffix = "");
+void parse_args(int argc, char **argv,InitParameters& param, sl::Mat &roi);
 
 int main(int argc, char **argv) {
 
@@ -49,7 +48,6 @@ int main(int argc, char **argv) {
     init_parameters.depth_mode = DEPTH_MODE::NEURAL;
     init_parameters.coordinate_units = UNIT::METER;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
-    init_parameters.depth_maximum_distance = 8.;
 
     sl::Mat roi;
     parse_args(argc, argv, init_parameters, roi);
@@ -73,6 +71,9 @@ int main(int argc, char **argv) {
     std::cout<<"\t- 'l' to enable/disable current live point cloud display\n";
     std::cout<<"\t- 'w' to switch mesh display from faces to triangles\n";
     std::cout<<"\t- 'd' to switch background color from dark to light\n";
+    std::cout<<"\t- 'f' to follow the camera\n";
+    std::cout<<"\t- 'Shift' for soft mouse control / 'alt' for regular control / 'Ctrl' for strong control \n";
+    std::cout<<"\t- 'space' to switch camera view\n";
 
     auto camera_infos = zed.getCameraInformation();
 
@@ -80,8 +81,10 @@ int main(int argc, char **argv) {
     Pose pose;
     POSITIONAL_TRACKING_STATE tracking_state = POSITIONAL_TRACKING_STATE::OFF;
 
-    returned_state = zed.enablePositionalTracking();
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    sl::PositionalTrackingParameters ptp;
+    ptp.mode = sl::POSITIONAL_TRACKING_MODE::GEN_3;
+    returned_state = zed.enablePositionalTracking(ptp);
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("Enabling positional tracking failed: ", returned_state);
         zed.close();
         return EXIT_FAILURE;
@@ -98,12 +101,13 @@ int main(int argc, char **argv) {
     FusedPointCloud map;
 #endif
     // Set mapping range, it will set the resolution accordingly (a higher range, a lower resolution)
-    spatial_mapping_parameters.set(SpatialMappingParameters::MAPPING_RANGE::SHORT);
-    spatial_mapping_parameters.set(SpatialMappingParameters::MAPPING_RESOLUTION::HIGH);
+    spatial_mapping_parameters.set(sl::SpatialMappingParameters::MAPPING_RESOLUTION::MEDIUM);
+    spatial_mapping_parameters.set(sl::SpatialMappingParameters::MAPPING_RANGE::MEDIUM);
     // Request partial updates only (only the last updated chunks need to be re-draw)
     spatial_mapping_parameters.use_chunk_only = true;
     // Stability counter defines how many times a stable 3D points should be seen before it is integrated into the spatial mapping
-    spatial_mapping_parameters.stability_counter = 4;
+    spatial_mapping_parameters.stability_counter = 10;
+    spatial_mapping_parameters.decay = 0.1;
 
     // Timestamp of the last fused point cloud requested
     chrono::high_resolution_clock::time_point ts_last; 
@@ -111,14 +115,13 @@ int main(int argc, char **argv) {
     // Setup runtime parameters
     RuntimeParameters runtime_parameters;
     // Use low depth confidence to avoid introducing noise in the constructed model
-    runtime_parameters.confidence_threshold = 50;
+    runtime_parameters.confidence_threshold = 30;
 
     auto resolution = camera_infos.camera_configuration.resolution;
 
     // Define display resolution and check that it fit at least the image resolution
-    float image_aspect_ratio = resolution.width / (1.f * resolution.height);
-    int requested_low_res_w = min(720, (int)resolution.width);
-    sl::Resolution display_resolution(requested_low_res_w, requested_low_res_w / image_aspect_ratio);
+    
+    sl::Resolution display_resolution = zed.getRetrieveMeasureResolution();
 
     Mat image(display_resolution, MAT_TYPE::U8_C4, sl::MEM::GPU);
     Mat point_cloud(display_resolution, MAT_TYPE::F32_C4, sl::MEM::GPU);
@@ -129,16 +132,12 @@ int main(int argc, char **argv) {
     viewer.init(argc, argv, image, point_cloud, zed.getCUDAStream());
  
     bool request_new_mesh = true;
-
     bool wait_for_mapping = true;
-
-    sl::Timestamp timestamp_start;
-    timestamp_start.data_ns = 0;
 
     // Start the main loop
     while (viewer.isAvailable()) {
         // Grab a new image
-        if (zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS)
+        if (zed.grab(runtime_parameters) <= ERROR_CODE::SUCCESS)
         {
             // Retrieve the left image
             zed.retrieveImage(image, VIEW::LEFT, MEM::GPU, display_resolution);
@@ -194,7 +193,6 @@ void parse_args(int argc, char **argv,InitParameters& param, sl::Mat &roi)
         if(arg.find(".svo")!=string::npos) {
             // SVO input mode
             param.input.setFromSVOFile(arg.c_str());
-            param.svo_real_time_mode=true;
             cout<<"[Sample] Using SVO File input: "<<arg<<endl;
         }
 

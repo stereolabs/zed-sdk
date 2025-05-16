@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
     /// Opening the ZED camera before the model deserialization to avoid cuda context issue
     sl::Camera zed;
     sl::InitParameters init_parameters;
-    init_parameters.depth_mode = sl::DEPTH_MODE::ULTRA;
+    init_parameters.depth_mode = sl::DEPTH_MODE::NEURAL;
     init_parameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
 
     if (argc >= 2) {
@@ -104,7 +104,7 @@ int main(int argc, char** argv) {
     GLViewer viewer;
     viewer.init(argc, argv, camera_info.calibration_parameters.left_cam, true);
     sl::Mat left_sl, point_cloud;
-    sl::ObjectDetectionRuntimeParameters objectTracker_parameters_rt;
+    sl::CustomObjectDetectionRuntimeParameters customObjectTracker_rt;
     sl::Objects objects;
     sl::Pose cam_w_pose;
     cam_w_pose.pose_data.setIdentity();
@@ -198,7 +198,7 @@ int main(int argc, char** argv) {
             cv::waitKey(10);
 
             // Retrieve the tracked objects, with 2D and 3D attributes
-            zed.retrieveObjects(objects, objectTracker_parameters_rt);
+            zed.retrieveCustomObjects(objects, customObjectTracker_rt);
             // GL Viewer
             zed.retrieveMeasure(point_cloud, sl::MEASURE::XYZRGBA, sl::MEM::GPU, pc_resolution);
             zed.getPosition(cam_w_pose, sl::REFERENCE_FRAME::WORLD);

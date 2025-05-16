@@ -42,7 +42,16 @@ int main(int argc, char **argv)
 {
     // Open camera:
     sl::Camera zed;
-    zed.open();
+    sl::InitParameters init_params;
+    init_params.depth_mode = sl::DEPTH_MODE::NONE; // No depth required
+
+    bool read_svo = false;
+    if(argc == 2){
+        init_params.input.setFromSVOFile(argv[1]);
+        read_svo = true;
+    }
+    
+    zed.open(init_params);
 
     // Grab data:
     std::cout << "Start grabbing 4000 IMU data" << std::endl;
@@ -63,6 +72,11 @@ int main(int argc, char **argv)
                 all_sensors_data_serialized.push_back(sensors_data_serialized);
             }
         }
+        else if (read_svo)
+        {
+            // in case of svo, we need to call grab to get the next frame sensor data
+            zed.grab();
+        }
     }
 
     // Write it into file:
@@ -79,10 +93,13 @@ int main(int argc, char **argv)
 nlohmann::json SensorsData2Json(sl::SensorsData sensors_data)
 {
     nlohmann::json out;
-    out["barometer"] = BarometerData2Json(sensors_data.barometer);
     out["temperature"] = TemperatureData2Json(sensors_data.temperature);
-    out["magnetometer"] = MagnetometerData2Json(sensors_data.magnetometer);
-    out["imu"] = IMUData2Json(sensors_data.imu);
+    if(sensors_data.barometer.is_available)
+        out["barometer"] = BarometerData2Json(sensors_data.barometer);
+    if(sensors_data.magnetometer.is_available)
+        out["magnetometer"] = MagnetometerData2Json(sensors_data.magnetometer);
+    if(sensors_data.imu.is_available)
+        out["imu"] = IMUData2Json(sensors_data.imu);
     out["camera_moving_state"] = sl::toString(sensors_data.camera_moving_state).c_str();
     out["image_sync_trigger"] = sensors_data.image_sync_trigger;
     return out;

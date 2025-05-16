@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright (c) 2024, STEREOLABS.
+// Copyright (c) 2025, STEREOLABS.
 //
 // All rights reserved.
 //
@@ -28,6 +28,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Numerics;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 using OpenGL;
 using OpenGL.CoreUI;
@@ -113,6 +114,7 @@ class MainWindow
             // to subscribe to a camera you must give its serial number, the way to communicate with it (shared memory or local network), and its world pose in the setup.
             Vector3 translation = config.position;
             Quaternion rotation = config.rotation;
+
             err = fusion.Subscribe(ref uuid, config.commParam, ref translation, ref rotation);
             if (err != sl.FUSION_ERROR_CODE.SUCCESS)
             {
@@ -151,6 +153,11 @@ class MainWindow
         bodyTrackingFusionRuntimeParameters.skeletonMinimumAllowedCameras = cameras.Count / 2;
 
         camRawData = new Dictionary<ulong, Bodies>();
+
+        foreach (var client in clients)
+        {
+            client.SetStartSVOPosition(0);
+        }
 
         // Create OpenGL Viewer
         viewer = new GLViewer();
@@ -269,7 +276,7 @@ class MainWindow
 
                     sl.Bodies rawBodies = new sl.Bodies();
                     // Retrieve raw skeleton data
-                    err = fusion.RetrieveBodies(ref rawBodies, ref bodyTrackingFusionRuntimeParameters, uuid);
+                    fusion.RetrieveBodies(ref rawBodies, ref bodyTrackingFusionRuntimeParameters, uuid);
                     camRawData[uuid.sn] = rawBodies;
 
                     // Retrieve camera pose
