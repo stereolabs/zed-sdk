@@ -1,4 +1,4 @@
-# Yolov8 / v6 / v5 custom ONNX ran in the ZED SDK
+# Yolov12 v11 v10 v8 v5 custom ONNX ran in the ZED SDK
 
 This sample is designed to run a state of the art object detection model using the ZED SDK and optimizing your model with the highly optimized TensorRT framework. Internally, the ZED SDK takes its images, run inference on it to obtain 2D box detections and extract 3D informations (localization, 3D bounding boxes) and tracking.
 

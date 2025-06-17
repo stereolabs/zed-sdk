@@ -55,12 +55,19 @@ int main(int argc, char **argv) {
     // Check if the ZED camera should run within the same process or if they are running on the edge.
     std::vector<ClientPublisher> clients(configurations.size());
     int id_ = 0;
+    int gpu_id = 0;
+
+    int nb_gpu = 0;
+    if (!isJetson)
+        cudaGetDeviceCount(&nb_gpu);
+
     std::map<int, std::string> svo_files;
     for (auto conf: configurations) {
         // if the ZED camera should run locally, then start a thread to handle it
         if(conf.communication_parameters.getType() == sl::CommunicationParameters::COMM_TYPE::INTRA_PROCESS){
             std::cout << "Try to open ZED " <<conf.serial_number << ".." << std::flush;
-            auto state = clients[id_].open(conf.input_type, &trigger);
+            gpu_id = id_ % nb_gpu;
+            auto state = clients[id_].open(conf.input_type, &trigger, gpu_id);
             if (!state) {
                 std::cerr << "Could not open ZED: " << conf.input_type.getConfiguration() << ". Skipping..." << std::endl;
                 continue;

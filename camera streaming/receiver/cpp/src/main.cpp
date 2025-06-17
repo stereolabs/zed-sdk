@@ -179,6 +179,18 @@ int main(int argc, char **argv) {
             // Display image with OpenCV
             cv::imshow(win_name, cvImage);
 
+            if (key== 'a') {
+                if (zed.getRecordingStatus().is_recording) {
+                    std::cout << "Stop recording" << std::endl;
+                    zed.disableRecording();
+                } else {
+                    std::cout << "Start recording" << std::endl;
+                    sl::RecordingParameters params;
+                    params.video_filename = "recording.svo";
+                    zed.enableRecording(params);
+                }
+            }
+
         } else {
             print("Error during capture : ", returned_state);
             break;
@@ -304,6 +316,7 @@ void printHelp() {
     cout << "* Toggle camera settings:          's'\n";
     cout << "* Toggle view mode:                'v'\n";
     cout << "* Toggle camera LED:               'l' (lower L)\n";
+    cout << "* Activate/Deactivate recording:   'a'\n";
     cout << "* Reset all parameters:            'r'\n";
     cout << "* Exit :                           'q'\n\n";
 }

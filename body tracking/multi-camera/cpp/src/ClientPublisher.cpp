@@ -7,7 +7,7 @@ ClientPublisher::~ClientPublisher()
     zed.close();
 }
 
-bool ClientPublisher::open(sl::InputType input, Trigger* ref) {
+bool ClientPublisher::open(sl::InputType input, Trigger* ref, int sdk_gpu_id) {
 
     p_trigger = ref;
 
@@ -16,6 +16,7 @@ bool ClientPublisher::open(sl::InputType input, Trigger* ref) {
     init_parameters.input = input;
     init_parameters.coordinate_units = sl::UNIT::METER;
     init_parameters.depth_stabilization = 30;
+    init_parameters.sdk_gpu_id = sdk_gpu_id;
     auto state = zed.open(init_parameters);
     if (state != sl::ERROR_CODE::SUCCESS)
     {
