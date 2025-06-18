@@ -59,10 +59,13 @@ def grab_run(index):
     while not stop_signal:
         err = zed_list[index].grab(runtime)
         if err == sl.ERROR_CODE.SUCCESS:
+            # If you want to add more computation here and to keep maximum performance with multiple cameras:
+            # 1. Minimize Python operations in the loop to avoid python to block the GIL
+            # 2. Pre-allocate objects and arrays to reduce memory allocations
+            # 3. Rely on the pyzed library which is optimized for performance
             zed_list[index].retrieve_image(left_list[index], sl.VIEW.LEFT)
             zed_list[index].retrieve_measure(depth_list[index], sl.MEASURE.DEPTH)
             timestamp_list[index] = zed_list[index].get_timestamp(sl.TIME_REFERENCE.CURRENT).data_ns
-        time.sleep(0.001) #1ms
     zed_list[index].close()
 
 def main():
@@ -73,13 +76,6 @@ def main():
     global timestamp_list
     global thread_list
     signal.signal(signal.SIGINT, signal_handler)
-
-    print("""DISCLAIMER:
-  This multi-camera sample uses Python threads, but due to the Global Interpreter Lock (GIL),
-  threads do not run in true parallel, which may limit performance with multiple cameras.
-  For best results, consider running one process per camera or using the C++ API.
-  Future SDK releases may handle camera threading internally, eliminating this limitation.
-""")
 
     print("Running...")
     init = sl.InitParameters()

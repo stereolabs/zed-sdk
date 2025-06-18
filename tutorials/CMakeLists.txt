@@ -18,7 +18,8 @@ add_subdirectory("tutorial 6 - object detection/${TYPE}")
 add_subdirectory("tutorial 7 - sensor data/${TYPE}")
 add_subdirectory("tutorial 8 - body tracking/${TYPE}")
 
-
 if(${BUILD_CPP})
 add_subdirectory("tutorial 9 - global localization/${TYPE}")
+add_subdirectory("tutorial 10 - split process/${TYPE}")
+add_subdirectory("tutorial 11 - health status/${TYPE}")
 endif()

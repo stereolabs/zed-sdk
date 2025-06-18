@@ -77,14 +77,16 @@ GLViewer::GLViewer() : available(false) {
 }
 
 GLViewer::~GLViewer() {
-    for (auto& pc : point_clouds) {
-        pc.second.close();
-    }
 }
 
 void GLViewer::exit() {
-    if (currentInstance_) 
-        available = false;    
+    if (currentInstance_ && available) {
+        available = false;
+    for (auto& pc : point_clouds)
+        pc.second.close();
+    for(auto& v : viewers)
+        v.second.close();
+    }
 }
 
 bool GLViewer::isAvailable() {

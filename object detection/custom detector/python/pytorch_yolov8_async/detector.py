@@ -86,10 +86,14 @@ def torch_thread(weights, img_size, conf_thres=0.2, iou_thres=0.45):
 def main():
     global image_net, exit_signal, run_signal, detections
 
-    print("""DISCLAIMER:
-  This async sample uses Python threads, but due to the Global Interpreter Lock (GIL),
-  threads do not run in true parallel, which may limit performance.
-  For best async results, consider using the C++ API.
+    print("""This sample uses Python's threading for asynchronous processing:
+
+  1. The pyzed library is optimized for performance and releases the Python's Global Interpreter Lock (GIL) when possible,
+  2. PyTorch inference remains bound by the GIL
+
+  Performance optimizations implemented in this sample:
+  • Separate threads for camera capture and inference
+  • Lock-protected shared resources to prevent race conditions
 """)
 
     capture_thread = Thread(target=torch_thread, kwargs={'weights': opt.weights, 'img_size': opt.img_size, "conf_thres": opt.conf_thres})

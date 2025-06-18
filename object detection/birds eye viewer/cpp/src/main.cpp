@@ -159,7 +159,7 @@ int main(int argc, char **argv) {
 #if ENABLE_GUI
             gl_viewer_available &&
 #endif
-            !quit && zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS) {
+            !quit && zed.grab(runtime_parameters) <= ERROR_CODE::SUCCESS) {
 
 
         // update confidence threshold based on TrackBar

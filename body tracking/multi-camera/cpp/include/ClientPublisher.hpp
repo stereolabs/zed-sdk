@@ -39,7 +39,7 @@ public:
     ClientPublisher();
     ~ClientPublisher();
 
-    bool open(sl::InputType, Trigger* ref);
+    bool open(sl::InputType, Trigger* ref, int sdk_gpu_id);
     void start();
     void stop();
     void setStartSVOPosition(unsigned pos);
