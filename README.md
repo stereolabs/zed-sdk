@@ -32,7 +32,12 @@
 
 ---
 
-:tada: The **ZED SDK 4.2** is released! We support the [**ZED X**](https://www.stereolabs.com/zed-x/) and [**ZED X Mini**](https://www.stereolabs.com/zed-x/) cameras, added the **Fusion API** for multi-camera Body Tracking, and more! Please check the [Release Notes](https://www.stereolabs.com/developers/release/) of the latest version for more details.
+:tada: The **ZED SDK 5.0** is released! 
+
+ZED SDK 5.0 delivers 5× faster depth sensing, 300% lower compute load on Jetson, and improved depth accuracy in challenging environments. It introduces new depth modes powered by TERRA AI, offering options for higher accuracy and faster depth processing to suit different applications. 
+The update also debuts Magellan™, a vision-based localization system providing centimeter-level positioning indoors and outdoors. Additionally, the capture pipeline architecture has been optimized to improve stability, reduce dropped frames, and lower video latency to under 60ms, delivering one of the lowest latencies in the industry. 
+
+Please check the [Release Notes](https://www.stereolabs.com/developers/release/) of the latest version for more details.
 
 ## Overview
 
