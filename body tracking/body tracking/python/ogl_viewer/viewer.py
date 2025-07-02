@@ -439,7 +439,7 @@ class GLViewer:
         glutInitWindowSize(width, height)
         glutInitWindowPosition((int)(wnd_w*0.05), (int)(wnd_h*0.05)) # The window opens at the upper left corner of the screen
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_SRGB)
-        glutCreateWindow("ZED Body Tracking")
+        glutCreateWindow(b"ZED Body Tracking")
         glViewport(0, 0, width, height)
 
         glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE,

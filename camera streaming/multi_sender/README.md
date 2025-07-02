@@ -1,4 +1,4 @@
-# ZED SDK - Streaming mutli Sender
+# ZED SDK - Streaming multi Sender
 
 This sample shows how to enable streaming module of the ZED SDK as image sender, using multiple ZED Camera in parallel.
 

@@ -19,9 +19,8 @@
 ########################################################################
 
 """
-This sample shows how to stream remotely the video of multiple ZED camera. 
-Any application using the ZED SDK can receive and process this stream.
-See Camera Streaming/Receiver example.
+This sample shows how to record video in Stereolabs SVO format.
+SVO video files can be played with the ZED API and used with its different modules.
 """
 
 import pyzed.sl as sl
@@ -54,8 +53,8 @@ def acquisition(zed):
 
     print(f"{infos.camera_model}[{infos.serial_number}] QUIT")
 
-    # disable Streaming
-    zed.disable_streaming()
+    # disable Recording
+    zed.disable_recording()
     # close the Camera
     zed.close()
 
