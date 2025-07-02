@@ -240,7 +240,7 @@ class GLViewer:
         glutInitWindowSize(int(width), int(height))
         glutInitWindowPosition(0, 0) # The window opens at the upper left corner of the screen
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_SRGB)
-        glutCreateWindow("ZED Spatial Mapping")
+        glutCreateWindow(b"ZED Spatial Mapping")
         glViewport(0, 0, int(width), int(height))
 
         glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE,

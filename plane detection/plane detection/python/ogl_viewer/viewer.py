@@ -313,7 +313,7 @@ class GLViewer:
         glutInitWindowSize(int(width), int(height))
         glutInitWindowPosition(0, 0) # The window opens at the upper left corner of the screen
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA)
-        glutCreateWindow("ZED Plane Detection")
+        glutCreateWindow(b"ZED Plane Detection")
         
         self.reshape_callback(width, height)
 

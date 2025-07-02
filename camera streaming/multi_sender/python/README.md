@@ -1,6 +1,6 @@
-# Stereolabs ZED - Streaming Sender
+# Stereolabs ZED - Streaming multi Sender
 
-This sample shows how to enable streaming module of the ZED SDK with multiple camera as image sender.
+This sample shows how to enable streaming module of the ZED SDK as image sender, using multiple ZED Camera in parallel.
 
 ## Getting Started
  - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://www.stereolabs.com/docs/app-development/python/install/)
