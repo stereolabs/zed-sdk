@@ -162,7 +162,7 @@ def main():
     cam_w_pose = sl.Pose()
 
     while viewer.is_available() and not exit_signal:
-        if zed.read() == sl.ERROR_CODE.SUCCESS: # Get a new image
+        if zed.read() <= sl.ERROR_CODE.SUCCESS: # Get a new image
 
             # -- Get the image
             lock.acquire()

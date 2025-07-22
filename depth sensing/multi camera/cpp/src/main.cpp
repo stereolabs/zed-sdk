@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
         init_parameters.input.setFromSerialNumber(devList[z].serial_number);
         init_parameters.camera_fps = 60;
         ERROR_CODE err = zeds[z].open(init_parameters);
-        if (err == ERROR_CODE::SUCCESS) {
+        if (err <= ERROR_CODE::SUCCESS) {
             auto cam_info = zeds[z].getCameraInformation();
             cout << cam_info.camera_model << ", ID: " << z << ", SN: " << cam_info.serial_number << " Opened" << endl;
         } else {
@@ -132,7 +132,7 @@ void zed_acquisition(Camera& zed, cv::Mat& image_low_res, bool& run, Timestamp& 
     Mat pt;
     while (run) {
         // grab current images and compute depth
-        if (zed.grab() == ERROR_CODE::SUCCESS) {
+        if (zed.grab() <= ERROR_CODE::SUCCESS) {
             zed.retrieveImage(zed_image, VIEW::LEFT, MEM::CPU, low_res);
             // copy Left image to the left part of the side by side image
             cv::Mat(h_low_res, w_low_res, CV_8UC4, zed_image.getPtr<sl::uchar1>(MEM::CPU)).copyTo(image_low_res(cv::Rect(0, 0, w_low_res, h_low_res)));
@@ -140,8 +140,8 @@ void zed_acquisition(Camera& zed, cv::Mat& image_low_res, bool& run, Timestamp& 
             // copy Dpeth image to the right part of the side by side image
             cv::Mat(h_low_res, w_low_res, CV_8UC4, zed_image.getPtr<sl::uchar1>(MEM::CPU)).copyTo(image_low_res(cv::Rect(w_low_res, 0, w_low_res, h_low_res)));
             ts = zed.getTimestamp(TIME_REFERENCE::IMAGE);
-	        zed.retrieveMeasure(pt, sl::MEASURE::XYZRGBA, sl::MEM::CPU);
-	        std::cout << std::this_thread::get_id() << " " << zed.getCurrentFPS() << "\n";
+            zed.retrieveMeasure(pt, sl::MEASURE::XYZRGBA, sl::MEM::CPU);
+            std::cout << std::this_thread::get_id() << " " << zed.getCurrentFPS() << "\n";
         }
     }
 }

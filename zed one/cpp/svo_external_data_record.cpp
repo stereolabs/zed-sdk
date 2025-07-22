@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
     int frames_recorded = 0;
     sl::RecordingStatus rec_status;
     while (frames_recorded < 100) {
-        if (zed.grab() == ERROR_CODE::SUCCESS) {
+        if (zed.grab() <= ERROR_CODE::SUCCESS) {
 
             // Each new frame is added to the SVO file
             rec_status = zed.getRecordingStatus();

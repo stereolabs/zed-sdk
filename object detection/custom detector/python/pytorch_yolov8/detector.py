@@ -154,7 +154,7 @@ def main():
     cam_w_pose = sl.Pose()
 
     while viewer.is_available() and not exit_signal:
-        if zed.grab(runtime_params) == sl.ERROR_CODE.SUCCESS:
+        if zed.grab(runtime_params) <= sl.ERROR_CODE.SUCCESS:
 
             print(zed.get_current_fps())
 

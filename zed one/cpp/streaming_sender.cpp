@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
     SetCtrlHandler();
 
     while (!exit_app) {
-        if (zed.grab() != ERROR_CODE::SUCCESS)
+        if (zed.grab() > ERROR_CODE::SUCCESS)
             sleep_ms(5);
     }
 

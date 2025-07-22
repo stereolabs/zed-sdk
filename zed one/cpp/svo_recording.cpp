@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
     sl::RecordingStatus rec_status;
     auto start = std::chrono::high_resolution_clock::now();
     while (!exit_app) {
-        if (zed.grab() == ERROR_CODE::SUCCESS) {
+        if (zed.grab() <= ERROR_CODE::SUCCESS) {
 
             // Each new frame is automatically added to the SVO file
 

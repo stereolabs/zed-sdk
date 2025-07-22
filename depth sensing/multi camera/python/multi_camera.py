@@ -58,7 +58,7 @@ def grab_run(index):
     runtime = sl.RuntimeParameters()
     while not stop_signal:
         err = zed_list[index].grab(runtime)
-        if err == sl.ERROR_CODE.SUCCESS:
+        if err <= sl.ERROR_CODE.SUCCESS:
             # If you want to add more computation here and to keep maximum performance with multiple cameras:
             # 1. Minimize Python operations in the loop to avoid python to block the GIL
             # 2. Pre-allocate objects and arrays to reduce memory allocations

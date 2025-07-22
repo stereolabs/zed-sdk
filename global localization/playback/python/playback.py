@@ -106,7 +106,7 @@ def main(opt):
 
     while viewer.isAvailable():
         # get the odometry information
-        if zed.grab() == sl.ERROR_CODE.SUCCESS:
+        if zed.grab() <= sl.ERROR_CODE.SUCCESS:
             zed.get_position(zed_pose, sl.REFERENCE_FRAME.WORLD)
             zed.retrieve_image(left_img, sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
             cv2.imshow("left", left_img.numpy())

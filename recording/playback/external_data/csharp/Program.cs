@@ -91,13 +91,13 @@ class Program
         while (key != 'q')
         {
             state = zed.Grab(ref rtParams);
-            if (state == ERROR_CODE.SUCCESS)
+            if (state <= ERROR_CODE.SUCCESS)
             {
                 List<SVOData> svoData = new List<SVOData>();
                 Console.WriteLine("Reading between " + last_timestamp_ns + " and " + zed.GetCameraTimeStamp());
                 state = zed.RetrieveSVOData("TEST", ref svoData, last_timestamp_ns, zed.GetCameraTimeStamp());
 
-                if (state == ERROR_CODE.SUCCESS)
+                if (state <= ERROR_CODE.SUCCESS)
                 {
                     foreach (var d in svoData)
                     {

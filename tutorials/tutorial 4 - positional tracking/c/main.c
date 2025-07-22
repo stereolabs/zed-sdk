@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
 	tracking_param.set_floor_as_origin = false;
 	tracking_param.set_gravity_as_origin = true;
 	tracking_param.enable_imu_fusion = true;
-	tracking_param.mode = SL_POSITIONAL_TRACKING_MODE_GEN_2;
+	tracking_param.mode = SL_POSITIONAL_TRACKING_MODE_GEN_3;
 
 	state = sl_enable_positional_tracking(camera_id, &tracking_param, "");
 	if (state != 0) {

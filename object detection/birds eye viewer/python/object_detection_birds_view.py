@@ -134,9 +134,9 @@ def main(opt):
     gl_viewer_available = True
     printHelp()
     while 1:
-        if not opt.disable_gui and ( zed.grab(runtime_parameters) != sl.ERROR_CODE.SUCCESS or quit_bool):
+        if not opt.disable_gui and ( zed.grab(runtime_parameters) > sl.ERROR_CODE.SUCCESS or quit_bool):
             break 
-        if opt.disable_gui and (zed.grab(runtime_parameters) != sl.ERROR_CODE.SUCCESS or quit_bool or not gl_viewer_available):
+        if opt.disable_gui and (zed.grab(runtime_parameters) > sl.ERROR_CODE.SUCCESS or quit_bool or not gl_viewer_available):
             break 
         if len(detection_parameters_rt.object_class_filter) == 0:
             detection_parameters_rt.detection_confidence_threshold = detection_confidence
@@ -145,7 +145,7 @@ def main(opt):
                 detection_parameters_rt.object_class_detection_confidence_threshold[parameter] = detection_confidence
         
         returned_state = zed.retrieve_objects(objects, detection_parameters_rt)
-        if returned_state == sl.ERROR_CODE.SUCCESS:
+        if returned_state <= sl.ERROR_CODE.SUCCESS:
             if opt.enable_batching_reid:
                 for object in objects.object_list : 
                     id_counter[str(object.id)] = 1
@@ -206,7 +206,7 @@ def main(opt):
     zed.close()
 
 def parse_args(init, opt):
-    if len(opt.input_svo_file)>0 and (opt.input_svo_file.endswith(".svo") or opt.input_svo_file.endswith(".svo2")):
+    if len(opt.input_svo_file)>0 and opt.input_svo_file.endswith((".svo", ".svo2")):
         init.set_from_svo_file(opt.input_svo_file)
         print("[Sample] Using SVO File input: {0}".format(opt.input_svo_file))
     elif len(opt.ip_address)>0 :

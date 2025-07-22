@@ -220,7 +220,7 @@ namespace sl
             Gl.Clear(ClearBufferMask.ColorBufferBit);
 
             ERROR_CODE err = ERROR_CODE.FAILURE;
-            if (viewer.isAvailable() && zedCamera.Grab(ref runtimeParameters) == ERROR_CODE.SUCCESS)
+            if (viewer.isAvailable() && zedCamera.Grab(ref runtimeParameters) <= ERROR_CODE.SUCCESS)
             {
                 if (imageLeft.IsInit())
                 {

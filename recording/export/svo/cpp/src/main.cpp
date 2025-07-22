@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
 
     while (!exit_app) {
         sl::ERROR_CODE err = zed.grab();
-        if (err == ERROR_CODE::SUCCESS) {
+        if (err <= ERROR_CODE::SUCCESS) {
             svo_position = zed.getSVOPosition();
 
             // Retrieve SVO images

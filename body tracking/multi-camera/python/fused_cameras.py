@@ -124,7 +124,7 @@ if __name__ == "__main__":
     bodies = sl.Bodies()        
     for serial in senders:
         zed = senders[serial]
-        if zed.grab() == sl.ERROR_CODE.SUCCESS:
+        if zed.grab() <= sl.ERROR_CODE.SUCCESS:
             zed.retrieve_bodies(bodies)
 
     for i in range(0, len(fusion_configurations)):
@@ -162,7 +162,7 @@ if __name__ == "__main__":
     while (viewer.is_available()):
         for serial in senders:
             zed = senders[serial]
-            if zed.grab() == sl.ERROR_CODE.SUCCESS:
+            if zed.grab() <= sl.ERROR_CODE.SUCCESS:
                 zed.retrieve_bodies(bodies)
 
         if fusion.process() == sl.FUSION_ERROR_CODE.SUCCESS:

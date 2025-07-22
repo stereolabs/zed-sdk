@@ -47,7 +47,7 @@ def acquisition(zed):
     infos = zed.get_camera_information()
 
     while not exit_app:
-        if zed.grab() == sl.ERROR_CODE.SUCCESS:
+        if zed.grab() <= sl.ERROR_CODE.SUCCESS:
             # If you want to add more computation here and to keep maximum performance with multiple cameras:
             # 1. Minimize Python operations in the loop to avoid python to block the GIL
             # 2. Pre-allocate objects and arrays to reduce memory allocations

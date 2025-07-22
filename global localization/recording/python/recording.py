@@ -109,7 +109,7 @@ def main():
     gnss_data_saver = GNSSSaver(zed)
     while is_running and viewer.isAvailable():
         # Grab camera:
-        if zed.grab() == sl.ERROR_CODE.SUCCESS:
+        if zed.grab() <= sl.ERROR_CODE.SUCCESS:
             zed_pose = sl.Pose()
             # You can still use the classical getPosition for your application, just not that the position returned by this method
             # is the position without any GNSS/cameras fusion

@@ -28,10 +28,10 @@ Please use the following parameters from the command line:
  A - SVO file path (input) : "path/to/file.svo"
  B - AVI file path (output) or image sequence folder(output) : "path/to/output/file.avi" or "path/to/output/folder/"
  C - Export mode:  0=Export LEFT+RIGHT AVI.
-				   1=Export LEFT+DEPTH_VIEW AVI.
-				   2=Export LEFT+RIGHT image sequence.
-				   3=Export LEFT+DEPTH_VIEW image sequence.
-				   4=Export LEFT+DEPTH_16Bit image sequence.
+                   1=Export LEFT+DEPTH_VIEW AVI.
+                   2=Export LEFT+RIGHT image sequence.
+                   3=Export LEFT+DEPTH_VIEW image sequence.
+                   4=Export LEFT+DEPTH_16Bit image sequence.
  A and B need to end with '/' or '\'
 
 Examples:

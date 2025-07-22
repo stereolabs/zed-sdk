@@ -135,7 +135,7 @@ if __name__ == "__main__":
     quit_app = False
 
     while(viewer.is_available() and (quit_app == False)):
-        if zed.grab(runtime_params) == sl.ERROR_CODE.SUCCESS:
+        if zed.grab(runtime_params) <= sl.ERROR_CODE.SUCCESS:
             # Retrieve objects
             returned_state = zed.retrieve_objects(objects, obj_runtime_param, obj_param.instance_module_id)
             returned_state2 = zed.retrieve_bodies(bodies, body_runtime_param, body_param.instance_module_id)

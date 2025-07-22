@@ -42,7 +42,7 @@ def main():
     image = sl.Mat()
     while i < 50:
         # Grab an image, a RuntimeParameters object must be given to grab()
-        if zedone.grab() == sl.ERROR_CODE.SUCCESS:
+        if zedone.grab() <= sl.ERROR_CODE.SUCCESS:
             # A new image is available if grab() returns SUCCESS
             zedone.retrieve_image(image)
             timestamp = zedone.get_timestamp(sl.TIME_REFERENCE.CURRENT)  # Get the timestamp at the time the image was captured

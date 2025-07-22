@@ -172,7 +172,7 @@ namespace sl
             Gl.Viewport(0, 0, (int)nativeWindow.Width, (int)nativeWindow.Height);
             Gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            if (viewer.isAvailable() && zedCamera.Grab(ref runtimeParameters) == ERROR_CODE.SUCCESS)
+            if (viewer.isAvailable() && zedCamera.Grab(ref runtimeParameters) <= ERROR_CODE.SUCCESS)
             {
                 if (point_cloud.IsInit())
                 {

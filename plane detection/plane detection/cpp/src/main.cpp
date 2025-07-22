@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
     PlaneDetectionParameters plane_parameters;
 
     while(viewer.isAvailable()) {
-        if(zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS) {
+        if(zed.grab(runtime_parameters) <= ERROR_CODE::SUCCESS) {
             // Retrieve image in GPU memory
             zed.retrieveImage(image, VIEW::LEFT, MEM::GPU);
             // Update pose data (used for projection of the mesh over the current image)

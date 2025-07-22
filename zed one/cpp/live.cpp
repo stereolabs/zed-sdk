@@ -67,7 +67,7 @@ int main(int argc, char **argv)
     {
         // Check that a new image is successfully acquired
         returned_state = zed.grab();
-        if (returned_state == ERROR_CODE::SUCCESS)
+        if (returned_state <= ERROR_CODE::SUCCESS)
         {
             // Retrieve  image
             zed.retrieveImage(zed_image);

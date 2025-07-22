@@ -30,7 +30,7 @@ import argparse
 
 
 def parse_args(init, opt):
-    if len(opt.input_svo_file)>0 and opt.input_svo_file.endswith(".svo"):
+    if len(opt.input_svo_file)>0 and opt.input_svo_file.endswith((".svo", ".svo2")):
         init.set_from_svo_file(opt.input_svo_file)
         print("[Sample] Using SVO File input: {0}".format(opt.input_svo_file))
     elif len(opt.ip_address)>0 :
@@ -115,7 +115,7 @@ def main(opt):
     
     while viewer.is_available():
         # Grab an image, a RuntimeParameters object must be given to grab()
-        if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
+        if zed.grab(runtime_parameters) <= sl.ERROR_CODE.SUCCESS:
             # Retrieve left image
             zed.retrieve_image(image, sl.VIEW.LEFT)
             # Retrieve objects

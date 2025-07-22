@@ -31,7 +31,7 @@ import numpy as np
 import argparse
 
 def parse_args(init, opt):
-    if len(opt.input_svo_file)>0 and opt.input_svo_file.endswith(".svo"):
+    if len(opt.input_svo_file)>0 and opt.input_svo_file.endswith((".svo", ".svo2")):
         init.set_from_svo_file(opt.input_svo_file)
         print("[Sample] Using SVO File input: {0}".format(opt.input_svo_file))
     elif len(opt.ip_address)>0 :
@@ -123,7 +123,7 @@ def main(opt):
     key_wait = 10 
     while viewer.is_available():
         # Grab an image
-        if zed.grab() == sl.ERROR_CODE.SUCCESS:
+        if zed.grab() <= sl.ERROR_CODE.SUCCESS:
             # Retrieve left image
             zed.retrieve_image(image, sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
             # Retrieve bodies

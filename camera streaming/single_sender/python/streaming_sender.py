@@ -76,7 +76,7 @@ def main(opt):
     try : 
         while not exit_app:
             err = cam.grab(runtime)
-            if err == sl.ERROR_CODE.SUCCESS: 
+            if err <= sl.ERROR_CODE.SUCCESS: 
                 sleep(0.001)
     except KeyboardInterrupt:
         exit_app = True 

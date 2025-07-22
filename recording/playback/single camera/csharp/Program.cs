@@ -84,7 +84,7 @@ class Program
         while (key != 'q')
         {
             state = zed.Grab(ref rtParams);
-            if (state == ERROR_CODE.SUCCESS)
+            if (state <= ERROR_CODE.SUCCESS)
             {
                 //Get the side by side image
                 zed.RetrieveImage(svoImage, VIEW.SIDE_BY_SIDE, MEM.CPU, lowResolution);

@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
     // Main Loop 
     while (1) {        
         // Check that a new image is successfully acquired
-        if (zed.grab() == ERROR_CODE::SUCCESS) {
+        if (zed.grab() <= ERROR_CODE::SUCCESS) {
 
             // retrieve current Image
             zed.retrieveImage(image, VIEW::LEFT, MEM::CPU, res);

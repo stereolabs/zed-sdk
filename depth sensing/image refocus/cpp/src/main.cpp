@@ -74,7 +74,7 @@ void mouseButtonCallback(int button, int state, int x, int y) {
 }
 
 void draw() {
-    if (zed.grab() == ERROR_CODE::SUCCESS) {
+    if (zed.grab() <= ERROR_CODE::SUCCESS) {
         // Retrieve Image and Depth
         zed.retrieveImage(gpu_image_left, VIEW::LEFT, MEM::GPU);
         zed.retrieveMeasure(gpu_depth, MEASURE::DEPTH, MEM::GPU);

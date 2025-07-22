@@ -87,7 +87,7 @@ class Program
         {
             // Check that a new image is successfully acquired
             returnedState = zed.Grab(ref rtParams);
-            if (returnedState == ERROR_CODE.SUCCESS)
+            if (returnedState <= ERROR_CODE.SUCCESS)
             {
                 //Retrieve left image
                 zed.RetrieveImage(zedImage, VIEW.LEFT);

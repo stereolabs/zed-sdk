@@ -72,7 +72,7 @@ def main():
     key = ''
     while key != 113:  # for 'q' key
         err = cam.grab(runtime) 
-        if err == sl.ERROR_CODE.SUCCESS: # Check that a new image is successfully acquired
+        if err <= sl.ERROR_CODE.SUCCESS: # Check that a new image is successfully acquired
             cam.retrieve_image(mat, sl.VIEW.LEFT) # Retrieve left image
             cvImage = mat.get_data() # Convert sl.Mat to cv2.Mat
             if (not selection_rect.is_empty() and selection_rect.is_contained(sl.Rect(0,0,cvImage.shape[1],cvImage.shape[0]))): #Check if selection rectangle is valid and draw it on the image

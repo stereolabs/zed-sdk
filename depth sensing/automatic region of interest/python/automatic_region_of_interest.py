@@ -29,7 +29,7 @@ import cv2
 import pyzed.sl as sl
 
 def parse_args(init, opt):
-    if len(opt.input_svo_file)>0 and opt.input_svo_file.endswith(".svo"):
+    if len(opt.input_svo_file)>0 and opt.input_svo_file.endswith((".svo", ".svo2")):
         init.set_from_svo_file(opt.input_svo_file)
         print("[Sample] Using SVO File input: {0}".format(opt.input_svo_file))
     elif len(opt.ip_address)>0 :
@@ -114,7 +114,7 @@ def main(opt):
     while key != ord('q') and key != 27:
         # Check that a new image is successfully acquired
         returned_state = zed.grab()
-        if returned_state == sl.ERROR_CODE.SUCCESS:
+        if returned_state <= sl.ERROR_CODE.SUCCESS:
             # Retrieve left image
             zed.retrieve_image(zed_image, sl.VIEW.LEFT)
             zed.retrieve_image(zed_depth_image, sl.VIEW.DEPTH)
