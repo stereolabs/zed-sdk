@@ -130,9 +130,9 @@ def __main(opt: argparse.Namespace):
 
     __printHelp()
     while 1:
-        if not opt.disable_gui and (zed.grab(runtime_parameters) != sl.ERROR_CODE.SUCCESS or quit_bool):
+        if not opt.disable_gui and (zed.grab(runtime_parameters) > sl.ERROR_CODE.SUCCESS or quit_bool):
             break
-        if opt.disable_gui and (zed.grab(runtime_parameters) != sl.ERROR_CODE.SUCCESS or quit_bool or not gl_viewer_available):
+        if opt.disable_gui and (zed.grab(runtime_parameters) > sl.ERROR_CODE.SUCCESS or quit_bool or not gl_viewer_available):
             break
 
         status = zed.retrieve_custom_objects(objects, detection_parameters_rt)

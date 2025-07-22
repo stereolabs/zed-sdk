@@ -159,7 +159,7 @@ class Program
         {
             exit_app = (System.Windows.Input.Keyboard.IsKeyDown(System.Windows.Input.Key.Q) == true);
             ERROR_CODE err = zed.Grab(ref rtParams);
-            if (err == ERROR_CODE.SUCCESS)
+            if (err <= ERROR_CODE.SUCCESS)
             {
                 svoPosition = zed.GetSVOPosition();
 

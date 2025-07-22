@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
     }
 
     PositionalTrackingParameters tracking_parameters;
-    tracking_parameters.mode = sl::POSITIONAL_TRACKING_MODE::GEN_2;
+    tracking_parameters.mode = sl::POSITIONAL_TRACKING_MODE::GEN_3;
     zed.enablePositionalTracking(tracking_parameters);
 
     cv::String imWndName = "Image";
@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
     while ((key != 'q') && (key != 27)) {
         // Check that a new image is successfully acquired
         returned_state = zed.grab();
-        if (returned_state == ERROR_CODE::SUCCESS) {
+        if (returned_state <= ERROR_CODE::SUCCESS) {
             // Retrieve left image
             zed.retrieveImage(zed_image, VIEW::LEFT);
             zed.retrieveImage(zed_depth_image, VIEW::DEPTH);

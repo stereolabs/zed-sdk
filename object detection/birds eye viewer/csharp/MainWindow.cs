@@ -262,7 +262,7 @@ class MainWindow
         Gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
         ERROR_CODE err = ERROR_CODE.FAILURE;
-        if (viewer.isAvailable() && zedCamera.Grab(ref runtimeParameters) == ERROR_CODE.SUCCESS)
+        if (viewer.isAvailable() && zedCamera.Grab(ref runtimeParameters) <= ERROR_CODE.SUCCESS)
         {
             foreach( var it in obj_runtime_parameters.objectClassFilter)
             {

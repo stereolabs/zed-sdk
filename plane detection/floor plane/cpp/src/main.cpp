@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
 #endif
     
     while(viewer.isAvailable()) {
-        if(zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS) {
+        if(zed.grab(runtime_parameters) <= ERROR_CODE::SUCCESS) {
 
             zed.retrieveImage(image, VIEW::LEFT, MEM::GPU, low_res);
             viewer.updateImage(image);

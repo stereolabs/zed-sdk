@@ -178,7 +178,7 @@ int main(int argc, char **argv) {
             !quit) {
 
         auto grab_state = zed.grab(runtime_parameters);
-        if (grab_state == ERROR_CODE::SUCCESS) {
+        if (grab_state <= ERROR_CODE::SUCCESS) {
             detection_parameters_rt.detection_confidence_threshold = detection_confidence_od;
             returned_state = zed.retrieveObjects(objects, detection_parameters_rt, object_detection_parameters.instance_module_id);
 

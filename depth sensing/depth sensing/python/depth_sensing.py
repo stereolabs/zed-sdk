@@ -29,7 +29,7 @@ import pyzed.sl as sl
 import argparse
 
 def parse_args(init, opt):
-    if len(opt.input_svo_file)>0 and opt.input_svo_file.endswith(".svo"):
+    if len(opt.input_svo_file)>0 and opt.input_svo_file.endswith((".svo", ".svo2")):
         init.set_from_svo_file(opt.input_svo_file)
         print("[Sample] Using SVO File input: {0}".format(opt.input_svo_file))
     elif len(opt.ip_address)>0 :
@@ -91,7 +91,7 @@ def main(opt):
     point_cloud = sl.Mat(res.width, res.height, sl.MAT_TYPE.F32_C4, sl.MEM.CPU)
 
     while viewer.is_available():
-        if zed.grab() == sl.ERROR_CODE.SUCCESS:
+        if zed.grab() <= sl.ERROR_CODE.SUCCESS:
             zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA,sl.MEM.CPU, res)
             viewer.updateData(point_cloud)
             if(viewer.save_data == True):

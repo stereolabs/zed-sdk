@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
     // Main Loop
     while (viewer.isAvailable()) {        
         // Check that a new image is successfully acquired
-        if (zed.grab(runParameters) == ERROR_CODE::SUCCESS) {
+        if (zed.grab(runParameters) <= ERROR_CODE::SUCCESS) {
             // retrieve the current 3D coloread point cloud in GPU
             zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, res);
             viewer.updatePointCloud(point_cloud);

@@ -46,7 +46,7 @@ def acquisition(zed):
     infos = zed.get_camera_information()
 
     while not exit_app:
-        if zed.grab() == sl.ERROR_CODE.SUCCESS:
+        if zed.grab() <= sl.ERROR_CODE.SUCCESS:
             # If needed, add more processing here
             # But be aware that any processing involving the GiL will slow down the multi threading performance
             pass

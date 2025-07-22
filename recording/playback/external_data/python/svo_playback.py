@@ -85,7 +85,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_svo_file', type=str, help='Path to the SVO file', required= True)
     opt = parser.parse_args()
-    if not opt.input_svo_file.endswith(".svo") and not opt.input_svo_file.endswith(".svo2"): 
+    if not opt.input_svo_file.endswith((".svo", ".svo2")):
         print("--input_svo_file parameter should be a .svo file but is not : ",opt.input_svo_file,"Exit program.")
         exit()
     if not os.path.isfile(opt.input_svo_file):

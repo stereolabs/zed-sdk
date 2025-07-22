@@ -77,7 +77,7 @@ class Program
 
         while (true)
         {
-            if (zed.Grab(ref rtParams) == ERROR_CODE.SUCCESS){
+            if (zed.Grab(ref rtParams) <= ERROR_CODE.SUCCESS){
                 // Each new frame is added to the SVO file
                 framesRecorded++;
                 Console.WriteLine("Frame count: " + framesRecorded);

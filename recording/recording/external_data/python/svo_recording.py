@@ -55,7 +55,7 @@ def main(opt):
     frames_recorded = 0
 
     while frames_recorded < 100:
-        if cam.grab(runtime) == sl.ERROR_CODE.SUCCESS : # Check that a new image is successfully acquired
+        if cam.grab(runtime) <= sl.ERROR_CODE.SUCCESS : # Check that a new image is successfully acquired
             frames_recorded += 1
             print("Frame count: " + str(frames_recorded))
             data = sl.SVOData()
@@ -68,7 +68,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--output_svo_file', type=str, help='Path to the SVO file that will be written', required= True)
     opt = parser.parse_args()
-    if not opt.output_svo_file.endswith(".svo") and not opt.output_svo_file.endswith(".svo2"): 
+    if not opt.output_svo_file.endswith((".svo", ".svo2")):
         print("--output_svo_file parameter should be a .svo file but is not : ",opt.output_svo_file,"Exit program.")
         exit()
     main(opt)

@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
     while (!quit) {
         // Grab images
         auto err = zed.grab();
-        if (err == ERROR_CODE::SUCCESS) {
+        if (err <= ERROR_CODE::SUCCESS) {
             // Retrieve Detected Human Bodies
             zed.retrieveBodies(bodies, body_tracker_parameters_rt);
 

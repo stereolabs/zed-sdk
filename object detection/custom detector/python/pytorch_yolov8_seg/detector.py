@@ -190,7 +190,7 @@ def main_(args: argparse.Namespace):
     objects = sl.Objects()
 
     while viewer.is_available() and not exit_signal:
-        if zed.grab(runtime_params) == sl.ERROR_CODE.SUCCESS:
+        if zed.grab(runtime_params) <= sl.ERROR_CODE.SUCCESS:
             # -- Get the image
             lock.acquire()
             zed.retrieve_image(image_left_tmp, sl.VIEW.LEFT)

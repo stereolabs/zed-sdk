@@ -169,7 +169,7 @@ class ClientPublisher
         while (IsRunning())
         {
             err = zedCamera.Grab(ref runtimeParameters);
-            if (err == sl.ERROR_CODE.SUCCESS)
+            if (err <= sl.ERROR_CODE.SUCCESS)
             {
                 err = zedCamera.RetrieveBodies(ref bodies, ref bodyTrackingRuntimeParameters);
             }

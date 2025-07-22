@@ -119,7 +119,7 @@ if __name__ == "__main__":
 
     skeleton_file_data = {}
     while (viewer.is_available()):
-        if zed.grab() == sl.ERROR_CODE.SUCCESS:
+        if zed.grab() <= sl.ERROR_CODE.SUCCESS:
             zed.retrieve_bodies(bodies)
             skeleton_file_data[str(bodies.timestamp.get_milliseconds())] = serializeBodies(bodies)
             viewer.update_bodies(bodies)

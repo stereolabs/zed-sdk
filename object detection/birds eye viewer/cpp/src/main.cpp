@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
     init_parameters.depth_mode = isJetson ? DEPTH_MODE::NEURAL_LIGHT : DEPTH_MODE::NEURAL;
     init_parameters.depth_maximum_distance = 10.0f * 1000.0f;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
-    init_parameters.sdk_verbose = 1;
+    init_parameters.sdk_verbose = 666;
 
     parseArgs(argc, argv, init_parameters);
 
@@ -170,7 +170,7 @@ int main(int argc, char **argv) {
                 detection_parameters_rt.object_class_detection_confidence_threshold[it] = detection_confidence;
 
         returned_state = zed.retrieveObjects(objects, detection_parameters_rt);
-        if (returned_state == ERROR_CODE::SUCCESS) {
+        if (returned_state <= ERROR_CODE::SUCCESS) {
             
 #if ENABLE_BATCHING_REID
             // store the id of detetected objects

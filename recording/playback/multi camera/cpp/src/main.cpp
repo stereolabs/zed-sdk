@@ -111,7 +111,7 @@ int main(int argc, char **argv)
             sl::Resolution low_resolution(min(720, (int) resolution.width) * 2, min(404, (int) resolution.height));
 
             returned_state = zed->grab();
-            if (returned_state == ERROR_CODE::SUCCESS)
+            if (returned_state <= ERROR_CODE::SUCCESS)
             {
                 // Get the side by side image
                 zed->retrieveImage(mat, VIEW::SIDE_BY_SIDE, MEM::CPU, low_resolution);

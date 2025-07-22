@@ -114,7 +114,7 @@ def main(opt):
 
     while True:
         err = zed.grab(rt_param)
-        if err == sl.ERROR_CODE.SUCCESS:
+        if err <= sl.ERROR_CODE.SUCCESS:
             svo_position = zed.get_svo_position()
 
             # Retrieve SVO images
@@ -178,7 +178,7 @@ if __name__ == "__main__":
     if opt.mode > 4 or opt.mode < 0 :
         print("Mode shoud be between 0 and 4 included. \n Mode 0 is to export LEFT+RIGHT AVI. \n Mode 1 is to export LEFT+DEPTH_VIEW Avi. \n Mode 2 is to export LEFT+RIGHT image sequence. \n Mode 3 is to export LEFT+DEPTH_View image sequence. \n Mode 4 is to export LEFT+DEPTH_16BIT image sequence.")
         exit()
-    if not opt.input_svo_file.endswith(".svo") and not opt.input_svo_file.endswith(".svo2"): 
+    if not opt.input_svo_file.endswith((".svo", ".svo2")):
         print("--input_svo_file parameter should be a .svo file but is not : ",opt.input_svo_file,"Exit program.")
         exit()
     if not os.path.isfile(opt.input_svo_file):

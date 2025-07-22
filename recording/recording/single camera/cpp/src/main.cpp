@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
     SetCtrlHandler();
     sl::RecordingStatus rec_status;
     while (!exit_app) {
-        if (zed.grab() == ERROR_CODE::SUCCESS) {
+        if (zed.grab() <= ERROR_CODE::SUCCESS) {
             // Each new frame is added to the SVO file
             rec_status = zed.getRecordingStatus();
             printf(" NFrames SVO: %d  / %d\n",rec_status.number_frames_ingested,rec_status.number_frames_encoded);

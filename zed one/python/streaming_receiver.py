@@ -72,7 +72,7 @@ def main(opt):
     key = ''
     while key != 113:  # for 'q' key
         err = cam.grab() #Check that a new image is successfully acquired
-        if err == sl.ERROR_CODE.SUCCESS:
+        if err <= sl.ERROR_CODE.SUCCESS:
             cam.retrieve_image(mat) #Retrieve left image
             cvImage = mat.get_data()
             if (not selection_rect.is_empty() and selection_rect.is_contained(sl.Rect(0,0,cvImage.shape[1],cvImage.shape[0]))):

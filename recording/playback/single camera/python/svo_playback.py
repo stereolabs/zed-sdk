@@ -71,7 +71,7 @@ def main(opt):
     
     while key != 113:  # for 'q' key
         err = cam.grab(runtime)
-        if err == sl.ERROR_CODE.SUCCESS:
+        if err <= sl.ERROR_CODE.SUCCESS:
             cam.retrieve_image(svo_image,sl.VIEW.SIDE_BY_SIDE,sl.MEM.CPU,low_resolution) #retrieve image left and right
             svo_position = cam.get_svo_position()
             cv2.imshow("View", svo_image.get_data()) #dislay both images to cv2
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_svo_file', type=str, help='Path to the SVO file', required= True)
     opt = parser.parse_args()
-    if not opt.input_svo_file.endswith(".svo") and not opt.input_svo_file.endswith(".svo2"): 
+    if not opt.input_svo_file.endswith((".svo", ".svo2")):
         print("--input_svo_file parameter should be a .svo file but is not : ",opt.input_svo_file,"Exit program.")
         exit()
     if not os.path.isfile(opt.input_svo_file):

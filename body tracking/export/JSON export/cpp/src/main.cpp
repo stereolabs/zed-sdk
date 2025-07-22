@@ -66,7 +66,7 @@ int main(int argc, char **argv)
     sl::Bodies bodies;
     while (viewer.isAvailable())
     {
-        if (zed.grab() == ERROR_CODE::SUCCESS)
+        if (zed.grab() <= ERROR_CODE::SUCCESS)
         {
             // Retrieve Detected Human Bodies
             zed.retrieveBodies(bodies);

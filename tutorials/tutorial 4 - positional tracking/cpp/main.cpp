@@ -45,6 +45,7 @@ int main(int argc, char **argv) {
 
     // Enable positional tracking with default parameters
     PositionalTrackingParameters tracking_parameters;
+    tracking_parameters.mode = POSITIONAL_TRACKING_MODE::GEN_3; // Use the latest tracking mode
     returned_state = zed.enablePositionalTracking(tracking_parameters);
     if (returned_state != ERROR_CODE::SUCCESS) {
         cout << "Error " << returned_state << ", exit program.\n";

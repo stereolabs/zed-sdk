@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
 
     // Main loop
     while (!exit_app) {
-        if (zed.grab(rt_params) == ERROR_CODE::SUCCESS) {
+        if (zed.grab(rt_params) <= ERROR_CODE::SUCCESS) {
             // Get the pose of the left eye of the camera with reference to the world frame
             if (zed.getPosition(zed_pose, sl::REFERENCE_FRAME::WORLD) != sl::POSITIONAL_TRACKING_STATE::OK) {
                 continue;

@@ -30,7 +30,7 @@ import time
 
 
 def parse_args(init, opt):
-    if len(opt.input_svo_file) > 0 and opt.input_svo_file.endswith(".svo"):
+    if len(opt.input_svo_file) > 0 and opt.input_svo_file.endswith((".svo", ".svo2")):
         init.set_from_svo_file(opt.input_svo_file)
         print("[Sample] Using SVO File input: {0}".format(opt.input_svo_file))
     elif len(opt.ip_address) > 0 :
@@ -81,7 +81,7 @@ def main(opt):
     if len(opt.roi_mask_file) > 0:
         mask_roi = sl.Mat()
         err = mask_roi.read(opt.roi_mask_file)
-        if err == sl.ERROR_CODE.SUCCESS:
+        if err <= sl.ERROR_CODE.SUCCESS:
             zed.set_region_of_interest(mask_roi, [sl.MODULE.ALL])
         else:
             print(f"Error loading Region of Interest file {opt.roi_mask_file}. Please check the path.")
@@ -127,7 +127,7 @@ def main(opt):
     roi_state = sl.REGION_OF_INTEREST_AUTO_DETECTION_STATE.NOT_ENABLED
 
     while viewer.is_available():
-        if zed.grab(runtime) == sl.ERROR_CODE.SUCCESS:
+        if zed.grab(runtime) <= sl.ERROR_CODE.SUCCESS:
             tracking_state = zed.get_position(camera_pose,sl.REFERENCE_FRAME.WORLD) #Get the position of the camera in a fixed reference frame (the World Frame)
             tracking_status = zed.get_positional_tracking_status()
 

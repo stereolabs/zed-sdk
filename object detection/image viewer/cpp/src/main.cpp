@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
     // Main Loop
     while (viewer.isAvailable()) {
         // Grab images
-        if (zed.grab() == ERROR_CODE::SUCCESS) {
+        if (zed.grab() <= ERROR_CODE::SUCCESS) {
 
             // Retrieve left image for display
             zed.retrieveImage(image, VIEW::LEFT, MEM::GPU);

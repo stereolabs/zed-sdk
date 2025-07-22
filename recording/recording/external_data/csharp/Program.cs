@@ -81,7 +81,7 @@ class Program
         sl.RecordingStatus recordingStatus = new sl.RecordingStatus();
         while (framesRecorded < 100)
         {
-            if (zed.Grab(ref rtParams) == ERROR_CODE.SUCCESS){
+            if (zed.Grab(ref rtParams) <= ERROR_CODE.SUCCESS){
 
                 ulong timestamp = zed.GetCameraTimeStamp();
 
