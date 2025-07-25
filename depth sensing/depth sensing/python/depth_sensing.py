@@ -91,7 +91,7 @@ def main(opt):
     point_cloud = sl.Mat(res.width, res.height, sl.MAT_TYPE.F32_C4, sl.MEM.CPU)
 
     while viewer.is_available():
-        if zed.grab() <= sl.ERROR_CODE.SUCCESS:
+        if zed.grab() == sl.ERROR_CODE.SUCCESS:
             zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA,sl.MEM.CPU, res)
             viewer.updateData(point_cloud)
             if(viewer.save_data == True):
