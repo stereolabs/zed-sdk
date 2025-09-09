@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
     // Enable recording with the filename specified in argument
     RecordingParameters recording_parameters;
     recording_parameters.video_filename.set(argv[1]);
-    recording_parameters.compression_mode = SVO_COMPRESSION_MODE::H264;
+    recording_parameters.compression_mode = SVO_COMPRESSION_MODE::H265;
     returned_state = zed.enableRecording(recording_parameters);
     if (returned_state != ERROR_CODE::SUCCESS) {
         print("Recording ZED : ", returned_state);

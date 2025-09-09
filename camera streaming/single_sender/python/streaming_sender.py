@@ -19,7 +19,7 @@
 ########################################################################
 
 """
-    Open the camera and start streaming images using H264 codec
+    Open the camera and start streaming images using H265 codec
 """
 import sys
 import pyzed.sl as sl
@@ -65,7 +65,7 @@ def main(opt):
     runtime = sl.RuntimeParameters()
     stream_params = sl.StreamingParameters()
     print("Streaming on port ",stream_params.port) #Get the port used to stream
-    stream_params.codec = sl.STREAMING_CODEC.H264
+    stream_params.codec = sl.STREAMING_CODEC.H265
     stream_params.bitrate = 4000
     status_streaming = cam.enable_streaming(stream_params) #Enable streaming
     if status_streaming != sl.ERROR_CODE.SUCCESS:

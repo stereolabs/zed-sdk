@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
     init_parameters.depth_mode = isJetson ? DEPTH_MODE::NEURAL_LIGHT : DEPTH_MODE::NEURAL;
     init_parameters.depth_maximum_distance = 10.0f * 1000.0f;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
-    init_parameters.sdk_verbose = 666;
+    init_parameters.sdk_verbose = 1;
 
     parseArgs(argc, argv, init_parameters);
 
