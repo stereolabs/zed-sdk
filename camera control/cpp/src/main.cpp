@@ -39,7 +39,7 @@ using namespace std;
 using namespace sl;
 
 // Sample functions
-void updateCameraSettings(char key, sl::Camera &zed);
+void updateCameraSettings(char key, sl::Camera &zed, InitParameters &init_params);
 void switchCameraSettings();
 void printHelp();
 void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
@@ -58,26 +58,26 @@ cv::Point origin_rect;
 
 static void onMouse(int event, int x, int y, int, void*) {
     switch (event) {
-        case cv::EVENT_LBUTTONDOWN:
-        {
-            origin_rect = cv::Point(x, y);
-            selectInProgress = true;
-            break;
-        }
+    case cv::EVENT_LBUTTONDOWN:
+    {
+        origin_rect = cv::Point(x, y);
+        selectInProgress = true;
+        break;
+    }
 
-        case cv::EVENT_LBUTTONUP:
-        {
-            selectInProgress = false;
-            break;
-        }
+    case cv::EVENT_LBUTTONUP:
+    {
+        selectInProgress = false;
+        break;
+    }
 
-        case cv::EVENT_RBUTTONDOWN:
-        {
-            //Reset selection
-            selectInProgress = false;
-            selection_rect = sl::Rect(0, 0, 0, 0);
-            break;
-        }
+    case cv::EVENT_RBUTTONDOWN:
+    {
+        //Reset selection
+        selectInProgress = false;
+        selection_rect = sl::Rect(0, 0, 0, 0);
+        break;
+    }
     }
 
     if (selectInProgress) {
@@ -88,6 +88,9 @@ static void onMouse(int event, int x, int y, int, void*) {
     }
 }
 
+
+bool must_grab = true;
+
 int main(int argc, char **argv) {
 
     // Create a ZED Camera object
@@ -97,7 +100,7 @@ int main(int argc, char **argv) {
     init_parameters.sdk_verbose = true;
     init_parameters.camera_resolution = sl::RESOLUTION::AUTO;
     init_parameters.depth_mode = sl::DEPTH_MODE::NONE; // no depth computation required here
-    init_parameters.async_grab_camera_recovery = true;
+    init_parameters.async_grab_camera_recovery = false;
     init_parameters.enable_image_validity_check = 1;
     parseArgs(argc, argv, init_parameters);
 
@@ -135,6 +138,9 @@ int main(int argc, char **argv) {
     char key = ' ';
     while (key != 'q') {
         // Check that a new image is successfully acquired
+        if (!must_grab)
+            continue;
+
         returned_state = zed.grab();
 
         if (returned_state == ERROR_CODE::CORRUPTED_FRAME) {
@@ -146,10 +152,8 @@ int main(int argc, char **argv) {
             if (health.low_depth_reliability) std::cout << "Low depth reliability - ";
             if (health.low_motion_sensors_reliability) std::cout << "Low motion sensors reliability - ";
             std::cout << std::endl;
-        } else if (returned_state != ERROR_CODE::SUCCESS)
-            std::cout << "returned_state " << returned_state << std::endl;
-        int current_value = 10;
-        zed.getCameraSettings(VIDEO_SETTINGS::EXPOSURE, current_value);
+        }
+
         if (returned_state <= ERROR_CODE::SUCCESS) {
             // Retrieve left image
             zed.retrieveImage(zed_image, VIEW::SIDE_BY_SIDE);
@@ -171,7 +175,7 @@ int main(int argc, char **argv) {
 
         key = cv::waitKey(10);
         // Change camera settings with keyboard
-        updateCameraSettings(key, zed);
+        updateCameraSettings(key, zed,init_parameters);
     }
 
     // Exit
@@ -182,61 +186,71 @@ int main(int argc, char **argv) {
 /**
     This function updates camera settings
  **/
-void updateCameraSettings(char key, sl::Camera &zed) {
+void updateCameraSettings(char key, sl::Camera &zed, sl::InitParameters& init_params) {
     int current_value;
 
     // Keyboard shortcuts
     switch (key) {
 
-            // Switch to the next camera parameter
-        case 's':
-            switchCameraSettings();
-            zed.getCameraSettings(camera_settings_, current_value);
-            std::cout << " Current Value : " << current_value << std::endl;
-            break;
+    // Switch to the next camera parameter
+    case 's':
+        switchCameraSettings();
+        zed.getCameraSettings(camera_settings_, current_value);
+        std::cout << " Current Value : " << current_value << std::endl;
+        break;
 
-            // Increase camera settings value ('+' key)
-        case '+':
-            zed.getCameraSettings(camera_settings_, current_value);
-            zed.setCameraSettings(camera_settings_, current_value + step_camera_setting);
-            zed.getCameraSettings(camera_settings_, current_value);
-            print(str_camera_settings + ": " + std::to_string(current_value));
-            break;
+        // Increase camera settings value ('+' key)
+    case '+':
+        zed.getCameraSettings(camera_settings_, current_value);
+        zed.setCameraSettings(camera_settings_, current_value + step_camera_setting);
+        zed.getCameraSettings(camera_settings_, current_value);
+        print(str_camera_settings + ": " + std::to_string(current_value));
+        break;
 
-            // Decrease camera settings value ('-' key)
-        case '-':
-            zed.getCameraSettings(camera_settings_, current_value);
-            current_value = current_value > 0 ? current_value - step_camera_setting : 0; // take care of the 'default' value parameter:  VIDEO_SETTINGS_VALUE_AUTO
-            zed.setCameraSettings(camera_settings_, current_value);
-            zed.getCameraSettings(camera_settings_, current_value);
-            print(str_camera_settings + ": " + std::to_string(current_value));
-            break;
+        // Decrease camera settings value ('-' key)
+    case '-':
+        zed.getCameraSettings(camera_settings_, current_value);
+        current_value = current_value > 0 ? current_value - step_camera_setting : 0; // take care of the 'default' value parameter:  VIDEO_SETTINGS_VALUE_AUTO
+        zed.setCameraSettings(camera_settings_, current_value);
+        zed.getCameraSettings(camera_settings_, current_value);
+        print(str_camera_settings + ": " + std::to_string(current_value));
+        break;
 
-            //switch LED On :
-        case 'l':
-            led_on = !led_on;
-            zed.setCameraSettings(sl::VIDEO_SETTINGS::LED_STATUS, led_on);
-            break;
+        //switch LED On :
+    case 'l':
+        led_on = !led_on;
+        zed.setCameraSettings(sl::VIDEO_SETTINGS::LED_STATUS, led_on);
+        break;
 
-            // Reset to default parameters
-        case 'r':
-            print("Reset all settings to default\n");
-            for (int s = (int) VIDEO_SETTINGS::BRIGHTNESS; s <= (int) VIDEO_SETTINGS::WHITEBALANCE_TEMPERATURE; s++)
-                zed.setCameraSettings(static_cast<VIDEO_SETTINGS> (s), sl::VIDEO_SETTINGS_VALUE_AUTO);
-            break;
+        // Reset to default parameters
+    case 'r':
+        print("Reset all settings to default\n");
+        for (int s = (int) VIDEO_SETTINGS::BRIGHTNESS; s <= (int) VIDEO_SETTINGS::WHITEBALANCE_TEMPERATURE; s++)
+            zed.setCameraSettings(static_cast<VIDEO_SETTINGS> (s), sl::VIDEO_SETTINGS_VALUE_AUTO);
+        break;
 
-        case 'a':
-        {
-            cout << "[Sample] set AEC_AGC_ROI on target [" << selection_rect.x << "," << selection_rect.y << "," << selection_rect.width << "," << selection_rect.height << "]\n";
-            zed.setCameraSettings(VIDEO_SETTINGS::AEC_AGC_ROI, selection_rect, sl::SIDE::BOTH);
-        }
-            break;
+    case 'a':
+    {
+        cout << "[Sample] set AEC_AGC_ROI on target [" << selection_rect.x << "," << selection_rect.y << "," << selection_rect.width << "," << selection_rect.height << "]\n";
+        zed.setCameraSettings(VIDEO_SETTINGS::AEC_AGC_ROI, selection_rect, sl::SIDE::BOTH);
+    }
+        break;
 
-        case 'f':
-            print("reset AEC_AGC_ROI to full res");
-            zed.setCameraSettings(VIDEO_SETTINGS::AEC_AGC_ROI, selection_rect, sl::SIDE::BOTH, true);
-            break;
+    case 'f':
+        print("reset AEC_AGC_ROI to full res");
+        zed.setCameraSettings(VIDEO_SETTINGS::AEC_AGC_ROI, selection_rect, sl::SIDE::BOTH, true);
+        break;
 
+    case 'b' :
+        must_grab  =false;
+        sl::sleep_ms(100); /// Wait 100ms to make sure no grab is performed
+        zed.close(); /// Make sure that the camera is closed before rebooting it.
+        sl::Camera::reboot(0); /// Reboot the first camera found. This is similar to unplug/plug the camera
+        sl::sleep_ms(3000); /// Sleep for 3 scs for making sure the camera is available
+        std::cout<<" Rebooting camera"<<std::endl;
+        sl::ERROR_CODE err_  = zed.open(init_params);
+        must_grab  = true;
+        break;
     }
 }
 
@@ -274,6 +288,7 @@ void printHelp() {
     cout << "* Toggle camera LED:               'l' (lower L)\n";
     cout << "* Reset all parameters:            'r'\n";
     cout << "* Reset exposure ROI to full image 'f'\n";
+    cout << "* Reboot camera while in use:      'b'\n";
     cout << "* Use mouse to select an image area to apply exposure (press 'a')\n";
     cout << "* Exit :                           'q'\n\n";
 }

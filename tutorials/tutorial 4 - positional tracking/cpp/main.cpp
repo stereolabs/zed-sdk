@@ -36,6 +36,9 @@ int main(int argc, char **argv) {
     init_parameters.coordinate_units = UNIT::METER; // Set units in meters
     init_parameters.sensors_required = true;
     
+    if (argc>1)
+    init_parameters.input.setFromSVOFile(sl::String(argv[1]));
+
     // Open the camera
     auto returned_state = zed.open(init_parameters);
     if (returned_state != ERROR_CODE::SUCCESS) {
@@ -87,7 +90,7 @@ int main(int argc, char **argv) {
                 // get raw acceleration
                 auto acceleration = sensor_data.imu.linear_acceleration;
 
-                cout << "IMU Orientation: {" << zed_orientation << "}, Acceleration: {" << acceleration << "}\n";
+                cout << "IMU Orientation: {" << imu_orientation << "}, Acceleration: {" << acceleration << "}\n";
             }
             i++;
         }

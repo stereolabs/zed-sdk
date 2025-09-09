@@ -99,7 +99,7 @@ bool openCamera(CameraType& zed, const int sn, const int camera_fps = 30) {
     std::string svo_filename = std::string(sl::toString(zed.getCameraInformation().camera_model)) + "_SN" + std::to_string(sn) + ".svo2";;
     svo_filename.erase(std::remove(svo_filename.begin(), svo_filename.end(), ' '), svo_filename.end()); // Remove spaces from the filename
     recording_params.video_filename.set(svo_filename.c_str()); 
-    recording_params.compression_mode = sl::SVO_COMPRESSION_MODE::H264;
+    recording_params.compression_mode = sl::SVO_COMPRESSION_MODE::H265;
     const sl::ERROR_CODE recording_err = zed.enableRecording(recording_params);
     if (recording_err <= sl::ERROR_CODE::SUCCESS) {
         std::cout << toString(zed.getCameraInformation().camera_model) << "_SN" << sn << " Enabled recording" << std::endl;
