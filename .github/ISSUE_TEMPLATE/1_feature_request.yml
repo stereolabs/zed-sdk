@@ -5,15 +5,15 @@ body:
   - type: markdown
     attributes:
       value: |
-        # Welcome 👋 
+        # Welcome 👋
 
         Thanks for taking the time to fill out this feature request module.
+
         Please fill out each section below. This info allows Stereolabs developers to correctly evaluate your request.
 
-        :warning: **Please use this service only to propose new features related to this repository** :warning: 
+        :warning: **Please use this template only to propose new features related to this repository** :warning:
         
-        If you have a problem with a device, a ZED SDK tool, a bug to report, or *generic questions* to ask please do not open an issue on GitHub, 
-        but instead start a thread on the [StereoLabs Community Forum](https://community.stereolabs.com/).
+        If you have a problem with a device, a ZED SDK tool, a bug to report, or *generic questions* to ask please do not open an issue on GitHub, but instead start a thread in the [StereoLabs Community Forum](https://community.stereolabs.com/).
 
         Useful Links:
         - Documentation: https://docs.stereolabs.com/
