@@ -1,5 +1,5 @@
 name: Bug Report 🐛
-description: Something isn't working as expected? Report your bugs here.
+description: Something isn't working as expected with the tutorials and the examples? Report your bugs here. **Do not use this template to ask questions**
 labels: "bug_report"
 body:
   - type: markdown
@@ -8,18 +8,18 @@ body:
         # Welcome 👋 
 
         Thanks for taking the time to fill out this bug report.
-        Please fill out each section below. 
-        This info allows Stereolabs developers to diagnose (and fix!) your issue as quickly as possible. 
+        Please fill out each section below. This info allows Stereolabs developers to diagnose (and fix!) your issue as quickly as possible.
         Otherwise, we might need to close the issue without e.g. clear reproduction steps.
 
-        **Please use this service only to report bugs related to the code of this repository**
-        
-        If you have a problem with a device, a ZED SDK tool, or * generic questions* please do not open an issue on GitHub, 
-        but send an email to support@stereolabs.com or start a thread on the [StereoLabs Community Forum](https://community.stereolabs.com/).
+        :warning: **Please use this service only to report bugs related to the code of this repository** :warning:
+
+        If you have a problem with a device, a ZED SDK tool, other types of bugs to report, or *generic questions* to ask please do not open an issue on GitHub,
+        but instead start a thread on the [StereoLabs Community Forum](https://community.stereolabs.com/).
 
         Useful Links:
-        - Documentation: https://www.stereolabs.com/docs/
-        - Stereolabs support: https://support.stereolabs.com/hc/en-us/
+        - Documentation: https://docs.stereolabs.com/
+        - Stereolabs support: https://support.stereolabs.com/hc
+        - StereoLabs Community Forum: https://community.stereolabs.com/
         
   - type: checkboxes
     attributes:
