@@ -23,19 +23,19 @@
 using namespace std;
 using namespace sl;
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
     // Create a ZED camera object
     Camera zed;
 
     // Set configuration parameters
     InitParameters init_parameters;
-    init_parameters.depth_mode = DEPTH_MODE::NEURAL; // Use NEURAL depth mode
+    init_parameters.depth_mode = DEPTH_MODE::NEURAL;     // Use NEURAL depth mode
     init_parameters.coordinate_units = UNIT::MILLIMETER; // Use millimeter units (for depth measurements)
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         cout << "Error " << returned_state << ", exit program." << endl;
         return EXIT_FAILURE;
     }
@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
 
     const sl::Timestamp start_ts = sl::getCurrentTimeStamp();
     const int depth_every_n_frames = 6;
-    
+
     while (frame_count < 150) {
         // A new image is available if read() returns ERROR_CODE::SUCCESS
         if (zed.read() == ERROR_CODE::SUCCESS) {
@@ -56,8 +56,8 @@ int main(int argc, char **argv) {
             frame_count++;
         }
 
-        // Measurement are available if grab() returns ERROR_CODE::SUCCESS
-        if(((frame_count % depth_every_n_frames) == 0) && (zed.grab() == ERROR_CODE::SUCCESS)) {
+        // Measurement are available if grab() returns ERROR_CODE::SUCCESS or a WARNING (an error_code lower than ERROR_CODE::SUCCESS)
+        if (((frame_count % depth_every_n_frames) == 0) && (zed.grab() <= ERROR_CODE::SUCCESS)) {
             // Retrieve depth map. Depth is aligned on the left image
             zed.retrieveMeasure(depth, MEASURE::DEPTH);
             // Retrieve colored point cloud. Point cloud is aligned on the left image.
@@ -70,18 +70,18 @@ int main(int argc, char **argv) {
             sl::float4 point_cloud_value;
             point_cloud.getValue(x, y, &point_cloud_value);
 
-            if(std::isfinite(point_cloud_value.z)) // convert to float3 to use norm(), the 4th component is used to store the color
-                cout<<"Distance to Camera at {"<<x<<";"<<y<<"}: "<<sl::float3(point_cloud_value).norm()<<"mm"<<endl;
+            if (std::isfinite(point_cloud_value.z)) // convert to float3 to use norm(), the 4th component is used to store the color
+                cout << "Distance to Camera at {" << x << ";" << y << "}: " << sl::float3(point_cloud_value).norm() << "mm" << endl;
             else
-                cout<<"The Distance can not be computed at {"<<x<<";"<<y<<"}"<<endl;
-            depth_count++;            
+                cout << "The Distance can not be computed at {" << x << ";" << y << "}" << endl;
+            depth_count++;
         }
     }
 
     auto diff = (sl::getCurrentTimeStamp() - start_ts).getSeconds();
     // Print the FPS
-    if(diff > 0)
-        std::cout << "Image: " << (frame_count / diff) << "FPS / Depth: " << (depth_count / diff) <<"FPS" << std::endl;
+    if (diff > 0)
+        std::cout << "Image: " << (frame_count / diff) << "FPS / Depth: " << (depth_count / diff) << "FPS" << std::endl;
 
     // Close the camera
     zed.close();

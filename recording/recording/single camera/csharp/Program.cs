@@ -26,14 +26,11 @@
 using System;
 using sl;
 
-class Program
-{
+class Program {
     [STAThread]
-    static void Main(string[] args)
-    {
+    static void Main(string[] args) {
 
-        if (args.Length < 1)
-        {
+        if (args.Length < 1) {
             Console.WriteLine("Usage : Only the path of the output SVO file should be passed as argument.");
             Environment.Exit(-1);
         }
@@ -46,16 +43,14 @@ class Program
             zed.Close();
         };
 
-        //Specify SVO path parameters
-        InitParameters initParameters = new InitParameters()
-        {
+        // Specify SVO path parameters
+        InitParameters initParameters = new InitParameters() {
             resolution = RESOLUTION.AUTO,
             depthMode = DEPTH_MODE.NONE,
         };
 
         ERROR_CODE state = zed.Open(ref initParameters);
-        if (state != ERROR_CODE.SUCCESS)
-        {
+        if (state > ERROR_CODE.SUCCESS) {
             Environment.Exit(-1);
         }
 
@@ -63,8 +58,7 @@ class Program
 
         RecordingParameters recordingParams = new RecordingParameters(pathOutput, SVO_COMPRESSION_MODE.H264_BASED, 8000, 15, false);
         state = zed.EnableRecording(recordingParams);
-        if (state != ERROR_CODE.SUCCESS)
-        {
+        if (state != ERROR_CODE.SUCCESS) {
             zed.Close();
             Environment.Exit(-1);
         }
@@ -72,19 +66,19 @@ class Program
         // Start recording SVO, stop with Q
         Console.WriteLine("SVO is recording, press Q to stop");
         int framesRecorded = 0;
-        
+
         RuntimeParameters rtParams = new RuntimeParameters();
 
-        while (true)
-        {
-            if (zed.Grab(ref rtParams) <= ERROR_CODE.SUCCESS){
+        while (true) {
+            if (zed.Grab(ref rtParams) <= ERROR_CODE.SUCCESS) {
                 // Each new frame is added to the SVO file
                 framesRecorded++;
                 Console.WriteLine("Frame count: " + framesRecorded);
             }
 
             bool State = (System.Windows.Input.Keyboard.IsKeyDown(System.Windows.Input.Key.Q) == true);
-            if (State) break;
+            if (State)
+                break;
         }
 
         // Stop recording

@@ -30,9 +30,9 @@ public:
     GLuint id() const;
 
     bool load(const char* vertexShaderSource, const char* fragmentShaderSource);
-    
+
     void use() const;
-    
+
     //
     // Shader Library
     //

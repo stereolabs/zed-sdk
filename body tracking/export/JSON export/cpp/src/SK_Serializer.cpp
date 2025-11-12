@@ -7,42 +7,35 @@ namespace {
 
     constexpr float NAN_f = NAN;
 
-    inline
-        void add(json& it, std::string k, sl::float3& in) {
-        it[k] = { in.x, in.y, in.z };
+    inline void add(json& it, std::string k, sl::float3& in) {
+        it[k] = {in.x, in.y, in.z};
     }
 
-    inline
-        void add(json& it, std::string k, sl::float4& in) {
-        it[k] = { in.x, in.y, in.z, in.w };
+    inline void add(json& it, std::string k, sl::float4& in) {
+        it[k] = {in.x, in.y, in.z, in.w};
     }
 
-    template<typename T>
-    inline
-        void add(json& it, std::string k, std::vector<sl::Vector2<T>>& in) {
+    template <typename T>
+    inline void add(json& it, std::string k, std::vector<sl::Vector2<T>>& in) {
         for (auto& i_ : in)
-            it[k].push_back({ i_.x, i_.y });
+            it[k].push_back({i_.x, i_.y});
     }
 
-    inline
-        void add(json& it, std::string k, std::vector<sl::float3>& in) {
+    inline void add(json& it, std::string k, std::vector<sl::float3>& in) {
         for (auto& i_ : in)
-            it[k].push_back({ i_.x, i_.y, i_.z });
+            it[k].push_back({i_.x, i_.y, i_.z});
     }
 
-    inline
-        void add(json& it, std::string k, std::vector<sl::float4>& in) {
+    inline void add(json& it, std::string k, std::vector<sl::float4>& in) {
         for (auto& i_ : in)
-            it[k].push_back({ i_.x, i_.y, i_.z, i_.w });
+            it[k].push_back({i_.x, i_.y, i_.z, i_.w});
     }
 
-    inline
-        void add(json& it, std::string k, std::vector<float>& in) {
+    inline void add(json& it, std::string k, std::vector<float>& in) {
         for (auto& i_ : in)
             it[k].push_back(i_);
     }
-    inline
-        void add(json& it, std::string k, std::vector<std::array<float,6>>& in) {
+    inline void add(json& it, std::string k, std::vector<std::array<float, 6>>& in) {
         for (auto& i_ : in)
             it[k].push_back({i_[0], i_[1], i_[2], i_[3], i_[4], i_[5]});
     }
@@ -55,8 +48,13 @@ namespace {
         out["action_state"] = data.action_state;
         add(out, "position", data.position);
         add(out, "velocity", data.velocity);
-        out["position_covariance"] = { data.position_covariance[0], data.position_covariance[1], data.position_covariance[2],
-                                        data.position_covariance[3], data.position_covariance[4], data.position_covariance[5] };
+        out["position_covariance"]
+            = {data.position_covariance[0],
+               data.position_covariance[1],
+               data.position_covariance[2],
+               data.position_covariance[3],
+               data.position_covariance[4],
+               data.position_covariance[5]};
         add(out, "bounding_box_2d", data.bounding_box_2d);
         out["confidence"] = data.confidence;
         add(out, "bounding_box", data.bounding_box);
@@ -74,47 +72,41 @@ namespace {
         return out;
     }
 
-    template<typename T>
-    inline
-        void get(T& data, json in, std::string k) {
+    template <typename T>
+    inline void get(T& data, json in, std::string k) {
         data = in[k].get<T>();
     }
 
-    inline 
-    void read(sl::float3& data, json in, std::string k) {
+    inline void read(sl::float3& data, json in, std::string k) {
         auto i_ = in[k];
-        if (i_[0].is_null()) 
+        if (i_[0].is_null())
             data = sl::float3(NAN_f, NAN_f, NAN_f);
         else
             data = sl::float3(i_[0].get<float>(), i_[1].get<float>(), i_[2].get<float>());
     }
 
-    inline
-        void read(sl::float4& data, json in, std::string k) {
+    inline void read(sl::float4& data, json in, std::string k) {
         auto i_ = in[k];
         data = sl::float4(i_[0].get<float>(), i_[1].get<float>(), i_[2].get<float>(), i_[3].get<float>());
     }
 
-    inline
-        void read(float* data, json in, std::string k) {
+    inline void read(float* data, json in, std::string k) {
         auto i_ = in[k];
         for (int i = 0; i < 6; i++)
             data[i] = i_[i].get<float>();
     }
 
-    template<typename T>
-    inline
-        void read(std::vector<sl::Vector2<T>>& data, json in, std::string k) {
+    template <typename T>
+    inline void read(std::vector<sl::Vector2<T>>& data, json in, std::string k) {
 
-        for(auto &i_ : in[k])
+        for (auto& i_ : in[k])
             if (i_[0].is_null())
                 data.push_back(sl::Vector2<T>(0, 0));
             else
                 data.push_back(sl::Vector2<T>(i_[0].get<T>(), i_[1].get<T>()));
     }
 
-    inline
-        void read(std::vector<float>& data, json in, std::string k) {
+    inline void read(std::vector<float>& data, json in, std::string k) {
         for (auto& i_ : in[k])
             if (i_.is_null())
                 data.push_back(NAN_f);
@@ -122,44 +114,37 @@ namespace {
                 data.push_back(i_.get<float>());
     }
 
-    template<typename T>
-    inline
-        void read(std::vector<sl::Vector3<T>>& data, json in, std::string k) {
+    template <typename T>
+    inline void read(std::vector<sl::Vector3<T>>& data, json in, std::string k) {
         for (auto& i_ : in[k])
             if (i_[0].is_null())
                 data.push_back(sl::Vector3<T>(NAN_f, NAN_f, NAN_f));
             else
-            data.push_back(sl::Vector3<T>(i_[0].get<T>(), i_[1].get<T>(), i_[2].get<T>()));
+                data.push_back(sl::Vector3<T>(i_[0].get<T>(), i_[1].get<T>(), i_[2].get<T>()));
     }
 
-    template<typename T>
-    inline
-        void read(std::vector<sl::Vector4<T>>& data, json in, std::string k) {
+    template <typename T>
+    inline void read(std::vector<sl::Vector4<T>>& data, json in, std::string k) {
         for (auto& i_ : in[k])
             if (i_[0].is_null())
                 data.push_back(sl::Vector4<T>(NAN_f, NAN_f, NAN_f, NAN_f));
             else
-            data.push_back(sl::Vector4<T>(i_[0].get<T>(), i_[1].get<T>(), i_[2].get<T>(), i_[3].get<T>()));
+                data.push_back(sl::Vector4<T>(i_[0].get<T>(), i_[1].get<T>(), i_[2].get<T>(), i_[3].get<T>()));
     }
 
-    inline
-        void read(std::vector<std::array<float, 6>>& data, json in, std::string k) {
-        for (auto& i_ : in[k])
-        {
-            std::array<float,6> t;
-            if (i_[0].is_null())
-            {
+    inline void read(std::vector<std::array<float, 6>>& data, json in, std::string k) {
+        for (auto& i_ : in[k]) {
+            std::array<float, 6> t;
+            if (i_[0].is_null()) {
                 for (int i = 0; i < 6; i++)
                     t[i] = NAN_f;
-            }
-            else{
+            } else {
                 for (int i = 0; i < 6; i++)
                     t[i] = i_[i].get<float>();
             }
             data.push_back(t);
         }
     }
-
 
     sl::BodyData deserialize_(json& data) {
         sl::BodyData out;
@@ -188,7 +173,7 @@ namespace {
         read(out.keypoint_covariances, data, "keypoint_cov");
         return out;
     }
-}
+} // namespace
 
 std::string string_to_hex(const std::string& in) {
     std::stringstream ss;
@@ -198,7 +183,7 @@ std::string string_to_hex(const std::string& in) {
         ss << std::setw(2) << static_cast<unsigned int>(static_cast<unsigned char>(in[i]));
     }
 
-    return ss.str(); 
+    return ss.str();
 }
 
 std::string hex_to_string(const std::string& in) {
@@ -232,7 +217,7 @@ nlohmann::json sk::serialize(sl::Bodies& data) {
     return out;
 }
 
-sl::Bodies sk::deserialize(nlohmann::json & data) {
+sl::Bodies sk::deserialize(nlohmann::json& data) {
     sl::Bodies out;
     get(out.is_new, data, "is_new");
     get(out.is_tracked, data, "is_tracked");

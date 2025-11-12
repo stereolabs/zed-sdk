@@ -11,8 +11,7 @@ std::map<std::string, std::ofstream> all_kml_files;
  *
  * @param file_path
  */
-void openKMLFile(std::string file_path)
-{
+void openKMLFile(std::string file_path) {
     if (all_kml_files.count(file_path) > 0)
         return;
     all_kml_files[file_path].open(file_path);
@@ -45,11 +44,9 @@ void openKMLFile(std::string file_path)
  * @brief Close all KML file writer and place KML files footer
  *
  */
-void closeAllKMLWriter()
-{
-   
-    for (auto &it : all_kml_files)
-    {
+void closeAllKMLWriter() {
+
+    for (auto& it : all_kml_files) {
         it.second << "\t</coordinates>\n";
         it.second << "\t</LineString>\n";
         it.second << "</Placemark>\n";
@@ -65,13 +62,12 @@ void closeAllKMLWriter()
  * @param file_path path expected for the resulted KML file
  * @param geopose current data to save
  */
-void saveKMLData(std::string file_path, sl::GeoPose geopose)
-{
-    if(all_kml_files.count(file_path) == 0)
+void saveKMLData(std::string file_path, sl::GeoPose geopose) {
+    if (all_kml_files.count(file_path) == 0)
         openKMLFile(file_path);
     double latitude, longitude, altitude;
     geopose.latlng_coordinates.getCoordinates(latitude, longitude, altitude, false);
-    all_kml_files[file_path] <<  std::to_string(longitude) + ", " + std::to_string(latitude) + ", " + std::to_string(altitude) + "\n";
+    all_kml_files[file_path] << std::to_string(longitude) + ", " + std::to_string(latitude) + ", " + std::to_string(altitude) + "\n";
 }
 /**
  * @brief Save GNSSData in KML file that can be displayed into google map (maps.google.com)
@@ -79,11 +75,10 @@ void saveKMLData(std::string file_path, sl::GeoPose geopose)
  * @param file_path path expected for the resulted KML file
  * @param gnss_data current data to save
  */
-void saveKMLData(std::string file_path, sl::GNSSData gnss_data)
-{
-    if(all_kml_files.count(file_path) == 0)
+void saveKMLData(std::string file_path, sl::GNSSData gnss_data) {
+    if (all_kml_files.count(file_path) == 0)
         openKMLFile(file_path);
     double latitude, longitude, altitude;
     gnss_data.getCoordinates(latitude, longitude, altitude, false);
-    all_kml_files[file_path] <<  std::to_string(longitude) + ", " + std::to_string(latitude)  + ", " + std::to_string(altitude) + "\n";
+    all_kml_files[file_path] << std::to_string(longitude) + ", " + std::to_string(latitude) + ", " + std::to_string(altitude) + "\n";
 }

@@ -81,7 +81,7 @@ def main(opt):
 
     # Open the camera
     err = zed.open(init_params)
-    if err != sl.ERROR_CODE.SUCCESS:
+    if err > sl.ERROR_CODE.SUCCESS:
         exit(1)
 
     # Enable object detection module

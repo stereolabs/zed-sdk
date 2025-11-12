@@ -15,20 +15,19 @@ using namespace nvinfer1;
 #define NMS_THRESH 0.4
 #define CONF_THRESH 0.3
 
-static void draw_objects(cv::Mat const& image,
-        cv::Mat &res,
-        sl::Objects const& objs,
-        std::vector<std::vector<int>> const& colors) {
+static void draw_objects(cv::Mat const& image, cv::Mat& res, sl::Objects const& objs, std::vector<std::vector<int>> const& colors) {
     res = image.clone();
-    cv::Mat mask{image.clone()};
+    cv::Mat mask {image.clone()};
     for (sl::ObjectData const& obj : objs.object_list) {
-        size_t const idx_color{obj.id % colors.size()};
-        cv::Scalar const color{cv::Scalar(colors[idx_color][0U], colors[idx_color][1U], colors[idx_color][2U])};
+        size_t const idx_color {obj.id % colors.size()};
+        cv::Scalar const color {cv::Scalar(colors[idx_color][0U], colors[idx_color][1U], colors[idx_color][2U])};
 
-        cv::Rect const rect{static_cast<int> (obj.bounding_box_2d[0U].x),
-            static_cast<int> (obj.bounding_box_2d[0U].y),
-            static_cast<int> (obj.bounding_box_2d[1U].x - obj.bounding_box_2d[0U].x),
-            static_cast<int> (obj.bounding_box_2d[2U].y - obj.bounding_box_2d[0U].y)};
+        cv::Rect const rect {
+            static_cast<int>(obj.bounding_box_2d[0U].x),
+            static_cast<int>(obj.bounding_box_2d[0U].y),
+            static_cast<int>(obj.bounding_box_2d[1U].x - obj.bounding_box_2d[0U].x),
+            static_cast<int>(obj.bounding_box_2d[2U].y - obj.bounding_box_2d[0U].y)
+        };
         cv::rectangle(res, rect, color, 2);
 
         char text[256U];
@@ -38,22 +37,26 @@ static void draw_objects(cv::Mat const& image,
             mask(rect).setTo(color, obj_mask);
         }
 
-        int baseLine{0};
-        cv::Size const label_size{cv::getTextSize(text, cv::FONT_HERSHEY_SIMPLEX, 0.4, 1, &baseLine)};
+        int baseLine {0};
+        cv::Size const label_size {cv::getTextSize(text, cv::FONT_HERSHEY_SIMPLEX, 0.4, 1, &baseLine)};
 
-        int const x{rect.x};
-        int const y{std::min(rect.y + 1, res.rows)};
+        int const x {rect.x};
+        int const y {std::min(rect.y + 1, res.rows)};
 
-        cv::rectangle(res, cv::Rect(x, y, label_size.width, label_size.height + baseLine),{0, 0, 255}, -1);
-        cv::putText(res, text, cv::Point(x, y + label_size.height), cv::FONT_HERSHEY_SIMPLEX, 0.4,{255, 255, 255}, 1);
+        cv::rectangle(res, cv::Rect(x, y, label_size.width, label_size.height + baseLine), {0, 0, 255}, -1);
+        cv::putText(res, text, cv::Point(x, y + label_size.height), cv::FONT_HERSHEY_SIMPLEX, 0.4, {255, 255, 255}, 1);
     }
     cv::addWeighted(res, 0.5, mask, 0.8, 1, res);
 }
 
 void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suffix) {
-    std::cout << "[Sample] ";
-    if (err_code != sl::ERROR_CODE::SUCCESS)
+    std::cout << "[Sample]";
+    if (err_code > sl::ERROR_CODE::SUCCESS)
         std::cout << "[Error] ";
+    else if (err_code < sl::ERROR_CODE::SUCCESS)
+        std::cout << "[Warning] ";
+    else
+        std::cout << " ";
     std::cout << msg_prefix << " ";
     if (err_code != sl::ERROR_CODE::SUCCESS) {
         std::cout << " | " << toString(err_code) << " : ";
@@ -68,7 +71,7 @@ cv::Rect get_rect(BBox box) {
     return cv::Rect(round(box.x1), round(box.y1), round(box.x2 - box.x1), round(box.y2 - box.y1));
 }
 
-std::vector<sl::uint2> cvt(const BBox &bbox_in) {
+std::vector<sl::uint2> cvt(const BBox& bbox_in) {
     std::vector<sl::uint2> bbox_out(4);
     bbox_out[0] = sl::uint2(bbox_in.x1, bbox_in.y1);
     bbox_out[1] = sl::uint2(bbox_in.x2, bbox_in.y1);
@@ -95,14 +98,14 @@ void run_detector() {
 
             // Preparing for ZED SDK ingesting
             std::vector<sl::CustomBoxObjectData> objects_tmp;
-            for (auto &it : detections) {
+            for (auto& it : detections) {
                 sl::CustomBoxObjectData tmp;
                 // Fill the detections into the correct format
                 tmp.unique_object_id = sl::generate_unique_id();
                 tmp.probability = it.prob;
-                tmp.label = (int) it.label;
+                tmp.label = (int)it.label;
                 tmp.bounding_box_2d = cvt(it.box);
-                tmp.is_grounded = ((int) it.label == 0); // Only the first class (person) is grounded, that is moving on the floor plane
+                tmp.is_grounded = ((int)it.label == 0); // Only the first class (person) is grounded, that is moving on the floor plane
                 // others are tracked in full 3D space
                 objects_tmp.push_back(tmp);
             }
@@ -121,7 +124,9 @@ void run_detector() {
 
 int main(int argc, char** argv) {
     if (argc == 1) {
-        std::cout << "Usage: \n 1. ./yolo_onnx_zed -s yolov8s.onnx yolov8s.engine\n 2. ./yolo_onnx_zed -s yolov8s.onnx yolov8s.engine images:1x3x512x512\n 3. ./yolo_onnx_zed yolov8s.engine <SVO path>" << std::endl;
+        std::cout << "Usage: \n 1. ./yolo_onnx_zed -s yolov8s.onnx yolov8s.engine\n 2. ./yolo_onnx_zed -s yolov8s.onnx yolov8s.engine "
+                     "images:1x3x512x512\n 3. ./yolo_onnx_zed yolov8s.engine <SVO path>"
+                  << std::endl;
         return 0;
     }
 
@@ -159,7 +164,7 @@ int main(int argc, char** argv) {
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != sl::ERROR_CODE::SUCCESS) {
+    if (returned_state > sl::ERROR_CODE::SUCCESS) {
         print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
@@ -176,13 +181,12 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
     auto camera_config = zed.getCameraInformation().camera_configuration;
-    sl::Resolution pc_resolution(std::min((int) camera_config.resolution.width, 720), std::min((int) camera_config.resolution.height, 404));
+    sl::Resolution pc_resolution(std::min((int)camera_config.resolution.width, 720), std::min((int)camera_config.resolution.height, 404));
     auto camera_info = zed.getCameraInformation(pc_resolution).camera_configuration;
     // Create OpenGL Viewer
     GLViewer viewer;
     viewer.init(argc, argv, camera_info.calibration_parameters.left_cam, true);
     // ---------
-
 
     // Creating the inference engine class
     std::string engine_name = "";
@@ -207,7 +211,7 @@ int main(int argc, char** argv) {
     auto zed_cuda_stream = zed.getCUDAStream();
 
     std::thread detection_thread(run_detector);
-    
+
     while (viewer.isAvailable()) {
         if (zed.read() == sl::ERROR_CODE::SUCCESS) {
             // Get image for inference
@@ -223,7 +227,8 @@ int main(int argc, char** argv) {
             left_cv = slMat2cvMat(left_sl);
 
             // wait for the detections
-            while (left_sl.timestamp != custom_data_ts) sl::sleep_ms(1);
+            while (left_sl.timestamp != custom_data_ts)
+                sl::sleep_ms(1);
 
             detector_mtx.lock();
             // Send the custom detected boxes to the ZED
@@ -239,17 +244,16 @@ int main(int argc, char** argv) {
             // Displaying the SDK objects
             draw_objects(left_cv, left_cv, objects, CLASS_COLORS);
             cv::imshow("ZED retrieved Objects", left_cv);
-            int const key{cv::waitKey(1)};
+            int const key {cv::waitKey(1)};
             if (key == 'q' || key == 'Q' || key == 27)
                 break;
         }
     }
 
     exit_detector = true;
-    
+
     detection_thread.join();
     viewer.exit();
-
 
     return 0;
 }

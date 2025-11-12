@@ -24,17 +24,19 @@ constexpr int INFERENCE_SIZE = 416;
 
 // colors for bounding boxes
 const cv::Scalar colors[] = {
-    {0, 255, 255},
-    {255, 255, 0},
-    {0, 255, 0},
-    {255, 0, 0}
+    {0,   255, 255},
+    {255, 255, 0  },
+    {0,   255, 0  },
+    {255, 0,   0  }
 };
-const auto NUM_COLORS = sizeof (colors) / sizeof (colors[0]);
+const auto NUM_COLORS = sizeof(colors) / sizeof(colors[0]);
 
 void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suffix) {
     std::cout << "[Sample] ";
-    if (err_code != sl::ERROR_CODE::SUCCESS)
+    if (err_code > sl::ERROR_CODE::SUCCESS)
         std::cout << "[Error] ";
+    else if (err_code < sl::ERROR_CODE::SUCCESS)
+        std::cout << "[Warning] ";
     std::cout << msg_prefix << " ";
     if (err_code != sl::ERROR_CODE::SUCCESS) {
         std::cout << " | " << toString(err_code) << " : ";
@@ -45,7 +47,7 @@ void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suff
     std::cout << std::endl;
 }
 
-std::vector<sl::uint2> cvt(const cv::Rect &bbox_in){
+std::vector<sl::uint2> cvt(const cv::Rect& bbox_in) {
     std::vector<sl::uint2> bbox_out(4);
     bbox_out[0] = sl::uint2(bbox_in.x, bbox_in.y);
     bbox_out[1] = sl::uint2(bbox_in.x + bbox_in.width, bbox_in.y);
@@ -81,7 +83,7 @@ int main(int argc, char** argv) {
     }
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != sl::ERROR_CODE::SUCCESS) {
+    if (returned_state > sl::ERROR_CODE::SUCCESS) {
         print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
@@ -98,7 +100,7 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
     auto camera_config = zed.getCameraInformation().camera_configuration;
-    sl::Resolution pc_resolution(std::min((int) camera_config.resolution.width, 720), std::min((int) camera_config.resolution.height, 404));
+    sl::Resolution pc_resolution(std::min((int)camera_config.resolution.width, 720), std::min((int)camera_config.resolution.height, 404));
     auto camera_info = zed.getCameraInformation(pc_resolution).camera_configuration;
     // Create OpenGL Viewer
     GLViewer viewer;
@@ -121,7 +123,7 @@ int main(int argc, char** argv) {
     cv::Mat frame, blob;
     std::vector<cv::Mat> detections;
     while (viewer.isAvailable()) {
-        if (zed.grab() == sl::ERROR_CODE::SUCCESS) {
+        if (zed.grab() <= sl::ERROR_CODE::SUCCESS) {
 
             zed.retrieveImage(left_sl, sl::VIEW::LEFT);
 
@@ -187,8 +189,21 @@ int main(int argc, char** argv) {
 
                     int baseline;
                     auto label_bg_sz = cv::getTextSize(label.c_str(), cv::FONT_HERSHEY_COMPLEX_SMALL, 1, 1, &baseline);
-                    cv::rectangle(frame, cv::Point(rect.x, rect.y - label_bg_sz.height - baseline - 10), cv::Point(rect.x + label_bg_sz.width, rect.y), color, cv::FILLED);
-                    cv::putText(frame, label.c_str(), cv::Point(rect.x, rect.y - baseline - 5), cv::FONT_HERSHEY_COMPLEX_SMALL, 1, cv::Scalar(0, 0, 0));
+                    cv::rectangle(
+                        frame,
+                        cv::Point(rect.x, rect.y - label_bg_sz.height - baseline - 10),
+                        cv::Point(rect.x + label_bg_sz.width, rect.y),
+                        color,
+                        cv::FILLED
+                    );
+                    cv::putText(
+                        frame,
+                        label.c_str(),
+                        cv::Point(rect.x, rect.y - baseline - 5),
+                        cv::FONT_HERSHEY_COMPLEX_SMALL,
+                        1,
+                        cv::Scalar(0, 0, 0)
+                    );
                 }
             }
             // Send the custom detected boxes to the ZED

@@ -512,8 +512,10 @@ void printTrackingParameters(PositionalTrackingParameters trackingParameters) {
 void print(std::string message, std::optional<ERROR_CODE> errorCode, bool showErrorDetail) {
     std::cout << "\033[36m[Sample]\033[0m";
 
-    if (errorCode && errorCode != ERROR_CODE::SUCCESS) {
+    if (errorCode && errorCode > ERROR_CODE::SUCCESS) {
         std::cout << " \033[31m[Error]\033[0m ";
+    } else if (errorCode && errorCode < ERROR_CODE::SUCCESS) {
+        std::cout << " \033[33m[Warning]\033[0m ";
     } else {
         std::cout << " ";
     }

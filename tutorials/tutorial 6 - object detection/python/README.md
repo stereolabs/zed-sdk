@@ -29,7 +29,7 @@ init_params.sdk_verbose = 1
 
 # Open the camera
 err = zed.open(init_params)
-if err != sl.ERROR_CODE.SUCCESS:
+if err > sl.ERROR_CODE.SUCCESS:
     exit(1)
 ```
 
@@ -73,7 +73,7 @@ obj_runtime_param = sl.ObjectDetectionRuntimeParameters()
 obj_runtime_param.detection_confidence_threshold = 40
 zed.set_object_detection_runtime_parameters(obj_runtime_param) # can be set at any time
 
-while zed.grab() == sl.ERROR_CODE.SUCCESS:
+while zed.grab() <= sl.ERROR_CODE.SUCCESS:
     zed_error = zed.retrieve_objects(objects)
     if objects.is_new :
         print(str(len(objects.object_list))+" Object(s) detected ("+str(zed.get_current_fps())+" FPS)")

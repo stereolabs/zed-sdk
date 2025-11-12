@@ -37,7 +37,7 @@ Once initial configuration is done, open the camera.
 ```python
 # Open the camera
 err = zed.open(init_params)
-if (err != sl.ERROR_CODE.SUCCESS) :
+if (err > sl.ERROR_CODE.SUCCESS) :
     exit(-1)
 ```
 

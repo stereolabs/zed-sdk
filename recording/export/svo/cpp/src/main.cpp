@@ -44,7 +44,7 @@ enum APP_TYPE {
 
 void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
     if (argc != 4) {
         cout << "Usage: \n\n";
@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
     }
 
     if (!output_as_video && output_path.back() != '/' && output_path.back() != '\\') {
-        print("Error: output folder needs to end with '/' or '\\'."+output_path);
+        print("Error: output folder needs to end with '/' or '\\'." + output_path);
         return EXIT_FAILURE;
     }
 
@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
 
     // Open the camera
     ERROR_CODE zed_open_state = zed.open(init_parameters);
-    if (zed_open_state != ERROR_CODE::SUCCESS) {
+    if (zed_open_state > ERROR_CODE::SUCCESS) {
         print("Camera Open", zed_open_state, "Exit program.");
         return EXIT_FAILURE;
     }
@@ -121,19 +121,19 @@ int main(int argc, char **argv) {
     cv::Mat depth_image_ocv = slMat2cvMat(depth_image);
 
     cv::Mat image_sideByside;
-    if(output_as_video)
-        image_sideByside = cv::Mat(image_size.height, image_size.width *2, CV_8UC3);
+    if (output_as_video)
+        image_sideByside = cv::Mat(image_size.height, image_size.width * 2, CV_8UC3);
 
     // Create video writer
     cv::VideoWriter video_writer;
     if (output_as_video) {
 #if (defined(CV_VERSION_EPOCH) && CV_VERSION_EPOCH == 2)
-        int fourcc = CV_FOURCC('M','J','P','G');
+        int fourcc = CV_FOURCC('M', 'J', 'P', 'G');
 #else
         int fourcc = cv::VideoWriter::fourcc('M', '4', 'S', '2'); // MPEG-4 part 2 codec
 #endif
         int frame_rate = fmax(zed.getInitParameters().camera_fps, 25); // Minimum write rate in OpenCV is 25
-        video_writer.open(output_path, fourcc, frame_rate, cv::Size(image_size.width*2, image_size.height));
+        video_writer.open(output_path, fourcc, frame_rate, cv::Size(image_size.width * 2, image_size.height));
         if (!video_writer.isOpened()) {
             print("Error: OpenCV video writer cannot be opened. Please check the .avi file path and write permissions.");
             zed.close();
@@ -174,8 +174,12 @@ int main(int argc, char **argv) {
 
             if (output_as_video) {
                 // Convert SVO image from RGBA to RGB
-                cv::cvtColor(left_image_ocv, image_sideByside(cv::Rect(0,0,image_size.width,image_size.height)), cv::COLOR_BGRA2BGR);
-                cv::cvtColor(right_image_ocv, image_sideByside(cv::Rect(image_size.width,0,image_size.width,image_size.height)), cv::COLOR_BGRA2BGR);
+                cv::cvtColor(left_image_ocv, image_sideByside(cv::Rect(0, 0, image_size.width, image_size.height)), cv::COLOR_BGRA2BGR);
+                cv::cvtColor(
+                    right_image_ocv,
+                    image_sideByside(cv::Rect(image_size.width, 0, image_size.width, image_size.height)),
+                    cv::COLOR_BGRA2BGR
+                );
                 // Write the RGB image in the video
                 video_writer.write(image_sideByside);
             } else {
@@ -183,7 +187,8 @@ int main(int argc, char **argv) {
                 ostringstream filename1;
                 filename1 << output_path << "/left" << setfill('0') << setw(6) << svo_position << ".png";
                 ostringstream filename2;
-                filename2 << output_path << (app_type == LEFT_AND_RIGHT ? "/right" : "/depth") << setfill('0') << setw(6) << svo_position << ".png";
+                filename2 << output_path << (app_type == LEFT_AND_RIGHT ? "/right" : "/depth") << setfill('0') << setw(6) << svo_position
+                          << ".png";
 
                 // Save Left images
                 cv::imwrite(filename1.str(), left_image_ocv);
@@ -200,13 +205,12 @@ int main(int argc, char **argv) {
             }
 
             // Display progress
-            ProgressBar((float) (svo_position / (float) nb_frames), 30);
-        } else if (err == sl::ERROR_CODE::END_OF_SVOFILE_REACHED){
+            ProgressBar((float)(svo_position / (float)nb_frames), 30);
+        } else if (err == sl::ERROR_CODE::END_OF_SVOFILE_REACHED) {
             print("SVO end has been reached. Exiting now.");
             exit_app = true;
-        }
-        else {
-            print("Grab Error: ",err);
+        } else {
+            print("Grab Error: ", err);
             exit_app = true;
         }
     }
@@ -220,11 +224,13 @@ int main(int argc, char **argv) {
 }
 
 void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
-    cout <<"[Sample]";
-    if (err_code != ERROR_CODE::SUCCESS)
+    cout << "[Sample]";
+    if (err_code > ERROR_CODE::SUCCESS)
         cout << "[Error] ";
+    else if (err_code < ERROR_CODE::SUCCESS)
+        cout << "[Warning] ";
     else
-        cout<<" ";
+        cout << " ";
     cout << msg_prefix << " ";
     if (err_code != ERROR_CODE::SUCCESS) {
         cout << " | " << toString(err_code) << " : ";

@@ -14,32 +14,43 @@ inline cv::Mat slMat2cvMat(sl::Mat& input) {
     // Mapping between MAT_TYPE and CV_TYPE
     int cv_type = -1;
     switch (input.getDataType()) {
-        case sl::MAT_TYPE::F32_C1: cv_type = CV_32FC1;
+        case sl::MAT_TYPE::F32_C1:
+            cv_type = CV_32FC1;
             break;
-        case sl::MAT_TYPE::F32_C2: cv_type = CV_32FC2;
+        case sl::MAT_TYPE::F32_C2:
+            cv_type = CV_32FC2;
             break;
-        case sl::MAT_TYPE::F32_C3: cv_type = CV_32FC3;
+        case sl::MAT_TYPE::F32_C3:
+            cv_type = CV_32FC3;
             break;
-        case sl::MAT_TYPE::F32_C4: cv_type = CV_32FC4;
+        case sl::MAT_TYPE::F32_C4:
+            cv_type = CV_32FC4;
             break;
-        case sl::MAT_TYPE::U8_C1: cv_type = CV_8UC1;
+        case sl::MAT_TYPE::U8_C1:
+            cv_type = CV_8UC1;
             break;
-        case sl::MAT_TYPE::U8_C2: cv_type = CV_8UC2;
+        case sl::MAT_TYPE::U8_C2:
+            cv_type = CV_8UC2;
             break;
-        case sl::MAT_TYPE::U8_C3: cv_type = CV_8UC3;
+        case sl::MAT_TYPE::U8_C3:
+            cv_type = CV_8UC3;
             break;
-        case sl::MAT_TYPE::U8_C4: cv_type = CV_8UC4;
+        case sl::MAT_TYPE::U8_C4:
+            cv_type = CV_8UC4;
             break;
-        default: break;
+        default:
+            break;
     }
 
     return cv::Mat(input.getHeight(), input.getWidth(), cv_type, input.getPtr<sl::uchar1>(sl::MEM::CPU));
 }
 
-void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, std::string msg_suffix="") {
+void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, std::string msg_suffix = "") {
     std::cout << "[Sample]";
-    if (err_code != sl::ERROR_CODE::SUCCESS)
+    if (err_code > sl::ERROR_CODE::SUCCESS)
         std::cout << "[Error] ";
+    else if (err_code < sl::ERROR_CODE::SUCCESS)
+        std::cout << "[Warning] ";
     else
         std::cout << " ";
     std::cout << msg_prefix << " ";
@@ -52,7 +63,7 @@ void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUC
     std::cout << std::endl;
 }
 
-int parseArgs(int argc, char **argv, sl::InitParametersOne& param) {
+int parseArgs(int argc, char** argv, sl::InitParametersOne& param) {
     if (argc > 1) {
         string arg = string(argv[1]);
         unsigned int a, b, c, d, port;
@@ -78,13 +89,13 @@ static bool exit_app = false;
 
 // Handle the CTRL-C keyboard signal
 #ifdef _WIN32
-#include <Windows.h>
+    #include <Windows.h>
 
 void CtrlHandler(DWORD fdwCtrlType) {
     exit_app = (fdwCtrlType == CTRL_C_EVENT);
 }
 #else
-#include <signal.h>
+    #include <signal.h>
 void nix_exit_handler(int s) {
     exit_app = true;
 }
@@ -93,7 +104,7 @@ void nix_exit_handler(int s) {
 // Set the function to handle the CTRL-C
 void SetCtrlHandler() {
 #ifdef _WIN32
-    SetConsoleCtrlHandler((PHANDLER_ROUTINE) CtrlHandler, TRUE);
+    SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, TRUE);
 #else // unix
     struct sigaction sigIntHandler;
     sigIntHandler.sa_handler = nix_exit_handler;
@@ -105,9 +116,11 @@ void SetCtrlHandler() {
 
 // input_type progress bar
 void ProgressBar(float ratio, unsigned int w) {
-    unsigned  int c = ratio * w;
-     for (unsigned int x = 0; x < c; x++) std::cout << "=";
-     for (unsigned int x = c; x < w; x++) std::cout << " ";
-     std::cout << (unsigned int) (ratio * 100) << "% ";
-     std::cout << "\r" << std::flush;
- }
+    unsigned int c = ratio * w;
+    for (unsigned int x = 0; x < c; x++)
+        std::cout << "=";
+    for (unsigned int x = c; x < w; x++)
+        std::cout << " ";
+    std::cout << (unsigned int)(ratio * 100) << "% ";
+    std::cout << "\r" << std::flush;
+}

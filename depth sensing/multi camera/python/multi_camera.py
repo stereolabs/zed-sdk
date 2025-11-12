@@ -97,7 +97,7 @@ def main():
         timestamp_list.append(0)
         last_ts_list.append(0)
         status = zed_list[index].open(init)
-        if status != sl.ERROR_CODE.SUCCESS:
+        if status > sl.ERROR_CODE.SUCCESS:
             print(repr(status))
             zed_list[index].close()
         index = index +1

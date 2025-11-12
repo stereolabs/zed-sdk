@@ -184,8 +184,7 @@ def main(opt):
 
     runtime_params = sl.RuntimeParameters()
     status = zed.open(init_params)
-
-    if status != sl.ERROR_CODE.SUCCESS:
+    if status > sl.ERROR_CODE.SUCCESS:
         print(repr(status))
         exit()
 

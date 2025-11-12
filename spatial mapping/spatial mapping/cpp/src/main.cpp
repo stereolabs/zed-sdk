@@ -38,9 +38,9 @@ using namespace sl;
 #define BUILD_MESH 1
 
 void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, std::string msg_suffix = "");
-void parse_args(int argc, char **argv,InitParameters& param, sl::Mat &roi);
+void parse_args(int argc, char** argv, InitParameters& param, sl::Mat& roi);
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
     Camera zed;
     // Set configuration parameters for the ZED
@@ -55,25 +55,25 @@ int main(int argc, char **argv) {
     // Open the camera
     auto returned_state = zed.open(init_parameters);
 
-    if (returned_state != ERROR_CODE::SUCCESS) {// Quit if an error occurred
+    if (returned_state > ERROR_CODE::SUCCESS) { // Quit if an error occurred
         print("Open Camera", returned_state, "\nExit program.");
         zed.close();
         return EXIT_FAILURE;
     }
 
-    if(roi.isInit()){
+    if (roi.isInit()) {
         auto state = zed.setRegionOfInterest(roi, {sl::MODULE::POSITIONAL_TRACKING, sl::MODULE::SPATIAL_MAPPING});
-        std::cout<<"Applied ROI "<<state<<"\n";
+        std::cout << "Applied ROI " << state << "\n";
     }
 
     /* Print shortcuts*/
-    std::cout<<"Shortcuts\n";
-    std::cout<<"\t- 'l' to enable/disable current live point cloud display\n";
-    std::cout<<"\t- 'w' to switch mesh display from faces to triangles\n";
-    std::cout<<"\t- 'd' to switch background color from dark to light\n";
-    std::cout<<"\t- 'f' to follow the camera\n";
-    std::cout<<"\t- 'Shift' for soft mouse control / 'alt' for regular control / 'Ctrl' for strong control \n";
-    std::cout<<"\t- 'space' to switch camera view\n";
+    std::cout << "Shortcuts\n";
+    std::cout << "\t- 'l' to enable/disable current live point cloud display\n";
+    std::cout << "\t- 'w' to switch mesh display from faces to triangles\n";
+    std::cout << "\t- 'd' to switch background color from dark to light\n";
+    std::cout << "\t- 'f' to follow the camera\n";
+    std::cout << "\t- 'Shift' for soft mouse control / 'alt' for regular control / 'Ctrl' for strong control \n";
+    std::cout << "\t- 'space' to switch camera view\n";
 
     auto camera_infos = zed.getCameraInformation();
 
@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
     spatial_mapping_parameters.decay = 0.1;
 
     // Timestamp of the last fused point cloud requested
-    chrono::high_resolution_clock::time_point ts_last; 
+    chrono::high_resolution_clock::time_point ts_last;
 
     // Setup runtime parameters
     RuntimeParameters runtime_parameters;
@@ -118,25 +118,24 @@ int main(int argc, char **argv) {
     auto resolution = camera_infos.camera_configuration.resolution;
 
     // Define display resolution and check that it fit at least the image resolution
-    
+
     sl::Resolution display_resolution = zed.getRetrieveMeasureResolution();
 
     Mat image(display_resolution, MAT_TYPE::U8_C4, sl::MEM::GPU);
     Mat point_cloud(display_resolution, MAT_TYPE::F32_C4, sl::MEM::GPU);
-    
+
     // Point cloud viewer
     GLViewer viewer;
 
     viewer.init(argc, argv, image, point_cloud, zed.getCUDAStream());
- 
+
     bool request_new_mesh = true;
     bool wait_for_mapping = true;
 
     // Start the main loop
     while (viewer.isAvailable()) {
         // Grab a new image
-        if (zed.grab(runtime_parameters) <= ERROR_CODE::SUCCESS)
-        {
+        if (zed.grab(runtime_parameters) <= ERROR_CODE::SUCCESS) {
             // Retrieve the left image
             zed.retrieveImage(image, VIEW::LEFT, MEM::GPU, display_resolution);
             zed.retrieveMeasure(point_cloud, MEASURE::XYZBGRA, MEM::GPU, display_resolution);
@@ -145,22 +144,22 @@ int main(int argc, char **argv) {
             viewer.updateCameraPose(pose.pose_data, tracking_state);
 
             if (tracking_state == POSITIONAL_TRACKING_STATE::OK) {
-                if(wait_for_mapping){
+                if (wait_for_mapping) {
                     zed.enableSpatialMapping(spatial_mapping_parameters);
                     wait_for_mapping = false;
-                }else{
-                    if(request_new_mesh){
-                        auto duration = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - ts_last).count();                    
+                } else {
+                    if (request_new_mesh) {
+                        auto duration = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - ts_last).count();
                         // Ask for a fused point cloud update if 500ms have elapsed since last request
-                        if(duration > 100) {
+                        if (duration > 100) {
                             // Ask for a point cloud refresh
                             zed.requestSpatialMapAsync();
                             request_new_mesh = false;
                         }
                     }
-                    
+
                     // If the point cloud is ready to be retrieved
-                    if(zed.getSpatialMapRequestStatusAsync() == ERROR_CODE::SUCCESS && !request_new_mesh) {
+                    if (zed.getSpatialMapRequestStatusAsync() == ERROR_CODE::SUCCESS && !request_new_mesh) {
                         zed.retrieveSpatialMapAsync(map);
                         viewer.updateMap(map);
                         request_new_mesh = true;
@@ -183,33 +182,31 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-void parse_args(int argc, char **argv,InitParameters& param, sl::Mat &roi)
-{
-    if(argc == 1) return;
-    for(int id = 1; id < argc; id ++) {
+void parse_args(int argc, char** argv, InitParameters& param, sl::Mat& roi) {
+    if (argc == 1)
+        return;
+    for (int id = 1; id < argc; id++) {
         std::string arg(argv[id]);
-        if(arg.find(".svo")!=string::npos) {
+        if (arg.find(".svo") != string::npos) {
             // SVO input mode
             param.input.setFromSVOFile(arg.c_str());
-            cout<<"[Sample] Using SVO File input: "<<arg<<endl;
+            cout << "[Sample] Using SVO File input: " << arg << endl;
         }
 
-        unsigned int a,b,c,d,port;
-        if (sscanf(arg.c_str(),"%u.%u.%u.%u:%d", &a, &b, &c, &d,&port) == 5) {
+        unsigned int a, b, c, d, port;
+        if (sscanf(arg.c_str(), "%u.%u.%u.%u:%d", &a, &b, &c, &d, &port) == 5) {
             // Stream input mode - IP + port
-            string ip_adress = to_string(a)+"."+to_string(b)+"."+to_string(c)+"."+to_string(d);
-            param.input.setFromStream(String(ip_adress.c_str()),port);
-            cout<<"[Sample] Using Stream input, IP : "<<ip_adress<<", port : "<<port<<endl;
-        }
-        else  if (sscanf(arg.c_str(),"%u.%u.%u.%u", &a, &b, &c, &d) == 4) {
+            string ip_adress = to_string(a) + "." + to_string(b) + "." + to_string(c) + "." + to_string(d);
+            param.input.setFromStream(String(ip_adress.c_str()), port);
+            cout << "[Sample] Using Stream input, IP : " << ip_adress << ", port : " << port << endl;
+        } else if (sscanf(arg.c_str(), "%u.%u.%u.%u", &a, &b, &c, &d) == 4) {
             // Stream input mode - IP only
             param.input.setFromStream(String(argv[1]));
-            cout<<"[Sample] Using Stream input, IP : "<<argv[1]<<endl;
-        }
-        else if (arg.find("HD2K") != string::npos) {
+            cout << "[Sample] Using Stream input, IP : " << argv[1] << endl;
+        } else if (arg.find("HD2K") != string::npos) {
             param.camera_resolution = RESOLUTION::HD2K;
             cout << "[Sample] Using Camera in resolution HD2K" << endl;
-        }else if (arg.find("HD1200") != string::npos) {
+        } else if (arg.find("HD1200") != string::npos) {
             param.camera_resolution = RESOLUTION::HD1200;
             cout << "[Sample] Using Camera in resolution HD1200" << endl;
         } else if (arg.find("HD1080") != string::npos) {
@@ -218,25 +215,27 @@ void parse_args(int argc, char **argv,InitParameters& param, sl::Mat &roi)
         } else if (arg.find("HD720") != string::npos) {
             param.camera_resolution = RESOLUTION::HD720;
             cout << "[Sample] Using Camera in resolution HD720" << endl;
-        }else if (arg.find("SVGA") != string::npos) {
+        } else if (arg.find("SVGA") != string::npos) {
             param.camera_resolution = RESOLUTION::SVGA;
             cout << "[Sample] Using Camera in resolution SVGA" << endl;
-        }else if (arg.find("VGA") != string::npos) {
+        } else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;
-        }else if ((arg.find(".png") != string::npos) || ((arg.find(".jpg") != string::npos))) {
+        } else if ((arg.find(".png") != string::npos) || ((arg.find(".jpg") != string::npos))) {
             roi.read(arg.c_str());
-            cout << "[Sample] Using Region of intererest from "<< arg << endl;
+            cout << "[Sample] Using Region of intererest from " << arg << endl;
         }
     }
 }
 
 void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suffix) {
-    cout <<"[Sample]";
-    if (err_code != sl::ERROR_CODE::SUCCESS)
+    cout << "[Sample]";
+    if (err_code > sl::ERROR_CODE::SUCCESS)
         cout << "[Error] ";
+    else if (err_code < sl::ERROR_CODE::SUCCESS)
+        cout << "[Warning] ";
     else
-        cout<<" ";
+        cout << " ";
     cout << msg_prefix << " ";
     if (err_code != sl::ERROR_CODE::SUCCESS) {
         cout << " | " << toString(err_code) << " : ";

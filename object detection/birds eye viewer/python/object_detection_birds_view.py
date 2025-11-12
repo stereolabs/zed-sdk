@@ -54,7 +54,7 @@ def main(opt):
 
 
     status = zed.open(init_params)
-    if status != sl.ERROR_CODE.SUCCESS:
+    if status > sl.ERROR_CODE.SUCCESS:
         print("Camera Open : "+repr(status)+". Exit program.")
         exit()
      # Enable positional tracking module

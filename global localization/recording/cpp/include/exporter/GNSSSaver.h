@@ -12,7 +12,7 @@ public:
      * Either recorded to a json file or directly in SVO2 custom data
      *
      */
-    GNSSSaver(sl::Camera *zed = 0);
+    GNSSSaver(sl::Camera* zed = 0);
     /**
      * @brief Destroy the GNSSSaver object
      *
@@ -33,7 +33,7 @@ protected:
     void saveAllData();
     std::string file_path;
     std::vector<sl::GNSSData> all_gnss_data;
-    sl::Camera *p_zed = 0;
+    sl::Camera* p_zed = 0;
 };
 
 #endif

@@ -27,13 +27,10 @@ using System;
 using OpenCvSharp;
 using sl;
 
-class Program
-{
+class Program {
 
-    static void Main(string[] args)
-    {
-        if (args.Length != 1)
-        {
+    static void Main(string[] args) {
+        if (args.Length != 1) {
             Console.WriteLine("Usage: ");
             Console.WriteLine("    ZED_SVO_Playback <SVO_file> ");
             Console.WriteLine("* *SVO file is mandatory in the application * *");
@@ -44,18 +41,12 @@ class Program
         // Create ZED Camera
         Camera zed = new Camera(0);
 
-        //Specify SVO path parameters
-        InitParameters initParameters = new InitParameters()
-        {
-            inputType = INPUT_TYPE.SVO,
-            pathSVO = args[0],
-            svoRealTimeMode = true,
-            depthMode = DEPTH_MODE.NEURAL
-        };
+        // Specify SVO path parameters
+        InitParameters initParameters
+            = new InitParameters() { inputType = INPUT_TYPE.SVO, pathSVO = args[0], svoRealTimeMode = true, depthMode = DEPTH_MODE.NEURAL };
 
         ERROR_CODE state = zed.Open(ref initParameters);
-        if (state != ERROR_CODE.SUCCESS)
-        {
+        if (state > ERROR_CODE.SUCCESS) {
             Environment.Exit(-1);
         }
 
@@ -67,7 +58,7 @@ class Program
         svoImage.Create(lowResolution, MAT_TYPE.MAT_8U_C4);
         OpenCvSharp.Mat svoImageOCV = SLMat2CVMat(ref svoImage, MAT_TYPE.MAT_8U_C4);
 
-        //Setup key, images, times
+        // Setup key, images, times
         char key = ' ';
         Console.WriteLine("Press 's' to save SVO image as PNG");
         Console.WriteLine("Press 'f' to jump forward in the video");
@@ -81,21 +72,18 @@ class Program
         RuntimeParameters rtParams = new RuntimeParameters();
         // Start SVO Playback
 
-        while (key != 'q')
-        {
+        while (key != 'q') {
             state = zed.Grab(ref rtParams);
-            if (state <= ERROR_CODE.SUCCESS)
-            {
-                //Get the side by side image
+            if (state <= ERROR_CODE.SUCCESS) {
+                // Get the side by side image
                 zed.RetrieveImage(svoImage, VIEW.SIDE_BY_SIDE, MEM.CPU, lowResolution);
                 int svoPosition = zed.GetSVOPosition();
 
-                //Display the frame
+                // Display the frame
                 Cv2.ImShow("View", svoImageOCV);
                 key = (char)Cv2.WaitKey(10);
 
-                switch (key)
-                {
+                switch (key) {
                     case 's':
                         svoImage.Write("capture" + svoPosition + ".png");
                         break;
@@ -107,14 +95,10 @@ class Program
                         break;
                 }
                 ProgressBar((float)svoPosition / (float)nbFrames, 30);
-            }
-            else if (zed.GetSVOPosition() >= nbFrames - (zed.GetInitParameters().svoRealTimeMode ? 2 : 1))
-            {
+            } else if (zed.GetSVOPosition() >= nbFrames - (zed.GetInitParameters().svoRealTimeMode ? 2 : 1)) {
                 Console.WriteLine("SVO end has been reached. Looping back to 0");
                 zed.SetSVOPosition(0);
-            }
-            else
-            {
+            } else {
                 Console.WriteLine("Grab Error : " + state);
                 break;
             }
@@ -122,15 +106,13 @@ class Program
         zed.Close();
     }
 
-
     /// <summary>
-    ///  Creates an OpenCV version of a ZED Mat. 
+    ///  Creates an OpenCV version of a ZED Mat.
     /// </summary>
     /// <param name="zedmat">Source ZED Mat.</param>
     /// <param name="zedmattype">Type of ZED Mat - data type and channel number.
     /// <returns></returns>
-    private static OpenCvSharp.Mat SLMat2CVMat(ref sl.Mat zedmat, MAT_TYPE zedmattype)
-    {
+    private static OpenCvSharp.Mat SLMat2CVMat(ref sl.Mat zedmat, MAT_TYPE zedmattype) {
         int cvmattype = SLMatType2CVMatType(zedmattype);
         OpenCvSharp.Mat cvmat = new OpenCvSharp.Mat(zedmat.GetHeight(), zedmat.GetWidth(), cvmattype, zedmat.GetPtr());
 
@@ -138,12 +120,10 @@ class Program
     }
 
     /// <summary>
-    /// Returns the OpenCV type that corresponds to a given ZED Mat type. 
+    /// Returns the OpenCV type that corresponds to a given ZED Mat type.
     /// </summary>
-    private static int SLMatType2CVMatType(MAT_TYPE zedmattype)
-    {
-        switch (zedmattype)
-        {
+    private static int SLMatType2CVMatType(MAT_TYPE zedmattype) {
+        switch (zedmattype) {
             case sl.MAT_TYPE.MAT_32F_C1:
                 return OpenCvSharp.MatType.CV_32FC1;
             case sl.MAT_TYPE.MAT_32F_C2:
@@ -166,11 +146,12 @@ class Program
     }
 
     // Display progress bar
-    static void ProgressBar(float ratio, uint w)
-    {
+    static void ProgressBar(float ratio, uint w) {
         uint c = (uint)(ratio * w);
-        for (uint x = 0; x < c; x++) Console.Write("=");
-        for (uint x = c; x < w; x++) Console.Write(" ");
+        for (uint x = 0; x < c; x++)
+            Console.Write("=");
+        for (uint x = c; x < w; x++)
+            Console.Write(" ");
         Console.Write((int)(ratio * 100) + "% ");
         Console.Write("\r");
     }

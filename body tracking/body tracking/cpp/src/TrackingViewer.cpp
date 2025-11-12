@@ -6,13 +6,20 @@
 
 #define VERBOSE_DISPLAY 0
 
-template<typename T>
+template <typename T>
 inline cv::Point2f cvt(T pt, sl::float2 scale) {
     return cv::Point2f(pt.x * scale.x, pt.y * scale.y);
 }
 
-template<typename T>
-void createSKPrimitive(sl::BodyData& body, const std::vector<std::pair<T, T>>&map, sl::float2 img_scale, cv::Mat& left_display, cv::Rect &roi_render, cv::Scalar color) {
+template <typename T>
+void createSKPrimitive(
+    sl::BodyData& body,
+    const std::vector<std::pair<T, T>>& map,
+    sl::float2 img_scale,
+    cv::Mat& left_display,
+    cv::Rect& roi_render,
+    cv::Scalar color
+) {
 
     for (const auto& parts : map) {
         auto kp_a = cvt(body.keypoint_2d[getIdx(parts.first)], img_scale);
@@ -27,7 +34,6 @@ void createSKPrimitive(sl::BodyData& body, const std::vector<std::pair<T, T>>&ma
         }
     }
 
-
     int i = 0;
     // skeleton joints
     for (auto& kp : body.keypoint_2d) {
@@ -35,21 +41,28 @@ void createSKPrimitive(sl::BodyData& body, const std::vector<std::pair<T, T>>&ma
         if (roi_render.contains(cv_kp)) {
             cv::circle(left_display, cv_kp, 3, color, -1);
 #if VERBOSE_DISPLAY
-            //auto str = std::to_string(i++);
+            // auto str = std::to_string(i++);
             auto str = std::string(sl::toString((sl::BODY_38_PARTS)i++));
-            cv::putText(left_display, str, cv_kp, cv::FONT_HERSHEY_COMPLEX, 0.4/*font_size*/, cv::Scalar(255, 0, 0)/*font_Color*/, 1/*font_weight*/);
+            cv::putText(
+                left_display,
+                str,
+                cv_kp,
+                cv::FONT_HERSHEY_COMPLEX,
+                0.4 /*font_size*/,
+                cv::Scalar(255, 0, 0) /*font_Color*/,
+                1 /*font_weight*/
+            );
 #endif
         }
     }
 }
 
-
-void render_2D(cv::Mat &left_display, sl::float2 img_scale, std::vector<sl::BodyData> &bodies, bool isTrackingON, bool fastRender) {
+void render_2D(cv::Mat& left_display, sl::float2 img_scale, std::vector<sl::BodyData>& bodies, bool isTrackingON, bool fastRender) {
     cv::Mat overlay = left_display.clone();
     cv::Rect roi_render(0, 0, left_display.size().width, left_display.size().height);
 
     // render skeleton joints and bones
-    for (auto &it : bodies)
+    for (auto& it : bodies)
         if (renderObject(it, isTrackingON)) {
             if (it.keypoint_2d.size()) {
                 cv::Scalar color = generateColorID_u(it.id);

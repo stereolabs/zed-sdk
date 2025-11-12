@@ -3,12 +3,9 @@ using System;
 using System.Runtime.InteropServices;
 using System.Numerics;
 
-namespace sl
-{
-    class Program
-    {
-        static void Main(string[] args)
-        {
+namespace sl {
+    class Program {
+        static void Main(string[] args) {
             // Set Initialization parameters
             InitParameters init_params = new InitParameters();
             init_params.resolution = RESOLUTION.HD720;
@@ -20,7 +17,7 @@ namespace sl
             Camera zedCamera = new Camera(0);
             // Open the camera
             ERROR_CODE err = zedCamera.Open(ref init_params);
-            if (err != ERROR_CODE.SUCCESS)
+            if (err > ERROR_CODE.SUCCESS)
                 Environment.Exit(-1);
 
             PositionalTrackingParameters positionalTrackingParameters = new PositionalTrackingParameters();
@@ -32,17 +29,16 @@ namespace sl
             sl.Pose pose = new Pose();
 
             RuntimeParameters runtimeParameters = new RuntimeParameters();
-            while (i < 1000)
-            {
-                if (zedCamera.Grab(ref runtimeParameters) == ERROR_CODE.SUCCESS)
-                {
+            while (i < 1000) {
+                if (zedCamera.Grab(ref runtimeParameters) <= ERROR_CODE.SUCCESS) {
                     // Get the pose of the left eye of the camera with reference to the world frame
-                    zedCamera.GetPosition(ref pose,REFERENCE_FRAME.WORLD);
+                    zedCamera.GetPosition(ref pose, REFERENCE_FRAME.WORLD);
 
                     // Display the translation and timestamp each 10 frames
-                    if (i % 10 == 0)
-                    {
-                        Console.WriteLine("Translation : " + pose.translation + ",\n Rotation : " + pose.rotation + ",\n Timestamp : " + pose.timestamp);
+                    if (i % 10 == 0) {
+                        Console.WriteLine(
+                            "Translation : " + pose.translation + ",\n Rotation : " + pose.rotation + ",\n Timestamp : " + pose.timestamp
+                        );
                     }
                     i++;
                 }

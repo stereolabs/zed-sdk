@@ -15,16 +15,17 @@
 #include <cuda_gl_interop.h>
 
 #ifndef M_PI
-#define M_PI 3.141592653f
+    #define M_PI 3.141592653f
 #endif
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 class Shader {
 public:
-
-    Shader() : verterxId_(0), fragmentId_(0), programId_(0) {}
+    Shader()
+        : verterxId_(0)
+        , fragmentId_(0)
+        , programId_(0) { }
     Shader(const GLchar* vs, const GLchar* fs);
     ~Shader();
 
@@ -41,9 +42,10 @@ public:
 
     static const GLint ATTRIB_VERTICES_POS = 0;
     static const GLint ATTRIB_COLOR_POS = 1;
-	static const GLint ATTRIB_NORMAL = 2;
+    static const GLint ATTRIB_NORMAL = 2;
+
 private:
-    bool compile(GLuint &shaderId, GLenum type, const GLchar* src);
+    bool compile(GLuint& shaderId, GLenum type, const GLchar* src);
     GLuint verterxId_;
     GLuint fragmentId_;
     GLuint programId_;
@@ -56,29 +58,28 @@ struct ShaderData {
 
 class Simple3DObject {
 public:
-
     Simple3DObject();
     ~Simple3DObject();
 
     void init(const sl::Translation& position, const bool isStatic);
 
     bool isInit();
-	void addPt(sl::float3 pt);
-	void addClr(sl::float4 clr);
-	void addNormal(sl::float3 normal);
-    void addPoints(std::vector<sl::float3> pts,sl::float4 base_clr);
-	void addPoint(sl::float3 pt, sl::float4 clr);
+    void addPt(sl::float3 pt);
+    void addClr(sl::float4 clr);
+    void addNormal(sl::float3 normal);
+    void addPoints(std::vector<sl::float3> pts, sl::float4 base_clr);
+    void addPoint(sl::float3 pt, sl::float4 clr);
     void addLine(sl::float3 p1, sl::float3 p2, sl::float3 clr);
-	void addCylinder(sl::float3 startPosition, sl::float3 endPosition, sl::float4 clr);
-	void addSphere(sl::float3 position, sl::float4 clr);
+    void addCylinder(sl::float3 startPosition, sl::float3 endPosition, sl::float4 clr);
+    void addSphere(sl::float3 position, sl::float4 clr);
     void pushToGPU();
 
-	// New 3D rendering
-	void addBBox(std::vector<sl::float3> &pts, sl::float4 clr);
-	void addFullEdges(std::vector<sl::float3> &pts, sl::float4 clr);
-	void addVerticalEdges(std::vector<sl::float3> &pts, sl::float4 clr);
-	void addTopFace(std::vector<sl::float3> &pts, sl::float4 clr);
-	void addVerticalFaces(std::vector<sl::float3> &pts, sl::float4 clr);
+    // New 3D rendering
+    void addBBox(std::vector<sl::float3>& pts, sl::float4 clr);
+    void addFullEdges(std::vector<sl::float3>& pts, sl::float4 clr);
+    void addVerticalEdges(std::vector<sl::float3>& pts, sl::float4 clr);
+    void addTopFace(std::vector<sl::float3>& pts, sl::float4 clr);
+    void addVerticalFaces(std::vector<sl::float3>& pts, sl::float4 clr);
 
     void clear();
 
@@ -104,7 +105,7 @@ private:
     std::vector<float> vertices_;
     std::vector<float> colors_;
     std::vector<unsigned int> indices_;
-	std::vector<float> normals_;
+    std::vector<float> normals_;
 
     bool isStatic_;
     bool is_init;
@@ -115,9 +116,9 @@ private:
     /*
     Vertex buffer IDs:
     - [0]: Vertices coordinates;
-	- [1]: Colors;
+        - [1]: Colors;
     - [2]: Indices;
-	- [3]: Normals
+        - [3]: Normals
     */
     GLuint vboID_[4];
 
@@ -135,7 +136,7 @@ public:
     // Initialize Opengl and Cuda buffers
     bool initialize(sl::Resolution res);
     // Push a new Image + Z buffer and transform into a point cloud
-    void pushNewImage(sl::Mat &image);
+    void pushNewImage(sl::Mat& image);
     // Draw the Image
     void draw();
     // Close (disable update)
@@ -144,15 +145,15 @@ public:
 private:
     GLuint texID;
     GLuint imageTex;
-    cudaGraphicsResource* cuda_gl_ressource;//cuda GL resource
+    cudaGraphicsResource* cuda_gl_ressource; // cuda GL resource
     ShaderData shaderImage;
     GLuint quad_vb;
 };
 
 struct ObjectClassName {
-	sl::float3 position;
-	std::string name;
-	sl::float4 color;
+    sl::float3 position;
+    std::string name;
+    sl::float4 color;
 };
 
 // This class manages input events, window and Opengl rendering pipeline
@@ -161,8 +162,8 @@ public:
     GLViewer();
     ~GLViewer();
     bool isAvailable();
-    void init(int argc, char **argv, sl::CameraParameters param, bool isTrackingON);
-    void updateView(sl::Mat image, sl::Objects &obj);
+    void init(int argc, char** argv, sl::CameraParameters param, bool isTrackingON);
+    void updateView(sl::Mat image, sl::Objects& obj);
     void exit();
 
 private:
@@ -170,10 +171,10 @@ private:
     void update();
     void draw();
     void clearInputs();
-    void setRenderCameraProjection(sl::CameraParameters params,float znear, float zfar);
+    void setRenderCameraProjection(sl::CameraParameters params, float znear, float zfar);
 
-	void createBboxRendering(std::vector<sl::float3> &bbox, sl::float4 bbox_clr);
-	void createIDRendering(sl::float3 &center, sl::float4 clr, unsigned int id);
+    void createBboxRendering(std::vector<sl::float3>& bbox, sl::float4 bbox_clr);
+    void createIDRendering(sl::float3& center, sl::float4 clr, unsigned int id);
 
     void printText();
 
@@ -185,7 +186,7 @@ private:
     static void idle();
 
     bool available;
-	bool isTrackingON_ = false;
+    bool isTrackingON_ = false;
 
     enum MOUSE_BUTTON {
         LEFT = 0,
@@ -201,7 +202,6 @@ private:
         FREE = 'f'
     };
 
-
     KEY_STATE keyStates_[256];
 
     std::mutex mtx;
@@ -213,12 +213,10 @@ private:
     ShaderData shader;
     sl::float3 bckgrnd_clr;
 
-
-	Simple3DObject BBox_edges;
-	Simple3DObject BBox_faces;
+    Simple3DObject BBox_edges;
+    Simple3DObject BBox_faces;
 
     std::vector<ObjectClassName> objectsName;
-
 };
 
 #endif /* __VIEWER_INCLUDE__ */

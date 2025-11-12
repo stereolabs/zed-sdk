@@ -37,45 +37,59 @@
 sl::COORDINATE_SYSTEM user_coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
 sl::UNIT user_unit = sl::UNIT::METER;
 
-std::vector<std::string> split(const std::string &s, const std::string &delimiter);
+std::vector<std::string> split(const std::string& s, const std::string& delimiter);
 cv::Mat slMat2cvMat(sl::Mat& input);
 
-sl::LatLng convert2Geo(const sl::Transform & position_in_world, const sl::Transform & gnss_vio_calibration, const sl::float3 & gnss_antenna_position, sl::Fusion & fusion_ref);
-sl::LatLng convert2Geo(const sl::float3 & position_in_world_frame, const sl::Transform & gnss_vio_calibration, const sl::float3 & gnss_antenna_position, sl::Fusion & fusion_ref);
+sl::LatLng convert2Geo(
+    const sl::Transform& position_in_world,
+    const sl::Transform& gnss_vio_calibration,
+    const sl::float3& gnss_antenna_position,
+    sl::Fusion& fusion_ref
+);
+sl::LatLng convert2Geo(
+    const sl::float3& position_in_world_frame,
+    const sl::Transform& gnss_vio_calibration,
+    const sl::float3& gnss_antenna_position,
+    sl::Fusion& fusion_ref
+);
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     if (argc < 2) {
-        std::cerr << "Usage ./ZED_GNSS_playback <svo-file> <gnss-data-file-path optional if SVO2 include GNSS data> <optional_mask.png> <opt_gnss_antenna_pos without spaces like 0.5,0.1,-1 >" << std::endl;
+        std::cerr << "Usage ./ZED_GNSS_playback <svo-file> <gnss-data-file-path optional if SVO2 include GNSS data> <optional_mask.png> "
+                     "<opt_gnss_antenna_pos without spaces like 0.5,0.1,-1 >"
+                  << std::endl;
         return EXIT_FAILURE;
     }
 
     // The GNSS data are either extracted from a external json OR preferably from the SVO v2 custom data
 
     std::string svo_name, gnss_file, mask_file, gnss_antenna_position_str;
-    for(int i = 1; i<argc; i++){
+    for (int i = 1; i < argc; i++) {
         std::string arg(argv[i]);
-        if(arg.find(".svo") != std::string::npos)
+        if (arg.find(".svo") != std::string::npos)
             svo_name = arg;
-        if(arg.find(".json") != std::string::npos)
+        if (arg.find(".json") != std::string::npos)
             gnss_file = arg;
-        if(arg.find(".png") != std::string::npos || arg.find(".jpg") != std::string::npos)
+        if (arg.find(".png") != std::string::npos || arg.find(".jpg") != std::string::npos)
             mask_file = arg;
-        if(arg.find(",") != std::string::npos)
+        if (arg.find(",") != std::string::npos)
             gnss_antenna_position_str = arg;
     }
     sl::float3 gnss_antenna_position;
     // GNSS input parsing
-    if(!gnss_antenna_position_str.empty()){
+    if (!gnss_antenna_position_str.empty()) {
         auto str_list = split(gnss_antenna_position_str, ",");
-        if(str_list.size() == 3){
+        if (str_list.size() == 3) {
             gnss_antenna_position.x = std::stof(str_list[0]);
             gnss_antenna_position.y = std::stof(str_list[1]);
             gnss_antenna_position.z = std::stof(str_list[2]);
 
-            std::cout << "GNSS antenna position: [" << gnss_antenna_position.x << "," << gnss_antenna_position.y << "," << gnss_antenna_position.z << "]" << std::endl;
-        } else std::cerr << "Invalid GNSS Position input, ignoring" << std::endl;
+            std::cout << "GNSS antenna position: [" << gnss_antenna_position.x << "," << gnss_antenna_position.y << ","
+                      << gnss_antenna_position.z << "]" << std::endl;
+        } else
+            std::cerr << "Invalid GNSS Position input, ignoring" << std::endl;
     }
-    
+
     // Open the camera
     sl::Camera zed;
     sl::InitParameters init_params;
@@ -84,17 +98,17 @@ int main(int argc, char **argv) {
     init_params.coordinate_units = user_unit;
     init_params.input.setFromSVOFile(svo_name.c_str());
     sl::ERROR_CODE camera_open_error = zed.open(init_params);
-    if (camera_open_error != sl::ERROR_CODE::SUCCESS) {
+    if (camera_open_error > sl::ERROR_CODE::SUCCESS) {
         std::cerr << "[ZED][ERROR] Can't open ZED camera" << std::endl;
         return EXIT_FAILURE;
     }
 
     // Set Region of Interest
-    if(!mask_file.empty()) { 
+    if (!mask_file.empty()) {
         std::cout << "Loading Region of interest file" << std::endl;
         sl::Mat mask_roi;
         auto err = mask_roi.read(mask_file.c_str());
-        if(err == sl::ERROR_CODE::SUCCESS)
+        if (err == sl::ERROR_CODE::SUCCESS)
             zed.setRegionOfInterest(mask_roi, {sl::MODULE::ALL});
         else
             std::cout << "Error loading Region of Interest file: " << err << std::endl;
@@ -116,8 +130,8 @@ int main(int argc, char **argv) {
     // Create Fusion object:
     sl::Fusion fusion;
     sl::InitFusionParameters init_fusion_param;
-    init_fusion_param.coordinate_system = init_params.coordinate_system; //sl::COORDINATE_SYSTEM::IMAGE;
-    init_fusion_param.coordinate_units = init_params.coordinate_units; //sl::UNIT::METER;
+    init_fusion_param.coordinate_system = init_params.coordinate_system; // sl::COORDINATE_SYSTEM::IMAGE;
+    init_fusion_param.coordinate_units = init_params.coordinate_units;   // sl::UNIT::METER;
     init_fusion_param.verbose = true;
     sl::FUSION_ERROR_CODE fusion_init_code = fusion.init(init_fusion_param);
     if (fusion_init_code != sl::FUSION_ERROR_CODE::SUCCESS) {
@@ -128,8 +142,7 @@ int main(int argc, char **argv) {
     // Enable odometry publishing:
     zed.startPublishing();
     /// Run a first grab for starting sending data:
-    while (zed.grab() != sl::ERROR_CODE::SUCCESS) {
-    }
+    while (zed.grab() > sl::ERROR_CODE::SUCCESS) { }
 
     // Subscribe to Odometry
     sl::CameraIdentifier uuid(zed.getCameraInformation().serial_number);
@@ -147,7 +160,7 @@ int main(int argc, char **argv) {
     positional_tracking_fusion_parameters.gnss_calibration_parameters = gnss_calibration_parameter;
     positional_tracking_fusion_parameters.enable_GNSS_fusion = true;
     sl::FUSION_ERROR_CODE tracking_error_code = fusion.enablePositionalTracking(positional_tracking_fusion_parameters);
-    if(tracking_error_code != sl::FUSION_ERROR_CODE::SUCCESS){
+    if (tracking_error_code != sl::FUSION_ERROR_CODE::SUCCESS) {
         std::cout << "[Fusion][ERROR] Could not start tracking, error: " << tracking_error_code << std::endl;
         return EXIT_FAILURE;
     }
@@ -156,14 +169,17 @@ int main(int argc, char **argv) {
     GenericDisplay viewer;
     viewer.init(argc, argv);
     std::cout << "Start grabbing data... Global localization data will be displayed on the Live Server" << std::endl;
-    std::cout << "To run the Live Server (web interface), go to 'map server' folder and run 'python3 -m http.server 8000' then open a browser to 'http://0.0.0.0:8000/'" << std::endl << std::endl;
+    std::cout << "To run the Live Server (web interface), go to 'map server' folder and run 'python3 -m http.server 8000' then open a "
+                 "browser to 'http://0.0.0.0:8000/'"
+              << std::endl
+              << std::endl;
     sl::Pose zed_pose;
 
     auto gnss_reader = IGNSSReader::create(&zed, true);
     while (viewer.isAvailable()) {
         // Grab camera:
         auto zed_status = zed.grab();
-        if (zed_status == sl::ERROR_CODE::SUCCESS) {
+        if (zed_status <= sl::ERROR_CODE::SUCCESS) {
             // You can still use the classical getPosition for your application, just not that the position returned by this method
             // is the position without any GNSS/cameras fusion
             zed.getPosition(zed_pose, sl::REFERENCE_FRAME::WORLD);
@@ -187,10 +203,10 @@ int main(int argc, char **argv) {
                 std::cout << "Ingest error occurred when ingesting GNSSData: " << ingest_error << std::endl;
             }
         }
-        
+
         // Process data and compute positions:
         if (fusion.process() == sl::FUSION_ERROR_CODE::SUCCESS) {
-            
+
             sl::Pose fused_position;
             // Get position into the ZED CAMERA coordinate system:
             sl::POSITIONAL_TRACKING_STATE current_state = fusion.getPosition(fused_position);
@@ -203,17 +219,18 @@ int main(int argc, char **argv) {
             fusion.getCurrentGNSSData(input_gnss_sync);
             viewer.updateRawGeoPoseData(input_gnss_sync);
 
-            // Get position into the GNSS coordinate system - this needs a initialization between CAMERA 
+            // Get position into the GNSS coordinate system - this needs a initialization between CAMERA
             // and GNSS. When the initialization is finish the getGeoPose will return sl::POSITIONAL_TRACKING_STATE::OK]
             float yaw_std;
             sl::float3 position_std;
             auto current_geopose_status = fusion.getCurrentGNSSCalibrationSTD(yaw_std, position_std);
 
-            if(current_geopose_status == sl::GNSS_FUSION_STATUS::OK){
+            if (current_geopose_status == sl::GNSS_FUSION_STATUS::OK) {
                 // There are 3-way to convert a Pose into a lat/lng/alt coordinate:
                 // 1. Use the API
                 // 2. Use the Camera2Geo function
-                // 3. Use the computation by the formula present in the documentation, this one also let you convert any 3D point into lat/lng/alt
+                // 3. Use the computation by the formula present in the documentation, this one also let you convert any 3D point into
+                // lat/lng/alt
 
                 const bool verbose_validation = false;
 
@@ -222,17 +239,21 @@ int main(int argc, char **argv) {
                 current_geopose_status = fusion.getGeoPose(current_geopose);
                 double returned_lat, returned_lng, returned_alt;
                 current_geopose.latlng_coordinates.getCoordinates(returned_lat, returned_lng, returned_alt, false);
-                if(verbose_validation) std::cout << std::fixed << std::setprecision(12) << "Found by API         " << returned_lat << " " << returned_lng << " " << returned_alt << std::endl;
+                if (verbose_validation)
+                    std::cout << std::fixed << std::setprecision(12) << "Found by API         " << returned_lat << " " << returned_lng
+                              << " " << returned_alt << std::endl;
 
                 // Display it on the Live Server:
                 viewer.updateGeoPoseData(current_geopose);
-                
+
                 // 2. Use the Camera2Geo function:
                 sl::GeoPose geopose_by_camera2geo;
                 fusion.Camera2Geo(fused_position.pose_data, geopose_by_camera2geo);
                 double lat_camera2geo, lng_camera2geo, alt_camera2geo;
                 geopose_by_camera2geo.latlng_coordinates.getCoordinates(lat_camera2geo, lng_camera2geo, alt_camera2geo, false);
-                if(verbose_validation) std::cout << std::fixed << std::setprecision(12) << "Camera2Geo:          " << lat_camera2geo << " " << lng_camera2geo << " " << alt_camera2geo << std::endl;
+                if (verbose_validation)
+                    std::cout << std::fixed << std::setprecision(12) << "Camera2Geo:          " << lat_camera2geo << " " << lng_camera2geo
+                              << " " << alt_camera2geo << std::endl;
 
                 // 3. Use the computation by the formula present in the documentation:
                 sl::Transform current_calibration = fusion.getGeoTrackingCalibration();
@@ -240,17 +261,20 @@ int main(int argc, char **argv) {
                 sl::LatLng current_latlng = convert2Geo(position_in_world_frame, current_calibration, gnss_antenna_position, fusion);
                 double lat_converted, lng_converted, alt_converted;
                 current_latlng.getCoordinates(lat_converted, lng_converted, alt_converted, false);
-                if(verbose_validation) std::cout << std::fixed << std::setprecision(12) << "Found by computation " << lat_converted << " " << lng_converted << " " << alt_converted << std::endl;
-                
-            }
-            else{
+                if (verbose_validation)
+                    std::cout << std::fixed << std::setprecision(12) << "Found by computation " << lat_converted << " " << lng_converted
+                              << " " << alt_converted << std::endl;
+
+            } else {
                 // GNSS coordinate system to ZED coordinate system is not initialize yet
                 // The initialisation between the coordinates system is basically an optimization problem that
                 // Try to fit the ZED computed path with the GNSS computed path. In order to do it just move
                 // your system by the distance you specified in positional_tracking_fusion_parameters.gnss_initialisation_distance
 
-                if(yaw_std != -1.f)
-                    std::cout << "GNSS State: " << current_geopose_status << ": calibration uncertainty yaw_std " << yaw_std << " rad position_std " << position_std[0] << " m, " << position_std[1] << " m, " << position_std[2] << " m\t\t\t\r";
+                if (yaw_std != -1.f)
+                    std::cout << "GNSS State: " << current_geopose_status << ": calibration uncertainty yaw_std " << yaw_std
+                              << " rad position_std " << position_std[0] << " m, " << position_std[1] << " m, " << position_std[2]
+                              << " m\t\t\t\r";
             }
         }
     }
@@ -258,11 +282,11 @@ int main(int argc, char **argv) {
     closeAllKMLWriter();
     fusion.close();
     zed.close();
-    
+
     return 0;
 }
 
-std::vector<std::string> split(const std::string &s, const std::string &delimiter) {
+std::vector<std::string> split(const std::string& s, const std::string& delimiter) {
     std::vector<std::string> tokens;
     size_t start = 0, end = 0;
     while ((end = s.find(delimiter, start)) != std::string::npos) {
@@ -277,22 +301,44 @@ cv::Mat slMat2cvMat(sl::Mat& input) {
     // Mapping between MAT_TYPE and CV_TYPE
     int cvType = -1;
     switch (input.getDataType()) {
-        case sl::MAT_TYPE::F32_C1: cvType = CV_32FC1; break;
-        case sl::MAT_TYPE::F32_C2: cvType = CV_32FC2; break;
-        case sl::MAT_TYPE::F32_C3: cvType = CV_32FC3; break;
-        case sl::MAT_TYPE::F32_C4: cvType = CV_32FC4; break;
-        case sl::MAT_TYPE::U8_C1: cvType = CV_8UC1; break;
-        case sl::MAT_TYPE::U8_C2: cvType = CV_8UC2; break;
-        case sl::MAT_TYPE::U8_C3: cvType = CV_8UC3; break;
-        case sl::MAT_TYPE::U8_C4: cvType = CV_8UC4; break;
-        default: break;
+        case sl::MAT_TYPE::F32_C1:
+            cvType = CV_32FC1;
+            break;
+        case sl::MAT_TYPE::F32_C2:
+            cvType = CV_32FC2;
+            break;
+        case sl::MAT_TYPE::F32_C3:
+            cvType = CV_32FC3;
+            break;
+        case sl::MAT_TYPE::F32_C4:
+            cvType = CV_32FC4;
+            break;
+        case sl::MAT_TYPE::U8_C1:
+            cvType = CV_8UC1;
+            break;
+        case sl::MAT_TYPE::U8_C2:
+            cvType = CV_8UC2;
+            break;
+        case sl::MAT_TYPE::U8_C3:
+            cvType = CV_8UC3;
+            break;
+        case sl::MAT_TYPE::U8_C4:
+            cvType = CV_8UC4;
+            break;
+        default:
+            break;
     }
 
     // Convert to OpenCV matrix
     return cv::Mat(input.getHeight(), input.getWidth(), cvType, input.getPtr<sl::uchar1>(sl::MEM::CPU));
 }
 
-sl::LatLng convert2Geo(const sl::Transform & pose_in_world, const sl::Transform & gnss_vio_calibration, const sl::float3 & gnss_antenna_position, sl::Fusion & fusion_ref){
+sl::LatLng convert2Geo(
+    const sl::Transform& pose_in_world,
+    const sl::Transform& gnss_vio_calibration,
+    const sl::float3& gnss_antenna_position,
+    sl::Fusion& fusion_ref
+) {
     // All computation assume that the position is expressed in IMAGE and in METER unit
     sl::Transform position_in_IMAGE_and_meter = pose_in_world;
     sl::convertCoordinateSystem(position_in_IMAGE_and_meter, user_coordinate_system, sl::COORDINATE_SYSTEM::IMAGE);
@@ -306,7 +352,7 @@ sl::LatLng convert2Geo(const sl::Transform & pose_in_world, const sl::Transform 
 
     // Apply formula present on documentation:
     sl::Transform position_in_EDN = gnss_vio_calibration * position_in_IMAGE_and_meter * antenna_transform;
-    
+
     // Convert position into ENU:
     sl::Transform EDN_to_ENU_transform;
     EDN_to_ENU_transform.setZeros();
@@ -326,7 +372,12 @@ sl::LatLng convert2Geo(const sl::Transform & pose_in_world, const sl::Transform 
     return latlng;
 }
 
-sl::LatLng convert2Geo(const sl::float3 & position_in_world_frame, const sl::Transform & gnss_vio_calibration, const sl::float3 & gnss_antenna_position, sl::Fusion & fusion_ref){
+sl::LatLng convert2Geo(
+    const sl::float3& position_in_world_frame,
+    const sl::Transform& gnss_vio_calibration,
+    const sl::float3& gnss_antenna_position,
+    sl::Fusion& fusion_ref
+) {
     sl::Transform pose_in_world;
     pose_in_world.setTranslation(position_in_world_frame);
     return convert2Geo(pose_in_world, gnss_vio_calibration, gnss_antenna_position, fusion_ref);

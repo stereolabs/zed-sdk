@@ -32,14 +32,14 @@ public:
     void addPoint(const sl::float3& pt);
     void setColor(const sl::float4& color);
     void setMVP(const sl::Transform& mvp);
-    
+
     void draw();
     void clear();
-    
+
 private:
     std::vector<sl::float3> _points;
     sl::float4 _color = {1.f, 1.f, 1.f, 1.f};
-    sl::Transform _mvp = sl::Transform(); 
+    sl::Transform _mvp = sl::Transform();
 
     GLuint _vaoID = 0;
     GLuint _vboID = 0;
@@ -49,7 +49,7 @@ private:
 
     bool _needsUpdate = false;
     bool _isGLInitialized = false;
-    
+
     void initGL();
     void pushToGPU();
 };

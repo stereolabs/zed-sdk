@@ -18,7 +18,6 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-
 /******************************************************************************************************************
  ** This sample demonstrates how to use two ZEDs with the ZED SDK, each grab are in a separate thread             **
  *******************************************************************************************************************/
@@ -26,30 +25,31 @@
 #include <sl/Camera.hpp>
 
 #include <opencv2/opencv.hpp>
- // Using std and sl namespaces
+// Using std and sl namespaces
 using namespace std;
 using namespace sl;
 
 void zed_acquisition(Camera& zed, cv::Mat& image_low_res, bool& run, Timestamp& ts);
 
 int main(int argc, char** argv) {
-    
-	InitParameters init_parameters;
+
+    InitParameters init_parameters;
     init_parameters.depth_mode = DEPTH_MODE::NEURAL;
     init_parameters.camera_resolution = RESOLUTION::AUTO;
-    
-	vector< DeviceProperties> devList = Camera::getDeviceList();
+
+    vector<DeviceProperties> devList = Camera::getDeviceList();
     int nb_detected_zed = devList.size();
 
-	for (int z = 0; z < nb_detected_zed; z++) {
-		std::cout << "ID : " << devList[z].id << " ,model : " << devList[z].camera_model << " , S/N : " << devList[z].serial_number << " , state : "<<devList[z].camera_state<<std::endl;
-	}
-	
+    for (int z = 0; z < nb_detected_zed; z++) {
+        std::cout << "ID : " << devList[z].id << " ,model : " << devList[z].camera_model << " , S/N : " << devList[z].serial_number
+                  << " , state : " << devList[z].camera_state << std::endl;
+    }
+
     if (nb_detected_zed == 0) {
         cout << "No ZED Detected, exit program" << endl;
         return EXIT_FAILURE;
     }
-    
+
     cout << nb_detected_zed << " ZED Detected" << endl;
 
     vector<Camera> zeds(nb_detected_zed);
@@ -66,19 +66,19 @@ int main(int argc, char** argv) {
             zeds[z].close();
         }
     }
-    
+
     bool run = true;
     // Create a grab thread for each opened camera
-    vector<thread> thread_pool(nb_detected_zed); // compute threads
-    vector<cv::Mat> images_lr(nb_detected_zed); // display images
-    vector<string> wnd_names(nb_detected_zed); // display windows names
+    vector<thread> thread_pool(nb_detected_zed);  // compute threads
+    vector<cv::Mat> images_lr(nb_detected_zed);   // display images
+    vector<string> wnd_names(nb_detected_zed);    // display windows names
     vector<Timestamp> images_ts(nb_detected_zed); // images timestamps
 
     bool zed_open = false;
     for (int z = 0; z < nb_detected_zed; z++)
         if (zeds[z].isOpened()) {
             // create an image to store Left+Depth image
-            images_lr[z] = cv::Mat(404, 720*2, CV_8UC4);
+            images_lr[z] = cv::Mat(404, 720 * 2, CV_8UC4);
             // camera acquisition thread
             thread_pool[z] = std::thread(zed_acquisition, ref(zeds[z]), ref(images_lr[z]), ref(run), ref(images_ts[z]));
             // create windows for display
@@ -87,7 +87,7 @@ int main(int argc, char** argv) {
             zed_open = true;
         }
 
-    if(!zed_open) {        
+    if (!zed_open) {
         cout << "No ZED opened, exit program" << endl;
         return EXIT_FAILURE;
     }
@@ -114,11 +114,11 @@ int main(int argc, char** argv) {
 
     // Wait for every thread to be stopped
     for (int z = 0; z < nb_detected_zed; z++)
-        if (zeds[z].isOpened()) 
+        if (zeds[z].isOpened())
             thread_pool[z].join();
 
     for (int z = 0; z < nb_detected_zed; z++)
-        if (zeds[z].isOpened()) 
+        if (zeds[z].isOpened())
             zeds[z].close();
 
     return EXIT_SUCCESS;
@@ -135,10 +135,12 @@ void zed_acquisition(Camera& zed, cv::Mat& image_low_res, bool& run, Timestamp& 
         if (zed.grab() <= ERROR_CODE::SUCCESS) {
             zed.retrieveImage(zed_image, VIEW::LEFT, MEM::CPU, low_res);
             // copy Left image to the left part of the side by side image
-            cv::Mat(h_low_res, w_low_res, CV_8UC4, zed_image.getPtr<sl::uchar1>(MEM::CPU)).copyTo(image_low_res(cv::Rect(0, 0, w_low_res, h_low_res)));
+            cv::Mat(h_low_res, w_low_res, CV_8UC4, zed_image.getPtr<sl::uchar1>(MEM::CPU))
+                .copyTo(image_low_res(cv::Rect(0, 0, w_low_res, h_low_res)));
             zed.retrieveImage(zed_image, VIEW::DEPTH, MEM::CPU, low_res);
             // copy Dpeth image to the right part of the side by side image
-            cv::Mat(h_low_res, w_low_res, CV_8UC4, zed_image.getPtr<sl::uchar1>(MEM::CPU)).copyTo(image_low_res(cv::Rect(w_low_res, 0, w_low_res, h_low_res)));
+            cv::Mat(h_low_res, w_low_res, CV_8UC4, zed_image.getPtr<sl::uchar1>(MEM::CPU))
+                .copyTo(image_low_res(cv::Rect(w_low_res, 0, w_low_res, h_low_res)));
             ts = zed.getTimestamp(TIME_REFERENCE::IMAGE);
             zed.retrieveMeasure(pt, sl::MEASURE::XYZRGBA, sl::MEM::CPU);
             std::cout << std::this_thread::get_id() << " " << zed.getCurrentFPS() << "\n";

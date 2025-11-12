@@ -70,7 +70,7 @@ def main(opt):
         is_playback = True
 
     status = zed.open(init_params)
-    if status != sl.ERROR_CODE.SUCCESS:
+    if status > sl.ERROR_CODE.SUCCESS:
         print(repr(status))
         exit()
 

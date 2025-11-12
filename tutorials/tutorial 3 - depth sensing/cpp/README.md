@@ -48,7 +48,7 @@ init_params.coordinate_units = UNIT::MILLIMETER; // Use millimeter units
 
 // Open the camera
 ERROR_CODE err = zed.open(init_params);
-if (err != ERROR_CODE::SUCCESS) {
+if (err > ERROR_CODE::SUCCESS) {
     std::cout << "Error " << err << ", exit program.\n"; // Display the error
     return -1;
 }
@@ -70,9 +70,8 @@ int i = 0;
 sl::Mat image, depth;
 while (i < 50) {
     // Grab an image
-    if (zed.grab(runtime_parameters) == ERROR_CODE::SUCCESS) {
-
-        // A new image is available if grab() returns ERROR_CODE::SUCCESS
+    if (zed.grab(runtime_parameters) <= ERROR_CODE::SUCCESS) {
+        // A new image is available if grab() returns ERROR_CODE::SUCCESS or a WARNING (an error_code lower than ERROR_CODE::SUCCESS)
         zed.retrieveImage(image, VIEW::LEFT); // Get the left image
         zed.retrieveMeasure(depth, MEASURE::DEPTH); // Retrieve depth Mat. Depth is aligned on the left image
         zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA);

@@ -57,7 +57,7 @@ def main():
     init = sl.InitParameters()
     cam = sl.Camera()
     status = cam.open(init)
-    if status != sl.ERROR_CODE.SUCCESS:
+    if status > sl.ERROR_CODE.SUCCESS:
         print("Camera Open : "+repr(status)+". Exit program.")
         exit()
     

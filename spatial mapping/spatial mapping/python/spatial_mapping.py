@@ -40,7 +40,7 @@ def main(opt):
     parse_args(init, opt)
     zed = sl.Camera()
     status = zed.open(init)
-    if status != sl.ERROR_CODE.SUCCESS:
+    if status > sl.ERROR_CODE.SUCCESS:
         print("Camera Open : "+repr(status)+". Exit program.")
         exit()
     

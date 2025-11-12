@@ -60,7 +60,7 @@ def main(opt):
     init_parameters.set_from_stream(opt.ip_address.split(':')[0],int(opt.ip_address.split(':')[1]))
     cam = sl.Camera()
     status = cam.open(init_parameters)
-    if status != sl.ERROR_CODE.SUCCESS:
+    if status > sl.ERROR_CODE.SUCCESS:
         print("Camera Open : "+repr(status)+". Exit program.")
         exit()
     runtime = sl.RuntimeParameters()

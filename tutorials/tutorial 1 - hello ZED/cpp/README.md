@@ -57,7 +57,7 @@ Once initial configuration is done, open the camera.
 ```cpp
 // Open the camera
 err = zed.open(init_params);
-if (err != ERROR_CODE::SUCCESS)
+if (err > ERROR_CODE::SUCCESS)
     exit(-1);
 ```
 

@@ -34,7 +34,7 @@
 using namespace sl;
 using namespace std;
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
     if (argc <= 1) {
         cout << "Usage: \n";
@@ -51,13 +51,14 @@ int main(int argc, char **argv) {
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
 
     std::string s;
-    for (const auto &piece : zed.getSVODataKeys()) s += piece + "; ";
+    for (const auto& piece : zed.getSVODataKeys())
+        s += piece + "; ";
     std::cout << "Channels that are in the SVO: " << s << std::endl;
 
     unsigned long long last_timestamp_ns;

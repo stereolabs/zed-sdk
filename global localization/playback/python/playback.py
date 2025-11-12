@@ -48,7 +48,7 @@ def main(opt):
     # create the camera that will input the position from its odometry
     zed = sl.Camera()
     status = zed.open(init_params)
-    if status != sl.ERROR_CODE.SUCCESS:
+    if status > sl.ERROR_CODE.SUCCESS:
         print("[ZED][ERROR] Camera Open : " + repr(status) + ". Exit program.")
         exit()
     # Enable positional tracking:

@@ -75,7 +75,7 @@ def main():
 
     # Open the camera
     err = zed.open(init_params)
-    if err != sl.ERROR_CODE.SUCCESS :
+    if err > sl.ERROR_CODE.SUCCESS :
         print(repr(err))
         zed.close()
         exit(1)

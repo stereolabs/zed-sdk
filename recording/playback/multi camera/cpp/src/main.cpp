@@ -34,11 +34,9 @@
 using namespace sl;
 using namespace std;
 
-int main(int argc, char **argv)
-{
+int main(int argc, char** argv) {
 
-    if (argc <= 1)
-    {
+    if (argc <= 1) {
         cout << "Usage: \n";
         cout << "$ ZED_SVO_Playback <SVO_file> ...\n";
         cout << "  ** SVO file is mandatory in the application ** \n\n";
@@ -47,11 +45,9 @@ int main(int argc, char **argv)
 
     std::map<int, std::string> svo_files;
     std::vector<std::shared_ptr<Camera>> cameras;
-    for (int i = 1; i < argc; ++i)
-    {
+    for (int i = 1; i < argc; ++i) {
         auto svo_path = std::string(argv[i]);
-        if (svo_path.find(".svo") == std::string::npos)
-        {
+        if (svo_path.find(".svo") == std::string::npos) {
             std::cerr << "Path " << svo_path << " is not a valid SVO path, skipping..." << std::endl;
             continue;
         }
@@ -65,8 +61,7 @@ int main(int argc, char **argv)
 
         // Open the camera
         auto returned_state = zed->open(init_parameters);
-        if (returned_state != ERROR_CODE::SUCCESS)
-        {
+        if (returned_state > ERROR_CODE::SUCCESS) {
             std::cerr << "Unable to open camera" << i << returned_state << ". Exit program." << std::endl;
             return EXIT_FAILURE;
         }
@@ -75,20 +70,17 @@ int main(int argc, char **argv)
         svo_files.insert(std::make_pair(i - 1, init_parameters.input.getConfiguration()));
     }
 
-    if (svo_files.empty())
-    {
+    if (svo_files.empty()) {
         std::cerr << "No SVO files opened, exiting." << std::endl;
         return EXIT_FAILURE;
     }
 
     bool enable_svo_sync = (svo_files.size() > 1);
-    if (enable_svo_sync)
-    {
+    if (enable_svo_sync) {
         std::cout << "Starting SVO sync process..." << std::endl;
         std::map<int, int> cam_idx_to_svo_frame_idx = syncDATA(svo_files);
 
-        for (auto &it: cam_idx_to_svo_frame_idx)
-        {
+        for (auto& it : cam_idx_to_svo_frame_idx) {
             std::cout << "Setting camera " << it.first << " to frame " << it.second << std::endl;
             cameras[it.first]->setSVOPosition(it.second);
         }
@@ -101,32 +93,27 @@ int main(int argc, char **argv)
     // Start SVO playback
     sl::Mat mat;
     sl::ERROR_CODE returned_state;
-    while (key != 'q')
-    {
-        for (auto i = 0; i < cameras.size(); ++i)
-        {
+    while (key != 'q') {
+        for (auto i = 0; i < cameras.size(); ++i) {
             auto zed = cameras[i];
             auto resolution = zed->getCameraInformation().camera_configuration.resolution;
             // Define OpenCV window size (resize to max 720/404)
-            sl::Resolution low_resolution(min(720, (int) resolution.width) * 2, min(404, (int) resolution.height));
+            sl::Resolution low_resolution(min(720, (int)resolution.width) * 2, min(404, (int)resolution.height));
 
             returned_state = zed->grab();
-            if (returned_state <= ERROR_CODE::SUCCESS)
-            {
+            if (returned_state <= ERROR_CODE::SUCCESS) {
                 // Get the side by side image
                 zed->retrieveImage(mat, VIEW::SIDE_BY_SIDE, MEM::CPU, low_resolution);
                 cv::Mat cv_mat = slMat2cvMat(mat);
 
                 // Display the frame
                 cv::imshow("View " + std::to_string(zed->getCameraInformation().serial_number), cv_mat);
-            } else if (returned_state == sl::ERROR_CODE::END_OF_SVOFILE_REACHED)
-            {
-                std::cout <<"SVO end has been reached. Closing camera." << std::endl;
+            } else if (returned_state == sl::ERROR_CODE::END_OF_SVOFILE_REACHED) {
+                std::cout << "SVO end has been reached. Closing camera." << std::endl;
                 cv::destroyAllWindows();
                 zed->close();
                 cameras.erase(cameras.begin() + i);
-            } else
-            {
+            } else {
                 std::cout << "Grab ZED : " << returned_state << std::endl;
                 break;
             }
@@ -134,7 +121,7 @@ int main(int argc, char **argv)
         key = cv::waitKey(1);
     }
 
-    for (auto &zed: cameras)
+    for (auto& zed : cameras)
         zed->close();
 
     return EXIT_SUCCESS;

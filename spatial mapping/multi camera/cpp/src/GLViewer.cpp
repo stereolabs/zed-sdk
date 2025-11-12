@@ -1,76 +1,71 @@
 #include "GLViewer.hpp"
 
-const GLchar* MESH_VERTEX_SHADER =
-        "#version 330 core\n"
-        "layout(location = 0) in vec3 in_Vertex;\n"
-        "layout(location = 1) in vec3 in_Color;\n"
-        "uniform mat4 u_mvpMatrix;\n"
-        "out vec3 b_color;\n"
-        "void main() {\n"
-        "   b_color = in_Color.bgr;\n"
-        "   gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
-        "}";
+const GLchar* MESH_VERTEX_SHADER = "#version 330 core\n"
+                                   "layout(location = 0) in vec3 in_Vertex;\n"
+                                   "layout(location = 1) in vec3 in_Color;\n"
+                                   "uniform mat4 u_mvpMatrix;\n"
+                                   "out vec3 b_color;\n"
+                                   "void main() {\n"
+                                   "   b_color = in_Color.bgr;\n"
+                                   "   gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
+                                   "}";
 
-const GLchar* MESH_FRAGMENT_SHADER =
-        "#version 330 core\n"
-        "in vec3 b_color;\n"
-        "layout(location = 0) out vec4 color;\n"
-        "void main() {\n"
-        "   color = vec4(b_color, 0.95);\n"
-        "}";
+const GLchar* MESH_FRAGMENT_SHADER = "#version 330 core\n"
+                                     "in vec3 b_color;\n"
+                                     "layout(location = 0) out vec4 color;\n"
+                                     "void main() {\n"
+                                     "   color = vec4(b_color, 0.95);\n"
+                                     "}";
 
-const GLchar* POINTCLOUD_VERTEX_SHADER =
-        "#version 330 core\n"
-        "layout(location = 0) in vec4 in_VertexRGBA;\n"
-        "uniform mat4 u_mvpMatrix;\n"
-        "out vec3 b_color;\n"
-        "vec4 decomposeFloat(const in float value)\n"
-        "{\n"
-        "   uint rgbaInt = floatBitsToUint(value);\n"
-        "	uint bIntValue = (rgbaInt / 256U / 256U) % 256U;\n"
-        "	uint gIntValue = (rgbaInt / 256U) % 256U;\n"
-        "	uint rIntValue = (rgbaInt) % 256U; \n"
-        "	return vec4(bIntValue / 255.0f, gIntValue / 255.0f, rIntValue / 255.0f, 1.0); \n"
-        "}\n"
-        "void main() {\n"
-        // Decompose the 4th channel of the XYZRGBA buffer to retrieve the color of the point (1float to 4uint)
-        "   b_color = decomposeFloat(in_VertexRGBA.a).xyz;\n"
-        "	gl_Position = u_mvpMatrix * vec4(in_VertexRGBA.xyz, 1);\n"
-        "}";
+const GLchar* POINTCLOUD_VERTEX_SHADER
+    = "#version 330 core\n"
+      "layout(location = 0) in vec4 in_VertexRGBA;\n"
+      "uniform mat4 u_mvpMatrix;\n"
+      "out vec3 b_color;\n"
+      "vec4 decomposeFloat(const in float value)\n"
+      "{\n"
+      "   uint rgbaInt = floatBitsToUint(value);\n"
+      "	uint bIntValue = (rgbaInt / 256U / 256U) % 256U;\n"
+      "	uint gIntValue = (rgbaInt / 256U) % 256U;\n"
+      "	uint rIntValue = (rgbaInt) % 256U; \n"
+      "	return vec4(bIntValue / 255.0f, gIntValue / 255.0f, rIntValue / 255.0f, 1.0); \n"
+      "}\n"
+      "void main() {\n"
+      // Decompose the 4th channel of the XYZRGBA buffer to retrieve the color of the point (1float to 4uint)
+      "   b_color = decomposeFloat(in_VertexRGBA.a).xyz;\n"
+      "	gl_Position = u_mvpMatrix * vec4(in_VertexRGBA.xyz, 1);\n"
+      "}";
 
-const GLchar* POINTCLOUD_FRAGMENT_SHADER =
-        "#version 330 core\n"
-        "in vec3 b_color;\n"
-        "layout(location = 0) out vec4 out_Color;\n"
-        "void main() {\n"
-        "   out_Color = vec4(b_color, 0.9);\n"
-        "}";
+const GLchar* POINTCLOUD_FRAGMENT_SHADER = "#version 330 core\n"
+                                           "in vec3 b_color;\n"
+                                           "layout(location = 0) out vec4 out_Color;\n"
+                                           "void main() {\n"
+                                           "   out_Color = vec4(b_color, 0.9);\n"
+                                           "}";
 
-const GLchar* VERTEX_SHADER_TEXTURE =
-        "#version 330 core\n"
-        "layout(location = 0) in vec3 in_Vertex;\n"
-        "layout(location = 1) in vec2 in_UVs;\n"
-        "uniform mat4 u_mvpMatrix;\n"
-        "out vec2 UV;\n"
-        "void main() {\n"
-        "   gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
-        "    UV = in_UVs;\n"
-        "}\n";
+const GLchar* VERTEX_SHADER_TEXTURE = "#version 330 core\n"
+                                      "layout(location = 0) in vec3 in_Vertex;\n"
+                                      "layout(location = 1) in vec2 in_UVs;\n"
+                                      "uniform mat4 u_mvpMatrix;\n"
+                                      "out vec2 UV;\n"
+                                      "void main() {\n"
+                                      "   gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
+                                      "    UV = in_UVs;\n"
+                                      "}\n";
 
-const GLchar* FRAGMENT_SHADER_TEXTURE =
-        "#version 330 core\n"
-        "in vec2 UV;\n"
-        "uniform sampler2D texture_sampler;\n"
-        "void main() {\n"
-        "    gl_FragColor = vec4(texture(texture_sampler, UV).bgr, 1.0);\n"
-        "}\n";
-
+const GLchar* FRAGMENT_SHADER_TEXTURE = "#version 330 core\n"
+                                        "in vec2 UV;\n"
+                                        "uniform sampler2D texture_sampler;\n"
+                                        "void main() {\n"
+                                        "    gl_FragColor = vec4(texture(texture_sampler, UV).bgr, 1.0);\n"
+                                        "}\n";
 
 using namespace sl;
 
 GLViewer* GLViewer::currentInstance_ = nullptr;
 
-GLViewer::GLViewer() : available(false) {
+GLViewer::GLViewer()
+    : available(false) {
     if (currentInstance_ != nullptr) {
         delete currentInstance_;
     }
@@ -82,8 +77,7 @@ GLViewer::GLViewer() : available(false) {
     previousMouseMotion_[0] = previousMouseMotion_[1] = 0;
 }
 
-GLViewer::~GLViewer() {
-}
+GLViewer::~GLViewer() { }
 
 bool GLViewer::isAvailable() {
     glutMainLoopEvent();
@@ -97,7 +91,7 @@ void GLViewer::exit() {
     available = false;
 }
 
-void GLViewer::init(int argc, char **argv) {
+void GLViewer::init(int argc, char** argv) {
 
     glutInit(&argc, argv);
 
@@ -114,20 +108,20 @@ void GLViewer::init(int argc, char **argv) {
         std::cout << "ERROR: glewInit failed: " << glewGetErrorString(err) << "\n";
 
     glEnable(GL_DEPTH_TEST);
-	glEnable(GL_TEXTURE_2D);
+    glEnable(GL_TEXTURE_2D);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_POINT_SMOOTH);
 
-    shader_mesh.it.set((GLchar*) MESH_VERTEX_SHADER, (GLchar*) MESH_FRAGMENT_SHADER);
+    shader_mesh.it.set((GLchar*)MESH_VERTEX_SHADER, (GLchar*)MESH_FRAGMENT_SHADER);
     shader_mesh.MVPM = glGetUniformLocation(shader_mesh.it.getProgramId(), "u_mvpMatrix");
 
-    shader_fpc.it.set((GLchar*) POINTCLOUD_VERTEX_SHADER, (GLchar*) POINTCLOUD_FRAGMENT_SHADER);
+    shader_fpc.it.set((GLchar*)POINTCLOUD_VERTEX_SHADER, (GLchar*)POINTCLOUD_FRAGMENT_SHADER);
     shader_fpc.MVPM = glGetUniformLocation(shader_fpc.it.getProgramId(), "u_mvpMatrix");
 
     camera_ = CameraGL(sl::Translation(0, 2, 2.000), sl::Translation(0, 0, -0.1));
     sl::Rotation rot;
-    rot.setEulerAngles(sl::float3(-45,0,0), false);
+    rot.setEulerAngles(sl::float3(-45, 0, 0), false);
     camera_.setRotation(rot);
 
     draw_mesh_as_wire = false;
@@ -147,7 +141,7 @@ void GLViewer::init(int argc, char **argv) {
 void GLViewer::render() {
     if (available) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        if(dark_background)
+        if (dark_background)
             glClearColor(59 / 255.f, 63 / 255.f, 69 / 255.f, 1.0f);
         else
             glClearColor(211 / 255.f, 220 / 255.f, 232 / 255.f, 1.0f);
@@ -163,7 +157,7 @@ void GLViewer::updateCameraPose(sl::Transform p, sl::POSITIONAL_TRACKING_STATE s
     cam_pose = p;
 }
 
-void GLViewer::updateMap(sl::FusedPointCloud &fpc){
+void GLViewer::updateMap(sl::FusedPointCloud& fpc) {
     map_fpc.resize(fpc.chunks.size());
     int c_id = 0;
     for (auto& it : map_fpc) {
@@ -173,7 +167,7 @@ void GLViewer::updateMap(sl::FusedPointCloud &fpc){
     }
 }
 
-void GLViewer::updateMap(sl::Mesh &mesh) {
+void GLViewer::updateMap(sl::Mesh& mesh) {
     map_mesh.resize(mesh.chunks.size());
     int c_id = 0;
     for (auto& it : map_mesh) {
@@ -190,30 +184,30 @@ void GLViewer::update() {
         return;
     }
 
-    if (keyStates_['o'] == KEY_STATE::UP || keyStates_['O'] == KEY_STATE::UP) 
-        point_size = point_size - 0.2;    
+    if (keyStates_['o'] == KEY_STATE::UP || keyStates_['O'] == KEY_STATE::UP)
+        point_size = point_size - 0.2;
 
-    if (keyStates_['p'] == KEY_STATE::UP || keyStates_['P'] == KEY_STATE::UP) 
+    if (keyStates_['p'] == KEY_STATE::UP || keyStates_['P'] == KEY_STATE::UP)
         point_size = point_size + 0.2;
-    
-    if (keyStates_['w'] == KEY_STATE::UP || keyStates_['W'] == KEY_STATE::UP) 
+
+    if (keyStates_['w'] == KEY_STATE::UP || keyStates_['W'] == KEY_STATE::UP)
         draw_mesh_as_wire = !draw_mesh_as_wire;
-    
-    if (keyStates_['d'] == KEY_STATE::UP || keyStates_['D'] == KEY_STATE::UP) 
+
+    if (keyStates_['d'] == KEY_STATE::UP || keyStates_['D'] == KEY_STATE::UP)
         dark_background = !dark_background;
-       
+
     // Rotate camera with mouse
     if (mouseButton_[MOUSE_BUTTON::LEFT]) {
-        camera_.rotate(sl::Rotation((float) mouseMotion_[1] * MOUSE_R_SENSITIVITY, camera_.getRight()));
-        camera_.rotate(sl::Rotation((float) mouseMotion_[0] * MOUSE_R_SENSITIVITY, camera_.getVertical() * -1.f));
+        camera_.rotate(sl::Rotation((float)mouseMotion_[1] * MOUSE_R_SENSITIVITY, camera_.getRight()));
+        camera_.rotate(sl::Rotation((float)mouseMotion_[0] * MOUSE_R_SENSITIVITY, camera_.getVertical() * -1.f));
     }
 
     // Translate camera with mouse
     if (mouseButton_[MOUSE_BUTTON::RIGHT]) {
-        camera_.translate(camera_.getUp() * (float) mouseMotion_[1] * MOUSE_T_SENSITIVITY);
-        camera_.translate(camera_.getRight() * (float) mouseMotion_[0] * MOUSE_T_SENSITIVITY);
+        camera_.translate(camera_.getUp() * (float)mouseMotion_[1] * MOUSE_T_SENSITIVITY);
+        camera_.translate(camera_.getRight() * (float)mouseMotion_[0] * MOUSE_T_SENSITIVITY);
     }
-    
+
     // Zoom in with mouse wheel
     if (mouseWheelPosition_ != 0) {
         if (mouseWheelPosition_ > 0 /* && distance > camera_.getZNear()*/) // zoom
@@ -223,7 +217,7 @@ void GLViewer::update() {
             camera_.translate(camera_.getForward() * MOUSE_UZ_SENSITIVITY);
     }
 
-    for (auto &it : map_mesh)
+    for (auto& it : map_mesh)
         it.pushToGPU();
 
     for (auto& it : map_fpc)
@@ -241,18 +235,18 @@ void GLViewer::draw() {
     glLineWidth(2.f);
     glPointSize(point_size);
 
-    if(map_fpc.size()){
+    if (map_fpc.size()) {
         glUseProgram(shader_fpc.it.getProgramId());
         glUniformMatrix4fv(shader_fpc.MVPM, 1, GL_FALSE, sl::Transform::transpose(vpMatrix).m);
-        for (auto &it: map_fpc)
+        for (auto& it : map_fpc)
             it.draw();
         glUseProgram(0);
     }
 
-    if(map_mesh.size()){
+    if (map_mesh.size()) {
         glUseProgram(shader_mesh.it.getProgramId());
         glUniformMatrix4fv(shader_mesh.MVPM, 1, GL_FALSE, sl::Transform::transpose(vpMatrix).m);
-        for (auto &it: map_mesh)
+        for (auto& it : map_mesh)
             it.draw(draw_mesh_as_wire);
         glUseProgram(0);
     }
@@ -323,20 +317,21 @@ Simple3DObject::~Simple3DObject() {
     }
 }
 
-void Simple3DObject::addPoint(sl::float3 pt, sl::float3 clr){
+void Simple3DObject::addPoint(sl::float3 pt, sl::float3 clr) {
     vertices_.push_back(pt);
     colors_.push_back(clr);
-    indices_.push_back((int) indices_.size());
+    indices_.push_back((int)indices_.size());
     need_update = true;
 }
-void Simple3DObject::addFace(sl::float3 p1, sl::float3 p2, sl::float3 p3, sl::float3 clr){
+void Simple3DObject::addFace(sl::float3 p1, sl::float3 p2, sl::float3 p3, sl::float3 clr) {
     addPoint(p1, clr);
     addPoint(p2, clr);
     addPoint(p3, clr);
 }
 
 void Simple3DObject::pushToGPU() {
-    if(!need_update) return;
+    if (!need_update)
+        return;
 
     if (!isStatic_ || vaoID_ == 0) {
         if (vaoID_ == 0) {
@@ -355,7 +350,12 @@ void Simple3DObject::pushToGPU() {
         glEnableVertexAttribArray(Shader::ATTRIB_COLOR_POS);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID_[2]);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_.size() * sizeof (unsigned int), &indices_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
+        glBufferData(
+            GL_ELEMENT_ARRAY_BUFFER,
+            indices_.size() * sizeof(unsigned int),
+            &indices_[0],
+            isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW
+        );
 
         glBindVertexArray(0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -376,11 +376,9 @@ void Simple3DObject::setDrawingType(GLenum type) {
 
 void Simple3DObject::draw() {
     glBindVertexArray(vaoID_);
-    glDrawElements(drawingType_, (GLsizei) indices_.size(), GL_UNSIGNED_INT, 0);
+    glDrawElements(drawingType_, (GLsizei)indices_.size(), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 }
-
-
 
 // ____________
 
@@ -397,7 +395,7 @@ FpcObj::~FpcObj() {
     }
 }
 
-void FpcObj::add(std::vector<sl::float4>&pts) {
+void FpcObj::add(std::vector<sl::float4>& pts) {
     clear();
     vertices_ = pts;
     for (int i = 0; i < vertices_.size(); i++)
@@ -406,7 +404,8 @@ void FpcObj::add(std::vector<sl::float4>&pts) {
 }
 
 void FpcObj::pushToGPU() {
-    if (!need_update) return;
+    if (!need_update)
+        return;
 
     if (vaoID_ == 0) {
         glGenVertexArrays(1, &vaoID_);
@@ -414,12 +413,12 @@ void FpcObj::pushToGPU() {
     }
     glBindVertexArray(vaoID_);
     glBindBuffer(GL_ARRAY_BUFFER, vboID_[0]);
-    glBufferData(GL_ARRAY_BUFFER, vertices_.size() * 4 * sizeof (float), &vertices_[0], GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices_.size() * 4 * sizeof(float), &vertices_[0], GL_DYNAMIC_DRAW);
     glVertexAttribPointer(Shader::ATTRIB_VERTICES_POS, 4, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(Shader::ATTRIB_VERTICES_POS);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID_[1]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_.size() * sizeof (unsigned int), &indices_[0], GL_DYNAMIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_.size() * sizeof(unsigned int), &indices_[0], GL_DYNAMIC_DRAW);
     nb_v = indices_.size();
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -437,7 +436,7 @@ void FpcObj::draw() {
     if (nb_v && vaoID_) {
         glDisable(GL_BLEND);
         glBindVertexArray(vaoID_);
-        glDrawElements(GL_POINTS, (GLsizei) nb_v, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_POINTS, (GLsizei)nb_v, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
         glEnable(GL_BLEND);
     }
@@ -450,10 +449,9 @@ MeshObject::MeshObject() {
     need_update = false;
 }
 
-MeshObject::~MeshObject() {
-}
+MeshObject::~MeshObject() { }
 
-void MeshObject::add(std::vector<sl::float3> &vertices, std::vector<sl::uint3> &triangles, std::vector<sl::uchar3> &colors) {
+void MeshObject::add(std::vector<sl::float3>& vertices, std::vector<sl::uint3>& triangles, std::vector<sl::uchar3>& colors) {
     vert = vertices;
     clr = colors;
     faces = triangles;
@@ -461,8 +459,10 @@ void MeshObject::add(std::vector<sl::float3> &vertices, std::vector<sl::uint3> &
 }
 
 void MeshObject::pushToGPU() {
-    if (!need_update) return;
-    if (faces.empty()) return;
+    if (!need_update)
+        return;
+    if (faces.empty())
+        return;
 
     if (vaoID_ == 0) {
         glGenVertexArrays(1, &vaoID_);
@@ -472,17 +472,17 @@ void MeshObject::pushToGPU() {
     glBindVertexArray(vaoID_);
 
     glBindBuffer(GL_ARRAY_BUFFER, vboID_[0]);
-    glBufferData(GL_ARRAY_BUFFER, vert.size() * sizeof (vert[0]), &vert[0], GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vert.size() * sizeof(vert[0]), &vert[0], GL_DYNAMIC_DRAW);
     glVertexAttribPointer(Shader::ATTRIB_VERTICES_POS, 3, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(Shader::ATTRIB_VERTICES_POS);
 
     glBindBuffer(GL_ARRAY_BUFFER, vboID_[1]);
-    glBufferData(GL_ARRAY_BUFFER, clr.size() * sizeof (clr[0]), &clr[0], GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, clr.size() * sizeof(clr[0]), &clr[0], GL_DYNAMIC_DRAW);
     glVertexAttribPointer(Shader::ATTRIB_COLOR_POS, 3, GL_UNSIGNED_BYTE, GL_TRUE, 0, 0);
     glEnableVertexAttribArray(Shader::ATTRIB_COLOR_POS);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID_[2]);
-    current_fc = faces.size() * sizeof (faces[0]);
+    current_fc = faces.size() * sizeof(faces[0]);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, current_fc, &faces[0], GL_DYNAMIC_DRAW);
 
     glBindVertexArray(0);
@@ -496,9 +496,9 @@ void MeshObject::draw(bool draw_wire) {
         auto type = draw_wire ? GL_LINE : GL_FILL;
         glPolygonMode(GL_FRONT, type);
         glPolygonMode(GL_BACK, type);
-            
+
         glBindVertexArray(vaoID_);
-        glDrawElements(GL_TRIANGLES, (GLsizei) current_fc, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, (GLsizei)current_fc, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 }
@@ -532,7 +532,7 @@ void Shader::set(const GLchar* vs, const GLchar* fs) {
         GLint errorSize(0);
         glGetProgramiv(programId_, GL_INFO_LOG_LENGTH, &errorSize);
 
-        char *error = new char[errorSize + 1];
+        char* error = new char[errorSize + 1];
         glGetShaderInfoLog(programId_, errorSize, &errorSize, error);
         error[errorSize] = '\0';
         std::cout << error << std::endl;
@@ -555,13 +555,13 @@ GLuint Shader::getProgramId() {
     return programId_;
 }
 
-bool Shader::compile(GLuint &shaderId, GLenum type, const GLchar* src) {
+bool Shader::compile(GLuint& shaderId, GLenum type, const GLchar* src) {
     shaderId = glCreateShader(type);
     if (shaderId == 0) {
         std::cout << "ERROR: shader type (" << type << ") does not exist" << std::endl;
         return false;
     }
-    glShaderSource(shaderId, 1, (const char**) &src, 0);
+    glShaderSource(shaderId, 1, (const char**)&src, 0);
     glCompileShader(shaderId);
 
     GLint errorCp(0);
@@ -571,7 +571,7 @@ bool Shader::compile(GLuint &shaderId, GLenum type, const GLchar* src) {
         GLint errorSize(0);
         glGetShaderiv(shaderId, GL_INFO_LOG_LENGTH, &errorSize);
 
-        char *error = new char[errorSize + 1];
+        char* error = new char[errorSize + 1];
         glGetShaderInfoLog(shaderId, errorSize, &errorSize, error);
         error[errorSize] = '\0';
         std::cout << error << std::endl;
@@ -598,8 +598,7 @@ CameraGL::CameraGL(Translation position, Translation direction, Translation vert
     updateVPMatrix();
 }
 
-CameraGL::~CameraGL() {
-}
+CameraGL::~CameraGL() { }
 
 void CameraGL::update() {
     if (sl::Translation::dot(vertical_, up_) < 0)

@@ -46,7 +46,7 @@ As in previous tutorials, we create, configure and open the ZED camera, as we do
 
     // Open the camera
     ERROR_CODE err = zed.open(init_parameters);
-    if (err != ERROR_CODE::SUCCESS) {
+    if (err > ERROR_CODE::SUCCESS) {
         cout << "Error " << err << ", exit program.\n";
         return -1;
     }

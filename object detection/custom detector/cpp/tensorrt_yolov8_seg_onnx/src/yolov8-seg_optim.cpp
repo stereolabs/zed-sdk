@@ -10,19 +10,16 @@
 #include "utils.h"
 #include "yolov8-seg_common.hpp"
 
-static Logger gLogger
-{
-    nvinfer1::ILogger::Severity::kINFO
-};
+static Logger gLogger {nvinfer1::ILogger::Severity::kINFO};
 
 int OptimDim::setFromString(std::string const& arg) {
     // "images:1x3x512x512"
-    std::vector<std::string> const v_{split_str(arg, ":")};
+    std::vector<std::string> const v_ {split_str(arg, ":")};
     if (v_.size() != 2U)
         return -1;
 
-    std::string const dims_str{v_.back()};
-    std::vector<std::string> const v{split_str(dims_str, "x")};
+    std::string const dims_str {v_.back()};
+    std::vector<std::string> const v {split_str(dims_str, "x")};
 
     size.nbDims = 4;
     // assuming batch is 1 and channel is 3
@@ -56,7 +53,7 @@ int build_engine(std::string const& onnx_path, std::string const& engine_path, O
     if (onnx_file_content.empty())
         return -1;
 
-    nvinfer1::ICudaEngine * engine;
+    nvinfer1::ICudaEngine* engine;
     // Create engine (onnx)
     std::cout << "Creating engine from onnx model" << std::endl;
 
@@ -66,7 +63,7 @@ int build_engine(std::string const& onnx_path, std::string const& engine_path, O
         return 1;
     }
 
-    auto explicitBatch = 1U << static_cast<uint32_t> (nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
+    auto explicitBatch = 1U << static_cast<uint32_t>(nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
     auto network = builder->createNetworkV2(explicitBatch);
 
     if (!network) {
@@ -102,8 +99,8 @@ int build_engine(std::string const& onnx_path, std::string const& engine_path, O
     }
 
     bool parsed = false;
-    unsigned char *onnx_model_buffer = onnx_file_content.data();
-    size_t onnx_model_buffer_size = onnx_file_content.size() * sizeof (char);
+    unsigned char* onnx_model_buffer = onnx_file_content.data();
+    size_t onnx_model_buffer_size = onnx_file_content.size() * sizeof(char);
     parsed = parser->parse(onnx_model_buffer, onnx_model_buffer_size);
 
     if (!parsed) {
@@ -121,7 +118,7 @@ int build_engine(std::string const& onnx_path, std::string const& engine_path, O
 #if NV_TENSORRT_MAJOR >= 10
     engine = nullptr;
     if (builder->isNetworkSupported(*network, *config)) {
-        std::unique_ptr<nvinfer1::IHostMemory> serializedEngine{builder->buildSerializedNetwork(*network, *config)};
+        std::unique_ptr<nvinfer1::IHostMemory> serializedEngine {builder->buildSerializedNetwork(*network, *config)};
         if (serializedEngine != nullptr && serializedEngine.get() && serializedEngine->size() > 0) {
             nvinfer1::IRuntime* infer = nvinfer1::createInferRuntime(gLogger);
             engine = infer->deserializeCudaEngine(serializedEngine->data(), serializedEngine->size());
@@ -134,13 +131,15 @@ int build_engine(std::string const& onnx_path, std::string const& engine_path, O
     onnx_file_content.clear();
 
     // write plan file if it is specified
-    if (engine == nullptr) return -1;
+    if (engine == nullptr)
+        return -1;
     nvinfer1::IHostMemory* ptr = engine->serialize();
     assert(ptr);
-    if (ptr == nullptr) return -1;
+    if (ptr == nullptr)
+        return -1;
 
-    FILE *fp = fopen(engine_path.c_str(), "wb");
-    fwrite(reinterpret_cast<const char*> (ptr->data()), ptr->size() * sizeof (char), 1, fp);
+    FILE* fp = fopen(engine_path.c_str(), "wb");
+    fwrite(reinterpret_cast<const char*>(ptr->data()), ptr->size() * sizeof(char), 1, fp);
     fclose(fp);
 
 #if NV_TENSORRT_MAJOR >= 10

@@ -30,7 +30,7 @@ To configure the camera, create a Camera object and specify your `InitParameters
 
  // Open the camera
  ERROR_CODE err = zedCamera.Open(ref init_params);
- if (err != ERROR_CODE.SUCCESS)
+ if (err > ERROR_CODE.SUCCESS)
 	Environment.Exit(-1);
 ```
  

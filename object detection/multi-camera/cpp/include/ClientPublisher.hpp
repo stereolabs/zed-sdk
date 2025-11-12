@@ -1,4 +1,4 @@
-#ifndef  __SENDER_RUNNER_HDR__
+#ifndef __SENDER_RUNNER_HDR__
 #define __SENDER_RUNNER_HDR__
 
 #include <sl/Camera.hpp>
@@ -7,13 +7,13 @@
 #include <thread>
 #include <condition_variable>
 
-struct Trigger{
+struct Trigger {
 
     void notifyZED() {
         cv.notify_all();
         if (running) {
             bool wait_for_zed = true;
-            size_t const nb_zed{states.size()};
+            size_t const nb_zed {states.size()};
             while (wait_for_zed) {
                 int count_r = 0;
                 for (auto const& it : states)
@@ -21,7 +21,7 @@ struct Trigger{
                 wait_for_zed = count_r != nb_zed;
                 sl::sleep_ms(1);
             }
-            for (auto &it : states)
+            for (auto& it : states)
                 it.second = false;
         }
     }
@@ -31,7 +31,7 @@ struct Trigger{
     std::map<int, bool> states;
 };
 
-class ClientPublisher{
+class ClientPublisher {
 
 public:
     ClientPublisher();
@@ -48,7 +48,7 @@ private:
     std::thread runner;
     int serial;
     std::mutex mtx;
-    Trigger *p_trigger;
+    Trigger* p_trigger;
 };
 
 #endif // ! __SENDER_RUNNER_HDR__

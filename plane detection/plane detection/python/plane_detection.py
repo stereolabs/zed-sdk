@@ -39,7 +39,7 @@ def main(opt):
     zed = sl.Camera()
     # Open the camera
     status = zed.open(init)
-    if status != sl.ERROR_CODE.SUCCESS:
+    if status > sl.ERROR_CODE.SUCCESS:
         print("Camera Open : "+repr(status)+". Exit program.")
         exit()
     # Get camera info and check if IMU data is available

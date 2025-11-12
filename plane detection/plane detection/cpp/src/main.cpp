@@ -34,21 +34,21 @@
 // Using std and sl namespaces
 using namespace std;
 using namespace sl;
- 
-void parseArgs(int argc, char **argv,sl::InitParameters& param);
+
+void parseArgs(int argc, char** argv, sl::InitParameters& param);
 
 int main(int argc, char** argv) {
     Camera zed;
-    // Setup configuration parameters for the ZED    
+    // Setup configuration parameters for the ZED
     InitParameters init_parameters;
     init_parameters.depth_mode = sl::DEPTH_MODE::NEURAL;
     init_parameters.coordinate_units = UNIT::METER;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL coordinates system
-    parseArgs(argc,argv, init_parameters);
+    parseArgs(argc, argv, init_parameters);
 
     // Open the camera
     ERROR_CODE zed_open_state = zed.open(init_parameters);
-    if (zed_open_state != ERROR_CODE::SUCCESS) {
+    if (zed_open_state > ERROR_CODE::SUCCESS) {
         print("Camera Open", zed_open_state, "Exit program.");
         return EXIT_FAILURE;
     }
@@ -58,16 +58,16 @@ int main(int argc, char** argv) {
 
     GLViewer viewer;
     bool error_viewer = viewer.init(argc, argv, camera_infos.camera_configuration.calibration_parameters.left_cam, has_imu);
-    if(error_viewer) {
+    if (error_viewer) {
         viewer.exit();
         zed.close();
         return EXIT_FAILURE;
     }
 
-    Mat image; // current left image
-    Pose pose; // positional tracking data
-    Plane plane; // detected plane 
-    Mesh mesh; // plane mesh
+    Mat image;   // current left image
+    Pose pose;   // positional tracking data
+    Plane plane; // detected plane
+    Mesh mesh;   // plane mesh
 
     ERROR_CODE find_plane_status = ERROR_CODE::SUCCESS;
     POSITIONAL_TRACKING_STATE tracking_state = POSITIONAL_TRACKING_STATE::OFF;
@@ -80,15 +80,15 @@ int main(int argc, char** argv) {
 
     // Enable positional tracking before starting spatial mapping
     zed.enablePositionalTracking();
-    
+
     RuntimeParameters runtime_parameters;
     runtime_parameters.measure3D_reference_frame = REFERENCE_FRAME::WORLD;
-    
+
     // the plane detection parameters can be change
     PlaneDetectionParameters plane_parameters;
 
-    while(viewer.isAvailable()) {
-        if(zed.grab(runtime_parameters) <= ERROR_CODE::SUCCESS) {
+    while (viewer.isAvailable()) {
+        if (zed.grab(runtime_parameters) <= ERROR_CODE::SUCCESS) {
             // Retrieve image in GPU memory
             zed.retrieveImage(image, VIEW::LEFT, MEM::GPU);
             // Update pose data (used for projection of the mesh over the current image)
@@ -97,14 +97,17 @@ int main(int argc, char** argv) {
             if (tracking_state == POSITIONAL_TRACKING_STATE::OK) {
                 // Compute elapse time since the last call of plane detection
                 auto duration = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - ts_last).count();
-                // Ask for a mesh update 
-                if(user_action.hit) {
-                    auto image_click = sl::uint2(user_action.hit_coord.x * camera_infos.camera_configuration.resolution.width,user_action.hit_coord.y * camera_infos.camera_configuration.resolution.height);
+                // Ask for a mesh update
+                if (user_action.hit) {
+                    auto image_click = sl::uint2(
+                        user_action.hit_coord.x * camera_infos.camera_configuration.resolution.width,
+                        user_action.hit_coord.y * camera_infos.camera_configuration.resolution.height
+                    );
                     find_plane_status = zed.findPlaneAtHit(image_click, plane, plane_parameters);
                 }
 
-                //if 500ms have spend since last request
-                if((duration > 500) && user_action.press_space) {
+                // if 500ms have spend since last request
+                if ((duration > 500) && user_action.press_space) {
                     // Update pose data (used for projection of the mesh over the current image)
                     Transform resetTrackingFloorFrame;
                     find_plane_status = zed.findFloorPlane(plane, resetTrackingFloorFrame);
@@ -113,7 +116,7 @@ int main(int argc, char** argv) {
                     ts_last = chrono::high_resolution_clock::now();
                 }
 
-                if(find_plane_status == ERROR_CODE::SUCCESS) {
+                if (find_plane_status == ERROR_CODE::SUCCESS) {
                     mesh = plane.extractMesh();
                     viewer.updateMesh(mesh, plane.type);
                 }
@@ -131,30 +134,27 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
 }
 
-void parseArgs(int argc, char **argv,sl::InitParameters& param)
-{
-    if (argc > 1 && string(argv[1]).find(".svo")!=string::npos) {
+void parseArgs(int argc, char** argv, sl::InitParameters& param) {
+    if (argc > 1 && string(argv[1]).find(".svo") != string::npos) {
         // SVO input mode
         param.input.setFromSVOFile(argv[1]);
-        cout<<"[Sample] Using SVO File input: "<<argv[1]<<endl;
-    } else if (argc > 1 && string(argv[1]).find(".svo")==string::npos) {
+        cout << "[Sample] Using SVO File input: " << argv[1] << endl;
+    } else if (argc > 1 && string(argv[1]).find(".svo") == string::npos) {
         string arg = string(argv[1]);
-        unsigned int a,b,c,d,port;
-        if (sscanf(arg.c_str(),"%u.%u.%u.%u:%d", &a, &b, &c, &d,&port) == 5) {
+        unsigned int a, b, c, d, port;
+        if (sscanf(arg.c_str(), "%u.%u.%u.%u:%d", &a, &b, &c, &d, &port) == 5) {
             // Stream input mode - IP + port
-            string ip_adress = to_string(a)+"."+to_string(b)+"."+to_string(c)+"."+to_string(d);
-            param.input.setFromStream(sl::String(ip_adress.c_str()),port);
-            cout<<"[Sample] Using Stream input, IP : "<<ip_adress<<", port : "<<port<<endl;
-        }
-        else  if (sscanf(arg.c_str(),"%u.%u.%u.%u", &a, &b, &c, &d) == 4) {
+            string ip_adress = to_string(a) + "." + to_string(b) + "." + to_string(c) + "." + to_string(d);
+            param.input.setFromStream(sl::String(ip_adress.c_str()), port);
+            cout << "[Sample] Using Stream input, IP : " << ip_adress << ", port : " << port << endl;
+        } else if (sscanf(arg.c_str(), "%u.%u.%u.%u", &a, &b, &c, &d) == 4) {
             // Stream input mode - IP only
             param.input.setFromStream(sl::String(argv[1]));
-            cout<<"[Sample] Using Stream input, IP : "<<argv[1]<<endl;
-        }
-        else if (arg.find("HD2K") != string::npos) {
+            cout << "[Sample] Using Stream input, IP : " << argv[1] << endl;
+        } else if (arg.find("HD2K") != string::npos) {
             param.camera_resolution = RESOLUTION::HD2K;
             cout << "[Sample] Using Camera in resolution HD2K" << endl;
-        }else if (arg.find("HD1200") != string::npos) {
+        } else if (arg.find("HD1200") != string::npos) {
             param.camera_resolution = RESOLUTION::HD1200;
             cout << "[Sample] Using Camera in resolution HD1200" << endl;
         } else if (arg.find("HD1080") != string::npos) {
@@ -163,10 +163,10 @@ void parseArgs(int argc, char **argv,sl::InitParameters& param)
         } else if (arg.find("HD720") != string::npos) {
             param.camera_resolution = RESOLUTION::HD720;
             cout << "[Sample] Using Camera in resolution HD720" << endl;
-        }else if (arg.find("SVGA") != string::npos) {
+        } else if (arg.find("SVGA") != string::npos) {
             param.camera_resolution = RESOLUTION::SVGA;
             cout << "[Sample] Using Camera in resolution SVGA" << endl;
-        }else if (arg.find("VGA") != string::npos) {
+        } else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;
         }

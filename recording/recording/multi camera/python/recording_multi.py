@@ -75,7 +75,7 @@ def open_camera(zed, sn, camera_fps=30):
 
     # Open the camera
     open_err = zed.open(init_params)
-    if open_err == sl.ERROR_CODE.SUCCESS:
+    if open_err <= sl.ERROR_CODE.SUCCESS:
         print(f"{zed.get_camera_information().camera_model}_SN{sn} Opened")
     else:
         print(f"ZED SN{sn} Error: {open_err}")

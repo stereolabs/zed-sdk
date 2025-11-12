@@ -1,38 +1,31 @@
 #include "display/GenericDisplay.h"
 #include "exporter/KMLExporter.h"
 
+GenericDisplay::GenericDisplay() { }
 
-GenericDisplay::GenericDisplay()
-{
-}
-
-GenericDisplay::~GenericDisplay()
-{
+GenericDisplay::~GenericDisplay() {
     closeAllKMLWriter();
 }
 
-void GenericDisplay::init(int argc, char **argv)
-{
+void GenericDisplay::init(int argc, char** argv) {
     opengl_viewer.init(argc, argv);
 }
 
-void GenericDisplay::updatePoseData(sl::Transform zed_rt, sl::FusedPositionalTrackingStatus state)
-{
+void GenericDisplay::updatePoseData(sl::Transform zed_rt, sl::FusedPositionalTrackingStatus state) {
     opengl_viewer.updateData(zed_rt, state);
 }
 
-bool GenericDisplay::isAvailable(){
+bool GenericDisplay::isAvailable() {
     return opengl_viewer.isAvailable();
 }
 
-void GenericDisplay::updateRawGeoPoseData(sl::GNSSData geo_data)
-{
+void GenericDisplay::updateRawGeoPoseData(sl::GNSSData geo_data) {
     double latitude, longitude, altitude;
     geo_data.getCoordinates(latitude, longitude, altitude, false);
 
     // Make the pose available for the Live Server
     ofstream data;
-    data.open ("../../../map server/raw_data.txt");
+    data.open("../../../map server/raw_data.txt");
     data << std::fixed << std::setprecision(17);
     data << std::fixed << std::setprecision(17);
     data << latitude;
@@ -52,11 +45,10 @@ void GenericDisplay::updateRawGeoPoseData(sl::GNSSData geo_data)
     data.close();
 }
 
-void GenericDisplay::updateGeoPoseData(sl::GeoPose geo_pose)
-{
+void GenericDisplay::updateGeoPoseData(sl::GeoPose geo_pose) {
     // Make the pose available for the Live Server
     ofstream data;
-    data.open ("../../../map server/data.txt");
+    data.open("../../../map server/data.txt");
     data << std::fixed << std::setprecision(17);
     data << geo_pose.latlng_coordinates.getLatitude(false);
     data << ",";

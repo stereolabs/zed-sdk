@@ -77,7 +77,7 @@ def main(opt):
 
     # Open the camera
     returned_state = zed.open(init_parameters)
-    if returned_state != sl.ERROR_CODE.SUCCESS:
+    if returned_state > sl.ERROR_CODE.SUCCESS:
         print("Camera Open", returned_state, "Exit program.")
         exit()
 

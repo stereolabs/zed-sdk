@@ -58,12 +58,12 @@ void acquisition(CameraType& zed) {
 }
 
 /// Function to set the depth mode in InitParameters
-inline void setDepthMode(sl::InitParameters &ip) {
+inline void setDepthMode(sl::InitParameters& ip) {
     ip.depth_mode = sl::DEPTH_MODE::NONE; // No depth mode for this example
 }
 
 /// Function to set the depth mode in InitParametersOne
-inline void setDepthMode(sl::InitParametersOne &ip) {
+inline void setDepthMode(sl::InitParametersOne& ip) {
     // NA
 }
 
@@ -74,7 +74,7 @@ inline void setDepthMode(sl::InitParametersOne &ip) {
 /// \param sn Serial number of the camera
 /// \param port Port number for streaming (default is 30000 + 2 * camera index)
 /// \param camera_fps Desired camera frame rate (default is 30)
-template<typename CameraType, typename IP>
+template <typename CameraType, typename IP>
 bool openCamera(CameraType& zed, const int sn, const int port, const int camera_fps = 30) {
 
     IP init_parameters;
@@ -110,15 +110,13 @@ bool openCamera(CameraType& zed, const int sn, const int port, const int camera_
 }
 
 /// Function to print device information
-void printDeviceInfo(const std::vector<sl::DeviceProperties> & devs) {
-    for (const auto &dev : devs)
-        std::cout << "ID : " << dev.id << ", model : " << dev.camera_model
-            << " , S/N : " << dev.serial_number
-            << " , state : " << dev.camera_state
-            << std::endl;
+void printDeviceInfo(const std::vector<sl::DeviceProperties>& devs) {
+    for (const auto& dev : devs)
+        std::cout << "ID : " << dev.id << ", model : " << dev.camera_model << " , S/N : " << dev.serial_number
+                  << " , state : " << dev.camera_state << std::endl;
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     // Get the list of available ZED cameras
     const std::vector<sl::DeviceProperties> dev_stereo_list = sl::Camera::getDeviceList();
     printDeviceInfo(dev_stereo_list);
@@ -154,7 +152,6 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-
     // Create a grab thread for each opened camera
     std::vector<std::thread> thread_pool(nb_stereo + nb_one); // compute threads
     for (int z = 0; z < nb_stereo; z++) {
@@ -185,5 +182,3 @@ int main(int argc, char **argv) {
     std::cout << "Program exited" << std::endl;
     return EXIT_SUCCESS;
 }
-
-

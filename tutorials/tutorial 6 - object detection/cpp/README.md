@@ -45,7 +45,7 @@ initParameters.sdk_verbose = true;
 
 // Open the camera
 ERROR_CODE zed_error = zed.open(initParameters);
-if (zed_error != ERROR_CODE::SUCCESS) {
+if (zed_error > ERROR_CODE::SUCCESS) {
 	std::cout << "Error " << zed_error << ", exit program.\n";
 	return 1; // Quit if an error occurred
 }
@@ -93,7 +93,7 @@ zed.setObjectDetectionRuntimeParameters(detection_parameters_rt); // Can be set 
 // Detection output
 Objects objects;
 
-while (zed.grab() == ERROR_CODE::SUCCESS) {
+while (zed.grab() <= ERROR_CODE::SUCCESS) {
 	zed_error = zed.retrieveObjects(objects);
 
 	if (objects.is_new) {

@@ -1,12 +1,13 @@
 #include "display/GLViewer.hpp"
 
-
 void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suffix) {
-    cout <<"[Sample]";
-    if (err_code != sl::ERROR_CODE::SUCCESS)
+    cout << "[Sample]";
+    if (err_code > sl::ERROR_CODE::SUCCESS)
         cout << "[Error] ";
+    else if (err_code < sl::ERROR_CODE::SUCCESS)
+        cout << "[Warning] ";
     else
-        cout<<" ";
+        cout << " ";
     cout << msg_prefix << " ";
     if (err_code != sl::ERROR_CODE::SUCCESS) {
         cout << " | " << toString(err_code) << " : ";
@@ -17,65 +18,65 @@ void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suff
     cout << endl;
 }
 
+const GLchar* VERTEX_SHADER = "#version 330 core\n"
+                              "layout(location = 0) in vec3 in_Vertex;\n"
+                              "layout(location = 1) in vec3 in_Color;\n"
+                              "uniform mat4 u_mvpMatrix;\n"
+                              "out vec3 b_color;\n"
+                              "void main() {\n"
+                              "   b_color = in_Color;\n"
+                              "	gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
+                              "}";
 
-
-const GLchar* VERTEX_SHADER =
-"#version 330 core\n"
-"layout(location = 0) in vec3 in_Vertex;\n"
-"layout(location = 1) in vec3 in_Color;\n"
-"uniform mat4 u_mvpMatrix;\n"
-"out vec3 b_color;\n"
-"void main() {\n"
-"   b_color = in_Color;\n"
-"	gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
-"}";
-
-const GLchar* FRAGMENT_SHADER =
-"#version 330 core\n"
-"in vec3 b_color;\n"
-"layout(location = 0) out vec4 out_Color;\n"
-"void main() {\n"
-"   out_Color = vec4(b_color, 1);\n"
-"}";
+const GLchar* FRAGMENT_SHADER = "#version 330 core\n"
+                                "in vec3 b_color;\n"
+                                "layout(location = 0) out vec4 out_Color;\n"
+                                "void main() {\n"
+                                "   out_Color = vec4(b_color, 1);\n"
+                                "}";
 
 using namespace sl;
 
 GLViewer* currentInstance_ = nullptr;
 
-GLViewer::GLViewer() : available(false) {
+GLViewer::GLViewer()
+    : available(false) {
     currentInstance_ = this;
     mouseButton_[0] = mouseButton_[1] = mouseButton_[2] = false;
     clearInputs();
     previousMouseMotion_[0] = previousMouseMotion_[1] = 0;
 }
 
-GLViewer::~GLViewer() {}
+GLViewer::~GLViewer() { }
 
 void GLViewer::exit() {
-    available = false;    
+    available = false;
 }
 
 bool GLViewer::isAvailable() {
-    if(available)
+    if (available)
         glutMainLoopEvent();
     return available;
 }
 
-void CloseFunc(void) { if(currentInstance_) currentInstance_->exit(); }
+void CloseFunc(void) {
+    if (currentInstance_)
+        currentInstance_->exit();
+}
 
-void createFrustrum(Simple3DObject &obj) {
+void createFrustrum(Simple3DObject& obj) {
     float Z_ = -0.25f;
     float Y_ = Z_ * tanf(95.f * M_PI / 180.f / 2.f);
-    float X_ = Y_ * 16./9.;
+    float X_ = Y_ * 16. / 9.;
 
     sl::float3 A, B, C, D, E;
     A = sl::float3(0, 0, 0);
     B = sl::float3(X_, Y_, Z_);
     C = sl::float3(-X_, Y_, Z_);
     D = sl::float3(-X_, -Y_, Z_);
-    E = sl::float3(X_, -Y_, Z_);    
+    E = sl::float3(X_, -Y_, Z_);
 
-    sl::float3 lime_clr(217,255,66);
+    sl::float3 lime_clr(217, 255, 66);
     lime_clr /= 255.f;
 
     obj.addLine(A, B, lime_clr);
@@ -92,7 +93,7 @@ void createFrustrum(Simple3DObject &obj) {
     obj.pushToGPU();
 }
 
-void addVert(Simple3DObject &obj, float i_f, float limit, sl::float3 &clr) {
+void addVert(Simple3DObject& obj, float i_f, float limit, sl::float3& clr) {
     auto p1 = sl::float3(i_f, 0, -limit);
     auto p2 = sl::float3(i_f, 0, limit);
     auto p3 = sl::float3(-limit, 0, i_f);
@@ -102,13 +103,13 @@ void addVert(Simple3DObject &obj, float i_f, float limit, sl::float3 &clr) {
     obj.addLine(p3, p4, clr);
 }
 
-void GLViewer::init(int argc, char **argv) {
+void GLViewer::init(int argc, char** argv) {
     glutInit(&argc, argv);
 
     int wnd_w = glutGet(GLUT_SCREEN_WIDTH);
-    int wnd_h = glutGet(GLUT_SCREEN_HEIGHT) *0.9;
-    glutInitWindowSize(wnd_w*0.9, wnd_h*0.9);
-    glutInitWindowPosition(wnd_w*0.05, wnd_h*0.05);
+    int wnd_h = glutGet(GLUT_SCREEN_HEIGHT) * 0.9;
+    glutInitWindowSize(wnd_w * 0.9, wnd_h * 0.9);
+    glutInitWindowPosition(wnd_w * 0.05, wnd_h * 0.05);
 
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
     glutCreateWindow("ZED Positional Tracking");
@@ -123,11 +124,11 @@ void GLViewer::init(int argc, char **argv) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_LINE_SMOOTH);
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-    
+
     // Compile and create the shader
     mainShader.it.set(VERTEX_SHADER, FRAGMENT_SHADER);
     mainShader.MVP_Mat = glGetUniformLocation(mainShader.it.getProgramId(), "u_mvpMatrix");
-    
+
     shaderLine.it.set(VERTEX_SHADER, FRAGMENT_SHADER);
     shaderLine.MVP_Mat = glGetUniformLocation(shaderLine.it.getProgramId(), "u_mvpMatrix");
 
@@ -138,7 +139,7 @@ void GLViewer::init(int argc, char **argv) {
     sl::Rotation cam_rot;
     cam_rot.setEulerAngles(euler, 0);
     camera_.setRotation(sl::Rotation(cam_rot));
-    
+
     floor_grid = Simple3DObject(sl::Translation(0, 0, 0), true);
     floor_grid.setDrawingType(GL_LINES);
 
@@ -148,9 +149,9 @@ void GLViewer::init(int argc, char **argv) {
     clr1 /= 255.f;
     sl::float3 clr2(108, 122, 137);
     clr2 /= 255.f;
-    for(int i = (int) (limit * -5); i <= (int) (limit * 5); i++) {
+    for (int i = (int)(limit * -5); i <= (int)(limit * 5); i++) {
         float i_f = i / 5.f;
-        if((i % 5) == 0)
+        if ((i % 5) == 0)
             addVert(floor_grid, i_f, limit, clr2);
         else
             addVert(floor_grid, i_f, limit, clr1);
@@ -175,7 +176,7 @@ void GLViewer::init(int argc, char **argv) {
     glutKeyboardFunc(GLViewer::keyPressedCallback);
     glutKeyboardUpFunc(GLViewer::keyReleasedCallback);
     glutCloseFunc(CloseFunc);
-    
+
     available = true;
 }
 
@@ -192,42 +193,38 @@ void GLViewer::render() {
 }
 
 void GLViewer::update() {
-    //Quit the software
+    // Quit the software
     if (keyStates_['q'] == KEY_STATE::UP || keyStates_['Q'] == KEY_STATE::UP || keyStates_[27] == KEY_STATE::UP) {
         currentInstance_->exit();
         return;
     }
 
-
-    //Reset the position to "origin"
-    if (keyStates_['r'] == KEY_STATE::UP)
-    {
+    // Reset the position to "origin"
+    if (keyStates_['r'] == KEY_STATE::UP) {
         camera_.setPosition(sl::Translation(0.3, 3.3, -3.3));
         camera_.setDirection(sl::Translation(0, 0, -4), sl::Translation(0, 1, 0));
         sl::float3 euler(-50, 180, 0);
         sl::Rotation cam_rot;
         cam_rot.setEulerAngles(euler, 0);
         camera_.setRotation(sl::Rotation(cam_rot));
-
     }
     // Rotate camera with mouse
     if (mouseButton_[MOUSE_BUTTON::LEFT]) {
-        camera_.rotate(sl::Rotation((float) mouseMotion_[1] * MOUSE_R_SENSITIVITY, camera_.getRight()));
-        camera_.rotate(sl::Rotation((float) mouseMotion_[0] * MOUSE_R_SENSITIVITY, camera_.getVertical() * -1.f));
+        camera_.rotate(sl::Rotation((float)mouseMotion_[1] * MOUSE_R_SENSITIVITY, camera_.getRight()));
+        camera_.rotate(sl::Rotation((float)mouseMotion_[0] * MOUSE_R_SENSITIVITY, camera_.getVertical() * -1.f));
     }
 
     // Translate camera with mouse
     if (mouseButton_[MOUSE_BUTTON::RIGHT]) {
-        camera_.translate(camera_.getUp() * (float) mouseMotion_[1] * MOUSE_T_SENSITIVITY);
-        camera_.translate(camera_.getRight() * (float) mouseMotion_[0] * MOUSE_T_SENSITIVITY);
+        camera_.translate(camera_.getUp() * (float)mouseMotion_[1] * MOUSE_T_SENSITIVITY);
+        camera_.translate(camera_.getRight() * (float)mouseMotion_[0] * MOUSE_T_SENSITIVITY);
     }
 
     // Zoom in with mouse wheel (translate in projZ)
     if (mouseWheelPosition_ != 0)
-        camera_.translate(-1.0*camera_.getForward() * mouseWheelPosition_ * MOUSE_WHEEL_SENSITIVITY);
+        camera_.translate(-1.0 * camera_.getForward() * mouseWheelPosition_ * MOUSE_WHEEL_SENSITIVITY);
 
-    
-    // update 
+    // update
     camera_.update();
     clearInputs();
     mtx.lock();
@@ -235,7 +232,7 @@ void GLViewer::update() {
         zedPath.clear();
         sl::float3 clr(0.1f, 0.5f, 0.9f);
         for (unsigned int i = 1; i < vecPath.size(); i++) {
-            float fade = (i*1.f) / vecPath.size();
+            float fade = (i * 1.f) / vecPath.size();
             sl::float3 new_color = clr * fade;
             zedPath.addPoint(vecPath[i], new_color);
         }
@@ -262,7 +259,12 @@ void GLViewer::draw() {
     zedPath.draw();
 
     // Move the ZED 3D model to correct position
-    glUniformMatrix4fv(mainShader.MVP_Mat, 1, GL_FALSE, (sl::Transform::transpose(zedModel.getModelMatrix()) *  sl::Transform::transpose(vpMatrix)).m);
+    glUniformMatrix4fv(
+        mainShader.MVP_Mat,
+        1,
+        GL_FALSE,
+        (sl::Transform::transpose(zedModel.getModelMatrix()) * sl::Transform::transpose(vpMatrix)).m
+    );
     zedModel.draw();
 
     glUseProgram(0);
@@ -273,19 +275,19 @@ void GLViewer::updateData(sl::Transform zed_rt, sl::FusedPositionalTrackingStatu
     vecPath.push_back(zed_rt.getTranslation());
     zedModel.setRT(zed_rt);
     updateZEDposition = true;
-    
+
     std::stringstream ss;
     ss << std::setprecision(3) << zed_rt.getTranslation();
     txtT = ss.str();
     std::stringstream ss2;
     ss2 << std::setprecision(3) << zed_rt.getEulerAngles();
     txtR = ss2.str();
-    
+
     trackState = state;
     mtx.unlock();
 }
 
-static void safe_glutBitmapString(void *font, const char *str) {
+static void safe_glutBitmapString(void* font, const char* str) {
     for (size_t x = 0; x < strlen(str); ++x)
         glutBitmapCharacter(font, str[x]);
 }
@@ -307,16 +309,16 @@ void GLViewer::printText() {
 
     float dark_clr = 0.12f;
     std::string odom_status = "POSITIONAL TRACKING STATUS: ";
-    
+
     glColor3f(dark_clr, dark_clr, dark_clr);
     glRasterPos2i(start_w, start_h);
     safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, odom_status.c_str());
 
-    (trackState.tracking_fusion_status != sl::POSITIONAL_TRACKING_FUSION_STATUS::UNAVAILABLE) ? glColor3f(0.2f, 0.65f, 0.2f) : glColor3f(0.85f, 0.2f, 0.2f);
+    (trackState.tracking_fusion_status != sl::POSITIONAL_TRACKING_FUSION_STATUS::UNAVAILABLE) ? glColor3f(0.2f, 0.65f, 0.2f)
+                                                                                              : glColor3f(0.85f, 0.2f, 0.2f);
     std::string track_str = (sl::toString(trackState.tracking_fusion_status).c_str());
     glRasterPos2i(start_w + 300, start_h);
     safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, track_str.c_str());
-
 
     glColor3f(dark_clr, dark_clr, dark_clr);
     glRasterPos2i(start_w, start_h - 40);
@@ -324,9 +326,9 @@ void GLViewer::printText() {
     safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, imu_status.c_str());
 
     if (trackState.gnss_mode == sl::GNSS_MODE::FIX_3D)
-      glColor3f(0.2f, 0.65f, 0.2f);
+        glColor3f(0.2f, 0.65f, 0.2f);
     else
-      glColor3f(0.85f, 0.2f, 0.2f);
+        glColor3f(0.85f, 0.2f, 0.2f);
     glRasterPos2i(start_w + 300, start_h - 40);
     track_str = (sl::toString(trackState.gnss_mode).c_str());
     safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, track_str.c_str());
@@ -337,9 +339,9 @@ void GLViewer::printText() {
     safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, gnss_status.c_str());
 
     if (trackState.gnss_status == sl::GNSS_STATUS::RTK_FIX || trackState.gnss_status == sl::GNSS_STATUS::RTK_FLOAT)
-      glColor3f(0.2f, 0.65f, 0.2f);
+        glColor3f(0.2f, 0.65f, 0.2f);
     else
-      glColor3f(0.85f, 0.2f, 0.2f);
+        glColor3f(0.85f, 0.2f, 0.2f);
     glRasterPos2i(start_w + 300, start_h - 60);
     track_str = (sl::toString(trackState.gnss_status).c_str());
     safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, track_str.c_str());
@@ -349,16 +351,14 @@ void GLViewer::printText() {
     std::string gnss_fusion_status = "GNSS FUSION STATUS: ";
     safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, gnss_fusion_status.c_str());
 
-    if(trackState.gnss_fusion_status == sl::GNSS_FUSION_STATUS::OK)
-      glColor3f(0.2f, 0.65f, 0.2f);
+    if (trackState.gnss_fusion_status == sl::GNSS_FUSION_STATUS::OK)
+        glColor3f(0.2f, 0.65f, 0.2f);
     else
-      glColor3f(0.85f, 0.2f, 0.2f);
+        glColor3f(0.85f, 0.2f, 0.2f);
     glRasterPos2i(start_w + 300, start_h - 80);
     track_str = (sl::toString(trackState.gnss_fusion_status).c_str());
     safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, track_str.c_str());
 
-
-    
     glColor3f(dark_clr, dark_clr, dark_clr);
     glRasterPos2i(start_w, start_h - 105);
     safe_glutBitmapString(GLUT_BITMAP_HELVETICA_18, "Translation (m) :");
@@ -418,7 +418,7 @@ void GLViewer::mouseMotionCallback(int x, int y) {
 
 void GLViewer::reshapeCallback(int width, int height) {
     glViewport(0, 0, width, height);
-    currentInstance_->camera_.setProjection((float) height / (float) width);
+    currentInstance_->camera_.setProjection((float)height / (float)width);
 }
 
 void GLViewer::keyPressedCallback(unsigned char c, int x, int y) {
@@ -434,14 +434,16 @@ void GLViewer::idle() {
     glutPostRedisplay();
 }
 
-Simple3DObject::Simple3DObject(): isStatic_(false) {
+Simple3DObject::Simple3DObject()
+    : isStatic_(false) {
     vaoID_ = 0;
     drawingType_ = GL_TRIANGLES;
     position_ = sl::float3(0, 0, 0);
     rotation_.setIdentity();
 }
 
-Simple3DObject::Simple3DObject(Translation position, bool isStatic): isStatic_(isStatic) {
+Simple3DObject::Simple3DObject(Translation position, bool isStatic)
+    : isStatic_(isStatic) {
     vaoID_ = 0;
     drawingType_ = GL_TRIANGLES;
     position_ = position;
@@ -466,7 +468,7 @@ void Simple3DObject::addPoint(float x, float y, float z, float r, float g, float
     colors_.push_back(r);
     colors_.push_back(g);
     colors_.push_back(b);
-    indices_.push_back((int) indices_.size());
+    indices_.push_back((int)indices_.size());
 }
 
 void Simple3DObject::addLine(sl::float3 p1, sl::float3 p2, sl::float3 clr) {
@@ -486,8 +488,8 @@ void Simple3DObject::addLine(sl::float3 p1, sl::float3 p2, sl::float3 clr) {
     colors_.push_back(clr.g);
     colors_.push_back(clr.b);
 
-    indices_.push_back((int) indices_.size());
-    indices_.push_back((int) indices_.size());
+    indices_.push_back((int)indices_.size());
+    indices_.push_back((int)indices_.size());
 }
 
 void Simple3DObject::pushToGPU() {
@@ -497,24 +499,29 @@ void Simple3DObject::pushToGPU() {
             glGenBuffers(3, vboID_);
         }
         glBindVertexArray(vaoID_);
-		if (vertices_.size()) {
-			glBindBuffer(GL_ARRAY_BUFFER, vboID_[0]);
-			glBufferData(GL_ARRAY_BUFFER, vertices_.size() * sizeof(float), &vertices_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
-			glVertexAttribPointer(Shader::ATTRIB_VERTICES_POS, 3, GL_FLOAT, GL_FALSE, 0, 0);
-			glEnableVertexAttribArray(Shader::ATTRIB_VERTICES_POS);
-		}
+        if (vertices_.size()) {
+            glBindBuffer(GL_ARRAY_BUFFER, vboID_[0]);
+            glBufferData(GL_ARRAY_BUFFER, vertices_.size() * sizeof(float), &vertices_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
+            glVertexAttribPointer(Shader::ATTRIB_VERTICES_POS, 3, GL_FLOAT, GL_FALSE, 0, 0);
+            glEnableVertexAttribArray(Shader::ATTRIB_VERTICES_POS);
+        }
 
-		if (colors_.size()) {
-			glBindBuffer(GL_ARRAY_BUFFER, vboID_[1]);
-			glBufferData(GL_ARRAY_BUFFER, colors_.size() * sizeof(float), &colors_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
-			glVertexAttribPointer(Shader::ATTRIB_COLOR_POS, 3, GL_FLOAT, GL_FALSE, 0, 0);
-			glEnableVertexAttribArray(Shader::ATTRIB_COLOR_POS);
-		}
+        if (colors_.size()) {
+            glBindBuffer(GL_ARRAY_BUFFER, vboID_[1]);
+            glBufferData(GL_ARRAY_BUFFER, colors_.size() * sizeof(float), &colors_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
+            glVertexAttribPointer(Shader::ATTRIB_COLOR_POS, 3, GL_FLOAT, GL_FALSE, 0, 0);
+            glEnableVertexAttribArray(Shader::ATTRIB_COLOR_POS);
+        }
 
-		if (indices_.size()) {
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID_[2]);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_.size() * sizeof(unsigned int), &indices_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
-		}
+        if (indices_.size()) {
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID_[2]);
+            glBufferData(
+                GL_ELEMENT_ARRAY_BUFFER,
+                indices_.size() * sizeof(unsigned int),
+                &indices_[0],
+                isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW
+            );
+        }
 
         glBindVertexArray(0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -533,9 +540,9 @@ void Simple3DObject::setDrawingType(GLenum type) {
 }
 
 void Simple3DObject::draw() {
-    if(indices_.size() && vaoID_) {
+    if (indices_.size() && vaoID_) {
         glBindVertexArray(vaoID_);
-        glDrawElements(drawingType_, (GLsizei) indices_.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(drawingType_, (GLsizei)indices_.size(), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 }
@@ -609,7 +616,7 @@ void Shader::set(const GLchar* vs, const GLchar* fs) {
         GLint errorSize(0);
         glGetProgramiv(programId_, GL_INFO_LOG_LENGTH, &errorSize);
 
-        char *error = new char[errorSize + 1];
+        char* error = new char[errorSize + 1];
         glGetShaderInfoLog(programId_, errorSize, &errorSize, error);
         error[errorSize] = '\0';
         std::cout << error << std::endl;
@@ -632,13 +639,13 @@ GLuint Shader::getProgramId() {
     return programId_;
 }
 
-bool Shader::compile(GLuint &shaderId, GLenum type, const GLchar* src) {
+bool Shader::compile(GLuint& shaderId, GLenum type, const GLchar* src) {
     shaderId = glCreateShader(type);
     if (shaderId == 0) {
         std::cout << "ERROR: shader type (" << type << ") does not exist" << std::endl;
         return false;
     }
-    glShaderSource(shaderId, 1, (const char**) &src, 0);
+    glShaderSource(shaderId, 1, (const char**)&src, 0);
     glCompileShader(shaderId);
 
     GLint errorCp(0);
@@ -648,7 +655,7 @@ bool Shader::compile(GLuint &shaderId, GLenum type, const GLchar* src) {
         GLint errorSize(0);
         glGetShaderiv(shaderId, GL_INFO_LOG_LENGTH, &errorSize);
 
-        char *error = new char[errorSize + 1];
+        char* error = new char[errorSize + 1];
         glGetShaderInfoLog(shaderId, errorSize, &errorSize, error);
         error[errorSize] = '\0';
         std::cout << error << std::endl;
@@ -664,11 +671,14 @@ const sl::Translation CameraGL::ORIGINAL_FORWARD = sl::Translation(0, 0, 1);
 const sl::Translation CameraGL::ORIGINAL_UP = sl::Translation(0, 1, 0);
 const sl::Translation CameraGL::ORIGINAL_RIGHT = sl::Translation(1, 0, 0);
 
-CameraGL::CameraGL(): znear(0.01f), zfar(10000.f), horizontalFOV(70.f) {
+CameraGL::CameraGL()
+    : znear(0.01f)
+    , zfar(10000.f)
+    , horizontalFOV(70.f) {
     setProjection(1.78f);
 }
 
-CameraGL::~CameraGL() {}
+CameraGL::~CameraGL() { }
 
 void CameraGL::update() {
     if (sl::Translation::dot(vertical_, up_) < 0)

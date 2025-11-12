@@ -18,13 +18,12 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-
 #include <sl/Camera.hpp>
 
 using namespace std;
 using namespace sl;
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
     // Create a ZED camera object
     Camera zed;
@@ -32,17 +31,18 @@ int main(int argc, char **argv) {
     // Set configuration parameters
     InitParameters init_parameters;
     init_parameters.camera_resolution = RESOLUTION::AUTO; // Use HD720 opr HD1200 video mode, depending on camera type.
-    init_parameters.camera_fps = 30; // Set fps at 30
+    init_parameters.camera_fps = 30;                      // Set fps at 30
     init_parameters.depth_mode = sl::DEPTH_MODE::NEURAL;
-    // '1' enables the health check, higher number enables more advanced verification (see documentation) but also increase the computation time
-    // '2' enables processing regarding the image quality (absolute quality, and difference between left and right)
-    // '3' enables advanced blur and quality check
+    // '1' enables the health check, higher number enables more advanced verification (see documentation) but also increase the computation
+    // time '2' enables processing regarding the image quality (absolute quality, and difference between left and right) '3' enables
+    // advanced blur and quality check
     init_parameters.enable_image_validity_check = 1;
-    if(argc > 1) init_parameters.input.setFromSVOFile(argv[1]);
+    if (argc > 1)
+        init_parameters.input.setFromSVOFile(argv[1]);
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         cout << "Error " << returned_state << ", exit program." << endl;
         return EXIT_FAILURE;
     }
@@ -51,10 +51,10 @@ int main(int argc, char **argv) {
         std::cout << "\033[2J\033[H"; // Clear screen and move cursor to top-left
         // Grab an image
         returned_state = zed.grab();
-        // A new image is available if grab() returns ERROR_CODE::SUCCESS
-        if (returned_state == ERROR_CODE::SUCCESS) {
+        // A new image is available if grab() returns ERROR_CODE::SUCCESS or a WARNING (an error_code lower than ERROR_CODE::SUCCESS)
+        if (returned_state <= ERROR_CODE::SUCCESS) {
 
-       } else if(returned_state == ERROR_CODE::CORRUPTED_FRAME) {
+        } else if (returned_state == ERROR_CODE::CORRUPTED_FRAME) {
             // If the health check detect a corrupted frame, the grab will return a warning error code as ERROR_CODE::CORRUPTED_FRAME
             cout << "**** Corrupted frame detected ! *****" << endl;
         } else {

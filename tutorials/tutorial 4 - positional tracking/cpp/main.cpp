@@ -18,30 +18,29 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-
 #include <sl/Camera.hpp>
 
 using namespace std;
 using namespace sl;
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
     // Create a ZED camera object
     Camera zed;
 
     // Set configuration parameters
     InitParameters init_parameters;
-    init_parameters.camera_resolution = RESOLUTION::AUTO; // Use HD720 or HD1200 video mode (default fps: 60)
+    init_parameters.camera_resolution = RESOLUTION::AUTO;                     // Use HD720 or HD1200 video mode (default fps: 60)
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // Use a right-handed Y-up coordinate system
-    init_parameters.coordinate_units = UNIT::METER; // Set units in meters
+    init_parameters.coordinate_units = UNIT::METER;                           // Set units in meters
     init_parameters.sensors_required = true;
-    
-    if (argc>1)
-    init_parameters.input.setFromSVOFile(sl::String(argv[1]));
+
+    if (argc > 1)
+        init_parameters.input.setFromSVOFile(sl::String(argv[1]));
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         cout << "Error " << returned_state << ", exit program.\n";
         return EXIT_FAILURE;
     }
@@ -55,7 +54,6 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-
     // Track the camera position during 1000 frames
     int i = 0;
     Pose zed_pose;
@@ -65,10 +63,10 @@ int main(int argc, char **argv) {
     SensorsData sensor_data;
 
     while (i < 1000) {
-        if (zed.grab() == ERROR_CODE::SUCCESS) {
+        if (zed.grab() <= ERROR_CODE::SUCCESS) {
 
             // Get the pose of the left eye of the camera with reference to the world frame
-            zed.getPosition(zed_pose, REFERENCE_FRAME::WORLD); 
+            zed.getPosition(zed_pose, REFERENCE_FRAME::WORLD);
 
             // get the translation information
             auto zed_translation = zed_pose.getTranslation();
@@ -78,14 +76,15 @@ int main(int argc, char **argv) {
             auto ts = zed_pose.timestamp.getNanoseconds();
 
             // Display the translation and timestamp
-            cout << "Camera Translation: {" << zed_translation << "}, Orientation: {" << zed_orientation << "}, timestamp: " << zed_pose.timestamp.getNanoseconds() << "ns\n";
-            
+            cout << "Camera Translation: {" << zed_translation << "}, Orientation: {" << zed_orientation
+                 << "}, timestamp: " << zed_pose.timestamp.getNanoseconds() << "ns\n";
+
             // Display IMU data
             if (zed_has_imu) {
-                 // Get IMU data at the time the image was captured
+                // Get IMU data at the time the image was captured
                 zed.getSensorsData(sensor_data, TIME_REFERENCE::IMAGE);
 
-                //get filtered orientation quaternion
+                // get filtered orientation quaternion
                 auto imu_orientation = sensor_data.imu.pose.getOrientation();
                 // get raw acceleration
                 auto acceleration = sensor_data.imu.linear_acceleration;

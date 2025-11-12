@@ -24,23 +24,20 @@
 #include "SK_Serializer.hpp"
 
 // Main loop
-int main(int argc, char **argv)
-{
+int main(int argc, char** argv) {
     sl::Camera zed;
     // Open the camera
     sl::InitParameters init_parameters;
     init_parameters.coordinate_system = sl::COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // Opengl Coordinate system
     auto state = zed.open(init_parameters);
-    if (state != sl::ERROR_CODE::SUCCESS)
-    {
+    if (state > sl::ERROR_CODE::SUCCESS) {
         std::cout << "Error open ZED " << state << std::endl;
         return -1;
     }
 
     // enable positional tracking (with default parameters)
     state = zed.enablePositionalTracking();
-    if (state != sl::ERROR_CODE::SUCCESS)
-    {
+    if (state != sl::ERROR_CODE::SUCCESS) {
         std::cout << "Error enable Positional Tracking" << state << std::endl;
         return -1;
     }
@@ -52,8 +49,7 @@ int main(int argc, char **argv)
     body_tracking_parameters.enable_tracking = true;
     body_tracking_parameters.enable_body_fitting = false;
     state = zed.enableBodyTracking(body_tracking_parameters);
-    if (state != sl::ERROR_CODE::SUCCESS)
-    {
+    if (state != sl::ERROR_CODE::SUCCESS) {
         std::cout << "Error enable Body Tracking" << state << std::endl;
         return -1;
     }
@@ -64,10 +60,8 @@ int main(int argc, char **argv)
     bool run = true;
     nlohmann::json bodies_json_file;
     sl::Bodies bodies;
-    while (viewer.isAvailable())
-    {
-        if (zed.grab() <= ERROR_CODE::SUCCESS)
-        {
+    while (viewer.isAvailable()) {
+        if (zed.grab() <= ERROR_CODE::SUCCESS) {
             // Retrieve Detected Human Bodies
             zed.retrieveBodies(bodies);
 
@@ -81,8 +75,7 @@ int main(int argc, char **argv)
     zed.close();
 
     std::string outfileName("detected_bodies.json");
-    if (bodies_json_file.size())
-    {
+    if (bodies_json_file.size()) {
         std::ofstream file_out(outfileName);
         file_out << std::setw(4) << bodies_json_file << std::endl;
         file_out.close();
@@ -104,8 +97,7 @@ int main(int argc, char **argv)
             viewer.updateData(objs);
             viewer.isAvailable();
         }
-    }
-    else
+    } else
         std::cout << "No body data to save." << std::endl;
 
     return EXIT_SUCCESS;

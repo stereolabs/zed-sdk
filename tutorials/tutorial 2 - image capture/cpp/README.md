@@ -51,7 +51,7 @@ init_params.camera_fps = 30; // Set fps at 30
 
 // Open the camera
 ERROR_CODE err = zed.open(init_params);
-if (err != ERROR_CODE::SUCCESS)
+if (err > ERROR_CODE::SUCCESS)
     exit(-1);
 ```
 
@@ -66,8 +66,8 @@ Each time you want a new image, you need to call this function. if grab() return
 
 ```
 // Grab an image
-if (zed.grab() == ERROR_CODE::SUCCESS) {
-	// A new image is available if grab() returns ERROR_CODE::SUCCESS
+if (zed.grab() <= ERROR_CODE::SUCCESS) {
+	// A new image is available if grab() returns ERROR_CODE::SUCCESS or a WARNING (an error_code lower than ERROR_CODE::SUCCESS)
 }
 ```
 
@@ -89,8 +89,8 @@ int i = 0;
 sl::Mat image;
 while (i < 50) {
     // Grab an image
-    if (zed.grab() == ERROR_CODE::SUCCESS) {
-        // A new image is available if grab() returns ERROR_CODE::SUCCESS
+    if (zed.grab() <= ERROR_CODE::SUCCESS) {
+        // A new image is available if grab() returns ERROR_CODE::SUCCESS or a WARNING (an error_code lower than ERROR_CODE::SUCCESS)
         zed.retrieveImage(image, VIEW::LEFT); // Get the left image
         auto timestamp = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE); // Get the timestamp at the time the image was captured
         printf("Image resolution: %d x %d  || Image timestamp: %llu\n", image.getWidth(), image.getHeight(), timestamp);

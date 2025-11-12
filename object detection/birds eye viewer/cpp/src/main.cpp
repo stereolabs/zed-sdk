@@ -37,8 +37,8 @@
 #include <sl/Camera.hpp>
 
 #if ENABLE_GUI
-#include "TrackingViewer.hpp"
-#include "GLViewer.hpp"
+    #include "TrackingViewer.hpp"
+    #include "GLViewer.hpp"
 #endif
 
 // Using std and sl namespaces
@@ -46,9 +46,9 @@ using namespace std;
 using namespace sl;
 bool is_playback = false;
 void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
-void parseArgs(int argc, char **argv, InitParameters& param);
+void parseArgs(int argc, char** argv, InitParameters& param);
 void printHelp();
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
 #ifdef _SL_JETSON_
     const bool isJetson = true;
@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
@@ -82,9 +82,10 @@ int main(int argc, char **argv) {
     print("Object Detection: Loading Module...");
     // Define the Objects detection module parameters
     ObjectDetectionParameters detection_parameters;
-    detection_parameters.enable_tracking = true; 
+    detection_parameters.enable_tracking = true;
     detection_parameters.enable_segmentation = false; // designed to give person pixel mask
-    detection_parameters.detection_model = isJetson ? OBJECT_DETECTION_MODEL::MULTI_CLASS_BOX_FAST : OBJECT_DETECTION_MODEL::MULTI_CLASS_BOX_ACCURATE;
+    detection_parameters.detection_model
+        = isJetson ? OBJECT_DETECTION_MODEL::MULTI_CLASS_BOX_FAST : OBJECT_DETECTION_MODEL::MULTI_CLASS_BOX_ACCURATE;
 
 #if ENABLE_BATCHING_REID
     detection_parameters.batch_parameters.enable = true;
@@ -106,12 +107,11 @@ int main(int argc, char **argv) {
     detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::PERSON] = detection_confidence;
     detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::VEHICLE] = detection_confidence;
 
-
     // Detection output
     bool quit = false;
 
 #if ENABLE_GUI
-    
+
     float image_aspect_ratio = camera_config.resolution.width / (1.f * camera_config.resolution.height);
     int requested_low_res_w = min(720, (int)camera_config.resolution.width);
     sl::Resolution display_resolution(requested_low_res_w, requested_low_res_w / image_aspect_ratio);
@@ -128,11 +128,18 @@ int main(int argc, char **argv) {
     // init an sl::Mat from the ocv image ref (which is in fact the memory of global_image)
     cv::Mat image_render_left = cv::Mat(display_resolution.height, display_resolution.width, CV_8UC4, 1);
     Mat image_left(display_resolution, MAT_TYPE::U8_C4, image_render_left.data, image_render_left.step);
-    sl::float2 img_scale(display_resolution.width / (float) camera_config.resolution.width, display_resolution.height / (float) camera_config.resolution.height);
-
+    sl::float2 img_scale(
+        display_resolution.width / (float)camera_config.resolution.width,
+        display_resolution.height / (float)camera_config.resolution.height
+    );
 
     // 2D tracks
-    TrackingViewer track_view_generator(tracks_resolution, camera_config.fps, init_parameters.depth_maximum_distance, detection_parameters.batch_parameters.latency);
+    TrackingViewer track_view_generator(
+        tracks_resolution,
+        camera_config.fps,
+        init_parameters.depth_maximum_distance,
+        detection_parameters.batch_parameters.latency
+    );
     track_view_generator.setCameraCalibration(camera_config.calibration_parameters);
 
     string window_name = "ZED| 3D View tracking";
@@ -155,12 +162,12 @@ int main(int argc, char **argv) {
     runtime_parameters.confidence_threshold = 50;
     Objects objects;
     bool gl_viewer_available = true;
-        while (
+    while (
 #if ENABLE_GUI
-            gl_viewer_available &&
+        gl_viewer_available &&
 #endif
-            !quit && zed.grab(runtime_parameters) <= ERROR_CODE::SUCCESS) {
-
+        !quit && zed.grab(runtime_parameters) <= ERROR_CODE::SUCCESS
+    ) {
 
         // update confidence threshold based on TrackBar
         if (detection_parameters_rt.object_class_filter.empty())
@@ -171,21 +178,23 @@ int main(int argc, char **argv) {
 
         returned_state = zed.retrieveObjects(objects, detection_parameters_rt);
         if (returned_state <= ERROR_CODE::SUCCESS) {
-            
+
 #if ENABLE_BATCHING_REID
             // store the id of detetected objects
-            for(auto &it: objects.object_list)
+            for (auto& it : objects.object_list)
                 id_counter[it.id] = 1;
 
             // check if bacthed trajectories are available
             std::vector<sl::ObjectsBatch> objectsBatch;
-            if(zed.getObjectsBatch(objectsBatch)==sl::ERROR_CODE::SUCCESS){
-                if(objectsBatch.size()){
-                    std::cout<<"During last batch processing: "<<id_counter.size()<<" Object were detected: ";
-                    for(auto it :id_counter) std::cout<<it.first<<" ";
-                    std::cout<<"\nWhile "<<objectsBatch.size()<<" different only after reID: ";
-                    for(auto it :objectsBatch) std::cout<<it.id<<" ";
-                    std::cout<<std::endl;
+            if (zed.getObjectsBatch(objectsBatch) == sl::ERROR_CODE::SUCCESS) {
+                if (objectsBatch.size()) {
+                    std::cout << "During last batch processing: " << id_counter.size() << " Object were detected: ";
+                    for (auto it : id_counter)
+                        std::cout << it.first << " ";
+                    std::cout << "\nWhile " << objectsBatch.size() << " different only after reID: ";
+                    for (auto it : objectsBatch)
+                        std::cout << it.id << " ";
+                    std::cout << std::endl;
                     id_counter.clear();
                 }
             }
@@ -196,7 +205,7 @@ int main(int argc, char **argv) {
             zed.getPosition(cam_w_pose, REFERENCE_FRAME::WORLD);
             zed.retrieveImage(image_left, VIEW::LEFT, MEM::CPU, display_resolution);
             image_render_left.copyTo(image_left_ocv);
-            track_view_generator.generate_view(objects, image_left_ocv,img_scale,cam_w_pose, image_track_ocv, objects.is_tracked);  
+            track_view_generator.generate_view(objects, image_left_ocv, img_scale, cam_w_pose, image_track_ocv, objects.is_tracked);
             viewer.updateData(point_cloud, objects.object_list, cam_w_pose.pose_data);
 
             gl_viewer_available = viewer.isAvailable();
@@ -227,10 +236,9 @@ int main(int argc, char **argv) {
 #endif
         }
 
-        if (is_playback && zed.getSVOPosition() == zed.getSVONumberOfFrames()) 
-            quit = true;        
+        if (is_playback && zed.getSVOPosition() == zed.getSVONumberOfFrames())
+            quit = true;
     }
-
 
 #if ENABLE_GUI
     viewer.exit();
@@ -242,7 +250,6 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 
-
 void printHelp() {
     cout << "\n\nBirds eye view hotkeys:\n";
     cout << "* Filter Person Only:              'p'\n";
@@ -253,11 +260,12 @@ void printHelp() {
     cout << "* Exit:                            'q'\n\n";
 }
 
-
 void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     cout << "[Sample] ";
-    if (err_code != ERROR_CODE::SUCCESS)
+    if (err_code > ERROR_CODE::SUCCESS)
         cout << "[Error] ";
+    else if (err_code < ERROR_CODE::SUCCESS)
+        cout << "[Warning] ";
     cout << msg_prefix << " ";
     if (err_code != ERROR_CODE::SUCCESS) {
         cout << " | " << toString(err_code) << " : ";
@@ -268,7 +276,7 @@ void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     cout << endl;
 }
 
-void parseArgs(int argc, char **argv, InitParameters& param) {
+void parseArgs(int argc, char** argv, InitParameters& param) {
     if (argc > 1 && string(argv[1]).find(".svo") != string::npos) {
         // SVO input mode
         param.input.setFromSVOFile(argv[1]);

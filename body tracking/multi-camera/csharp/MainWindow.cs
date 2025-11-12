@@ -35,8 +35,7 @@ using OpenGL.CoreUI;
 
 using sl;
 
-class MainWindow
-{
+class MainWindow {
     GLViewer viewer;
     Fusion fusion;
     BodyTrackingFusionParameters bodyTrackingFusionParameters;
@@ -46,10 +45,8 @@ class MainWindow
     sl.Resolution pointCloudResolution;
     Dictionary<ulong, sl.Mat> pointClouds;
     Dictionary<ulong, sl.Bodies> camRawData;
-    public MainWindow(string[] args)
-    {
-        if (args.Length < 1)
-        {
+    public MainWindow(string[] args) {
+        if (args.Length < 1) {
             Console.WriteLine("Requires a configuration file as argument");
             return;
         }
@@ -57,29 +54,26 @@ class MainWindow
         const sl.COORDINATE_SYSTEM COORDINATE_SYSTEM = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP;
         const sl.UNIT UNIT = sl.UNIT.METER;
 
-        // Read json file containing the configuration of your multicamera setup. 
-        List<FusionConfiguration> fusionConfigurations = sl.Fusion.ReadConfigurationFile(new StringBuilder(args[0]), COORDINATE_SYSTEM, UNIT);
+        // Read json file containing the configuration of your multicamera setup.
+        List<FusionConfiguration> fusionConfigurations
+            = sl.Fusion.ReadConfigurationFile(new StringBuilder(args[0]), COORDINATE_SYSTEM, UNIT);
 
-        if (fusionConfigurations.Count == 0 )
-        {
+        if (fusionConfigurations.Count == 0) {
             Console.WriteLine("Empty configuration file");
             return;
         }
 
-        List<ClientPublisher> clients =  new List<ClientPublisher>();
+        List<ClientPublisher> clients = new List<ClientPublisher>();
         int id = 0;
         // Check if the ZED camera should run within the same process or if they are running on the edge.
-        foreach (FusionConfiguration config in fusionConfigurations)
-        {
-            if (config.commParam.communicationType == sl.COMM_TYPE.INTRA_PROCESS)
-            {
+        foreach (FusionConfiguration config in fusionConfigurations) {
+            if (config.commParam.communicationType == sl.COMM_TYPE.INTRA_PROCESS) {
                 Console.WriteLine("Try to open ZED " + config.serialNumber);
                 var client = new ClientPublisher(id);
                 bool state = client.Open(config.inputType);
                 clients.Add(client);
 
-                if (!state)
-                {
+                if (!state) {
                     Console.WriteLine("Error while opening ZED " + config.serialNumber);
                     continue;
                 }
@@ -90,7 +84,8 @@ class MainWindow
         }
 
         // Starts Camera threads
-        foreach(var client in clients) client.Start();
+        foreach (var client in clients)
+            client.Start();
 
         sl.InitFusionParameters initFusionParameters = new sl.InitFusionParameters();
         initFusionParameters.coordinateUnits = UNIT;
@@ -99,8 +94,7 @@ class MainWindow
         fusion = new sl.Fusion();
         FUSION_ERROR_CODE err = fusion.Init(ref initFusionParameters);
 
-        if (err != sl.FUSION_ERROR_CODE.SUCCESS)
-        {
+        if (err != sl.FUSION_ERROR_CODE.SUCCESS) {
             Console.WriteLine("Error while initializing the fusion. Exiting...");
             Environment.Exit(-1);
         }
@@ -108,27 +102,23 @@ class MainWindow
         cameras = new List<sl.CameraIdentifier>();
 
         // subscribe to every cameras of the setup to internally gather their data
-        foreach (var config in fusionConfigurations)
-        {
+        foreach (var config in fusionConfigurations) {
             sl.CameraIdentifier uuid = new sl.CameraIdentifier(config.serialNumber);
-            // to subscribe to a camera you must give its serial number, the way to communicate with it (shared memory or local network), and its world pose in the setup.
+            // to subscribe to a camera you must give its serial number, the way to communicate with it (shared memory or local network),
+            // and its world pose in the setup.
             Vector3 translation = config.position;
             Quaternion rotation = config.rotation;
 
             err = fusion.Subscribe(ref uuid, config.commParam, ref translation, ref rotation);
-            if (err != sl.FUSION_ERROR_CODE.SUCCESS)
-            {
+            if (err != sl.FUSION_ERROR_CODE.SUCCESS) {
                 Console.WriteLine("Error while subscribing to camera " + config.serialNumber + " : " + err + ". Exiting...");
                 Environment.Exit(-1);
-            }
-            else
-            {
+            } else {
                 cameras.Add(uuid);
             }
         }
 
-        if (cameras.Count == 0)
-        {
+        if (cameras.Count == 0) {
             Console.WriteLine("No camera subscribed. Exiting...");
             Environment.Exit(-1);
         }
@@ -136,8 +126,7 @@ class MainWindow
         pointCloudResolution = new sl.Resolution(512, 360);
         pointClouds = new Dictionary<ulong, Mat>();
 
-        foreach (var camera in cameras)
-        {
+        foreach (var camera in cameras) {
             sl.Mat pointCloud = new sl.Mat();
             pointCloud.Create(pointCloudResolution, MAT_TYPE.MAT_32F_C4, MEM.CPU);
             pointClouds[camera.sn] = pointCloud;
@@ -154,35 +143,30 @@ class MainWindow
 
         camRawData = new Dictionary<ulong, Bodies>();
 
-        foreach (var client in clients)
-        {
+        foreach (var client in clients) {
             client.SetStartSVOPosition(0);
         }
 
         // Create OpenGL Viewer
         viewer = new GLViewer();
 
-        Console.Write("Viewer shortcuts : \n" +
-        "'r': switch on/off for raw skeleton display\n" +
-        "'p': switch on/off for live point cloud display");
+        Console.Write(
+            "Viewer shortcuts : \n" + "'r': switch on/off for raw skeleton display\n" + "'p': switch on/off for live point cloud display"
+        );
 
         // Create OpenGL window
         CreateWindow();
     }
 
     // Create Window
-    public void CreateWindow()
-    {
-        using (OpenGL.CoreUI.NativeWindow nativeWindow = OpenGL.CoreUI.NativeWindow.Create())
-        {
+    public void CreateWindow() {
+        using (OpenGL.CoreUI.NativeWindow nativeWindow = OpenGL.CoreUI.NativeWindow.Create()) {
             nativeWindow.ContextCreated += NativeWindow_ContextCreated;
             nativeWindow.Render += NativeWindow_Render;
             nativeWindow.MouseMove += NativeWindow_MouseEvent;
             nativeWindow.Resize += NativeWindow_Resize;
-            nativeWindow.KeyDown += (object obj, NativeWindowKeyEventArgs e) =>
-            {
-                switch (e.Key)
-                {
+            nativeWindow.KeyDown += (object obj, NativeWindowKeyEventArgs e) => {
+                switch (e.Key) {
                     case KeyCode.Escape:
                         close();
                         nativeWindow.Stop();
@@ -206,33 +190,27 @@ class MainWindow
 
             nativeWindow.Create((int)(wnd_h * 0.05f), (int)(wnd_w * 0.05f), width, height, NativeWindowStyle.Resizeable);
             nativeWindow.Show();
-            try
-            {
+            try {
                 nativeWindow.Run();
-            }
-            catch(Exception e)
-            {
+            } catch (Exception e) {
                 Console.WriteLine("Mouse wheel is broken in the current OPENGL .NET VERSION. Please do not use it. " + e);
             }
         }
     }
 
-    private void NativeWindow_Resize(object sender, EventArgs e)
-    {
+    private void NativeWindow_Resize(object sender, EventArgs e) {
         OpenGL.CoreUI.NativeWindow nativeWindow = (OpenGL.CoreUI.NativeWindow)sender;
 
         viewer.resizeCallback((int)nativeWindow.Width, (int)nativeWindow.Height);
     }
 
-    private void NativeWindow_MouseEvent(object sender, NativeWindowMouseEventArgs e)
-    {
+    private void NativeWindow_MouseEvent(object sender, NativeWindowMouseEventArgs e) {
         viewer.mouseEventFunction(e);
         viewer.computeMouseMotion(e.Location.X, e.Location.Y);
     }
 
     // Init Window
-    private void NativeWindow_ContextCreated(object sender, NativeWindowEventArgs e)
-    {
+    private void NativeWindow_ContextCreated(object sender, NativeWindowEventArgs e) {
         OpenGL.CoreUI.NativeWindow nativeWindow = (OpenGL.CoreUI.NativeWindow)sender;
 
         Gl.ReadBuffer(ReadBufferMode.Back);
@@ -246,32 +224,27 @@ class MainWindow
 
         viewer.Init(bodyTrackingFusionParameters.enableTracking);
 
-        foreach (var camera in cameras)
-        {
+        foreach (var camera in cameras) {
             viewer.InitPointCloud(camera.sn, pointCloudResolution);
         }
     }
 
     // Render loop
-    private void NativeWindow_Render(object sender, NativeWindowEventArgs e)
-    {
+    private void NativeWindow_Render(object sender, NativeWindowEventArgs e) {
         OpenGL.CoreUI.NativeWindow nativeWindow = (OpenGL.CoreUI.NativeWindow)sender;
         Gl.Viewport(0, 0, (int)nativeWindow.Width, (int)nativeWindow.Height);
         Gl.Clear(ClearBufferMask.ColorBufferBit);
 
         FUSION_ERROR_CODE err = FUSION_ERROR_CODE.FAILURE;
         // run the fusion as long as the viewer is available.
-        if (viewer.IsAvailable())
-        {
+        if (viewer.IsAvailable()) {
             // run the fusion process (which gather data from all camera, sync them and process them)
             err = fusion.Process();
-            if (err == sl.FUSION_ERROR_CODE.SUCCESS)
-            {
+            if (err == sl.FUSION_ERROR_CODE.SUCCESS) {
                 // Retrieve fused body
                 fusion.RetrieveBodies(ref bodies, ref bodyTrackingFusionRuntimeParameters, new CameraIdentifier(0));
-               
-                for (int i = 0; i < cameras.Count; i++)
-                {
+
+                for (int i = 0; i < cameras.Count; i++) {
                     CameraIdentifier uuid = cameras[i];
 
                     sl.Bodies rawBodies = new sl.Bodies();
@@ -282,28 +255,25 @@ class MainWindow
                     // Retrieve camera pose
                     sl.Pose pose = new sl.Pose();
                     sl.POSITIONAL_TRACKING_STATE state = fusion.GetPosition(ref pose, REFERENCE_FRAME.WORLD, ref uuid, POSITION_TYPE.RAW);
-                    if (state == sl.POSITIONAL_TRACKING_STATE.OK)
-                    {
+                    if (state == sl.POSITIONAL_TRACKING_STATE.OK) {
                         viewer.SetCameraPose(uuid.sn, pose);
                     }
 
-                    // Retrieve point cloud                 
+                    // Retrieve point cloud
                     err = fusion.RetrieveMeasure(pointClouds[uuid.sn], ref uuid, MEASURE.XYZBGRA, pointCloudResolution);
 
-                    if (err == sl.FUSION_ERROR_CODE.SUCCESS)
-                    {
+                    if (err == sl.FUSION_ERROR_CODE.SUCCESS) {
                         viewer.UpdatePointCloud(uuid.sn, pointClouds[uuid.sn]);
-                    }              
+                    }
                 }
             }
-            //Update GL View
+            // Update GL View
             viewer.UpdateBodies(bodies, camRawData);
             viewer.Render();
         }
     }
 
-    private void close()
-    {
+    private void close() {
         fusion.Close();
         viewer.Exit();
     }

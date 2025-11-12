@@ -58,12 +58,12 @@ void acquisition(CameraType& zed) {
 }
 
 /// Function to set the depth mode in InitParameters
-inline void setDepthMode(sl::InitParameters &ip) {
+inline void setDepthMode(sl::InitParameters& ip) {
     ip.depth_mode = sl::DEPTH_MODE::NONE; // No depth mode for this example
 }
 
 /// Function to set the depth mode in InitParametersOne
-inline void setDepthMode(sl::InitParametersOne &ip) {
+inline void setDepthMode(sl::InitParametersOne& ip) {
     // NA
 }
 
@@ -73,7 +73,7 @@ inline void setDepthMode(sl::InitParametersOne &ip) {
 /// \param zed Reference to the camera object
 /// \param sn Serial number of the camera
 /// \param camera_fps Desired camera frame rate (default is 30)
-template<typename CameraType, typename IP>
+template <typename CameraType, typename IP>
 bool openCamera(CameraType& zed, const int sn, const int camera_fps = 30) {
 
     IP init_parameters;
@@ -94,9 +94,10 @@ bool openCamera(CameraType& zed, const int sn, const int camera_fps = 30) {
 
     // Enable streaming
     sl::RecordingParameters recording_params;
-    std::string svo_filename = std::string(sl::toString(zed.getCameraInformation().camera_model)) + "_SN" + std::to_string(sn) + ".svo2";;
+    std::string svo_filename = std::string(sl::toString(zed.getCameraInformation().camera_model)) + "_SN" + std::to_string(sn) + ".svo2";
+    ;
     svo_filename.erase(std::remove(svo_filename.begin(), svo_filename.end(), ' '), svo_filename.end()); // Remove spaces from the filename
-    recording_params.video_filename.set(svo_filename.c_str()); 
+    recording_params.video_filename.set(svo_filename.c_str());
     recording_params.compression_mode = sl::SVO_COMPRESSION_MODE::H265;
     const sl::ERROR_CODE recording_err = zed.enableRecording(recording_params);
     if (recording_err <= sl::ERROR_CODE::SUCCESS) {
@@ -112,15 +113,13 @@ bool openCamera(CameraType& zed, const int sn, const int camera_fps = 30) {
 }
 
 /// Function to print device information
-void printDeviceInfo(const std::vector<sl::DeviceProperties> & devs) {
-    for (const auto &dev : devs)
-        std::cout << "ID : " << dev.id << ", model : " << dev.camera_model
-            << " , S/N : " << dev.serial_number
-            << " , state : " << dev.camera_state
-            << std::endl;
+void printDeviceInfo(const std::vector<sl::DeviceProperties>& devs) {
+    for (const auto& dev : devs)
+        std::cout << "ID : " << dev.id << ", model : " << dev.camera_model << " , S/N : " << dev.serial_number
+                  << " , state : " << dev.camera_state << std::endl;
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     // Get the list of available ZED cameras
     const std::vector<sl::DeviceProperties> dev_stereo_list = sl::Camera::getDeviceList();
     printDeviceInfo(dev_stereo_list);
@@ -154,7 +153,6 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-
     // Create a grab thread for each opened camera
     std::vector<std::thread> thread_pool(nb_stereo + nb_one); // compute threads
     for (int z = 0; z < nb_stereo; z++) {
@@ -185,5 +183,3 @@ int main(int argc, char **argv) {
     std::cout << "Program exited" << std::endl;
     return EXIT_SUCCESS;
 }
-
-

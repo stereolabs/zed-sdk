@@ -47,7 +47,7 @@ initParameters.sdk_verbose = true;
 
 // Open the camera
 ERROR_CODE zed_error = zed.open(initParameters);
-if (zed_error != ERROR_CODE::SUCCESS) {
+if (zed_error > ERROR_CODE::SUCCESS) {
 	std::cout << "Error " << zed_error << ", exit program.\n";
 	return 1; // Quit if an error occurred
 }
@@ -105,7 +105,7 @@ Bodies bodies;
 int nb_detection = 0;
 while (nb_detection < 100) {
 
-	if (zed.grab() == ERROR_CODE::SUCCESS) {
+	if (zed.grab() <= ERROR_CODE::SUCCESS) {
 		zed.retrieveBodies(bodies, detection_parameters_rt);
 
 		if (bodies.is_new) {

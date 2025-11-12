@@ -5,11 +5,13 @@
 using namespace std;
 
 void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suffix) {
-    cout <<"[Sample]";
-    if (err_code != sl::ERROR_CODE::SUCCESS)
+    cout << "[Sample]";
+    if (err_code > sl::ERROR_CODE::SUCCESS)
         cout << "[Error] ";
+    else if (err_code < sl::ERROR_CODE::SUCCESS)
+        cout << "[Warning] ";
     else
-        cout<<" ";
+        cout << " ";
     cout << msg_prefix << " ";
     if (err_code != sl::ERROR_CODE::SUCCESS) {
         cout << " | " << toString(err_code) << " : ";
@@ -20,50 +22,47 @@ void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suff
     cout << endl;
 }
 
-const GLchar* MESH_VERTEX_SHADER =
-"#version 330 core\n"
-"layout(location = 0) in vec3 in_Vertex;\n"
-"layout(location = 1) in float in_dist;\n"
-"uniform mat4 u_mvpMatrix;\n"
-"uniform vec3 u_color;\n"
-"out vec3 b_color;\n"
-"out float distance;\n"
-"void main() {\n"
-"   b_color = u_color;\n"
-"   distance = in_dist;\n"
-"   gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
-"}";
+const GLchar* MESH_VERTEX_SHADER = "#version 330 core\n"
+                                   "layout(location = 0) in vec3 in_Vertex;\n"
+                                   "layout(location = 1) in float in_dist;\n"
+                                   "uniform mat4 u_mvpMatrix;\n"
+                                   "uniform vec3 u_color;\n"
+                                   "out vec3 b_color;\n"
+                                   "out float distance;\n"
+                                   "void main() {\n"
+                                   "   b_color = u_color;\n"
+                                   "   distance = in_dist;\n"
+                                   "   gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
+                                   "}";
 
-const GLchar* MESH_FRAGMENT_SHADER =
-"#version 330 core\n"
-"in vec3 b_color;\n"
-"in float distance;\n"
-"layout(location = 0) out vec4 color;\n"
-"void main() {\n"
-"   color = vec4(b_color,distance);\n"
-"}";
+const GLchar* MESH_FRAGMENT_SHADER = "#version 330 core\n"
+                                     "in vec3 b_color;\n"
+                                     "in float distance;\n"
+                                     "layout(location = 0) out vec4 color;\n"
+                                     "void main() {\n"
+                                     "   color = vec4(b_color,distance);\n"
+                                     "}";
 
-const GLchar* IMAGE_FRAGMENT_SHADER =
-"#version 330 core\n"
-" in vec2 UV;\n"
-" out vec4 color;\n"
-" uniform sampler2D texImage;\n"
-" uniform bool revert;\n"
-" uniform bool rgbflip;\n"
-" void main() {\n"
-"    vec2 scaler  =revert?vec2(UV.x,1.f - UV.y):vec2(UV.x,UV.y);\n"
-"    vec3 rgbcolor = rgbflip?vec3(texture(texImage, scaler).zyx):vec3(texture(texImage, scaler).xyz);\n"
-"    color = vec4(rgbcolor,1);\n"
-"}";
+const GLchar* IMAGE_FRAGMENT_SHADER
+    = "#version 330 core\n"
+      " in vec2 UV;\n"
+      " out vec4 color;\n"
+      " uniform sampler2D texImage;\n"
+      " uniform bool revert;\n"
+      " uniform bool rgbflip;\n"
+      " void main() {\n"
+      "    vec2 scaler  =revert?vec2(UV.x,1.f - UV.y):vec2(UV.x,UV.y);\n"
+      "    vec3 rgbcolor = rgbflip?vec3(texture(texImage, scaler).zyx):vec3(texture(texImage, scaler).xyz);\n"
+      "    color = vec4(rgbcolor,1);\n"
+      "}";
 
-const GLchar* IMAGE_VERTEX_SHADER =
-"#version 330\n"
-"layout(location = 0) in vec3 vert;\n"
-"out vec2 UV;"
-"void main() {\n"
-"   UV = (vert.xy+vec2(1,1))/2;\n"
-"	gl_Position = vec4(vert, 1);\n"
-"}\n";
+const GLchar* IMAGE_VERTEX_SHADER = "#version 330\n"
+                                    "layout(location = 0) in vec3 vert;\n"
+                                    "out vec2 UV;"
+                                    "void main() {\n"
+                                    "   UV = (vert.xy+vec2(1,1))/2;\n"
+                                    "	gl_Position = vec4(vert, 1);\n"
+                                    "}\n";
 
 MeshObject::MeshObject() {
     current_fc = 0;
@@ -77,13 +76,13 @@ MeshObject::~MeshObject() {
     vert.clear();
     edge_dist.clear();
     tri.clear();
-    if(vaoID_) {
+    if (vaoID_) {
         glDeleteBuffers(3, vboID_);
         glDeleteVertexArrays(1, &vaoID_);
     }
 }
 
-void MeshObject::alloc(){
+void MeshObject::alloc() {
     glGenVertexArrays(1, &vaoID_);
     glGenBuffers(3, vboID_);
     shader.it.set(MESH_VERTEX_SHADER, MESH_FRAGMENT_SHADER);
@@ -91,8 +90,8 @@ void MeshObject::alloc(){
     shader.shColorLoc = glGetUniformLocation(shader.it.getProgramId(), "u_color");
 }
 
-void MeshObject::updateMesh(std::vector<sl::float3> &vertices, std::vector<sl::uint3> &triangles, std::vector<int> &border) {
-    if(!need_update) {
+void MeshObject::updateMesh(std::vector<sl::float3>& vertices, std::vector<sl::uint3>& triangles, std::vector<int>& border) {
+    if (!need_update) {
         vert = vertices;
         tri = triangles;
 
@@ -103,7 +102,7 @@ void MeshObject::updateMesh(std::vector<sl::float3> &vertices, std::vector<sl::u
             sl::float3 v_current = vertices[i];
             for (unsigned int j = 0; j < border.size(); j++) {
                 float dist_current = sl::float3::distance(v_current, vertices[border[j]]);
-                if(dist_current < d_min) {
+                if (dist_current < d_min) {
                     d_min = dist_current;
                 }
             }
@@ -114,7 +113,7 @@ void MeshObject::updateMesh(std::vector<sl::float3> &vertices, std::vector<sl::u
 }
 
 void MeshObject::pushToGPU() {
-    if(need_update) {
+    if (need_update) {
         glBindVertexArray(vaoID_);
 
         glBindBuffer(GL_ARRAY_BUFFER, vboID_[0]);
@@ -130,7 +129,7 @@ void MeshObject::pushToGPU() {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID_[2]);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, tri.size() * sizeof(sl::uint3), &tri[0], GL_DYNAMIC_DRAW);
 
-        current_fc = (int) tri.size() * 3;
+        current_fc = (int)tri.size() * 3;
 
         glBindVertexArray(0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -140,16 +139,17 @@ void MeshObject::pushToGPU() {
 }
 
 void MeshObject::draw() {
-    if(current_fc && vaoID_) {
+    if (current_fc && vaoID_) {
         glBindVertexArray(vaoID_);
-        glDrawElements(GL_TRIANGLES, (GLsizei) current_fc, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, (GLsizei)current_fc, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 }
 
 GLViewer* currentInstance_ = nullptr;
 
-GLViewer::GLViewer() :available(false) {
+GLViewer::GLViewer()
+    : available(false) {
     currentInstance_ = this;
     pose.setIdentity();
     tracking_state = sl::POSITIONAL_TRACKING_STATE::OFF;
@@ -157,12 +157,10 @@ GLViewer::GLViewer() :available(false) {
     user_action.clear();
 }
 
-GLViewer::~GLViewer() {
-}
-
+GLViewer::~GLViewer() { }
 
 bool cudaSafeCall(cudaError_t err) {
-    if(err != cudaSuccess) {
+    if (err != cudaSuccess) {
         printf("Cuda error [%d]: %s.\n", err, cudaGetErrorString(err));
         return false;
     }
@@ -170,21 +168,24 @@ bool cudaSafeCall(cudaError_t err) {
 }
 
 void GLViewer::exit() {
-    if(available) {
+    if (available) {
         image_handler.close();
     }
     available = false;
 }
 
 bool GLViewer::isAvailable() {
-    if(available)
+    if (available)
         glutMainLoopEvent();
     return available;
 }
 
-void CloseFunc(void) { if(currentInstance_) currentInstance_->exit(); }
+void CloseFunc(void) {
+    if (currentInstance_)
+        currentInstance_->exit();
+}
 
-bool GLViewer::init(int argc, char **argv, sl::CameraParameters &camLeft, bool has_imu) {
+bool GLViewer::init(int argc, char** argv, sl::CameraParameters& camLeft, bool has_imu) {
 
     glutInit(&argc, argv);
     int wnd_w = glutGet(GLUT_SCREEN_WIDTH);
@@ -195,16 +196,16 @@ bool GLViewer::init(int argc, char **argv, sl::CameraParameters &camLeft, bool h
         width = camLeft.image_size.width;
         height = camLeft.image_size.height;
     }
-    
+
     glutInitWindowSize(width, height);
     glutInitWindowPosition(wnd_w * 0.05, wnd_h * 0.05);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
     glutCreateWindow("ZED Plane Detection");
-    
+
     reshapeCallback(width, height);
 
     GLenum err = glewInit();
-    if (GLEW_OK != err){
+    if (GLEW_OK != err) {
         std::cout << "ERROR: glewInit failed: " << glewGetErrorString(err) << "\n";
         return true;
     }
@@ -213,7 +214,7 @@ bool GLViewer::init(int argc, char **argv, sl::CameraParameters &camLeft, bool h
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    
+
     glEnable(GL_LINE_SMOOTH);
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 
@@ -222,7 +223,7 @@ bool GLViewer::init(int argc, char **argv, sl::CameraParameters &camLeft, bool h
         std::cout << "ERROR: Failed to initialized Image Renderer" << std::endl;
         return true;
     }
-    
+
     // Create the rendering camera
     setRenderCameraProjection(camLeft, 0.1f, 50);
 
@@ -255,20 +256,21 @@ void GLViewer::setRenderCameraProjection(sl::CameraParameters params, float znea
     camera_projection(2, 3) = -(2.f * zfar * znear) / (zfar - znear);
     camera_projection(3, 3) = 0;
 
-    camera_projection(0, 0) = 1.0f / tanf(fov_x * 0.5f); //Horizontal FoV.
+    camera_projection(0, 0) = 1.0f / tanf(fov_x * 0.5f); // Horizontal FoV.
     camera_projection(0, 1) = 0;
-    camera_projection(0, 2) = 2.0f * ((params.image_size.width - 1.0f * params.cx) / params.image_size.width) - 1.0f; //Horizontal offset.
+    camera_projection(0, 2) = 2.0f * ((params.image_size.width - 1.0f * params.cx) / params.image_size.width) - 1.0f; // Horizontal offset.
     camera_projection(0, 3) = 0;
 
     camera_projection(1, 0) = 0;
-    camera_projection(1, 1) = 1.0f / tanf(fov_y * 0.5f); //Vertical FoV.
-    camera_projection(1, 2) = -(2.0f * ((params.image_size.height - 1.0f * params.cy) / params.image_size.height) - 1.0f); //Vertical offset.
+    camera_projection(1, 1) = 1.0f / tanf(fov_y * 0.5f); // Vertical FoV.
+    camera_projection(1, 2)
+        = -(2.0f * ((params.image_size.height - 1.0f * params.cy) / params.image_size.height) - 1.0f); // Vertical offset.
     camera_projection(1, 3) = 0;
 
     camera_projection(2, 0) = 0;
     camera_projection(2, 1) = 0;
-    camera_projection(2, 2) = -(zfar + znear) / (zfar - znear); //Near and far planes.
-    camera_projection(2, 3) = -(2.0f * zfar * znear) / (zfar - znear); //Near and far planes.
+    camera_projection(2, 2) = -(zfar + znear) / (zfar - znear);        // Near and far planes.
+    camera_projection(2, 3) = -(2.0f * zfar * znear) / (zfar - znear); // Near and far planes.
 
     camera_projection(3, 0) = 0;
     camera_projection(3, 1) = 0;
@@ -286,14 +288,14 @@ void GLViewer::idle() {
 
 void GLViewer::keyReleasedCallback(unsigned char c, int x, int y) {
     // space bar means change spatial mapping state
-    if(c == 32)
+    if (c == 32)
         currentInstance_->user_action.press_space = true;
 
-    if((c == 'p') || (c == 'P'))
+    if ((c == 'p') || (c == 'P'))
         currentInstance_->user_action.hit = true;
 
     // Esc or Q hit means exit
-    if((c == 'q') || (c == 'Q') || (c == 27))
+    if ((c == 'q') || (c == 'Q') || (c == 27))
         currentInstance_->exit();
 }
 
@@ -304,18 +306,18 @@ void GLViewer::reshapeCallback(int width, int height) {
 }
 
 void GLViewer::mouseButtonCallback(int button, int state, int x, int y) {
-    if(button < 3) {
-        if(state == GLUT_DOWN) {
+    if (button < 3) {
+        if (state == GLUT_DOWN) {
             currentInstance_->user_action.hit = true;
-            currentInstance_->user_action.hit_coord.x = (x / (1.f*currentInstance_->wnd_w));
-            currentInstance_->user_action.hit_coord.y = (y / (1.f*currentInstance_->wnd_h));
+            currentInstance_->user_action.hit_coord.x = (x / (1.f * currentInstance_->wnd_w));
+            currentInstance_->user_action.hit_coord.y = (y / (1.f * currentInstance_->wnd_h));
         }
     }
 }
 
-UserAction GLViewer::updateImageAndState(sl::Mat &im, sl::Transform &pose_, sl::POSITIONAL_TRACKING_STATE track_state) {
-    if(mtx.try_lock()) {
-        if(available) {
+UserAction GLViewer::updateImageAndState(sl::Mat& im, sl::Transform& pose_, sl::POSITIONAL_TRACKING_STATE track_state) {
+    if (mtx.try_lock()) {
+        if (available) {
             image_handler.pushNewImage(im);
             pose = pose_;
             tracking_state = track_state;
@@ -329,8 +331,8 @@ UserAction GLViewer::updateImageAndState(sl::Mat &im, sl::Transform &pose_, sl::
     return cpy;
 }
 
-void GLViewer::updateMesh(sl::Mesh &mesh, sl::PLANE_TYPE type) {
-    if(mtx.try_lock()) {
+void GLViewer::updateMesh(sl::Mesh& mesh, sl::PLANE_TYPE type) {
+    if (mtx.try_lock()) {
         auto edges = mesh.getBoundaries();
         mesh_object.updateMesh(mesh.vertices, mesh.triangles, edges);
         mesh_object.type = type;
@@ -339,7 +341,7 @@ void GLViewer::updateMesh(sl::Mesh &mesh, sl::PLANE_TYPE type) {
 }
 
 void GLViewer::render() {
-    if(available) {
+    if (available) {
         mtx.lock();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glClearColor(0, 0, 0, 1.f);
@@ -354,7 +356,7 @@ void GLViewer::render() {
 
 void GLViewer::update() {
     // Update GPU data
-    if(new_data) {
+    if (new_data) {
         mesh_object.pushToGPU();
         new_data = false;
     }
@@ -362,20 +364,24 @@ void GLViewer::update() {
 
 sl::float3 getPlaneColor(sl::PLANE_TYPE type) {
     sl::float3 clr;
-    switch(type) {
-    case sl::PLANE_TYPE::HORIZONTAL: clr = sl::float3(0.65f, 0.95f, 0.35f);
-        break;
-    case sl::PLANE_TYPE::VERTICAL: clr = sl::float3(0.95f, 0.35f, 0.65f);
-        break;
-    case sl::PLANE_TYPE::UNKNOWN: clr = sl::float3(0.35f, 0.65f, 0.95f);
-        break;
-    default: break;
+    switch (type) {
+        case sl::PLANE_TYPE::HORIZONTAL:
+            clr = sl::float3(0.65f, 0.95f, 0.35f);
+            break;
+        case sl::PLANE_TYPE::VERTICAL:
+            clr = sl::float3(0.95f, 0.35f, 0.65f);
+            break;
+        case sl::PLANE_TYPE::UNKNOWN:
+            clr = sl::float3(0.35f, 0.65f, 0.95f);
+            break;
+        default:
+            break;
     }
     return clr;
 }
 
 void GLViewer::draw() {
-    if(available) {
+    if (available) {
         image_handler.draw();
 
         // If the Positional tracking is good, we can draw the mesh over the current image
@@ -398,12 +404,12 @@ void GLViewer::draw() {
             glUseProgram(0);
         }
 
-        /// Draw Hit 
+        /// Draw Hit
         float cx = user_action.hit_coord.x * 2.f - 1.f;
-        float cy = (user_action.hit_coord.y * 2.f - 1.f)*-1.f;
+        float cy = (user_action.hit_coord.y * 2.f - 1.f) * -1.f;
 
         float lx = 0.02f;
-        float ly = lx * (wnd_w/(1.f*wnd_h));
+        float ly = lx * (wnd_w / (1.f * wnd_h));
 
         glLineWidth(2);
         glColor3f(0.2f, 0.45f, 0.9f);
@@ -412,20 +418,20 @@ void GLViewer::draw() {
         glVertex3f(cx + lx, cy, 0.0);
         glVertex3f(cx, cy - ly, 0.0);
         glVertex3f(cx, cy + ly, 0.0);
-        glEnd();        
+        glEnd();
     }
 }
 
-void printGL(float x, float y, const char *string) {
+void printGL(float x, float y, const char* string) {
     glRasterPos2f(x, y);
-    int len = (int) strlen(string);
-    for(int i = 0; i < len; i++) {
+    int len = (int)strlen(string);
+    for (int i = 0; i < len; i++) {
         glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, string[i]);
     }
 }
 
 void GLViewer::printText() {
-    if(available) {
+    if (available) {
         if (tracking_state != sl::POSITIONAL_TRACKING_STATE::OK) {
             glColor4f(0.85f, 0.25f, 0.15f, 1.f);
             std::string state_str;
@@ -438,10 +444,10 @@ void GLViewer::printText() {
             printGL(-0.99f, 0.85f, "Press 'p' key to get plane at hit.");
         }
 
-        if(use_imu) {
+        if (use_imu) {
             float y_start = -0.99f;
-            for(int t = 0; t < static_cast<int>(sl::PLANE_TYPE::LAST); t++) {
-                sl::PLANE_TYPE type = static_cast<sl::PLANE_TYPE> (t);
+            for (int t = 0; t < static_cast<int>(sl::PLANE_TYPE::LAST); t++) {
+                sl::PLANE_TYPE type = static_cast<sl::PLANE_TYPE>(t);
                 sl::float3 clr = getPlaneColor(type);
                 glColor4f(clr.r, clr.g, clr.b, 1.f);
                 printGL(-0.99f, y_start, sl::toString(type).c_str());
@@ -458,10 +464,10 @@ Shader::Shader(const GLchar* vs, const GLchar* fs) {
 }
 
 void Shader::set(const GLchar* vs, const GLchar* fs) {
-    if(!compile(verterxId_, GL_VERTEX_SHADER, vs)) {
+    if (!compile(verterxId_, GL_VERTEX_SHADER, vs)) {
         std::cout << "ERROR: while compiling vertex shader" << std::endl;
     }
-    if(!compile(fragmentId_, GL_FRAGMENT_SHADER, fs)) {
+    if (!compile(fragmentId_, GL_FRAGMENT_SHADER, fs)) {
         std::cout << "ERROR: while compiling fragment shader" << std::endl;
     }
 
@@ -476,12 +482,12 @@ void Shader::set(const GLchar* vs, const GLchar* fs) {
 
     GLint errorlk(0);
     glGetProgramiv(programId_, GL_LINK_STATUS, &errorlk);
-    if(errorlk != GL_TRUE) {
+    if (errorlk != GL_TRUE) {
         std::cout << "ERROR: while linking Shader :" << std::endl;
         GLint errorSize(0);
         glGetProgramiv(programId_, GL_INFO_LOG_LENGTH, &errorSize);
 
-        char *error = new char[errorSize + 1];
+        char* error = new char[errorSize + 1];
         glGetShaderInfoLog(programId_, errorSize, &errorSize, error);
         error[errorSize] = '\0';
         std::cout << error << std::endl;
@@ -504,23 +510,23 @@ GLuint Shader::getProgramId() {
     return programId_;
 }
 
-bool Shader::compile(GLuint &shaderId, GLenum type, const GLchar* src) {
+bool Shader::compile(GLuint& shaderId, GLenum type, const GLchar* src) {
     shaderId = glCreateShader(type);
-    if(shaderId == 0) {
+    if (shaderId == 0) {
         std::cout << "ERROR: shader type (" << type << ") does not exist" << std::endl;
         return false;
     }
-    glShaderSource(shaderId, 1, (const char**) &src, 0);
+    glShaderSource(shaderId, 1, (const char**)&src, 0);
     glCompileShader(shaderId);
 
     GLint errorCp(0);
     glGetShaderiv(shaderId, GL_COMPILE_STATUS, &errorCp);
-    if(errorCp != GL_TRUE) {
+    if (errorCp != GL_TRUE) {
         std::cout << "ERROR: while compiling Shader :" << std::endl;
         GLint errorSize(0);
         glGetShaderiv(shaderId, GL_INFO_LOG_LENGTH, &errorSize);
 
-        char *error = new char[errorSize + 1];
+        char* error = new char[errorSize + 1];
         glGetShaderInfoLog(shaderId, errorSize, &errorSize, error);
         error[errorSize] = '\0';
         std::cout << error << std::endl;
@@ -532,7 +538,8 @@ bool Shader::compile(GLuint &shaderId, GLenum type, const GLchar* src) {
     return true;
 }
 
-ImageHandler::ImageHandler() : imageTex(0) {}
+ImageHandler::ImageHandler()
+    : imageTex(0) { }
 
 ImageHandler::~ImageHandler() {
     close();
@@ -546,13 +553,8 @@ void ImageHandler::close() {
 bool ImageHandler::initialize(sl::Resolution res) {
     shader.it.set(IMAGE_VERTEX_SHADER, IMAGE_FRAGMENT_SHADER);
     texID = glGetUniformLocation(shader.it.getProgramId(), "texImage");
-    static const GLfloat g_quad_vertex_buffer_data[] = {
-        -1.0f, -1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f,
-        -1.0f, 1.0f, 0.0f,
-        -1.0f, 1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f };
+    static const GLfloat g_quad_vertex_buffer_data[]
+        = {-1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, -1.0f, 1.0f, 0.0f, -1.0f, 1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f};
 
     glGenBuffers(1, &quad_vb);
     glBindBuffer(GL_ARRAY_BUFFER, quad_vb);
@@ -574,7 +576,16 @@ void ImageHandler::pushNewImage(sl::Mat& image) {
     cudaArray_t ArrIm;
     cudaGraphicsMapResources(1, &cuda_gl_ressource, 0);
     cudaGraphicsSubResourceGetMappedArray(&ArrIm, cuda_gl_ressource, 0, 0);
-    cudaMemcpy2DToArray(ArrIm, 0, 0, image.getPtr<sl::uchar1>(sl::MEM::GPU), image.getStepBytes(sl::MEM::GPU), image.getPixelBytes() * image.getWidth(), image.getHeight(), cudaMemcpyDeviceToDevice);
+    cudaMemcpy2DToArray(
+        ArrIm,
+        0,
+        0,
+        image.getPtr<sl::uchar1>(sl::MEM::GPU),
+        image.getStepBytes(sl::MEM::GPU),
+        image.getPixelBytes() * image.getWidth(),
+        image.getHeight(),
+        cudaMemcpyDeviceToDevice
+    );
     cudaGraphicsUnmapResources(1, &cuda_gl_ressource, 0);
 }
 
@@ -586,7 +597,7 @@ void ImageHandler::draw() {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, imageTex);
     glUniform1i(texID, 0);
-    //invert y axis and color for this image (since its reverted from cuda array)
+    // invert y axis and color for this image (since its reverted from cuda array)
     glUniform1i(glGetUniformLocation(shader.it.getProgramId(), "revert"), 1);
     glUniform1i(glGetUniformLocation(shader.it.getProgramId(), "rgbflip"), 1);
 

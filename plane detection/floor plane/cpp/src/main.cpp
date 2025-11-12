@@ -34,23 +34,23 @@
 // Using std and sl namespaces
 using namespace std;
 using namespace sl;
- 
-void parseArgs(int argc, char **argv,sl::InitParameters& param);
+
+void parseArgs(int argc, char** argv, sl::InitParameters& param);
 
 #define AUTO_SEARCH 0
 
 int main(int argc, char** argv) {
     Camera zed;
-    // Setup configuration parameters for the ZED    
+    // Setup configuration parameters for the ZED
     InitParameters init_parameters;
     init_parameters.depth_mode = sl::DEPTH_MODE::NEURAL;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL coordinates system
     init_parameters.camera_disable_self_calib = true;
-    parseArgs(argc,argv, init_parameters);
+    parseArgs(argc, argv, init_parameters);
 
     // Open the camera
     ERROR_CODE zed_open_state = zed.open(init_parameters);
-    if (zed_open_state != ERROR_CODE::SUCCESS) {
+    if (zed_open_state > ERROR_CODE::SUCCESS) {
         std::cout << "Camera Open" << zed_open_state << "\nExit program." << std::endl;
         return EXIT_FAILURE;
     }
@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
 
     GLViewer viewer;
     viewer.init(argc, argv, camera_infos.camera_configuration.calibration_parameters.left_cam);
-   
+
     Pose pose; // positional tracking data
     ERROR_CODE find_plane_status = ERROR_CODE::SUCCESS;
     POSITIONAL_TRACKING_STATE tracking_state = POSITIONAL_TRACKING_STATE::SEARCHING_FLOOR_PLANE;
@@ -80,9 +80,9 @@ int main(int argc, char** argv) {
     Plane floor_plane;
     Transform reset_tracking;
 #endif
-    
-    while(viewer.isAvailable()) {
-        if(zed.grab(runtime_parameters) <= ERROR_CODE::SUCCESS) {
+
+    while (viewer.isAvailable()) {
+        if (zed.grab(runtime_parameters) <= ERROR_CODE::SUCCESS) {
 
             zed.retrieveImage(image, VIEW::LEFT, MEM::GPU, low_res);
             viewer.updateImage(image);
@@ -96,8 +96,7 @@ int main(int argc, char** argv) {
                     tracking_state = POSITIONAL_TRACKING_STATE::OK;
                     std::cout << "\rFloor Plane found ! Set world reference and start point cloud retrieval" << std::endl;
                 }
-            }
-            else
+            } else
 #endif
             {
                 tracking_state = zed.getPosition(pose);
@@ -105,8 +104,7 @@ int main(int argc, char** argv) {
                 if (tracking_state == POSITIONAL_TRACKING_STATE::OK) {
                     zed.retrieveMeasure(pointCloud, MEASURE::XYZRGBA, MEM::GPU, low_res);
                     viewer.updateData(pointCloud, pose.pose_data);
-                }
-                else if (tracking_state == POSITIONAL_TRACKING_STATE::SEARCHING_FLOOR_PLANE)
+                } else if (tracking_state == POSITIONAL_TRACKING_STATE::SEARCHING_FLOOR_PLANE)
                     std::cout << "\rFloor Plane not found, mouve around to find it";
             }
         }
@@ -119,30 +117,27 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
 }
 
-void parseArgs(int argc, char **argv,sl::InitParameters& param)
-{
-    if (argc > 1 && string(argv[1]).find(".svo")!=string::npos) {
+void parseArgs(int argc, char** argv, sl::InitParameters& param) {
+    if (argc > 1 && string(argv[1]).find(".svo") != string::npos) {
         // SVO input mode
         param.input.setFromSVOFile(argv[1]);
-        cout<<"[Sample] Using SVO File input: "<<argv[1]<<endl;
-    } else if (argc > 1 && string(argv[1]).find(".svo")==string::npos) {
+        cout << "[Sample] Using SVO File input: " << argv[1] << endl;
+    } else if (argc > 1 && string(argv[1]).find(".svo") == string::npos) {
         string arg = string(argv[1]);
-        unsigned int a,b,c,d,port;
-        if (sscanf(arg.c_str(),"%u.%u.%u.%u:%d", &a, &b, &c, &d,&port) == 5) {
+        unsigned int a, b, c, d, port;
+        if (sscanf(arg.c_str(), "%u.%u.%u.%u:%d", &a, &b, &c, &d, &port) == 5) {
             // Stream input mode - IP + port
-            string ip_adress = to_string(a)+"."+to_string(b)+"."+to_string(c)+"."+to_string(d);
-            param.input.setFromStream(sl::String(ip_adress.c_str()),port);
-            cout<<"[Sample] Using Stream input, IP : "<<ip_adress<<", port : "<<port<<endl;
-        }
-        else  if (sscanf(arg.c_str(),"%u.%u.%u.%u", &a, &b, &c, &d) == 4) {
+            string ip_adress = to_string(a) + "." + to_string(b) + "." + to_string(c) + "." + to_string(d);
+            param.input.setFromStream(sl::String(ip_adress.c_str()), port);
+            cout << "[Sample] Using Stream input, IP : " << ip_adress << ", port : " << port << endl;
+        } else if (sscanf(arg.c_str(), "%u.%u.%u.%u", &a, &b, &c, &d) == 4) {
             // Stream input mode - IP only
             param.input.setFromStream(sl::String(argv[1]));
-            cout<<"[Sample] Using Stream input, IP : "<<argv[1]<<endl;
-        }
-        else if (arg.find("HD2K") != string::npos) {
+            cout << "[Sample] Using Stream input, IP : " << argv[1] << endl;
+        } else if (arg.find("HD2K") != string::npos) {
             param.camera_resolution = RESOLUTION::HD2K;
             cout << "[Sample] Using Camera in resolution HD2K" << endl;
-        }else if (arg.find("HD1200") != string::npos) {
+        } else if (arg.find("HD1200") != string::npos) {
             param.camera_resolution = RESOLUTION::HD1200;
             cout << "[Sample] Using Camera in resolution HD1200" << endl;
         } else if (arg.find("HD1080") != string::npos) {
@@ -151,10 +146,10 @@ void parseArgs(int argc, char **argv,sl::InitParameters& param)
         } else if (arg.find("HD720") != string::npos) {
             param.camera_resolution = RESOLUTION::HD720;
             cout << "[Sample] Using Camera in resolution HD720" << endl;
-        }else if (arg.find("SVGA") != string::npos) {
+        } else if (arg.find("SVGA") != string::npos) {
             param.camera_resolution = RESOLUTION::SVGA;
             cout << "[Sample] Using Camera in resolution SVGA" << endl;
-        }else if (arg.find("VGA") != string::npos) {
+        } else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;
         }

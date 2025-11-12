@@ -32,13 +32,13 @@
 #include "exporter/GNSSSaver.h"
 #include "utils.hpp"
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     // Open the camera
     sl::Camera zed;
     sl::InitParameters init_params;
     init_params.sdk_verbose = 1;
     sl::ERROR_CODE camera_open_error = zed.open(init_params);
-    if (camera_open_error != sl::ERROR_CODE::SUCCESS) {
+    if (camera_open_error > sl::ERROR_CODE::SUCCESS) {
         std::cerr << "[ZED][ERROR] Can't open ZED camera" << std::endl;
         return EXIT_FAILURE;
     }
@@ -59,7 +59,6 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-
     // Create Fusion object:
     sl::Fusion fusion;
     sl::InitFusionParameters init_fusion_param;
@@ -75,8 +74,7 @@ int main(int argc, char **argv) {
     communication_parameters.setForSharedMemory();
     zed.startPublishing(communication_parameters);
     /// Run a first grab for starting sending data:
-    while (zed.grab() != sl::ERROR_CODE::SUCCESS) {
-    }
+    while (zed.grab() > sl::ERROR_CODE::SUCCESS) { }
     // Enable GNSS data producing:
     auto gnss_reader = IGNSSReader::create(&zed, false);
 
@@ -87,11 +85,11 @@ int main(int argc, char **argv) {
     sl::PositionalTrackingFusionParameters positional_tracking_fusion_parameters;
     positional_tracking_fusion_parameters.enable_GNSS_fusion = true;
     sl::FUSION_ERROR_CODE tracking_error_code = fusion.enablePositionalTracking(positional_tracking_fusion_parameters);
-    if(tracking_error_code != sl::FUSION_ERROR_CODE::SUCCESS){
+    if (tracking_error_code != sl::FUSION_ERROR_CODE::SUCCESS) {
         std::cout << "[Fusion][ERROR] Could not start tracking, error: " << tracking_error_code << std::endl;
         return EXIT_FAILURE;
     }
-    
+
     std::cout << "Start grabbing data... Global localization data will be displayed on the Live Server" << std::endl;
 
     GenericDisplay viewer;
@@ -100,7 +98,7 @@ int main(int argc, char **argv) {
     GNSSSaver gnss_data_saver(&zed);
     while (viewer.isAvailable()) {
         // Grab camera:
-        if (zed.grab() == sl::ERROR_CODE::SUCCESS) {
+        if (zed.grab() <= sl::ERROR_CODE::SUCCESS) {
             sl::Pose zed_pose;
             // You can still use the classical getPosition for your application, just not that the position returned by this method
             // is the position without any GNSS/cameras fusion
@@ -135,7 +133,7 @@ int main(int argc, char **argv) {
                 sl::FusedPositionalTrackingStatus fused_status = fusion.getFusedPositionalTrackingStatus();
                 viewer.updatePoseData(fused_position.pose_data, fused_status);
             }
-            // Get position into the GNSS coordinate system - this needs a initialization between CAMERA 
+            // Get position into the GNSS coordinate system - this needs a initialization between CAMERA
             // and GNSS. When the initialization is finish the getGeoPose will return sl::POSITIONAL_TRACKING_STATE::OK
             sl::GeoPose current_geopose;
             auto current_geopose_satus = fusion.getGeoPose(current_geopose);

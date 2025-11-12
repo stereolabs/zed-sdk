@@ -27,6 +27,7 @@ RESET = "\033[0m"
 RED   = "\033[31m"
 GREEN = "\033[32m"
 CYAN  = "\033[36m"
+YELLOW = "\033[33m"
 
 def color_bool(val: bool) -> str:
     return f"{GREEN}true{RESET}" if bool(val) else f"{RED}false{RESET}"
@@ -64,8 +65,10 @@ Examples:
 def sample_print(message: str, error_code = None, show_error_detail: bool = True):
     prefix = f"{CYAN}[Sample]{RESET}"
 
-    if error_code is not None and error_code != sl.ERROR_CODE.SUCCESS:
+    if error_code is not None and error_code > sl.ERROR_CODE.SUCCESS:
         err_tag = f" {RED}[Error]{RESET} "
+    elif error_code is not None and error_code < sl.ERROR_CODE.SUCCESS:
+        err_tag = f" {YELLOW}[Warning]{RESET} "
     else:
         err_tag = " "
 

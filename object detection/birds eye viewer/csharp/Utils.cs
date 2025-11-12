@@ -5,18 +5,15 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using OpenCvSharp;
 
-namespace sl
-{
-    public class Utils
-    {
+namespace sl {
+    public class Utils {
         /// <summary>
-        ///  Creates an OpenCV version of a ZED Mat. 
+        ///  Creates an OpenCV version of a ZED Mat.
         /// </summary>
         /// <param name="zedmat">Source ZED Mat.</param>
         /// <param name="zedmattype">Type of ZED Mat - data type and channel number.
         /// <returns></returns>
-        public static OpenCvSharp.Mat SLMat2CVMat(ref sl.Mat zedmat, MAT_TYPE zedmattype)
-        {
+        public static OpenCvSharp.Mat SLMat2CVMat(ref sl.Mat zedmat, MAT_TYPE zedmattype) {
             int cvmattype = SLMatType2CVMatType(zedmattype);
             OpenCvSharp.Mat cvmat = new OpenCvSharp.Mat(zedmat.GetHeight(), zedmat.GetWidth(), cvmattype, zedmat.GetPtr());
 
@@ -24,12 +21,10 @@ namespace sl
         }
 
         /// <summary>
-        /// Returns the OpenCV type that corresponds to a given ZED Mat type. 
+        /// Returns the OpenCV type that corresponds to a given ZED Mat type.
         /// </summary>
-        private static int SLMatType2CVMatType(MAT_TYPE zedmattype)
-        {
-            switch (zedmattype)
-            {
+        private static int SLMatType2CVMatType(MAT_TYPE zedmattype) {
+            switch (zedmattype) {
                 case sl.MAT_TYPE.MAT_32F_C1:
                     return OpenCvSharp.MatType.CV_32FC1;
                 case sl.MAT_TYPE.MAT_32F_C2:
@@ -51,13 +46,11 @@ namespace sl
             }
         }
 
-        public static ulong getMilliseconds(ulong ts_ns)
-        {
+        public static ulong getMilliseconds(ulong ts_ns) {
             return ts_ns / 1000000;
         }
 
-        public static  void drawVerticalLine(ref OpenCvSharp.Mat left_display, Point start_pt, Point end_pt, Scalar clr, int thickness)
-        {
+        public static void drawVerticalLine(ref OpenCvSharp.Mat left_display, Point start_pt, Point end_pt, Scalar clr, int thickness) {
             int n_steps = 7;
             Point pt1, pt4;
             pt1.X = ((n_steps - 1) * start_pt.X + end_pt.X) / n_steps;
@@ -70,13 +63,11 @@ namespace sl
             Cv2.Line(left_display, pt4, end_pt, clr, thickness);
         }
 
-        public static Point cvt(Vector2 pt, sl.float2 scale)
-        {
+        public static Point cvt(Vector2 pt, sl.float2 scale) {
             return new Point(pt.X * scale.x, pt.Y * scale.y);
         }
 
-        public static sl.float4 generateColorID(int idx)
-        {
+        public static sl.float4 generateColorID(int idx) {
             int offset = Math.Max(0, idx % 5);
             sl.float4 color = new float4();
             color.x = id_colors[offset, 0];
@@ -86,8 +77,7 @@ namespace sl
             return color;
         }
 
-        public static OpenCvSharp.Scalar generateColorID_u(int idx)
-        {
+        public static OpenCvSharp.Scalar generateColorID_u(int idx) {
             int offset = Math.Max(0, idx % 5);
             OpenCvSharp.Scalar color = new OpenCvSharp.Scalar();
             color[0] = id_colors[offset, 2] * 255;
@@ -97,26 +87,25 @@ namespace sl
             return color;
         }
 
-        public static float[,] id_colors = new float[5, 3]{
+        public static float[,] id_colors = new float[5, 3] {
 
-        {.231f, .909f, .69f},
-        {.098f, .686f, .816f},
-        {.412f, .4f, .804f},
-        {1, .725f, .0f},
-        {.989f, .388f, .419f}
-    };
+            {.231f, .909f, .69f },
+            {.098f, .686f, .816f},
+            {.412f, .4f,   .804f},
+            {1,     .725f, .0f  },
+            {.989f, .388f, .419f}
+        };
 
-        public static float[,] class_colors = new float[6, 3]{
-        { 44.0f, 117.0f, 255.0f}, // PEOPLE
-        { 255.0f, 0.0f, 255.0f}, // VEHICLE
-        { 0.0f, 0.0f, 255.0f},
-        { 0.0f, 255.0f, 255.0f},
-        { 0.0f, 255.0f, 0.0f},
-        { 255.0f, 255.0f, 255.0f}
-    };
+        public static float[,] class_colors = new float[6, 3] {
+            {44.0f,  117.0f, 255.0f}, // PEOPLE
+            {255.0f, 0.0f,   255.0f}, // VEHICLE
+            {0.0f,   0.0f,   255.0f},
+            {0.0f,   255.0f, 255.0f},
+            {0.0f,   255.0f, 0.0f  },
+            {255.0f, 255.0f, 255.0f}
+        };
 
-        public static float4 generateColorClass(int idx)
-        {
+        public static float4 generateColorClass(int idx) {
             idx = Math.Min(5, idx);
             sl.float4 color = new float4();
             color.x = class_colors[idx, 0];
@@ -126,8 +115,7 @@ namespace sl
             return color;
         }
 
-        public static OpenCvSharp.Scalar generateColorClass_u(int idx)
-        {
+        public static OpenCvSharp.Scalar generateColorClass_u(int idx) {
             idx = Math.Min(5, idx);
             OpenCvSharp.Scalar color = new OpenCvSharp.Scalar();
             color[0] = class_colors[idx, 0];
@@ -137,27 +125,24 @@ namespace sl
             return color;
         }
 
-        public static bool renderObject(ObjectData i, bool showOnlyOK)
-        {
+        public static bool renderObject(ObjectData i, bool showOnlyOK) {
             if (showOnlyOK)
                 return (i.objectTrackingState == sl.OBJECT_TRACKING_STATE.OK);
             else
                 return (i.objectTrackingState == sl.OBJECT_TRACKING_STATE.OK || i.objectTrackingState == sl.OBJECT_TRACKING_STATE.OFF);
         }
 
-
-        public static byte _applyFading(double val, float current_alpha, double current_clr)
-        {
+        public static byte _applyFading(double val, float current_alpha, double current_clr) {
             return (byte)(current_alpha * current_clr + (1.0 - current_alpha) * val);
         }
 
-        public static Vec4b applyFading(Scalar val, float current_alpha, Scalar current_clr){
-             Vec4b out_ = new Vec4b();
-             out_[0] = _applyFading(val[0], current_alpha, current_clr[0]);
-             out_[1] = _applyFading(val[1], current_alpha, current_clr[1]);
-             out_[2] = _applyFading(val[2], current_alpha, current_clr[2]);
-             out_[3] = 255;
-             return out_;
+        public static Vec4b applyFading(Scalar val, float current_alpha, Scalar current_clr) {
+            Vec4b out_ = new Vec4b();
+            out_[0] = _applyFading(val[0], current_alpha, current_clr[0]);
+            out_[1] = _applyFading(val[1], current_alpha, current_clr[1]);
+            out_[2] = _applyFading(val[2], current_alpha, current_clr[2]);
+            out_[3] = 255;
+            return out_;
         }
     }
 }

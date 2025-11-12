@@ -32,7 +32,7 @@ def main():
 
     # Open the camera
     err = zedone.open(init_params)
-    if err != sl.ERROR_CODE.SUCCESS:
+    if err > sl.ERROR_CODE.SUCCESS:
         print("Camera Open : "+repr(err)+". Exit program.")
         exit()
 

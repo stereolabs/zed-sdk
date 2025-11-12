@@ -36,9 +36,9 @@ using namespace std;
 
 void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
-    if (argc<=1)  {
+    if (argc <= 1) {
         cout << "Usage: \n";
         cout << "$ ZED_SVO_Playback <SVO_file> \n";
         cout << "  ** SVO file is mandatory in the application ** \n\n";
@@ -53,13 +53,14 @@ int main(int argc, char **argv) {
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
 
     std::string s;
-    for (const auto &piece : zed.getSVODataKeys()) s += piece + "; ";
+    for (const auto& piece : zed.getSVODataKeys())
+        s += piece + "; ";
     std::cout << "Channels that are in the SVO: " << s << std::endl;
 
     unsigned long long last_timestamp_ns;
@@ -68,7 +69,7 @@ int main(int argc, char **argv) {
     std::cout << "Reading everything all at once." << std::endl;
     auto ing = zed.retrieveSVOData("TEST", data_map);
 
-    for(const auto& d : data_map) {
+    for (const auto& d : data_map) {
         std::string s;
         d.second.getContent(s);
         std::cout << d.first << " (//) " << s << std::endl;
@@ -78,44 +79,42 @@ int main(int argc, char **argv) {
 
     // Setup key, images, times
     char key = ' ';
-     while (key != 'q') {
+    while (key != 'q') {
         returned_state = zed.grab();
         if (returned_state <= ERROR_CODE::SUCCESS) {
             std::map<sl::Timestamp, sl::SVOData> data_map;
-            std::cout << "Reading between "<< last_timestamp_ns << " and " << zed.getTimestamp(sl::TIME_REFERENCE::IMAGE) << std::endl;
-            auto ing = zed.retrieveSVOData("TEST", data_map, last_timestamp_ns,  zed.getTimestamp(sl::TIME_REFERENCE::IMAGE));
-            for(const auto& d : data_map) {
+            std::cout << "Reading between " << last_timestamp_ns << " and " << zed.getTimestamp(sl::TIME_REFERENCE::IMAGE) << std::endl;
+            auto ing = zed.retrieveSVOData("TEST", data_map, last_timestamp_ns, zed.getTimestamp(sl::TIME_REFERENCE::IMAGE));
+            for (const auto& d : data_map) {
                 std::string s;
                 d.second.getContent(s);
                 std::cout << d.first << " // " << s << std::endl;
             }
 
-
             // Display the frame
             key = cv::waitKey(10);
-        }
-        else if (returned_state == sl::ERROR_CODE::END_OF_SVOFILE_REACHED)
-        {
+        } else if (returned_state == sl::ERROR_CODE::END_OF_SVOFILE_REACHED) {
             print("SVO end has been reached. Looping back to 0\n");
             zed.setSVOPosition(0);
             break;
-        }
-        else {
+        } else {
             print("Grab ZED : ", returned_state);
             break;
         }
         last_timestamp_ns = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE);
-     } 
+    }
     zed.close();
     return EXIT_SUCCESS;
 }
 
 void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
-    cout <<"[Sample]";
-    if (err_code != ERROR_CODE::SUCCESS)
+    cout << "[Sample]";
+    if (err_code > ERROR_CODE::SUCCESS)
         cout << "[Error] ";
+    else if (err_code < ERROR_CODE::SUCCESS)
+        cout << "[Warning] ";
     else
-        cout<<" ";
+        cout << " ";
     cout << msg_prefix << " ";
     if (err_code != ERROR_CODE::SUCCESS) {
         cout << " | " << toString(err_code) << " : ";

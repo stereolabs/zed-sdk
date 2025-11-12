@@ -1,37 +1,40 @@
 #pragma once
 
 #ifndef __GL_VIEWER_HDR__
-#define __GL_VIEWER_HDR__
+    #define __GL_VIEWER_HDR__
 
-#include <GL/glew.h>
-#include <GL/freeglut.h>
+    #include <GL/glew.h>
+    #include <GL/freeglut.h>
 
-#include <math.h>
-#include <thread>         // std::thread
-#include <mutex>          // std::mutex
+    #include <math.h>
+    #include <thread> // std::thread
+    #include <mutex>  // std::mutex
 
-#include <sl/Camera.hpp>
-#include <sl/Fusion.hpp>
+    #include <sl/Camera.hpp>
+    #include <sl/Fusion.hpp>
 
-#ifndef M_PI
-#define M_PI 3.1416f
-#endif
+    #ifndef M_PI
+        #define M_PI 3.1416f
+    #endif
 
-#define SAFE_DELETE( res ) if( res!=NULL )  { delete res; res = NULL; }
+    #define SAFE_DELETE(res) \
+        if (res != NULL) {   \
+            delete res;      \
+            res = NULL;      \
+        }
 
-#define MOUSE_R_SENSITIVITY 0.005f
-#define MOUSE_WHEEL_SENSITIVITY 0.065f
-#define MOUSE_T_SENSITIVITY 0.01f
-#define KEY_T_SENSITIVITY 0.01f
+    #define MOUSE_R_SENSITIVITY 0.005f
+    #define MOUSE_WHEEL_SENSITIVITY 0.065f
+    #define MOUSE_T_SENSITIVITY 0.01f
+    #define KEY_T_SENSITIVITY 0.01f
 
 //// UTILS //////
 using namespace std;
-void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, std::string msg_suffix = "") ;
+void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, std::string msg_suffix = "");
 
 /////////////////
 class CameraGL {
 public:
-
     CameraGL();
     ~CameraGL();
 
@@ -39,7 +42,7 @@ public:
     void setProjection(float im_ratio);
     const sl::Transform& getViewProjectionMatrix() const;
 
-    void setDirection(const sl::Translation& direction, const sl::Translation &vertical);
+    void setDirection(const sl::Translation& direction, const sl::Translation& vertical);
     void translate(const sl::Translation& t);
     void setPosition(const sl::Translation& p);
     void rotate(const sl::Rotation& m);
@@ -71,11 +74,12 @@ private:
     const float horizontalFOV;
 };
 
-
 class Shader {
 public:
-
-    Shader() : verterxId_(0), fragmentId_(0), programId_(0) {}
+    Shader()
+        : verterxId_(0)
+        , fragmentId_(0)
+        , programId_(0) { }
     Shader(const GLchar* vs, const GLchar* fs);
     ~Shader();
 
@@ -92,8 +96,9 @@ public:
 
     static const GLint ATTRIB_VERTICES_POS = 0;
     static const GLint ATTRIB_COLOR_POS = 1;
+
 private:
-    bool compile(GLuint &shaderId, GLenum type, const GLchar* src);
+    bool compile(GLuint& shaderId, GLenum type, const GLchar* src);
     GLuint verterxId_;
     GLuint fragmentId_;
     GLuint programId_;
@@ -101,7 +106,6 @@ private:
 
 class Simple3DObject {
 public:
-
     Simple3DObject();
     Simple3DObject(sl::Translation position, bool isStatic);
     ~Simple3DObject();
@@ -129,6 +133,7 @@ public:
     const sl::Translation& getPosition() const;
 
     sl::Transform getModelMatrix() const;
+
 private:
     std::vector<float> vertices_;
     std::vector<float> colors_;
@@ -149,7 +154,6 @@ private:
 
     sl::Translation position_;
     sl::Orientation rotation_;
-
 };
 
 struct ShaderData {
@@ -164,7 +168,7 @@ public:
     ~GLViewer();
     void exit();
     bool isAvailable();
-    void init(int argc, char **argv);
+    void init(int argc, char** argv);
     void updateData(sl::Transform zed_rt, sl::FusedPositionalTrackingStatus state);
 
 private:
@@ -178,7 +182,7 @@ private:
     void clearInputs();
 
     void printText();
-    
+
     // Glut functions callbacks
     static void drawCallback();
     static void mouseButtonCallback(int button, int state, int x, int y);
@@ -210,7 +214,7 @@ private:
     int mouseMotion_[2];
     int previousMouseMotion_[2];
     KEY_STATE keyStates_[256];
-    
+
     Simple3DObject floor_grid;
     Simple3DObject zedModel;
     Simple3DObject zedPath;

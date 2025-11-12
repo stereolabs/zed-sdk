@@ -25,7 +25,7 @@
 static bool exit_app = false;
 
 // Set the function to handle the CTRL-C
-void SetCtrlHandler() ;
+void SetCtrlHandler();
 
 /**
  * @brief Get the current datetime in human readable string

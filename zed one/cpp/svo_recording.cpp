@@ -33,7 +33,7 @@
 using namespace sl;
 using namespace std;
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
     if (argc < 2) {
         cout << "No arguments provided, an output SVO name is expected.\n";
@@ -42,13 +42,13 @@ int main(int argc, char **argv) {
 
     // Create a ZED camera
     CameraOne zed;
-    
+
     // Set configuration parameters for the ZED
     InitParametersOne init_parameters;
 
     // Open the camera
-    auto returned_state  = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    auto returned_state = zed.open(init_parameters);
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
@@ -74,17 +74,17 @@ int main(int argc, char **argv) {
 
             // Each new frame is automatically added to the SVO file
 
-            if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count() > 1000){
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count() > 1000) {
                 rec_status = zed.getRecordingStatus();
-                std::cout<<"Recording: "<<rec_status.number_frames_ingested<<"frames, compression ratio: "<<rec_status.average_compression_ratio<<"\r"<<std::flush;
+                std::cout << "Recording: " << rec_status.number_frames_ingested
+                          << "frames, compression ratio: " << rec_status.average_compression_ratio << "\r" << std::flush;
                 start = std::chrono::high_resolution_clock::now();
             }
-        }
-        else
+        } else
             break;
     }
 
-    std::cout<<std::endl;
+    std::cout << std::endl;
 
     // Stop recording
     zed.disableRecording();

@@ -16,9 +16,8 @@
 
 #include "utils.h"
 
-
 #ifndef M_PI
-#define M_PI 3.141592653f
+    #define M_PI 3.141592653f
 #endif
 
 #define MOUSE_R_SENSITIVITY 0.03f
@@ -34,14 +33,21 @@ std::vector<sl::float3> getBBoxOnFloorPlane(std::vector<sl::float3> const& bbox,
 
 class CameraGL {
 public:
-
-    CameraGL() {
-    }
+    CameraGL() { }
 
     enum DIRECTION {
-        UP, DOWN, LEFT, RIGHT, FORWARD, BACK
+        UP,
+        DOWN,
+        LEFT,
+        RIGHT,
+        FORWARD,
+        BACK
     };
-    CameraGL(sl::Translation const& position, sl::Translation const& direction, sl::Translation const& vertical = sl::Translation(0, 1, 0)); // vertical = Eigen::Vector3f(0, 1, 0)
+    CameraGL(
+        sl::Translation const& position,
+        sl::Translation const& direction,
+        sl::Translation const& vertical = sl::Translation(0, 1, 0)
+    ); // vertical = Eigen::Vector3f(0, 1, 0)
     ~CameraGL();
 
     void update();
@@ -57,7 +63,7 @@ public:
     void setOffsetFromPosition(sl::Translation const& offset);
     const sl::Translation& getOffsetFromPosition() const;
 
-    void setDirection(sl::Translation const& direction, sl::Translation const &vertical);
+    void setDirection(sl::Translation const& direction, sl::Translation const& vertical);
     void translate(sl::Translation const& t);
     void setPosition(sl::Translation const& p);
     void rotate(sl::Orientation const& rot);
@@ -79,6 +85,7 @@ public:
 
     sl::Transform projection_;
     bool usePerspective_;
+
 private:
     void updateVectors();
     void updateView();
@@ -103,8 +110,10 @@ private:
 
 class Shader {
 public:
-
-    Shader() : verterxId_(0), fragmentId_(0), programId_(0) {}
+    Shader()
+        : verterxId_(0)
+        , fragmentId_(0)
+        , programId_(0) { }
     Shader(const GLchar* vs, const GLchar* fs);
     ~Shader();
 
@@ -121,8 +130,9 @@ public:
 
     static const GLint ATTRIB_VERTICES_POS = 0;
     static const GLint ATTRIB_COLOR_POS = 1;
+
 private:
-    bool compile(GLuint &shaderId, GLenum const type, GLchar const* src);
+    bool compile(GLuint& shaderId, GLenum const type, GLchar const* src);
     GLuint verterxId_;
     GLuint fragmentId_;
     GLuint programId_;
@@ -135,9 +145,7 @@ struct ShaderData {
 
 class Simple3DObject {
 public:
-
-    Simple3DObject() {
-    }
+    Simple3DObject() { }
     Simple3DObject(sl::Translation const& position, bool const isStatic);
     ~Simple3DObject();
 
@@ -175,6 +183,7 @@ public:
     const sl::Translation& getPosition() const;
 
     sl::Transform getModelMatrix() const;
+
 private:
     std::vector<float> vertices_;
     std::vector<float> colors_;
@@ -239,19 +248,24 @@ public:
     GLViewer();
     ~GLViewer();
     bool isAvailable();
-    bool isPlaying() const { return play; }
-    void setPlaying(const bool p) { play = p; }
+    bool isPlaying() const {
+        return play;
+    }
+    void setPlaying(const bool p) {
+        play = p;
+    }
 
-    void init(int argc, char **argv, sl::CameraParameters const& param, bool const isTrackingON);
+    void init(int argc, char** argv, sl::CameraParameters const& param, bool const isTrackingON);
     void updateData(sl::Mat const& matXYZRGBA, std::vector<sl::ObjectData> const& objs, sl::Transform const& cam_pose);
 
     int getKey() {
-        int const key{last_key};
+        int const key {last_key};
         last_key = -1;
         return key;
     }
 
     void exit();
+
 private:
     // Rendering loop method called each frame by glutDisplayFunc
     void render();
@@ -263,7 +277,7 @@ private:
     void clearInputs();
 
     void printText();
-    void createBboxRendering(std::vector<sl::float3> const&bbox, sl::float4& bbox_clr);
+    void createBboxRendering(std::vector<sl::float3> const& bbox, sl::float4& bbox_clr);
     void createIDRendering(sl::float3 const& center, sl::float4 const& clr, unsigned int const id);
 
     // Glut functions callbacks
@@ -316,8 +330,8 @@ private:
     Simple3DObject skeletons;
     Simple3DObject floor_grid;
 
-    bool play{true};
-    int last_key{-1};
+    bool play {true};
+    int last_key {-1};
 };
 
 #endif // __GLVIEWER_HPP__

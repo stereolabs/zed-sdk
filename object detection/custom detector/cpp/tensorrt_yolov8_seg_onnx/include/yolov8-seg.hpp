@@ -7,15 +7,13 @@
 #include <fstream>
 #include <sl/Camera.hpp>
 
-
 #if NV_TENSORRT_MAJOR >= 10
-#define trt_name_engine_get_binding_name getIOTensorName
-#define trt_name_engine_get_nb_binding getNbIOTensors
+    #define trt_name_engine_get_binding_name getIOTensorName
+    #define trt_name_engine_get_nb_binding getNbIOTensors
 #else
-#define trt_name_engine_get_binding_name getBindingName
-#define trt_name_engine_get_nb_binding getNbBindings
+    #define trt_name_engine_get_binding_name getBindingName
+    #define trt_name_engine_get_nb_binding getNbBindings
 #endif
-
 
 using namespace seg;
 
@@ -28,11 +26,7 @@ public:
     void copy_from_Mat(sl::Mat& image);
     void setParams(sl::Resolution orig_res, sl::Resolution net_res);
     void infer();
-    void postprocess(std::vector<Object>& objs,
-            float score_thres = 0.25f,
-            float iou_thres = 0.65f,
-            int topk = 100,
-            int seg_channels = 32);
+    void postprocess(std::vector<Object>& objs, float score_thres = 0.25f, float iou_thres = 0.65f, int topk = 100, int seg_channels = 32);
 
     int num_bindings;
     int num_inputs = 0;
@@ -40,7 +34,7 @@ public:
     std::vector<Binding> input_bindings;
     std::vector<Binding> output_bindings;
     std::vector<void*> host_ptrs;
-    std::vector<void*> device_ptrs_in; // ref, not allocated
+    std::vector<void*> device_ptrs_in;  // ref, not allocated
     std::vector<void*> device_ptrs_out; // allocated
 
     sl::Mat blob; // input tensor
@@ -52,7 +46,7 @@ private:
     nvinfer1::ICudaEngine* engine = nullptr;
     nvinfer1::IRuntime* runtime = nullptr;
     nvinfer1::IExecutionContext* context = nullptr;
-    Logger gLogger{nvinfer1::ILogger::Severity::kERROR};
+    Logger gLogger {nvinfer1::ILogger::Severity::kERROR};
 };
 
 YOLOv8_seg::YOLOv8_seg(const std::string& engine_file_path) {
@@ -149,7 +143,7 @@ void YOLOv8_seg::make_pipe() {
     this->device_ptrs_in.resize(1);
 
     for (auto& bindings : this->output_bindings) {
-        void * d_ptr, *h_ptr;
+        void *d_ptr, *h_ptr;
         size_t size = bindings.size * bindings.dsize;
         CHECK(cudaMallocAsync(&d_ptr, size, this->stream));
         CHECK(cudaHostAlloc(&h_ptr, size, 0));
@@ -188,9 +182,21 @@ void YOLOv8_seg::copy_from_Mat(sl::Mat& image) {
     this->setParams(image.getResolution(), sl::Resolution(width, height));
 
 #if NV_TENSORRT_MAJOR >= 10
-            this->context->setInputShape(in_binding.name.c_str(), nvinfer1::Dims{4,        {1, 3, height, width}});
+    this->context->setInputShape(
+        in_binding.name.c_str(),
+        nvinfer1::Dims {
+            4,
+            {1, 3, height, width}
+    }
+    );
 #else
-            this->context->setBindingDimensions(0, nvinfer1::Dims{4,        {1, 3, height, width}});
+    this->context->setBindingDimensions(
+        0,
+        nvinfer1::Dims {
+            4,
+            {1, 3, height, width}
+    }
+    );
 #endif
 
     sl::blobFromImage(image, blob, sl::Resolution(width, height), 1 / 255.f, sl::float3(0, 0, 0), sl::float3(1, 1, 1), true, true, stream);
@@ -217,8 +223,7 @@ void YOLOv8_seg::infer() {
     cudaStreamSynchronize(this->stream);
 }
 
-void YOLOv8_seg::postprocess(
-        std::vector<Object>& objs, float score_thres, float iou_thres, int topk, int seg_channels) {
+void YOLOv8_seg::postprocess(std::vector<Object>& objs, float score_thres, float iou_thres, int topk, int seg_channels) {
     objs.clear();
     auto input_h = this->input_bindings[0].dims.d[2];
     auto input_w = this->input_bindings[0].dims.d[3];
@@ -246,10 +251,10 @@ void YOLOv8_seg::postprocess(
     auto& height = this->pparam.height;
     auto& ratio = this->pparam.ratio;
 
-    cv::Mat output = cv::Mat(num_channels, num_anchors, CV_32F, static_cast<float*> (this->host_ptrs[bid]));
+    cv::Mat output = cv::Mat(num_channels, num_anchors, CV_32F, static_cast<float*>(this->host_ptrs[bid]));
     output = output.t();
 
-    cv::Mat protos = cv::Mat(seg_channels, seg_h * seg_w, CV_32F, static_cast<float*> (this->host_ptrs[1 - bid]));
+    cv::Mat protos = cv::Mat(seg_channels, seg_h * seg_w, CV_32F, static_cast<float*>(this->host_ptrs[1 - bid]));
 
     std::vector<int> labels;
     std::vector<float> scores;
@@ -317,7 +322,7 @@ void YOLOv8_seg::postprocess(
         // masks is empty
     } else {
         cv::Mat matmulRes = (masks * protos).t();
-        cv::Mat maskMat = matmulRes.reshape(indices.size(),{seg_h, seg_w});
+        cv::Mat maskMat = matmulRes.reshape(indices.size(), {seg_h, seg_w});
 
         std::vector<cv::Mat> maskChannels;
         cv::split(maskMat, maskChannels);
@@ -331,10 +336,10 @@ void YOLOv8_seg::postprocess(
             cv::exp(-maskChannels[i], dest);
             dest = 1.0 / (1.0 + dest);
             dest = dest(roi);
-            cv::resize(dest, mask, cv::Size((int) width, (int) height), cv::INTER_LINEAR);
+            cv::resize(dest, mask, cv::Size((int)width, (int)height), cv::INTER_LINEAR);
             objs[i].boxMask = mask(objs[i].rect) > 0.5f;
         }
     }
 }
 
-#endif  // SEGMENT_NORMAL_YOLOV8_SEG_HPP
+#endif // SEGMENT_NORMAL_YOLOV8_SEG_HPP

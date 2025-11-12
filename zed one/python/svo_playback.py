@@ -44,7 +44,7 @@ def main(opt):
     cam = sl.CameraOne()
     print("Opening camera")
     status = cam.open(init)
-    if status != sl.ERROR_CODE.SUCCESS: #Ensure the camera opened succesfully 
+    if status > sl.ERROR_CODE.SUCCESS: #Ensure the camera opened succesfully 
         print("Camera Open", status, "Exit program.")
         exit(1)
 

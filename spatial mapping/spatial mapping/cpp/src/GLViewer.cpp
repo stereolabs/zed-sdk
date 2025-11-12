@@ -1,119 +1,111 @@
 #include "GLViewer.hpp"
 
-const GLchar* MESH_VERTEX_SHADER_ =
-        "#version 330 core\n"
-        "layout(location = 0) in vec3 in_Vertex;\n"
-        "layout(location = 1) in vec4 in_Color;\n"
-        "uniform mat4 u_mvpMatrix;\n"
-        "out vec4 b_color;\n"
-        "void main() {\n"
-        "   b_color = in_Color;\n"
-        "   gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
-        "}";
+const GLchar* MESH_VERTEX_SHADER_ = "#version 330 core\n"
+                                    "layout(location = 0) in vec3 in_Vertex;\n"
+                                    "layout(location = 1) in vec4 in_Color;\n"
+                                    "uniform mat4 u_mvpMatrix;\n"
+                                    "out vec4 b_color;\n"
+                                    "void main() {\n"
+                                    "   b_color = in_Color;\n"
+                                    "   gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
+                                    "}";
 
-const GLchar* MESH_FRAGMENT_SHADER_ =
-        "#version 330 core\n"
-        "in vec4 b_color;\n"
-        "layout(location = 0) out vec4 color;\n"
-        "void main() {\n"
-        "   color = b_color;\n"
-        "}";
-        
-const GLchar* MESH_VERTEX_SHADER =
-        "#version 330 core\n"
-        "layout(location = 0) in vec3 in_Vertex;\n"
-        "layout(location = 1) in vec3 in_Color;\n"
-        "uniform mat4 u_mvpMatrix;\n"
-        "out vec3 b_color;\n"
-        "void main() {\n"
-        "   b_color = in_Color.bgr;\n"
-        "   gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
-        "}";
+const GLchar* MESH_FRAGMENT_SHADER_ = "#version 330 core\n"
+                                      "in vec4 b_color;\n"
+                                      "layout(location = 0) out vec4 color;\n"
+                                      "void main() {\n"
+                                      "   color = b_color;\n"
+                                      "}";
 
-const GLchar* MESH_FRAGMENT_SHADER =
-        "#version 330 core\n"
-        "in vec3 b_color;\n"
-        "layout(location = 0) out vec4 color;\n"
-        "void main() {\n"
-        "   color = vec4(b_color, 0.95);\n"
-        "}";
+const GLchar* MESH_VERTEX_SHADER = "#version 330 core\n"
+                                   "layout(location = 0) in vec3 in_Vertex;\n"
+                                   "layout(location = 1) in vec3 in_Color;\n"
+                                   "uniform mat4 u_mvpMatrix;\n"
+                                   "out vec3 b_color;\n"
+                                   "void main() {\n"
+                                   "   b_color = in_Color.bgr;\n"
+                                   "   gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
+                                   "}";
 
-const GLchar* POINTCLOUD_VERTEX_SHADER =
-        "#version 330 core\n"
-        "layout(location = 0) in vec4 in_VertexRGBA;\n"
-        "uniform mat4 u_mvpMatrix;\n"
-        "out vec3 b_color;\n"
-        "vec4 decomposeFloat(const in float value)\n"
-        "{\n"
-        "   uint rgbaInt = floatBitsToUint(value);\n"
-        "	uint bIntValue = (rgbaInt / 256U / 256U) % 256U;\n"
-        "	uint gIntValue = (rgbaInt / 256U) % 256U;\n"
-        "	uint rIntValue = (rgbaInt) % 256U; \n"
-        "	return vec4(bIntValue / 255.0f, gIntValue / 255.0f, rIntValue / 255.0f, 1.0); \n"
-        "}\n"
-        "void main() {\n"
-        // Decompose the 4th channel of the XYZRGBA buffer to retrieve the color of the point (1float to 4uint)
-        "   b_color = decomposeFloat(in_VertexRGBA.a).xyz;\n"
-        "	gl_Position = u_mvpMatrix * vec4(in_VertexRGBA.xyz, 1);\n"
-        "}";
+const GLchar* MESH_FRAGMENT_SHADER = "#version 330 core\n"
+                                     "in vec3 b_color;\n"
+                                     "layout(location = 0) out vec4 color;\n"
+                                     "void main() {\n"
+                                     "   color = vec4(b_color, 0.95);\n"
+                                     "}";
 
-const GLchar* POINTCLOUD_FRAGMENT_SHADER =
-        "#version 330 core\n"
-        "in vec3 b_color;\n"
-        "layout(location = 0) out vec4 out_Color;\n"
-        "void main() {\n"
-        "   out_Color = vec4(b_color, 0.9);\n"
-        "}";
+const GLchar* POINTCLOUD_VERTEX_SHADER
+    = "#version 330 core\n"
+      "layout(location = 0) in vec4 in_VertexRGBA;\n"
+      "uniform mat4 u_mvpMatrix;\n"
+      "out vec3 b_color;\n"
+      "vec4 decomposeFloat(const in float value)\n"
+      "{\n"
+      "   uint rgbaInt = floatBitsToUint(value);\n"
+      "	uint bIntValue = (rgbaInt / 256U / 256U) % 256U;\n"
+      "	uint gIntValue = (rgbaInt / 256U) % 256U;\n"
+      "	uint rIntValue = (rgbaInt) % 256U; \n"
+      "	return vec4(bIntValue / 255.0f, gIntValue / 255.0f, rIntValue / 255.0f, 1.0); \n"
+      "}\n"
+      "void main() {\n"
+      // Decompose the 4th channel of the XYZRGBA buffer to retrieve the color of the point (1float to 4uint)
+      "   b_color = decomposeFloat(in_VertexRGBA.a).xyz;\n"
+      "	gl_Position = u_mvpMatrix * vec4(in_VertexRGBA.xyz, 1);\n"
+      "}";
 
-const GLchar* VERTEX_SHADER_TEXTURE =
-        "#version 330 core\n"
-        "layout(location = 0) in vec3 in_Vertex;\n"
-        "layout(location = 1) in vec2 in_UVs;\n"
-        "uniform mat4 u_mvpMatrix;\n"
-        "out vec2 UV;\n"
-        "void main() {\n"
-        "   gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
-        "    UV = in_UVs;\n"
-        "}\n";
+const GLchar* POINTCLOUD_FRAGMENT_SHADER = "#version 330 core\n"
+                                           "in vec3 b_color;\n"
+                                           "layout(location = 0) out vec4 out_Color;\n"
+                                           "void main() {\n"
+                                           "   out_Color = vec4(b_color, 0.9);\n"
+                                           "}";
 
-const GLchar* FRAGMENT_SHADER_TEXTURE =
-        "#version 330 core\n"
-        "in vec2 UV;\n"
-        "uniform sampler2D texture_sampler;\n"
-        "void main() {\n"
-        "    gl_FragColor = vec4(texture(texture_sampler, UV).bgr, 1.0);\n"
-        "}\n";
+const GLchar* VERTEX_SHADER_TEXTURE = "#version 330 core\n"
+                                      "layout(location = 0) in vec3 in_Vertex;\n"
+                                      "layout(location = 1) in vec2 in_UVs;\n"
+                                      "uniform mat4 u_mvpMatrix;\n"
+                                      "out vec2 UV;\n"
+                                      "void main() {\n"
+                                      "   gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
+                                      "    UV = in_UVs;\n"
+                                      "}\n";
 
-const GLchar* IMAGE_VERTEX_SHADER =
-        "#version 330\n"
-        "layout(location = 0) in vec2 vert;\n"
-        "layout(location = 1) in vec3 vert_tex;\n"
-        "out vec2 UV;"
-        "void main() {\n"
-        "	UV = vert;\n"
-        "	gl_Position = vec4(vert_tex, 1);\n"
-        "}\n";
-        
-const GLchar* IMAGE_FRAGMENT_SHADER =
-        "#version 330 core\n"
-        " in vec2 UV;\n"
-        " out vec4 color;\n"
-        " uniform sampler2D texImage;\n"
-        " void main() {\n"
-        "	vec2 scaler = vec2(UV.x, UV.y);\n"
-        "	color = vec4(texture(texImage, scaler).zyxw);\n"
-        "}";
+const GLchar* FRAGMENT_SHADER_TEXTURE = "#version 330 core\n"
+                                        "in vec2 UV;\n"
+                                        "uniform sampler2D texture_sampler;\n"
+                                        "void main() {\n"
+                                        "    gl_FragColor = vec4(texture(texture_sampler, UV).bgr, 1.0);\n"
+                                        "}\n";
+
+const GLchar* IMAGE_VERTEX_SHADER = "#version 330\n"
+                                    "layout(location = 0) in vec2 vert;\n"
+                                    "layout(location = 1) in vec3 vert_tex;\n"
+                                    "out vec2 UV;"
+                                    "void main() {\n"
+                                    "	UV = vert;\n"
+                                    "	gl_Position = vec4(vert_tex, 1);\n"
+                                    "}\n";
+
+const GLchar* IMAGE_FRAGMENT_SHADER = "#version 330 core\n"
+                                      " in vec2 UV;\n"
+                                      " out vec4 color;\n"
+                                      " uniform sampler2D texImage;\n"
+                                      " void main() {\n"
+                                      "	vec2 scaler = vec2(UV.x, UV.y);\n"
+                                      "	color = vec4(texture(texImage, scaler).zyxw);\n"
+                                      "}";
 
 using namespace sl;
 
-float const to_f = 1.f/ 255.f;
-const sl::float4 clr_lime(217*to_f,255*to_f,66*to_f, 1.f);
-const sl::float4 clr_iron(194*to_f,194*to_f,194*to_f, 0.2f);
-const sl::float4 clr_pearl(242*to_f,242*to_f,242*to_f, 0.7f);
+float const to_f = 1.f / 255.f;
+const sl::float4 clr_lime(217 * to_f, 255 * to_f, 66 * to_f, 1.f);
+const sl::float4 clr_iron(194 * to_f, 194 * to_f, 194 * to_f, 0.2f);
+const sl::float4 clr_pearl(242 * to_f, 242 * to_f, 242 * to_f, 0.7f);
 
 GLViewer* GLViewer::currentInstance_ = nullptr;
 
-GLViewer::GLViewer() : available(false) {
+GLViewer::GLViewer()
+    : available(false) {
     if (currentInstance_ != nullptr) {
         delete currentInstance_;
     }
@@ -125,8 +117,7 @@ GLViewer::GLViewer() : available(false) {
     previousMouseMotion_[0] = previousMouseMotion_[1] = 0;
 }
 
-GLViewer::~GLViewer() {
-}
+GLViewer::~GLViewer() { }
 
 bool GLViewer::isAvailable() {
     glutMainLoopEvent();
@@ -140,7 +131,7 @@ void GLViewer::exit() {
     available = false;
 }
 
-void GLViewer::init(int argc, char **argv, sl::Mat &image, sl::Mat & pointcloud, CUstream stream) {
+void GLViewer::init(int argc, char** argv, sl::Mat& image, sl::Mat& pointcloud, CUstream stream) {
 
     glutInit(&argc, argv);
 
@@ -160,23 +151,23 @@ void GLViewer::init(int argc, char **argv, sl::Mat &image, sl::Mat & pointcloud,
         std::cout << "ERROR: glewInit failed: " << glewGetErrorString(err) << "\n";
 
     glEnable(GL_DEPTH_TEST);
-	glEnable(GL_TEXTURE_2D);
+    glEnable(GL_TEXTURE_2D);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_POINT_SMOOTH);
 
     strm = stream;
-   
+
     pc_render.initialize(pointcloud);
     camera_viewer.initialize(image);
 
-    shader.it.set((GLchar*) MESH_VERTEX_SHADER_, (GLchar*) MESH_FRAGMENT_SHADER_);
+    shader.it.set((GLchar*)MESH_VERTEX_SHADER_, (GLchar*)MESH_FRAGMENT_SHADER_);
     shader.MVPM = glGetUniformLocation(shader.it.getProgramId(), "u_mvpMatrix");
 
-    shader_mesh.it.set((GLchar*) MESH_VERTEX_SHADER, (GLchar*) MESH_FRAGMENT_SHADER);
+    shader_mesh.it.set((GLchar*)MESH_VERTEX_SHADER, (GLchar*)MESH_FRAGMENT_SHADER);
     shader_mesh.MVPM = glGetUniformLocation(shader_mesh.it.getProgramId(), "u_mvpMatrix");
 
-    shader_fpc.it.set((GLchar*) POINTCLOUD_VERTEX_SHADER, (GLchar*) POINTCLOUD_FRAGMENT_SHADER);
+    shader_fpc.it.set((GLchar*)POINTCLOUD_VERTEX_SHADER, (GLchar*)POINTCLOUD_FRAGMENT_SHADER);
     shader_fpc.MVPM = glGetUniformLocation(shader_fpc.it.getProgramId(), "u_mvpMatrix");
 
     ZED_path.setDrawingType(GL_LINE_STRIP);
@@ -184,7 +175,7 @@ void GLViewer::init(int argc, char **argv, sl::Mat &image, sl::Mat & pointcloud,
     camera_ = CameraGL(sl::Translation(0, 2, 5.000), sl::Translation(0, 0, -0.1));
 
     sl::Rotation rot;
-    rot.setEulerAngles(sl::float3(-25,0,0), false);
+    rot.setEulerAngles(sl::float3(-25, 0, 0), false);
     camera_.setRotation(rot);
 
     draw_mesh_as_wire = false;
@@ -198,7 +189,7 @@ void GLViewer::init(int argc, char **argv, sl::Mat &image, sl::Mat & pointcloud,
     glutReshapeFunc(GLViewer::reshapeCallback);
     glutKeyboardFunc(GLViewer::keyPressedCallback);
     glutKeyboardUpFunc(GLViewer::keyReleasedCallback);
-	glutSpecialFunc(GLViewer::specialKeyReleasedCallback);
+    glutSpecialFunc(GLViewer::specialKeyReleasedCallback);
 
     available = true;
 }
@@ -206,7 +197,7 @@ void GLViewer::init(int argc, char **argv, sl::Mat &image, sl::Mat & pointcloud,
 void GLViewer::render() {
     if (available) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        if(dark_background)
+        if (dark_background)
             glClearColor(59 / 255.f, 63 / 255.f, 69 / 255.f, 1.f);
         else
             glClearColor(211 / 255.f, 220 / 255.f, 232 / 255.f, 1.f);
@@ -221,12 +212,12 @@ void GLViewer::render() {
 void GLViewer::updateCameraPose(sl::Transform p, sl::POSITIONAL_TRACKING_STATE state_) {
     cam_pose = p;
     ZED_path.addPoint(cam_pose.getTranslation(), clr_pearl);
-    if(draw_live_point_cloud)
+    if (draw_live_point_cloud)
         pc_render.pushNewPC(strm);
     camera_viewer.pushNewImage(strm);
 }
 
-void GLViewer::updateMap(sl::FusedPointCloud &fpc){
+void GLViewer::updateMap(sl::FusedPointCloud& fpc) {
     map_fpc.resize(fpc.chunks.size());
     int c_id = 0;
     for (auto& it : map_fpc) {
@@ -236,7 +227,7 @@ void GLViewer::updateMap(sl::FusedPointCloud &fpc){
     }
 }
 
-void GLViewer::updateMap(sl::Mesh &mesh) {
+void GLViewer::updateMap(sl::Mesh& mesh) {
     map_mesh.resize(mesh.chunks.size());
     int c_id = 0;
     for (auto& it : map_mesh) {
@@ -256,33 +247,33 @@ void GLViewer::update() {
         return;
     }
 
-    if (keyStates_['w'] == KEY_STATE::UP || keyStates_['W'] == KEY_STATE::UP) 
+    if (keyStates_['w'] == KEY_STATE::UP || keyStates_['W'] == KEY_STATE::UP)
         draw_mesh_as_wire = !draw_mesh_as_wire;
-    
-    if (keyStates_['l'] == KEY_STATE::UP || keyStates_['L'] == KEY_STATE::UP) 
+
+    if (keyStates_['l'] == KEY_STATE::UP || keyStates_['L'] == KEY_STATE::UP)
         draw_live_point_cloud = !draw_live_point_cloud;
 
-    if (keyStates_['d'] == KEY_STATE::UP || keyStates_['D'] == KEY_STATE::UP) 
+    if (keyStates_['d'] == KEY_STATE::UP || keyStates_['D'] == KEY_STATE::UP)
         dark_background = !dark_background;
-       
-    if(keyStates_[32] == KEY_STATE::UP) 
+
+    if (keyStates_[32] == KEY_STATE::UP)
         currentInstance_->SPLIT_DISPLAY = !currentInstance_->SPLIT_DISPLAY;
 
-    if (keyStates_['f'] == KEY_STATE::UP || keyStates_['F'] == KEY_STATE::UP) 
+    if (keyStates_['f'] == KEY_STATE::UP || keyStates_['F'] == KEY_STATE::UP)
         follow_cam = !follow_cam;
-    
+
     // Rotate camera with mouse
     if (mouseButton_[MOUSE_BUTTON::LEFT]) {
-        camera_.rotate(sl::Rotation((float) mouseMotion_[1] * MOUSE_RT_SENSITIVITY, camera_.getRight()));
-        camera_.rotate(sl::Rotation((float) mouseMotion_[0] * MOUSE_RT_SENSITIVITY, camera_.getVertical() * -1.f));
+        camera_.rotate(sl::Rotation((float)mouseMotion_[1] * MOUSE_RT_SENSITIVITY, camera_.getRight()));
+        camera_.rotate(sl::Rotation((float)mouseMotion_[0] * MOUSE_RT_SENSITIVITY, camera_.getVertical() * -1.f));
     }
 
     // Translate camera with mouse
     if (mouseButton_[MOUSE_BUTTON::RIGHT]) {
-        camera_.translate(camera_.getUp() * (float) mouseMotion_[1] * MOUSE_RT_SENSITIVITY * control_magnitude);
-        camera_.translate(camera_.getRight() * (float) mouseMotion_[0] * MOUSE_RT_SENSITIVITY * control_magnitude);
+        camera_.translate(camera_.getUp() * (float)mouseMotion_[1] * MOUSE_RT_SENSITIVITY * control_magnitude);
+        camera_.translate(camera_.getRight() * (float)mouseMotion_[0] * MOUSE_RT_SENSITIVITY * control_magnitude);
     }
-    
+
     // Zoom in with mouse wheel
     if (mouseWheelPosition_ != 0) {
         if (mouseWheelPosition_ > 0 /* && distance > camera_.getZNear()*/) // zoom
@@ -292,7 +283,7 @@ void GLViewer::update() {
             camera_.translate(camera_.getForward() * MOUSE_UZ_SENSITIVITY * control_magnitude);
     }
 
-    for (auto &it : map_mesh)
+    for (auto& it : map_mesh)
         it.pushToGPU();
 
     for (auto& it : map_fpc)
@@ -306,11 +297,11 @@ void GLViewer::update() {
 
 void GLViewer::draw() {
 
-    if(SPLIT_DISPLAY){
+    if (SPLIT_DISPLAY) {
 
         glPolygonMode(GL_FRONT, GL_FILL);
 
-        int half_w = wnd_size.width *.5f;
+        int half_w = wnd_size.width * .5f;
 
         // DRAW 2D image part
         int h = half_w / camera_viewer.aspect_ratio;
@@ -318,10 +309,10 @@ void GLViewer::draw() {
 
         glViewport(0, y, half_w, h);
         camera_viewer.draw2D();
-        
+
         // DRAW 3D
         glViewport(half_w, 0, half_w, wnd_size.height);
-    }else
+    } else
         glViewport(0, 0, wnd_size.width, wnd_size.height);
 
     sl::Transform vpMatrix = camera_.getViewProjectionMatrix();
@@ -332,16 +323,16 @@ void GLViewer::draw() {
 
     glUseProgram(shader.it.getProgramId());
 
-    if(follow_cam){
+    if (follow_cam) {
         sl::Transform pose_w_t = cam_pose;
         auto ea = pose_w_t.getEulerAngles();
         ea.x = 0;
-        //ea.y = 0;
+        // ea.y = 0;
         ea.z = 0;
         pose_w_t.setEulerAngles(ea);
         vpMatrix = vpMatrix * sl::Transform::inverse(pose_w_t);
     }
-    
+
     sl::Transform pose_ = vpMatrix * cam_pose;
     glUniformMatrix4fv(shader.MVPM, 1, GL_TRUE, vpMatrix.m);
     ZED_path.draw();
@@ -351,24 +342,24 @@ void GLViewer::draw() {
     glUniformMatrix4fv(shader.MVPM, 1, GL_TRUE, pose_.m);
     camera_viewer.frustum.draw();
     glUseProgram(0);
-    
-    if(map_fpc.size()){
+
+    if (map_fpc.size()) {
         glUseProgram(shader_fpc.it.getProgramId());
         glUniformMatrix4fv(shader_fpc.MVPM, 1, GL_FALSE, sl::Transform::transpose(vpMatrix).m);
-        for (auto &it: map_fpc)
+        for (auto& it : map_fpc)
             it.draw();
         glUseProgram(0);
     }
 
-    if(map_mesh.size()){
+    if (map_mesh.size()) {
         glUseProgram(shader_mesh.it.getProgramId());
         glUniformMatrix4fv(shader_mesh.MVPM, 1, GL_FALSE, sl::Transform::transpose(vpMatrix).m);
-        for (auto &it: map_mesh)
+        for (auto& it : map_mesh)
             it.draw(draw_mesh_as_wire);
         glUseProgram(0);
     }
 
-    if(draw_live_point_cloud)
+    if (draw_live_point_cloud)
         pc_render.draw(pose_);
 }
 
@@ -377,7 +368,7 @@ void GLViewer::clearInputs() {
     mouseWheelPosition_ = 0;
     for (unsigned int i = 0; i < 256; ++i)
         if (keyStates_[i] != KEY_STATE::FREE)
-            keyStates_[i] = KEY_STATE::FREE;        
+            keyStates_[i] = KEY_STATE::FREE;
 }
 
 void GLViewer::drawCallback() {
@@ -419,21 +410,20 @@ void GLViewer::keyReleasedCallback(unsigned char c, int x, int y) {
     glutPostRedisplay();
 }
 
-void GLViewer::specialKeyReleasedCallback(int c, int x, int y){
-    switch (c)
-    {
-    case 112: /* Shift */ 
-        std::cout<<"switch to soft control"<<std::endl;
-        currentInstance_->control_magnitude = 0.2f; 
-        break;
-    case 114: /* Ctrl */
-        std::cout<<"switch to strong control"<<std::endl;
-        currentInstance_->control_magnitude = 5.f;
-        break;
-    case 116: /* Alt */ 
-        std::cout<<"switch to regular control"<<std::endl;
-        currentInstance_->control_magnitude = 1.f;
-        break;
+void GLViewer::specialKeyReleasedCallback(int c, int x, int y) {
+    switch (c) {
+        case 112: /* Shift */
+            std::cout << "switch to soft control" << std::endl;
+            currentInstance_->control_magnitude = 0.2f;
+            break;
+        case 114: /* Ctrl */
+            std::cout << "switch to strong control" << std::endl;
+            currentInstance_->control_magnitude = 5.f;
+            break;
+        case 116: /* Alt */
+            std::cout << "switch to regular control" << std::endl;
+            currentInstance_->control_magnitude = 1.f;
+            break;
     }
 }
 
@@ -455,21 +445,22 @@ Simple3DObject::~Simple3DObject() {
     }
 }
 
-void Simple3DObject::addPoint(sl::float3 pt, sl::float4 clr){
+void Simple3DObject::addPoint(sl::float3 pt, sl::float4 clr) {
     vertices_.push_back(pt);
     colors_.push_back(clr);
-    indices_.push_back((int) indices_.size());
+    indices_.push_back((int)indices_.size());
     need_update = true;
 }
 
-void Simple3DObject::addFace(sl::float3 p1, sl::float3 p2, sl::float3 p3, sl::float3 clr){
+void Simple3DObject::addFace(sl::float3 p1, sl::float3 p2, sl::float3 p3, sl::float3 clr) {
     addPoint(p1, clr);
     addPoint(p2, clr);
     addPoint(p3, clr);
 }
 
 void Simple3DObject::pushToGPU() {
-    if(!need_update) return;
+    if (!need_update)
+        return;
 
     if (!isStatic_ || vaoID_ == 0) {
         if (vaoID_ == 0) {
@@ -489,7 +480,12 @@ void Simple3DObject::pushToGPU() {
         glEnableVertexAttribArray(Shader::ATTRIB_COLOR_POS);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID_[2]);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_.size() * sizeof (unsigned int), &indices_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
+        glBufferData(
+            GL_ELEMENT_ARRAY_BUFFER,
+            indices_.size() * sizeof(unsigned int),
+            &indices_[0],
+            isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW
+        );
 
         glBindVertexArray(0);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -509,9 +505,9 @@ void Simple3DObject::setDrawingType(GLenum type) {
 }
 
 void Simple3DObject::draw() {
-    if(vaoID_){
+    if (vaoID_) {
         glBindVertexArray(vaoID_);
-        glDrawElements(drawingType_, (GLsizei) indices_.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(drawingType_, (GLsizei)indices_.size(), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 }
@@ -531,7 +527,7 @@ FpcObj::~FpcObj() {
     }
 }
 
-void FpcObj::add(std::vector<sl::float4>&pts) {
+void FpcObj::add(std::vector<sl::float4>& pts) {
     clear();
     vertices_ = pts;
     for (int i = 0; i < vertices_.size(); i++)
@@ -540,7 +536,8 @@ void FpcObj::add(std::vector<sl::float4>&pts) {
 }
 
 void FpcObj::pushToGPU() {
-    if (!need_update) return;
+    if (!need_update)
+        return;
 
     if (vaoID_ == 0) {
         glGenVertexArrays(1, &vaoID_);
@@ -548,12 +545,12 @@ void FpcObj::pushToGPU() {
     }
     glBindVertexArray(vaoID_);
     glBindBuffer(GL_ARRAY_BUFFER, vboID_[0]);
-    glBufferData(GL_ARRAY_BUFFER, vertices_.size() * 4 * sizeof (float), &vertices_[0], GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices_.size() * 4 * sizeof(float), &vertices_[0], GL_DYNAMIC_DRAW);
     glVertexAttribPointer(Shader::ATTRIB_VERTICES_POS, 4, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(Shader::ATTRIB_VERTICES_POS);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID_[1]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_.size() * sizeof (unsigned int), &indices_[0], GL_DYNAMIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_.size() * sizeof(unsigned int), &indices_[0], GL_DYNAMIC_DRAW);
     nb_v = indices_.size();
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -569,11 +566,11 @@ void FpcObj::clear() {
 
 void FpcObj::draw() {
     if (nb_v && vaoID_) {
-        //glDisable(GL_BLEND);
+        // glDisable(GL_BLEND);
         glBindVertexArray(vaoID_);
-        glDrawElements(GL_POINTS, (GLsizei) nb_v, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_POINTS, (GLsizei)nb_v, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
-        //glEnable(GL_BLEND);
+        // glEnable(GL_BLEND);
     }
 }
 // ____________
@@ -584,10 +581,9 @@ MeshObject::MeshObject() {
     need_update = false;
 }
 
-MeshObject::~MeshObject() {
-}
+MeshObject::~MeshObject() { }
 
-void MeshObject::add(std::vector<sl::float3> &vertices, std::vector<sl::uint3> &triangles, std::vector<sl::uchar3> &colors) {
+void MeshObject::add(std::vector<sl::float3>& vertices, std::vector<sl::uint3>& triangles, std::vector<sl::uchar3>& colors) {
     vert = vertices;
     clr = colors;
     faces = triangles;
@@ -595,8 +591,10 @@ void MeshObject::add(std::vector<sl::float3> &vertices, std::vector<sl::uint3> &
 }
 
 void MeshObject::pushToGPU() {
-    if (!need_update) return;
-    if (faces.empty()) return;
+    if (!need_update)
+        return;
+    if (faces.empty())
+        return;
 
     if (vaoID_ == 0) {
         glGenVertexArrays(1, &vaoID_);
@@ -606,17 +604,17 @@ void MeshObject::pushToGPU() {
     glBindVertexArray(vaoID_);
 
     glBindBuffer(GL_ARRAY_BUFFER, vboID_[0]);
-    glBufferData(GL_ARRAY_BUFFER, vert.size() * sizeof (vert[0]), &vert[0], GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vert.size() * sizeof(vert[0]), &vert[0], GL_DYNAMIC_DRAW);
     glVertexAttribPointer(Shader::ATTRIB_VERTICES_POS, 3, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(Shader::ATTRIB_VERTICES_POS);
 
     glBindBuffer(GL_ARRAY_BUFFER, vboID_[1]);
-    glBufferData(GL_ARRAY_BUFFER, clr.size() * sizeof (clr[0]), &clr[0], GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, clr.size() * sizeof(clr[0]), &clr[0], GL_DYNAMIC_DRAW);
     glVertexAttribPointer(Shader::ATTRIB_COLOR_POS, 3, GL_UNSIGNED_BYTE, GL_TRUE, 0, 0);
     glEnableVertexAttribArray(Shader::ATTRIB_COLOR_POS);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID_[2]);
-    current_fc = faces.size() * sizeof (faces[0]);
+    current_fc = faces.size() * sizeof(faces[0]);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, current_fc, &faces[0], GL_DYNAMIC_DRAW);
 
     glBindVertexArray(0);
@@ -630,9 +628,9 @@ void MeshObject::draw(bool draw_wire) {
         auto type = draw_wire ? GL_LINE : GL_FILL;
         glPolygonMode(GL_FRONT, type);
         glPolygonMode(GL_BACK, type);
-            
+
         glBindVertexArray(vaoID_);
-        glDrawElements(GL_TRIANGLES, (GLsizei) current_fc, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, (GLsizei)current_fc, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 }
@@ -666,7 +664,7 @@ void Shader::set(const GLchar* vs, const GLchar* fs) {
         GLint errorSize(0);
         glGetProgramiv(programId_, GL_INFO_LOG_LENGTH, &errorSize);
 
-        char *error = new char[errorSize + 1];
+        char* error = new char[errorSize + 1];
         glGetShaderInfoLog(programId_, errorSize, &errorSize, error);
         error[errorSize] = '\0';
         std::cout << error << std::endl;
@@ -689,13 +687,13 @@ GLuint Shader::getProgramId() {
     return programId_;
 }
 
-bool Shader::compile(GLuint &shaderId, GLenum type, const GLchar* src) {
+bool Shader::compile(GLuint& shaderId, GLenum type, const GLchar* src) {
     shaderId = glCreateShader(type);
     if (shaderId == 0) {
         std::cout << "ERROR: shader type (" << type << ") does not exist" << std::endl;
         return false;
     }
-    glShaderSource(shaderId, 1, (const char**) &src, 0);
+    glShaderSource(shaderId, 1, (const char**)&src, 0);
     glCompileShader(shaderId);
 
     GLint errorCp(0);
@@ -705,7 +703,7 @@ bool Shader::compile(GLuint &shaderId, GLenum type, const GLchar* src) {
         GLint errorSize(0);
         glGetShaderiv(shaderId, GL_INFO_LOG_LENGTH, &errorSize);
 
-        char *error = new char[errorSize + 1];
+        char* error = new char[errorSize + 1];
         glGetShaderInfoLog(shaderId, errorSize, &errorSize, error);
         error[errorSize] = '\0';
         std::cout << error << std::endl;
@@ -717,9 +715,7 @@ bool Shader::compile(GLuint &shaderId, GLenum type, const GLchar* src) {
     return true;
 }
 
-PointCloud::PointCloud() {
-
-}
+PointCloud::PointCloud() { }
 
 PointCloud::~PointCloud() {
     close();
@@ -734,12 +730,12 @@ void PointCloud::close() {
     }
 }
 
-void PointCloud::initialize(sl::Mat &ref) {
+void PointCloud::initialize(sl::Mat& ref) {
     refMat = ref;
 
     glGenBuffers(1, &bufferGLID_);
     glBindBuffer(GL_ARRAY_BUFFER, bufferGLID_);
-    glBufferData(GL_ARRAY_BUFFER, refMat.getResolution().area() * 4 * sizeof (float), 0, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, refMat.getResolution().area() * 4 * sizeof(float), 0, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     cudaError_t err = cudaGraphicsGLRegisterBuffer(&bufferCudaID_, bufferGLID_, cudaGraphicsRegisterFlagsNone);
@@ -750,7 +746,7 @@ void PointCloud::initialize(sl::Mat &ref) {
     if (err != cudaSuccess)
         std::cerr << "Error: CUDA MapResources (" << err << ")" << std::endl;
 
-    err = cudaGraphicsResourceGetMappedPointer((void**) &xyzrgbaMappedBuf_, &numBytes_, bufferCudaID_);
+    err = cudaGraphicsResourceGetMappedPointer((void**)&xyzrgbaMappedBuf_, &numBytes_, bufferCudaID_);
     if (err != cudaSuccess)
         std::cerr << "Error: CUDA GetMappedPointer (" << err << ")" << std::endl;
 
@@ -765,7 +761,7 @@ void PointCloud::pushNewPC(CUstream strm) {
 
 void PointCloud::draw(const sl::Transform& vp) {
     if (refMat.isInit()) {
-        //glDisable(GL_BLEND);
+        // glDisable(GL_BLEND);
         glUseProgram(shader_.getProgramId());
         glUniformMatrix4fv(shMVPMatrixLoc_, 1, GL_TRUE, vp.m);
 
@@ -776,7 +772,7 @@ void PointCloud::draw(const sl::Transform& vp) {
         glDrawArrays(GL_POINTS, 0, refMat.getResolution().area());
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glUseProgram(0);
-        //glEnable(GL_BLEND);
+        // glEnable(GL_BLEND);
     }
 }
 
@@ -795,8 +791,7 @@ CameraGL::CameraGL(Translation position, Translation direction, Translation vert
     updateVPMatrix();
 }
 
-CameraGL::~CameraGL() {
-}
+CameraGL::~CameraGL() { }
 
 void CameraGL::update() {
     if (sl::Translation::dot(vertical_, up_) < 0)
@@ -923,39 +918,38 @@ void CameraGL::updateVPMatrix() {
     vpMatrix_ = projection_ * view_;
 }
 
-CameraViewer::CameraViewer() {
-
-}
+CameraViewer::CameraViewer() { }
 
 CameraViewer::~CameraViewer() {
-	close();
+    close();
 }
 
 void CameraViewer::close() {
-	if (ref.isInit()) {	
-        
-        auto err = cudaGraphicsUnmapResources(1, &cuda_gl_ressource, 0);
-	    if (err) std::cout << "err 3 " << err << " " << cudaGetErrorString(err) << "\n";
+    if (ref.isInit()) {
 
-		glDeleteTextures(1, &texture);
-		glDeleteBuffers(3, vboID_);
-		glDeleteVertexArrays(1, &vaoID_);
-	}
+        auto err = cudaGraphicsUnmapResources(1, &cuda_gl_ressource, 0);
+        if (err)
+            std::cout << "err 3 " << err << " " << cudaGetErrorString(err) << "\n";
+
+        glDeleteTextures(1, &texture);
+        glDeleteBuffers(3, vboID_);
+        glDeleteVertexArrays(1, &vaoID_);
+    }
 }
 
-bool CameraViewer::initialize(sl::Mat &im) {
+bool CameraViewer::initialize(sl::Mat& im) {
 
     // Create 3D axis
-    float fx,fy,cx,cy;
+    float fx, fy, cx, cy;
     fx = fy = 1400;
     float width, height;
     width = 2208;
     height = 1242;
-    cx = width /2;
-    cy = height /2;
-        
+    cx = width / 2;
+    cy = height / 2;
+
     float Z_ = .15f;
-    sl::float3 toOGL(1,-1,-1);
+    sl::float3 toOGL(1, -1, -1);
     sl::float3 cam_0(0, 0, 0);
     sl::float3 cam_1, cam_2, cam_3, cam_4;
 
@@ -963,23 +957,23 @@ bool CameraViewer::initialize(sl::Mat &im) {
     float fy_ = 1.f / fy;
 
     cam_1.z = Z_;
-    cam_1.x = (0 - cx) * Z_ *fx_;
-    cam_1.y = (0 - cy) * Z_ *fy_ ;
+    cam_1.x = (0 - cx) * Z_ * fx_;
+    cam_1.y = (0 - cy) * Z_ * fy_;
     cam_1 *= toOGL;
 
     cam_2.z = Z_;
-    cam_2.x = (width - cx) * Z_ *fx_;
-    cam_2.y = (0 - cy) * Z_ *fy_;
+    cam_2.x = (width - cx) * Z_ * fx_;
+    cam_2.y = (0 - cy) * Z_ * fy_;
     cam_2 *= toOGL;
 
     cam_3.z = Z_;
-    cam_3.x = (width - cx) * Z_ *fx_;
-    cam_3.y = (height - cy) * Z_ *fy_;
+    cam_3.x = (width - cx) * Z_ * fx_;
+    cam_3.y = (height - cy) * Z_ * fy_;
     cam_3 *= toOGL;
 
     cam_4.z = Z_;
-    cam_4.x = (0 - cx) * Z_ *fx_;
-    cam_4.y = (height - cy) * Z_ *fy_;
+    cam_4.x = (0 - cx) * Z_ * fx_;
+    cam_4.y = (height - cy) * Z_ * fy_;
     cam_4 *= toOGL;
 
     frustum.addPoint(cam_0, clr_lime);
@@ -990,28 +984,28 @@ bool CameraViewer::initialize(sl::Mat &im) {
 
     frustum.addPoint(cam_0, clr_lime);
     frustum.addPoint(cam_3, clr_lime);
-    
+
     frustum.addPoint(cam_0, clr_lime);
     frustum.addPoint(cam_4, clr_lime);
 
     frustum.setDrawingType(GL_LINES);
     frustum.pushToGPU();
-    
+
     vert.push_back(cam_1);
     vert.push_back(cam_2);
     vert.push_back(cam_3);
     vert.push_back(cam_4);
 
-    uv.push_back(sl::float2(0,0));
-    uv.push_back(sl::float2(1,0));
-    uv.push_back(sl::float2(1,1));
-    uv.push_back(sl::float2(0,1));
-    
-    faces.push_back(sl::uint3(0,1,2));
-    faces.push_back(sl::uint3(0,2,3));
+    uv.push_back(sl::float2(0, 0));
+    uv.push_back(sl::float2(1, 0));
+    uv.push_back(sl::float2(1, 1));
+    uv.push_back(sl::float2(0, 1));
+
+    faces.push_back(sl::uint3(0, 1, 2));
+    faces.push_back(sl::uint3(0, 2, 3));
 
     ref = im;
-	shader.set(VERTEX_SHADER_TEXTURE, FRAGMENT_SHADER_TEXTURE);
+    shader.set(VERTEX_SHADER_TEXTURE, FRAGMENT_SHADER_TEXTURE);
     shMVPMatrixLocTex_ = glGetUniformLocation(shader.getProgramId(), "u_mvpMatrix");
 
     shader_im.set(IMAGE_VERTEX_SHADER, IMAGE_FRAGMENT_SHADER);
@@ -1026,11 +1020,7 @@ bool CameraViewer::initialize(sl::Mat &im) {
             float h_0 = 1.f;
             float h_1 = 0.f;
 
-            GLfloat g_quad_vertex_buffer_data[] = {
-                w_0, h_0,
-                w_1, h_0,
-                w_0, h_1,
-                w_1, h_1};
+            GLfloat g_quad_vertex_buffer_data[] = {w_0, h_0, w_1, h_0, w_0, h_1, w_1, h_1};
 
             glBindBuffer(GL_ARRAY_BUFFER, vboID_[0]);
             glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(float), g_quad_vertex_buffer_data, GL_STATIC_DRAW);
@@ -1045,11 +1035,7 @@ bool CameraViewer::initialize(sl::Mat &im) {
             float h_0 = -1.f;
             float h_1 = 1.f;
 
-            GLfloat g_quad_vertex_buffer_data[] = {
-                w_0, h_0, 0.f,
-                w_1, h_0, 0.f,
-                w_0, h_1, 0.f,
-                w_1, h_1, 0.f };
+            GLfloat g_quad_vertex_buffer_data[] = {w_0, h_0, 0.f, w_1, h_0, 0.f, w_0, h_1, 0.f, w_1, h_1, 0.f};
             glBindBuffer(GL_ARRAY_BUFFER, vboID_[1]);
             glBufferData(GL_ARRAY_BUFFER, 12 * sizeof(float), g_quad_vertex_buffer_data, GL_DYNAMIC_DRAW);
             glVertexAttribPointer(Shader::ATTRIB_COLOR_POS, 3, GL_FLOAT, GL_FALSE, 0, 0);
@@ -1058,7 +1044,8 @@ bool CameraViewer::initialize(sl::Mat &im) {
         }
 
         std::vector<unsigned int> indices_; // 4 corners
-        for (int i = 0; i < 4; i++) indices_.push_back(i);
+        for (int i = 0; i < 4; i++)
+            indices_.push_back(i);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID_[2]);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_.size() * sizeof(unsigned int), &indices_[0], GL_STATIC_DRAW);
 
@@ -1067,34 +1054,49 @@ bool CameraViewer::initialize(sl::Mat &im) {
     }
 
     auto res = ref.getResolution();
-    aspect_ratio = res.width / (1.f*res.height);
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, res.width, res.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	cudaError_t err = cudaGraphicsGLRegisterImage(&cuda_gl_ressource, texture, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
-	if (err) std::cout << "err alloc " << err << " " << cudaGetErrorString(err) << "\n";
-	glDisable(GL_TEXTURE_2D);
-	
-	err = cudaGraphicsMapResources(1, &cuda_gl_ressource, 0);
-	if (err) std::cout << "err 0 " << err << " " << cudaGetErrorString(err) << "\n";
-	err = cudaGraphicsSubResourceGetMappedArray(&ArrIm, cuda_gl_ressource, 0, 0);
-	if (err) std::cout << "err 1 " << err << " " << cudaGetErrorString(err) << "\n";
+    aspect_ratio = res.width / (1.f * res.height);
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, res.width, res.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    cudaError_t err = cudaGraphicsGLRegisterImage(&cuda_gl_ressource, texture, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
+    if (err)
+        std::cout << "err alloc " << err << " " << cudaGetErrorString(err) << "\n";
+    glDisable(GL_TEXTURE_2D);
 
-	return (err == cudaSuccess);
+    err = cudaGraphicsMapResources(1, &cuda_gl_ressource, 0);
+    if (err)
+        std::cout << "err 0 " << err << " " << cudaGetErrorString(err) << "\n";
+    err = cudaGraphicsSubResourceGetMappedArray(&ArrIm, cuda_gl_ressource, 0, 0);
+    if (err)
+        std::cout << "err 1 " << err << " " << cudaGetErrorString(err) << "\n";
+
+    return (err == cudaSuccess);
 }
 
 void CameraViewer::pushNewImage(CUstream strm) {
-	if (!ref.isInit())  return;
-	auto err = cudaMemcpy2DToArrayAsync(ArrIm, 0, 0, ref.getPtr<sl::uchar1>(sl::MEM::GPU), ref.getStepBytes(sl::MEM::GPU), ref.getPixelBytes() * ref.getWidth(), ref.getHeight(), cudaMemcpyDeviceToDevice, strm);
-	if (err) std::cout << "err 2 " << err << " " << cudaGetErrorString(err) << "\n";
+    if (!ref.isInit())
+        return;
+    auto err = cudaMemcpy2DToArrayAsync(
+        ArrIm,
+        0,
+        0,
+        ref.getPtr<sl::uchar1>(sl::MEM::GPU),
+        ref.getStepBytes(sl::MEM::GPU),
+        ref.getPixelBytes() * ref.getWidth(),
+        ref.getHeight(),
+        cudaMemcpyDeviceToDevice,
+        strm
+    );
+    if (err)
+        std::cout << "err 2 " << err << " " << cudaGetErrorString(err) << "\n";
 }
 
-
 void CameraViewer::draw2D() {
-	if (!ref.isInit())  return;
+    if (!ref.isInit())
+        return;
 
     glDisable(GL_DEPTH_TEST);
     glUseProgram(shader_im.getProgramId());

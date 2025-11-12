@@ -54,7 +54,7 @@ def __main(opt: argparse.Namespace):
     is_playback = opt.svo is not None and len(opt.svo) > 0 # Defines if an SVO is used
 
     status = zed.open(init_params)
-    if status != sl.ERROR_CODE.SUCCESS:
+    if status > sl.ERROR_CODE.SUCCESS:
         print(f"Camera Open : {repr(status)}. Exit program.")
         exit()
     camera_configuration = zed.get_camera_information().camera_configuration

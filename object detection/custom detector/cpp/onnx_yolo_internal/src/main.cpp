@@ -7,25 +7,27 @@
 
 #include <sl/Camera.hpp>
 
-
-static void draw_objects(const cv::Mat& image,
-                         cv::Mat &res,
-                         const sl::Objects& objs,
-                         const std::vector<std::vector<int>>& colors,
-                         const bool isTrackingON)
-{
+static void draw_objects(
+    const cv::Mat& image,
+    cv::Mat& res,
+    const sl::Objects& objs,
+    const std::vector<std::vector<int>>& colors,
+    const bool isTrackingON
+) {
     res = image.clone();
-    cv::Mat mask{image.clone()};
+    cv::Mat mask {image.clone()};
     for (sl::ObjectData const& obj : objs.object_list) {
         if (!renderObject(obj, isTrackingON))
             continue;
-        size_t const idx_color{obj.id % colors.size()};
-        cv::Scalar const color{cv::Scalar(colors[idx_color][0U], colors[idx_color][1U], colors[idx_color][2U])};
+        size_t const idx_color {obj.id % colors.size()};
+        cv::Scalar const color {cv::Scalar(colors[idx_color][0U], colors[idx_color][1U], colors[idx_color][2U])};
 
-        cv::Rect const rect{static_cast<int>(obj.bounding_box_2d[0U].x),
-                            static_cast<int>(obj.bounding_box_2d[0U].y),
-                            static_cast<int>(obj.bounding_box_2d[1U].x - obj.bounding_box_2d[0U].x),
-                            static_cast<int>(obj.bounding_box_2d[2U].y - obj.bounding_box_2d[0U].y)};
+        cv::Rect const rect {
+            static_cast<int>(obj.bounding_box_2d[0U].x),
+            static_cast<int>(obj.bounding_box_2d[0U].y),
+            static_cast<int>(obj.bounding_box_2d[1U].x - obj.bounding_box_2d[0U].x),
+            static_cast<int>(obj.bounding_box_2d[2U].y - obj.bounding_box_2d[0U].y)
+        };
         cv::rectangle(res, rect, color, 2);
 
         char text[256U];
@@ -35,11 +37,11 @@ static void draw_objects(const cv::Mat& image,
             mask(rect).setTo(color, obj_mask);
         }
 
-        int baseLine{0};
-        const cv::Size label_size{cv::getTextSize(text, cv::FONT_HERSHEY_SIMPLEX, 0.4, 1, &baseLine)};
+        int baseLine {0};
+        const cv::Size label_size {cv::getTextSize(text, cv::FONT_HERSHEY_SIMPLEX, 0.4, 1, &baseLine)};
 
-        const int x{rect.x};
-        const int y{std::min(rect.y + 1, res.rows)};
+        const int x {rect.x};
+        const int y {std::min(rect.y + 1, res.rows)};
 
         cv::rectangle(res, cv::Rect(x, y, label_size.width, label_size.height + baseLine), {0, 0, 255}, -1);
         cv::putText(res, text, cv::Point(x, y + label_size.height), cv::FONT_HERSHEY_SIMPLEX, 0.4, {255, 255, 255}, 1);
@@ -49,8 +51,10 @@ static void draw_objects(const cv::Mat& image,
 
 void print(const std::string& msg_prefix, const sl::ERROR_CODE err_code, const std::string& msg_suffix) {
     std::cout << "[Sample] ";
-    if (err_code != sl::ERROR_CODE::SUCCESS)
+    if (err_code > sl::ERROR_CODE::SUCCESS)
         std::cout << "[Error] ";
+    else if (err_code < sl::ERROR_CODE::SUCCESS)
+        std::cout << "[Warning] ";
     std::cout << msg_prefix << " ";
     if (err_code != sl::ERROR_CODE::SUCCESS) {
         std::cout << " | " << toString(err_code) << " : ";
@@ -82,7 +86,7 @@ int main(int argc, char** argv) {
 
     // Open the camera
     const sl::ERROR_CODE open_ret = zed.open(init_parameters);
-    if (open_ret != sl::ERROR_CODE::SUCCESS) {
+    if (open_ret > sl::ERROR_CODE::SUCCESS) {
         print("Camera Open", open_ret, "Exit program.");
         return EXIT_FAILURE;
     }
@@ -107,7 +111,10 @@ int main(int argc, char** argv) {
 
     // Camera config
     const sl::CameraConfiguration camera_config = zed.getCameraInformation().camera_configuration;
-    const sl::Resolution pc_resolution(std::min((int) camera_config.resolution.width, 720), std::min((int) camera_config.resolution.height, 404));
+    const sl::Resolution pc_resolution(
+        std::min((int)camera_config.resolution.width, 720),
+        std::min((int)camera_config.resolution.height, 404)
+    );
     const sl::CameraConfiguration camera_info = zed.getCameraInformation(pc_resolution).camera_configuration;
 
     // Create OpenGL Viewer
@@ -121,20 +128,47 @@ int main(int argc, char** argv) {
     sl::CustomObjectDetectionRuntimeParameters customObjectTracker_rt;
     // All classes parameters
     customObjectTracker_rt.object_detection_properties.detection_confidence_threshold = 20.f; // Set all classes threshold to 20
-    printf("Custom Object Detection runtime parameters: confidence threshold set to %2.1f for all classes\n", customObjectTracker_rt.object_detection_properties.detection_confidence_threshold);
+    printf(
+        "Custom Object Detection runtime parameters: confidence threshold set to %2.1f for all classes\n",
+        customObjectTracker_rt.object_detection_properties.detection_confidence_threshold
+    );
     // Per classes parameters override
-    customObjectTracker_rt.object_class_detection_properties[0U].detection_confidence_threshold = 60.f; // Set custom model's label 0 threshold to 60
-    customObjectTracker_rt.object_class_detection_properties[0U].native_mapped_class = sl::OBJECT_SUBCLASS::PERSON; // Map custom model's label 0 to nativ PERSON subclass
-    customObjectTracker_rt.object_class_detection_properties[1U].min_box_width_normalized = 0.01f;  // Min box width for custom model's label 1
-    customObjectTracker_rt.object_class_detection_properties[1U].max_box_width_normalized = 0.5f;   // Max box width for custom model's label 1
-    customObjectTracker_rt.object_class_detection_properties[1U].min_box_height_normalized = 0.01f; // Min box height for custom model's label 1
-    customObjectTracker_rt.object_class_detection_properties[1U].max_box_height_normalized = 0.5f;  // Max box height for custom model's label 1
-    printf("Custom Object Detection runtime parameters: Label 0, confidence threshold set to %2.1f\n", customObjectTracker_rt.object_class_detection_properties[0U].detection_confidence_threshold);
-    printf("Custom Object Detection runtime parameters: Label 0, mapped to native SUBCLASS %s\n", toString(customObjectTracker_rt.object_class_detection_properties[0U].native_mapped_class).get());
-    printf("Custom Object Detection runtime parameters: Label 1, min box width set to %.2f\n", customObjectTracker_rt.object_class_detection_properties[1U].min_box_width_normalized);
-    printf("Custom Object Detection runtime parameters: Label 1, max box width set to %.2f\n", customObjectTracker_rt.object_class_detection_properties[1U].max_box_width_normalized);
-    printf("Custom Object Detection runtime parameters: Label 1, min box height set to %.2f\n", customObjectTracker_rt.object_class_detection_properties[1U].min_box_height_normalized);
-    printf("Custom Object Detection runtime parameters: Label 1, max box height set to %.2f\n", customObjectTracker_rt.object_class_detection_properties[1U].max_box_height_normalized);
+    customObjectTracker_rt.object_class_detection_properties[0U].detection_confidence_threshold
+        = 60.f; // Set custom model's label 0 threshold to 60
+    customObjectTracker_rt.object_class_detection_properties[0U].native_mapped_class
+        = sl::OBJECT_SUBCLASS::PERSON; // Map custom model's label 0 to nativ PERSON subclass
+    customObjectTracker_rt.object_class_detection_properties[1U].min_box_width_normalized
+        = 0.01f; // Min box width for custom model's label 1
+    customObjectTracker_rt.object_class_detection_properties[1U].max_box_width_normalized
+        = 0.5f; // Max box width for custom model's label 1
+    customObjectTracker_rt.object_class_detection_properties[1U].min_box_height_normalized
+        = 0.01f; // Min box height for custom model's label 1
+    customObjectTracker_rt.object_class_detection_properties[1U].max_box_height_normalized
+        = 0.5f; // Max box height for custom model's label 1
+    printf(
+        "Custom Object Detection runtime parameters: Label 0, confidence threshold set to %2.1f\n",
+        customObjectTracker_rt.object_class_detection_properties[0U].detection_confidence_threshold
+    );
+    printf(
+        "Custom Object Detection runtime parameters: Label 0, mapped to native SUBCLASS %s\n",
+        toString(customObjectTracker_rt.object_class_detection_properties[0U].native_mapped_class).get()
+    );
+    printf(
+        "Custom Object Detection runtime parameters: Label 1, min box width set to %.2f\n",
+        customObjectTracker_rt.object_class_detection_properties[1U].min_box_width_normalized
+    );
+    printf(
+        "Custom Object Detection runtime parameters: Label 1, max box width set to %.2f\n",
+        customObjectTracker_rt.object_class_detection_properties[1U].max_box_width_normalized
+    );
+    printf(
+        "Custom Object Detection runtime parameters: Label 1, min box height set to %.2f\n",
+        customObjectTracker_rt.object_class_detection_properties[1U].min_box_height_normalized
+    );
+    printf(
+        "Custom Object Detection runtime parameters: Label 1, max box height set to %.2f\n",
+        customObjectTracker_rt.object_class_detection_properties[1U].max_box_height_normalized
+    );
 
     sl::Objects objects;
     sl::Pose cam_w_pose;
@@ -142,7 +176,7 @@ int main(int argc, char** argv) {
 
     // Main loop
     while (viewer.isAvailable()) {
-        if (zed.grab() == sl::ERROR_CODE::SUCCESS) {
+        if (zed.grab() <= sl::ERROR_CODE::SUCCESS) {
             // Get image for display
             zed.retrieveImage(left_sl, sl::VIEW::LEFT);
             left_cv = slMat2cvMat(left_sl);
@@ -159,7 +193,7 @@ int main(int argc, char** argv) {
             // Displaying the SDK objects
             draw_objects(left_cv, left_cv, objects, CLASS_COLORS, enable_tracking);
             cv::imshow("ZED retrieved Objects", left_cv);
-            int const key{cv::waitKey(1)};
+            int const key {cv::waitKey(1)};
             if (key == 'q' || key == 'Q' || key == 27)
                 break;
         }

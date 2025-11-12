@@ -10,26 +10,25 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#define CHECK(call)                                                                                                    \
-    do {                                                                                                               \
-        const cudaError_t error_code = call;                                                                           \
-        if (error_code != cudaSuccess) {                                                                               \
-            printf("CUDA Error:\n");                                                                                   \
-            printf("    File:       %s\n", __FILE__);                                                                  \
-            printf("    Line:       %d\n", __LINE__);                                                                  \
-            printf("    Error code: %d\n", error_code);                                                                \
-            printf("    Error text: %s\n", cudaGetErrorString(error_code));                                            \
-            exit(1);                                                                                                   \
-        }                                                                                                              \
+#define CHECK(call)                                                         \
+    do {                                                                    \
+        const cudaError_t error_code = call;                                \
+        if (error_code != cudaSuccess) {                                    \
+            printf("CUDA Error:\n");                                        \
+            printf("    File:       %s\n", __FILE__);                       \
+            printf("    Line:       %d\n", __LINE__);                       \
+            printf("    Error code: %d\n", error_code);                     \
+            printf("    Error text: %s\n", cudaGetErrorString(error_code)); \
+            exit(1);                                                        \
+        }                                                                   \
     } while (0)
 
 class Logger : public nvinfer1::ILogger {
 public:
     nvinfer1::ILogger::Severity reportableSeverity;
 
-    explicit Logger(nvinfer1::ILogger::Severity severity = nvinfer1::ILogger::Severity::kINFO) :
-    reportableSeverity(severity) {
-    }
+    explicit Logger(nvinfer1::ILogger::Severity severity = nvinfer1::ILogger::Severity::kINFO)
+        : reportableSeverity(severity) { }
 
     void log(nvinfer1::ILogger::Severity severity, const char* msg) noexcept override {
         if (severity > reportableSeverity) {
@@ -133,4 +132,4 @@ namespace seg {
         float width = 0;
     };
 } // namespace seg
-#endif  // SEGMENT_NORMAL_COMMON_HPP
+#endif // SEGMENT_NORMAL_COMMON_HPP

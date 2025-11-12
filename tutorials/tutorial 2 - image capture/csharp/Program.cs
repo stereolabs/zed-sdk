@@ -3,12 +3,9 @@ using System;
 using System.Runtime.InteropServices;
 using System.Numerics;
 
-namespace sl
-{
-    class Program
-    {
-        static void Main(string[] args)
-        {
+namespace sl {
+    class Program {
+        static void Main(string[] args) {
             // Set Initialization parameters
             InitParameters init_params = new InitParameters();
             init_params.resolution = RESOLUTION.HD1080;
@@ -16,7 +13,7 @@ namespace sl
             Camera zedCamera = new Camera(0);
             // Open the camera
             ERROR_CODE err = zedCamera.Open(ref init_params);
-            if (err != ERROR_CODE.SUCCESS)
+            if (err > ERROR_CODE.SUCCESS)
                 Environment.Exit(-1);
 
             // Get resolution of camera
@@ -32,13 +29,13 @@ namespace sl
 
             // Initialize runtime parameters and frame counter
             int i = 0;
-            while (i < 1000)
-            {
-                if (zedCamera.Grab(ref runtimeParameters) == ERROR_CODE.SUCCESS)
-                {
-                    zedCamera.RetrieveImage(image, VIEW.LEFT); // Get the left image
+            while (i < 1000) {
+                if (zedCamera.Grab(ref runtimeParameters) <= ERROR_CODE.SUCCESS) {
+                    zedCamera.RetrieveImage(image, VIEW.LEFT);        // Get the left image
                     ulong timestamp = zedCamera.GetCameraTimeStamp(); // Get image timestamp
-                    Console.WriteLine("Image resolution: " + image.GetWidth() + "x" + image.GetHeight() +"|| Image timestamp: " + timestamp);
+                    Console.WriteLine(
+                        "Image resolution: " + image.GetWidth() + "x" + image.GetHeight() + "|| Image timestamp: " + timestamp
+                    );
                     // increment frame count
                     i++;
                 }

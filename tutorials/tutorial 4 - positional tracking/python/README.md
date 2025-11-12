@@ -26,7 +26,7 @@ init_params.coordinate_units = sl.UNIT.METER # Set units in meters
 
 # Open the camera
 err = zed.open(init_params)
-if (err != sl.ERROR_CODE.SUCCESS):
+if (err > sl.ERROR_CODE.SUCCESS):
     exit(-1)
 ```
 
@@ -57,7 +57,7 @@ i = 0
 zed_pose = sl.Pose()
 # Track the camera position during 1000 frames
 while i < 1000:
-    if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
+    if zed.grab(runtime_parameters) <= sl.ERROR_CODE.SUCCESS:
         # Get the pose of the left eye of the camera with reference to the world frame
         zed.get_position(zed_pose, sl.REFERENCE_FRAME.WORLD)
         

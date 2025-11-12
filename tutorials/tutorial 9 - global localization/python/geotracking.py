@@ -46,7 +46,7 @@ if __name__ == "__main__":
     # create the camera that will input the position from its odometry
     zed = sl.Camera()
     status = zed.open(init_params)
-    if status != sl.ERROR_CODE.SUCCESS:
+    if status > sl.ERROR_CODE.SUCCESS:
         print("Camera Open: " + repr(status) + ". Exit program.")
         exit()
     
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     zed.start_publishing(communication_parameters)
 
     # warmup for camera 
-    if zed.grab() != sl.ERROR_CODE.SUCCESS:
+    if zed.grab() > sl.ERROR_CODE.SUCCESS:
         print("Camera grab: " + repr(status) + ". Exit program.")
         exit()
     else:
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     i = 0
     while i < 200:
         # get the odometry information
-        if zed.grab() == sl.ERROR_CODE.SUCCESS:
+        if zed.grab() <= sl.ERROR_CODE.SUCCESS:
             zed.get_position(odometry_pose, sl.REFERENCE_FRAME.WORLD)
 
         elif zed.grab() == sl.ERROR_CODE.END_OF_SVOFILE_REACHED:

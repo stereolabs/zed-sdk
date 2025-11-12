@@ -23,7 +23,6 @@
  ** with the ZED SDK                                                           **
  ********************************************************************************/
 
-
 // Standard includes
 #include <stdio.h>
 #include <string.h>
@@ -40,11 +39,11 @@ using namespace std;
 using namespace sl;
 
 // Sample functions
-void updateCameraSettings(char key, sl::Camera &zed);
+void updateCameraSettings(char key, sl::Camera& zed);
 void switchCameraSettings();
 void printHelp();
 void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
-bool parseArgs(int argc, char **argv, sl::InitParameters& param);
+bool parseArgs(int argc, char** argv, sl::InitParameters& param);
 void printDevices();
 
 // Sample variables
@@ -53,7 +52,6 @@ string str_camera_settings = "BRIGHTNESS";
 int step_camera_setting = 1;
 bool led_on = true;
 
-
 bool selectInProgress = false;
 sl::Rect selection_rect;
 cv::Point origin_rect;
@@ -61,25 +59,25 @@ cv::Point origin_rect;
 static void onMouse(int event, int x, int y, int, void*) {
     switch (event) {
         case cv::EVENT_LBUTTONDOWN:
-        {
-            origin_rect = cv::Point(x, y);
-            selectInProgress = true;
-            break;
-        }
+            {
+                origin_rect = cv::Point(x, y);
+                selectInProgress = true;
+                break;
+            }
 
         case cv::EVENT_LBUTTONUP:
-        {
-            selectInProgress = false;
-            break;
-        }
+            {
+                selectInProgress = false;
+                break;
+            }
 
         case cv::EVENT_RBUTTONDOWN:
-        {
-            //Reset selection
-            selectInProgress = false;
-            selection_rect = sl::Rect(0, 0, 0, 0);
-            break;
-        }
+            {
+                // Reset selection
+                selectInProgress = false;
+                selection_rect = sl::Rect(0, 0, 0, 0);
+                break;
+            }
     }
 
     if (selectInProgress) {
@@ -90,7 +88,7 @@ static void onMouse(int event, int x, int y, int, void*) {
     }
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
     // Create a ZED Camera object
     Camera zed;
@@ -110,15 +108,15 @@ int main(int argc, char **argv) {
     // use hash function to create a virtual serial number that follows the same rules as physical camera serial numbers
     // the virtual serial number must be unique to avoid conflicts with real camera serial numbers
     unsigned int virt_sn = generateVirtualStereoSerialNumber(serial_left, serial_right);
-#if 0
+    #if 0
     // From the 2 ZED X One cameras serial numbers, defining the Left and Right cameras of the virtual stereo rig
     init_parameters.input.setVirtualStereoFromSerialNumbers(serial_left, serial_right, virt_sn);
-#else
+    #else
     // Or from the GMSL IDs
     init_parameters.input.setVirtualStereoFromCameraIDs(1, 0, virt_sn);
-#endif
+    #endif
 #else
-   if(!parseArgs(argc, argv, init_parameters)) {
+    if (!parseArgs(argc, argv, init_parameters)) {
         std::cout << "Usage examples:" << std::endl;
         std::cout << "  - IP address: " << argv[0] << " 192.168.1.2" << std::endl;
         std::cout << "  - IP with port: " << argv[0] << " 192.168.1.2:30000" << std::endl;
@@ -132,7 +130,7 @@ int main(int argc, char **argv) {
     auto returned_state = zed.open(init_parameters);
     if (returned_state == ERROR_CODE::INVALID_CALIBRATION_FILE) {
         std::cout << "WARNING: Virtual Stereo rig not calibrated, only unrectified images and recording are available" << std::endl;
-    }else if (returned_state != ERROR_CODE::SUCCESS) {
+    } else if (returned_state > ERROR_CODE::SUCCESS) {
         print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
@@ -150,7 +148,8 @@ int main(int argc, char **argv) {
     cout << endl;
     cout << "ZED Model                 : " << camera_info.camera_model << endl;
     cout << "ZED Serial Number         : " << camera_info.serial_number << endl;
-    cout << "ZED Camera Firmware       : " << camera_conf.firmware_version << "/" << camera_info.sensors_configuration.firmware_version << endl;
+    cout << "ZED Camera Firmware       : " << camera_conf.firmware_version << "/" << camera_info.sensors_configuration.firmware_version
+         << endl;
     cout << "ZED Camera Resolution     : " << camera_conf.resolution.width << "x" << camera_conf.resolution.height << endl;
     cout << "ZED Camera FPS            : " << zed.getInitParameters().camera_fps << endl;
 
@@ -173,10 +172,14 @@ int main(int argc, char **argv) {
             // Get the detailed health status
             auto health = zed.getHealthStatus();
             std::cout << "Health status: ";
-            if (health.low_image_quality) std::cout << "Low image quality - ";
-            if (health.low_lighting) std::cout << "Low lighting - ";
-            if (health.low_depth_reliability) std::cout << "Low depth reliability - ";
-            if (health.low_motion_sensors_reliability) std::cout << "Low motion sensors reliability - ";
+            if (health.low_image_quality)
+                std::cout << "Low image quality - ";
+            if (health.low_lighting)
+                std::cout << "Low lighting - ";
+            if (health.low_depth_reliability)
+                std::cout << "Low depth reliability - ";
+            if (health.low_motion_sensors_reliability)
+                std::cout << "Low motion sensors reliability - ";
             std::cout << std::endl;
         } else if (returned_state != ERROR_CODE::SUCCESS)
             std::cout << "returned_state " << returned_state << std::endl;
@@ -188,14 +191,21 @@ int main(int argc, char **argv) {
             zed.retrieveImage(zed_image2, VIEW::RIGHT_UNRECTIFIED);
 
             // Convert sl::Mat to cv::Mat (share buffer)
-            cv::Mat cvImage = cv::Mat((int) zed_image.getHeight(), (int) zed_image.getWidth(), CV_8UC4, zed_image.getPtr<sl::uchar1>(sl::MEM::CPU));
-            cv::Mat cvImage2 = cv::Mat((int) zed_image2.getHeight(), (int) zed_image2.getWidth(), CV_8UC4, zed_image2.getPtr<sl::uchar1>(sl::MEM::CPU));
+            cv::Mat cvImage
+                = cv::Mat((int)zed_image.getHeight(), (int)zed_image.getWidth(), CV_8UC4, zed_image.getPtr<sl::uchar1>(sl::MEM::CPU));
+            cv::Mat cvImage2
+                = cv::Mat((int)zed_image2.getHeight(), (int)zed_image2.getWidth(), CV_8UC4, zed_image2.getPtr<sl::uchar1>(sl::MEM::CPU));
 
-            //Check that selection rectangle is valid and draw it on the image
+            // Check that selection rectangle is valid and draw it on the image
             if (!selection_rect.isEmpty() && selection_rect.isContained(sl::Resolution(cvImage.cols, cvImage.rows)))
-                cv::rectangle(cvImage, cv::Rect(selection_rect.x, selection_rect.y, selection_rect.width, selection_rect.height), cv::Scalar(220, 180, 20), 2);
+                cv::rectangle(
+                    cvImage,
+                    cv::Rect(selection_rect.x, selection_rect.y, selection_rect.width, selection_rect.height),
+                    cv::Scalar(220, 180, 20),
+                    2
+                );
 
-            //Display the image
+            // Display the image
             cv::imshow(win_name, cvImage);
             cv::imshow(win_name2, cvImage2);
         } else {
@@ -207,8 +217,6 @@ int main(int argc, char **argv) {
         key = cv::waitKey(10);
         // Change camera settings with keyboard
         updateCameraSettings(key, zed);
-
-
     }
 
     // Exit
@@ -219,7 +227,7 @@ int main(int argc, char **argv) {
 /**
     This function updates camera settings
  **/
-void updateCameraSettings(char key, sl::Camera &zed) {
+void updateCameraSettings(char key, sl::Camera& zed) {
     int current_value;
 
     // Keyboard shortcuts
@@ -243,13 +251,14 @@ void updateCameraSettings(char key, sl::Camera &zed) {
             // Decrease camera settings value ('-' key)
         case '-':
             zed.getCameraSettings(camera_settings_, current_value);
-            current_value = current_value > 0 ? current_value - step_camera_setting : 0; // take care of the 'default' value parameter:  VIDEO_SETTINGS_VALUE_AUTO
+            current_value = current_value > 0 ? current_value - step_camera_setting
+                                              : 0; // take care of the 'default' value parameter:  VIDEO_SETTINGS_VALUE_AUTO
             zed.setCameraSettings(camera_settings_, current_value);
             zed.getCameraSettings(camera_settings_, current_value);
             print(str_camera_settings + ": " + std::to_string(current_value));
             break;
 
-            //switch LED On :
+            // switch LED On :
         case 'l':
             led_on = !led_on;
             zed.setCameraSettings(sl::VIDEO_SETTINGS::LED_STATUS, led_on);
@@ -258,22 +267,22 @@ void updateCameraSettings(char key, sl::Camera &zed) {
             // Reset to default parameters
         case 'r':
             print("Reset all settings to default\n");
-            for (int s = (int) VIDEO_SETTINGS::BRIGHTNESS; s <= (int) VIDEO_SETTINGS::WHITEBALANCE_TEMPERATURE; s++)
-                zed.setCameraSettings(static_cast<VIDEO_SETTINGS> (s), sl::VIDEO_SETTINGS_VALUE_AUTO);
+            for (int s = (int)VIDEO_SETTINGS::BRIGHTNESS; s <= (int)VIDEO_SETTINGS::WHITEBALANCE_TEMPERATURE; s++)
+                zed.setCameraSettings(static_cast<VIDEO_SETTINGS>(s), sl::VIDEO_SETTINGS_VALUE_AUTO);
             break;
 
         case 'a':
-        {
-            cout << "[Sample] set AEC_AGC_ROI on target [" << selection_rect.x << "," << selection_rect.y << "," << selection_rect.width << "," << selection_rect.height << "]\n";
-            zed.setCameraSettings(VIDEO_SETTINGS::AEC_AGC_ROI, selection_rect, sl::SIDE::BOTH);
-        }
+            {
+                cout << "[Sample] set AEC_AGC_ROI on target [" << selection_rect.x << "," << selection_rect.y << "," << selection_rect.width
+                     << "," << selection_rect.height << "]\n";
+                zed.setCameraSettings(VIDEO_SETTINGS::AEC_AGC_ROI, selection_rect, sl::SIDE::BOTH);
+            }
             break;
 
         case 'f':
             print("reset AEC_AGC_ROI to full res");
             zed.setCameraSettings(VIDEO_SETTINGS::AEC_AGC_ROI, selection_rect, sl::SIDE::BOTH, true);
             break;
-
     }
 }
 
@@ -281,7 +290,7 @@ void updateCameraSettings(char key, sl::Camera &zed) {
     This function toggles between camera settings
  **/
 void switchCameraSettings() {
-    camera_settings_ = static_cast<VIDEO_SETTINGS> ((int) camera_settings_ + 1);
+    camera_settings_ = static_cast<VIDEO_SETTINGS>((int)camera_settings_ + 1);
 
     // reset to 1st setting
     if (camera_settings_ > VIDEO_SETTINGS::SCENE_ILLUMINANCE)
@@ -289,7 +298,7 @@ void switchCameraSettings() {
 
     // increment if AEC_AGC_ROI since it using the overloaded function
     if (camera_settings_ == VIDEO_SETTINGS::AEC_AGC_ROI)
-        camera_settings_ = static_cast<VIDEO_SETTINGS> ((int) camera_settings_ + 1);
+        camera_settings_ = static_cast<VIDEO_SETTINGS>((int)camera_settings_ + 1);
 
     // select the right step
     step_camera_setting = (camera_settings_ == VIDEO_SETTINGS::WHITEBALANCE_TEMPERATURE) ? 100 : 1;
@@ -317,8 +326,10 @@ void printHelp() {
 
 void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     cout << "[Sample]";
-    if (err_code != ERROR_CODE::SUCCESS)
+    if (err_code > ERROR_CODE::SUCCESS)
         cout << "[Error] ";
+    else if (err_code < ERROR_CODE::SUCCESS)
+        cout << "[Warning] ";
     else
         cout << " ";
     cout << msg_prefix << " ";
@@ -331,16 +342,17 @@ void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     cout << endl;
 }
 
-void printDevices() {       
+void printDevices() {
     auto devices = sl::CameraOne::getDeviceList();
-        
+
     if (devices.empty()) {
         std::cout << "No ZED cameras found." << std::endl;
         return;
     }
-    for(auto &it:devices){
-        if(it.camera_state == sl::CAMERA_STATE::AVAILABLE && isCameraOne(it.camera_model)) { 
-            std::cout << "- ZED One camera: " << it.camera_model << " (ID : " << it.id << ", Serial: " << it.serial_number << ")" << std::endl;
+    for (auto& it : devices) {
+        if (it.camera_state == sl::CAMERA_STATE::AVAILABLE && isCameraOne(it.camera_model)) {
+            std::cout << "- ZED One camera: " << it.camera_model << " (ID : " << it.id << ", Serial: " << it.serial_number << ")"
+                      << std::endl;
         }
     }
 }
@@ -350,7 +362,7 @@ bool isNumber(const std::string& s) {
     return !s.empty() && s.find_first_not_of("0123456789") == std::string::npos;
 }
 
-bool parseArgs(int argc, char **argv, sl::InitParameters& param) {
+bool parseArgs(int argc, char** argv, sl::InitParameters& param) {
     // A constant to differentiate camera IDs from serial numbers.
     const unsigned int MIN_SERIAL_NUMBER = 20;
 
@@ -379,7 +391,7 @@ bool parseArgs(int argc, char **argv, sl::InitParameters& param) {
         std::cout << "[Sample] Using Stream input, IP: " << ip_str << ", Port: " << port << std::endl;
         return true;
     }
-    
+
     if (sscanf(first_arg.c_str(), "%u.%u.%u.%u", &a, &b, &c, &d) == 4) {
         param.input.setFromStream(sl::String(first_arg.c_str()));
         std::cout << "[Sample] Using Stream input, IP: " << first_arg << std::endl;
@@ -390,14 +402,14 @@ bool parseArgs(int argc, char **argv, sl::InitParameters& param) {
     if (args.size() >= 2) {
         // Check if all arguments are valid numbers before converting.
         if (!isNumber(args[0]) || !isNumber(args[1]) || (args.size() > 2 && !isNumber(args[2]))) {
-             std::cout << "Error: Non-numeric argument detected for camera/serial number." << std::endl;
-             return false;
+            std::cout << "Error: Non-numeric argument detected for camera/serial number." << std::endl;
+            return false;
         }
 
         unsigned long num1 = std::stoul(args[0]);
         unsigned long num2 = std::stoul(args[1]);
         unsigned long num3 = (args.size() > 2) ? std::stoul(args[2]) : 0;
-        if(num3 == 0) {
+        if (num3 == 0) {
             std::cout << "Invalid Virtual Serial Number" << std::endl;
             return false;
         }
@@ -407,21 +419,23 @@ bool parseArgs(int argc, char **argv, sl::InitParameters& param) {
 
         if (are_camera_ids) {
             std::cout << "[Sample] Using Virtual Stereo from Camera IDs: " << num1 << ", " << num2;
-            if (num3 > 0) std::cout << " with virtual SN: " << num3;
+            if (num3 > 0)
+                std::cout << " with virtual SN: " << num3;
             std::cout << std::endl;
             return !param.input.setVirtualStereoFromCameraIDs(num1, num2, num3);
         }
 
         if (are_serial_numbers) {
             std::cout << "[Sample] Using Virtual Stereo from Serial Numbers: " << num1 << ", " << num2;
-            if (num3 > 0) std::cout << " with virtual SN: " << num3;
+            if (num3 > 0)
+                std::cout << " with virtual SN: " << num3;
             std::cout << std::endl;
             return !param.input.setVirtualStereoFromSerialNumbers(num1, num2, num3);
         }
-        
+
         // If numbers are a mix of ID and SN, it's an error.
         std::cout << "Error: Both numbers must be either camera IDs (<" << MIN_SERIAL_NUMBER
-                    << ") or serial numbers (>=" << MIN_SERIAL_NUMBER << ")." << std::endl;
+                  << ") or serial numbers (>=" << MIN_SERIAL_NUMBER << ")." << std::endl;
         return false;
     }
     return false;

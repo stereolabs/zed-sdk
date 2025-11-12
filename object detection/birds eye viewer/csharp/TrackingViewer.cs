@@ -8,21 +8,18 @@ using sl;
 using OpenCvSharp;
 using System.Windows.Forms;
 
-public enum TrackPointState
-{
+public enum TrackPointState {
     OK,
     PREDICTED,
     OFF
 }
 
-public struct TrackPoint
-{
+public struct TrackPoint {
     public float x, y, z;
     public ulong timestamp;
     public TrackPointState tracking_state;
 
-    public TrackPoint(Vector3 pos, TrackPointState state, ulong ts)
-    {
+    public TrackPoint(Vector3 pos, TrackPointState state, ulong ts) {
         x = pos.X;
         y = pos.Y;
         z = pos.Z;
@@ -30,29 +27,29 @@ public struct TrackPoint
         timestamp = ts;
     }
 
-    public TrackPoint(Vector3 pos, sl.OBJECT_TRACKING_STATE state, ulong ts)
-    {
+    public TrackPoint(Vector3 pos, sl.OBJECT_TRACKING_STATE state, ulong ts) {
         x = pos.X;
         y = pos.Y;
         z = pos.Z;
 
-        if (state == OBJECT_TRACKING_STATE.OK) tracking_state = TrackPointState.OK;
-        else tracking_state = TrackPointState.OFF;
+        if (state == OBJECT_TRACKING_STATE.OK)
+            tracking_state = TrackPointState.OK;
+        else
+            tracking_state = TrackPointState.OFF;
 
         timestamp = ts;
     }
 
-    public Vector3 toVector3()
-    {
+    public Vector3 toVector3() {
         return new Vector3(x, y, z);
     }
 };
 
-public class Tracklet
-{
+public class Tracklet {
     public int id;
     public List<TrackPoint> positions = new List<TrackPoint>(); // Will store detected positions and the predicted ones
-    public List<TrackPoint> positions_to_draw = new List<TrackPoint>(); // Will store the visualization output => when smoothing track, point won't be the same as the real points
+    public List<TrackPoint> positions_to_draw
+        = new List<TrackPoint>(); // Will store the visualization output => when smoothing track, point won't be the same as the real points
 
     public sl.OBJECT_TRACKING_STATE tracking_state;
     public sl.OBJECT_CLASS object_type;
@@ -64,8 +61,7 @@ public class Tracklet
 
     private static int recovery_length = 10;
 
-    public Tracklet(sl.ObjectData obj, sl.OBJECT_CLASS type, ulong ts = 0)
-    {
+    public Tracklet(sl.ObjectData obj, sl.OBJECT_CLASS type, ulong ts = 0) {
         id = obj.id;
         positions.Add(new TrackPoint(obj.position, obj.objectTrackingState, ts));
         positions_to_draw.Add(new TrackPoint(obj.position, obj.objectTrackingState, ts));
@@ -76,35 +72,33 @@ public class Tracklet
         object_type = type;
     }
 
-    public void addDetectedPoint(sl.ObjectData obj, ulong ts, int smoothing_window_size = 0)
-    {
-        if (positions.Count > 0)
-        {
-            if (positions[positions.Count - 1].tracking_state == TrackPointState.PREDICTED) recovery_cpt = 0;
-            else ++recovery_cpt;
+    public void addDetectedPoint(sl.ObjectData obj, ulong ts, int smoothing_window_size = 0) {
+        if (positions.Count > 0) {
+            if (positions[positions.Count - 1].tracking_state == TrackPointState.PREDICTED)
+                recovery_cpt = 0;
+            else
+                ++recovery_cpt;
         }
 
         positions.Add(new TrackPoint(obj.position, TrackPointState.OK, ts));
         tracking_state = obj.objectTrackingState;
         last_detected_timestamp = ts;
 
-
         positions_to_draw.Add(new TrackPoint(obj.position, TrackPointState.OK, ts));
     }
 }
 
-public class TrackingViewer
-{
-    float x_min, x_max;  // show objects between [x_min; x_max] (in millimeters) 
-    float x_step, z_step;     // Conversion from world position to pixel coordinates
-    float z_min; // show objects between [z_min; 0] (z_min < 0) (in millimeters)
+public class TrackingViewer {
+    float x_min, x_max;   // show objects between [x_min; x_max] (in millimeters)
+    float x_step, z_step; // Conversion from world position to pixel coordinates
+    float z_min;          // show objects between [z_min; 0] (z_min < 0) (in millimeters)
 
     // window size
     int window_width, window_height;
     // Keep tracks of alive tracks
     List<Tracklet> tracklets = new List<Tracklet>();
 
-    //History management
+    // History management
     ulong history_duration; // in ns
     int min_length_to_draw;
 
@@ -122,30 +116,28 @@ public class TrackingViewer
     bool do_smooth;
     int smoothing_window_size;
 
-
     static sl.float2 getImagePosition(Vector2[] bounding_box_image, sl.float2 img_scale) {
         sl.float2 position;
-        position.x = (bounding_box_image[0].X + (bounding_box_image[2].X - bounding_box_image[0].X)*0.5f) * img_scale.x;
-        position.y = (bounding_box_image[0].Y + (bounding_box_image[2].Y - bounding_box_image[0].Y)*0.5f) * img_scale.y;
+        position.x = (bounding_box_image[0].X + (bounding_box_image[2].X - bounding_box_image[0].X) * 0.5f) * img_scale.x;
+        position.y = (bounding_box_image[0].Y + (bounding_box_image[2].Y - bounding_box_image[0].Y) * 0.5f) * img_scale.y;
         return position;
     }
 
-    public static void render_2D(ref OpenCvSharp.Mat left_display, sl.float2 img_scale, ref sl.Objects objects, bool render_mask, bool isTrackingON)
-    {
+    public static void
+    render_2D(ref OpenCvSharp.Mat left_display, sl.float2 img_scale, ref sl.Objects objects, bool render_mask, bool isTrackingON) {
         OpenCvSharp.Mat overlay = left_display.Clone();
         OpenCvSharp.Rect roi_render = new OpenCvSharp.Rect(0, 0, left_display.Size().Width, left_display.Size().Height);
 
         int line_thickness = 2;
 
-        for (int i = 0; i < objects.numObject; i++)
-        {
+        for (int i = 0; i < objects.numObject; i++) {
             sl.ObjectData obj = objects.objectData[i];
-            if (Utils.renderObject(obj, isTrackingON))
-            {
+            if (Utils.renderObject(obj, isTrackingON)) {
                 OpenCvSharp.Scalar base_color = Utils.generateColorID_u(obj.id);
 
                 // Display image scale bouding box 2d
-                if (obj.boundingBox2D.Length < 4) continue;
+                if (obj.boundingBox2D.Length < 4)
+                    continue;
 
                 Point top_left_corner = Utils.cvt(obj.boundingBox2D[0], img_scale);
                 Point top_right_corner = Utils.cvt(obj.boundingBox2D[1], img_scale);
@@ -162,26 +154,40 @@ public class TrackingViewer
                 Utils.drawVerticalLine(ref left_display, bottom_left_corner, top_left_corner, base_color, line_thickness);
                 Utils.drawVerticalLine(ref left_display, bottom_right_corner, top_right_corner, base_color, line_thickness);
 
-                if (render_mask)
-                {
+                if (render_mask) {
                     // Scaled ROI
                     OpenCvSharp.Rect roi = new OpenCvSharp.Rect(top_left_corner.X, top_left_corner.Y, width, height);
                     sl.Mat mask = new sl.Mat(obj.mask);
-                    OpenCvSharp.Mat tmp_mask = new OpenCvSharp.Mat(mask.GetHeight(), mask.GetWidth(), OpenCvSharp.MatType.CV_8UC1, mask.GetPtr());
-                    if (!tmp_mask.Empty())
-                    {
+                    OpenCvSharp.Mat tmp_mask
+                        = new OpenCvSharp.Mat(mask.GetHeight(), mask.GetWidth(), OpenCvSharp.MatType.CV_8UC1, mask.GetPtr());
+                    if (!tmp_mask.Empty()) {
                         var mask_resized = tmp_mask.Resize(roi.Size);
                         overlay.SubMat(roi).SetTo(base_color, mask_resized);
                     }
                 }
 
                 sl.float2 position_image = getImagePosition(obj.boundingBox2D, img_scale);
-                Cv2.PutText(left_display, obj.label.ToString(), new Point(position_image.x - 20, position_image.y - 12), HersheyFonts.HersheyComplexSmall, 0.5f, new Scalar(255, 255, 255, 255), 1);
+                Cv2.PutText(
+                    left_display,
+                    obj.label.ToString(),
+                    new Point(position_image.x - 20, position_image.y - 12),
+                    HersheyFonts.HersheyComplexSmall,
+                    0.5f,
+                    new Scalar(255, 255, 255, 255),
+                    1
+                );
 
-                if (!float.IsInfinity(obj.position.Z))
-                {
+                if (!float.IsInfinity(obj.position.Z)) {
                     string text = Math.Abs(obj.position.Z).ToString("0.##M");
-                    Cv2.PutText(left_display, text, new Point(position_image.x - 20, position_image.y), HersheyFonts.HersheyComplexSmall, 0.5, new Scalar(255, 255, 255, 255), 1);
+                    Cv2.PutText(
+                        left_display,
+                        text,
+                        new Point(position_image.x - 20, position_image.y),
+                        HersheyFonts.HersheyComplexSmall,
+                        0.5,
+                        new Scalar(255, 255, 255, 255),
+                        1
+                    );
                 }
             }
         }
@@ -190,12 +196,9 @@ public class TrackingViewer
         Cv2.AddWeighted(left_display, 0.7, overlay, 0.3, 0.0, left_display);
     }
 
-    public TrackingViewer()
-    {
-    }
+    public TrackingViewer() { }
 
-    public TrackingViewer(sl.Resolution res, int fps_, float D_max, int duration)
-    {
+    public TrackingViewer(sl.Resolution res, int fps_, float D_max, int duration) {
         // ----------- Default configuration -----------------
 
         // window size
@@ -225,7 +228,7 @@ public class TrackingViewer
         do_smooth = false;
 
         // Show last 3.0 seconds
-        history_duration = (ulong)(duration) * 1000 * 1000 * 1000; //convert sc to ns
+        history_duration = (ulong)(duration) * 1000 * 1000 * 1000; // convert sc to ns
 
         // Smoothing window: 80ms
         smoothing_window_size = (int)(Math.Ceiling(0.08f * fps_) + .5f);
@@ -238,15 +241,15 @@ public class TrackingViewer
         x_step = (x_max - x_min) / window_width;
         z_step = Math.Abs(z_min) / (window_height - camera_offset);
     }
-   
-    public void generate_view(ref sl.Objects objects, sl.Pose current_camera_pose, ref OpenCvSharp.Mat tracking_view, bool tracking_enabled)
-    {
+
+    public void
+    generate_view(ref sl.Objects objects, sl.Pose current_camera_pose, ref OpenCvSharp.Mat tracking_view, bool tracking_enabled) {
         // To get position in WORLD reference
-        for (int i = 0; i < objects.numObject; i++){
+        for (int i = 0; i < objects.numObject; i++) {
             sl.ObjectData obj = objects.objectData[i];
 
             Vector3 pos = obj.position;
-            Vector3 new_pos =  Vector3.Transform(pos, current_camera_pose.rotation) + current_camera_pose.translation;
+            Vector3 new_pos = Vector3.Transform(pos, current_camera_pose.rotation) + current_camera_pose.translation;
             obj.position = new_pos;
         }
 
@@ -258,8 +261,7 @@ public class TrackingViewer
         // Scale
         drawScale(ref tracking_view);
 
-        if (tracking_enabled)
-        {
+        if (tracking_enabled) {
             // First add new points, and remove the ones that are too old
             ulong current_timestamp = objects.timestamp;
             addToTracklets(ref objects);
@@ -268,42 +270,34 @@ public class TrackingViewer
 
             // Draw all tracklets
             drawTracklets(ref tracking_view, current_camera_pose);
-        }
-        else
-        {
+        } else {
             drawPosition(ref objects, ref tracking_view, current_camera_pose);
         }
     }
 
-    public void setCameraCalibration(sl.CalibrationParameters calib)
-    {
+    public void setCameraCalibration(sl.CalibrationParameters calib) {
         camera_calibration = calib;
         has_background_ready = false;
     }
 
-    //Zoom functions
-    public void zoomIn()
-    {
+    // Zoom functions
+    public void zoomIn() {
         zoom(0.9f);
     }
 
-    public void zoomOut()
-    {
+    public void zoomOut() {
         zoom(1.0f / 0.9f);
     }
 
     // vizualisation methods
-    void drawTracklets(ref OpenCvSharp.Mat tracking_view, sl.Pose current_camera_pose)
-    {
+    void drawTracklets(ref OpenCvSharp.Mat tracking_view, sl.Pose current_camera_pose) {
         foreach (Tracklet track in tracklets) {
-            if (track.tracking_state != sl.OBJECT_TRACKING_STATE.OK)
-            {
+            if (track.tracking_state != sl.OBJECT_TRACKING_STATE.OK) {
                 Console.WriteLine("not ok");
                 continue;
             }
-            if (track.positions_to_draw.Count < min_length_to_draw)
-            {
-                //Console.WriteLine("too small " + track.positions_to_draw.Count);
+            if (track.positions_to_draw.Count < min_length_to_draw) {
+                // Console.WriteLine("too small " + track.positions_to_draw.Count);
                 continue;
             }
 
@@ -313,14 +307,12 @@ public class TrackingViewer
             TrackPoint start_point = track.positions_to_draw[0];
             Point cv_start_point = toCVPoint(start_point, current_camera_pose);
             TrackPoint end_point = track.positions_to_draw[0];
-            for (int point_index = 1; point_index < track_size; ++point_index)
-            {
+            for (int point_index = 1; point_index < track_size; ++point_index) {
                 end_point = track.positions_to_draw[point_index];
                 Point cv_end_point = toCVPoint(track.positions_to_draw[point_index], current_camera_pose);
 
                 // Check point status
-                if (start_point.tracking_state == TrackPointState.OFF || end_point.tracking_state == TrackPointState.OFF)
-                {
+                if (start_point.tracking_state == TrackPointState.OFF || end_point.tracking_state == TrackPointState.OFF) {
                     continue;
                 }
 
@@ -330,13 +322,17 @@ public class TrackingViewer
             }
 
             // Current position, visualized as a point, only for alived track
-            // Point = person || Square = Vehicle 
-            if (track.is_alive)
-            {
-                switch (track.object_type)
-                {
+            // Point = person || Square = Vehicle
+            if (track.is_alive) {
+                switch (track.object_type) {
                     case sl.OBJECT_CLASS.PERSON:
-                        Cv2.Circle(tracking_view, toCVPoint(track.positions_to_draw[track.positions_to_draw.Count - 1], current_camera_pose), 5, clr, 5);
+                        Cv2.Circle(
+                            tracking_view,
+                            toCVPoint(track.positions_to_draw[track.positions_to_draw.Count - 1], current_camera_pose),
+                            5,
+                            clr,
+                            5
+                        );
                         break;
                     case sl.OBJECT_CLASS.VEHICLE:
                         {
@@ -357,22 +353,19 @@ public class TrackingViewer
         }
     }
 
-    void drawPosition(ref sl.Objects objects, ref OpenCvSharp.Mat tracking_view, sl.Pose current_camera_pose){
-        for (int i = 0; i < objects.numObject; i++)
-        {
+    void drawPosition(ref sl.Objects objects, ref OpenCvSharp.Mat tracking_view, sl.Pose current_camera_pose) {
+        for (int i = 0; i < objects.numObject; i++) {
             sl.ObjectData obj = objects.objectData[i];
             Scalar generated_color = Utils.generateColorClass_u((int)obj.label);
 
-            // Point = person || Rect = Vehicle 
-            switch (obj.label)
-            {
+            // Point = person || Rect = Vehicle
+            switch (obj.label) {
                 case sl.OBJECT_CLASS.PERSON:
                     Cv2.Circle(tracking_view, toCVPoint(obj.position, current_camera_pose), 5, generated_color, 5);
                     break;
                 case sl.OBJECT_CLASS.VEHICLE:
                     {
-                        if (obj.boundingBox.Length > 0)
-                        {
+                        if (obj.boundingBox.Length > 0) {
                             Point rect_center = toCVPoint(obj.position, current_camera_pose);
                             int square_size = 10;
                             Point top_left_corner = rect_center - new Point(square_size, square_size * 2);
@@ -390,8 +383,7 @@ public class TrackingViewer
         }
     }
 
-    void drawScale(ref OpenCvSharp.Mat tracking_view)
-    {
+    void drawScale(ref OpenCvSharp.Mat tracking_view) {
         int one_meter_horizontal = (int)(1.0f / x_step + .5f);
         Point st_pt = new Point(25, window_height - 50);
         Point end_pt = new Point(25 + one_meter_horizontal, window_height - 50);
@@ -408,11 +400,9 @@ public class TrackingViewer
         Cv2.PutText(tracking_view, "1m", end_pt + new Point(5, 5), HersheyFonts.HersheyPlain, 1.0, new Scalar(0, 0, 0, 255), 1);
     }
 
-    void addToTracklets(ref sl.Objects objects)
-    {
+    void addToTracklets(ref sl.Objects objects) {
         ulong current_timestamp = objects.timestamp;
-        for (int i = 0; i < objects.numObject; i++)
-        {
+        for (int i = 0; i < objects.numObject; i++) {
             sl.ObjectData obj = objects.objectData[i];
             int id = obj.id;
 
@@ -420,33 +410,27 @@ public class TrackingViewer
                 continue;
 
             bool new_object = true;
-            foreach (Tracklet track in tracklets)
-            {
-                if (track.id == id && track.is_alive)
-                {
+            foreach (Tracklet track in tracklets) {
+                if (track.id == id && track.is_alive) {
                     new_object = false;
                     track.addDetectedPoint(obj, current_timestamp, smoothing_window_size);
                 }
             }
 
             // In case this object does not belong to existing tracks
-            if (new_object)
-            {
+            if (new_object) {
                 Tracklet new_track = new Tracklet(obj, obj.label, current_timestamp);
                 tracklets.Add(new_track);
             }
         }
     }
 
-    void detectUnchangedTrack(ulong current_timestamp){
-        for (int track_index = 0; track_index < tracklets.Count; ++track_index)
-        {
+    void detectUnchangedTrack(ulong current_timestamp) {
+        for (int track_index = 0; track_index < tracklets.Count; ++track_index) {
             Tracklet track = tracklets[track_index];
-            if (track.last_detected_timestamp < current_timestamp && track.last_detected_timestamp > 0)
-            {
+            if (track.last_detected_timestamp < current_timestamp && track.last_detected_timestamp > 0) {
                 // If track missed more than N frames, delete it
-                if (current_timestamp - track.last_detected_timestamp >= history_duration)
-                {
+                if (current_timestamp - track.last_detected_timestamp >= history_duration) {
                     track.is_alive = false;
                     continue;
                 }
@@ -454,35 +438,26 @@ public class TrackingViewer
         }
     }
 
-    void pruneOldPoints(ulong ts){
+    void pruneOldPoints(ulong ts) {
         List<int> track_to_delete = new List<int>(); // If a dead track does not contain drawing points, juste erase it
-        for (int track_index = 0; track_index < tracklets.Count; ++track_index)
-        {
-            if (tracklets[track_index].is_alive)
-            {
-                while (tracklets[track_index].positions.Count > 0 && tracklets[track_index].positions[0].timestamp < ts - history_duration)
-                {
+        for (int track_index = 0; track_index < tracklets.Count; ++track_index) {
+            if (tracklets[track_index].is_alive) {
+                while (tracklets[track_index].positions.Count > 0 && tracklets[track_index].positions[0].timestamp < ts - history_duration
+                ) {
                     tracklets[track_index].positions.RemoveAt(0);
                 }
-                while (tracklets[track_index].positions_to_draw.Count > 0 && tracklets[track_index].positions_to_draw[0].timestamp < ts - history_duration)
-                {
+                while (tracklets[track_index].positions_to_draw.Count > 0
+                       && tracklets[track_index].positions_to_draw[0].timestamp < ts - history_duration) {
                     tracklets[track_index].positions_to_draw.RemoveAt(0);
                 }
-            }
-            else
-            { // Here, we fade the dead trajectories faster than the alive one (4 points every frame)
-                for (int i = 0; i < 4; ++i)
-                {
-                    if (tracklets[track_index].positions.Count > 0)
-                    {
+            } else { // Here, we fade the dead trajectories faster than the alive one (4 points every frame)
+                for (int i = 0; i < 4; ++i) {
+                    if (tracklets[track_index].positions.Count > 0) {
                         tracklets[track_index].positions.RemoveAt(0);
                     }
-                    if (tracklets[track_index].positions_to_draw.Count > 0)
-                    {
+                    if (tracklets[track_index].positions_to_draw.Count > 0) {
                         tracklets[track_index].positions_to_draw.RemoveAt(0);
-                    }
-                    else
-                    {
+                    } else {
                         track_to_delete.Add(track_index);
                         break;
                     }
@@ -495,14 +470,13 @@ public class TrackingViewer
             tracklets.RemoveAt(track_to_delete[i]);
     }
 
-    void computeFOV(){
+    void computeFOV() {
         sl.Resolution image_size = camera_calibration.leftCam.resolution;
         float fx = camera_calibration.leftCam.fx;
         fov = 2.0f * (float)Math.Atan((int)image_size.width / (2.0f * fx));
     }
 
-    void zoom(float factor)
-    {
+    void zoom(float factor) {
         x_min *= factor;
         x_max *= factor;
         z_min *= factor;
@@ -513,16 +487,16 @@ public class TrackingViewer
     }
 
     // background generation
-    void generateBackground(){
+    void generateBackground() {
         // Draw camera + hotkeys information
         drawCamera();
         drawHotkeys();
         has_background_ready = true;
     }
 
-    void drawCamera(){
+    void drawCamera() {
         // Configuration
-        Scalar camera_color  = new Scalar(255, 117, 44, 255);
+        Scalar camera_color = new Scalar(255, 117, 44, 255);
 
         int camera_size = 10;
         int camera_height = window_height - camera_offset;
@@ -530,18 +504,19 @@ public class TrackingViewer
         Point camera_right_pt = new Point(window_width / 2 + camera_size / 2, camera_height);
 
         // Drawing camera
-        List<Point> camera_pts = new List<Point>{
+        List<Point> camera_pts = new List<Point> {
             new Point(window_width / 2 - camera_size, camera_height),
             new Point(window_width / 2 + camera_size, camera_height),
             new Point(window_width / 2 + camera_size, camera_height + camera_size / 2),
-            new Point(window_width / 2 - camera_size, camera_height + camera_size / 2)};
+            new Point(window_width / 2 - camera_size, camera_height + camera_size / 2)
+        };
 
         Cv2.FillConvexPoly(background, camera_pts, camera_color);
 
         // Compute the FOV
         if (fov < 0.0f)
             computeFOV();
-        
+
         // Get FOV intersection with window borders
         float z_at_x_max = x_max / (float)Math.Tan(fov / 2.0f);
         Point left_intersection_pt = toCVPoint(x_min, -z_at_x_max), right_intersection_pt = toCVPoint(x_max, -z_at_x_max);
@@ -551,17 +526,15 @@ public class TrackingViewer
         // Second try: dotted line
         LineIterator left_line_it = new LineIterator(background, camera_left_pt, left_intersection_pt, PixelConnectivity.Connectivity8);
         int i = 0;
-        foreach (var it in left_line_it)
-        {
+        foreach (var it in left_line_it) {
             Point current_pos = it.Pos;
             /*if (i % 5 == 0 || i % 5 == 1)
             {
                 it.SetValue<Scalar>(clr);
             }*/
-            
-            for (int r = 0; r < current_pos.Y; ++r)
-            {
-                float ratio =(float)r / camera_height;
+
+            for (int r = 0; r < current_pos.Y; ++r) {
+                float ratio = (float)r / camera_height;
                 background.At<Vec4b>(r, current_pos.X) = Utils.applyFading(background_color, ratio, fov_color);
             }
             i++;
@@ -569,48 +542,40 @@ public class TrackingViewer
 
         LineIterator right_line_it = new LineIterator(background, camera_right_pt, right_intersection_pt, PixelConnectivity.Connectivity8);
         int j = 0;
-        foreach (var it in right_line_it)
-        {
+        foreach (var it in right_line_it) {
             Point current_pos = it.Pos;
             /*if (j % 5 == 0 || j % 5 == 1)
             {
                 it.SetValue<Scalar>(clr);
             }*/
 
-            for (int r = 0; r < current_pos.Y; ++r)
-            {
+            for (int r = 0; r < current_pos.Y; ++r) {
                 float ratio = (float)r / camera_height;
                 background.At<Vec4b>(r, current_pos.X) = Utils.applyFading(background_color, ratio, fov_color);
             }
             j++;
         }
 
-        for (int c = window_width / 2 - camera_size / 2; c <= window_width / 2 + camera_size / 2; ++c)
-        {
-            for (int r = 0; r < camera_height; ++r)
-            {
+        for (int c = window_width / 2 - camera_size / 2; c <= window_width / 2 + camera_size / 2; ++c) {
+            for (int r = 0; r < camera_height; ++r) {
                 float ratio = (float)r / camera_height;
                 background.At<Vec4b>(r, c) = Utils.applyFading(background_color, ratio, fov_color);
             }
         }
     }
 
-    void drawHotkeys(){
+    void drawHotkeys() {
         Scalar hotkeys_clr = new Scalar(0, 0, 0, 255);
-        Cv2.PutText(background, "Press 'i' to zoom in", new Point(25, window_height - 25), HersheyFonts.HersheyPlain,
-                1.0, hotkeys_clr, 1);
-       Cv2.PutText(background, "Press 'o' to zoom out", new Point(25, window_height - 15), HersheyFonts.HersheyPlain,
-                1.0, hotkeys_clr, 1);
+        Cv2.PutText(background, "Press 'i' to zoom in", new Point(25, window_height - 25), HersheyFonts.HersheyPlain, 1.0, hotkeys_clr, 1);
+        Cv2.PutText(background, "Press 'o' to zoom out", new Point(25, window_height - 15), HersheyFonts.HersheyPlain, 1.0, hotkeys_clr, 1);
     }
 
     // Utils
-    Point toCVPoint(double x, double z)
-    {
+    Point toCVPoint(double x, double z) {
         return new Point((x - x_min) / x_step, (z - z_min) / z_step);
     }
 
-    Point toCVPoint(Vector3 position, sl.Pose pose)
-    {
+    Point toCVPoint(Vector3 position, sl.Pose pose) {
         // Go to camera current pose
         Quaternion rotation = pose.rotation;
         Quaternion rotation_inv = Quaternion.Inverse(rotation);
@@ -618,8 +583,7 @@ public class TrackingViewer
         return new Point((int)((new_position.X - x_min) / x_step + .5f), (int)((new_position.Z - z_min) / z_step + .5f));
     }
 
-    Point toCVPoint(TrackPoint position, sl.Pose pose)
-    {
+    Point toCVPoint(TrackPoint position, sl.Pose pose) {
         Vector3 sl_position = position.toVector3();
         return toCVPoint(sl_position, pose);
     }

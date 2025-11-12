@@ -1,34 +1,31 @@
 #include "GLViewer.hpp"
 #include <random>
 
-
 #if defined(_DEBUG) && defined(_WIN32)
-//#error "This sample should not be built in Debug mode, use RelWithDebInfo if you want to do step by step."
+// #error "This sample should not be built in Debug mode, use RelWithDebInfo if you want to do step by step."
 #endif
 
 #define FADED_RENDERING
 const float grid_size = 10.0f;
 
-const GLchar* VERTEX_SHADER =
-        "#version 330 core\n"
-        "layout(location = 0) in vec3 in_Vertex;\n"
-        "layout(location = 1) in vec4 in_Color;\n"
-        "uniform mat4 u_mvpMatrix;\n"
-        "out vec4 b_color;\n"
-        "void main() {\n"
-        "   b_color = in_Color;\n"
-        "	gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
-        "}";
+const GLchar* VERTEX_SHADER = "#version 330 core\n"
+                              "layout(location = 0) in vec3 in_Vertex;\n"
+                              "layout(location = 1) in vec4 in_Color;\n"
+                              "uniform mat4 u_mvpMatrix;\n"
+                              "out vec4 b_color;\n"
+                              "void main() {\n"
+                              "   b_color = in_Color;\n"
+                              "	gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
+                              "}";
 
-const GLchar* FRAGMENT_SHADER =
-        "#version 330 core\n"
-        "in vec4 b_color;\n"
-        "layout(location = 0) out vec4 out_Color;\n"
-        "void main() {\n"
-        "   out_Color = b_color;\n"
-        "}";
+const GLchar* FRAGMENT_SHADER = "#version 330 core\n"
+                                "in vec4 b_color;\n"
+                                "layout(location = 0) out vec4 out_Color;\n"
+                                "void main() {\n"
+                                "   out_Color = b_color;\n"
+                                "}";
 
-void addVert(Simple3DObject &obj, float i_f, float limit, float height, sl::float4 &clr) {
+void addVert(Simple3DObject& obj, float i_f, float limit, float height, sl::float4& clr) {
     auto p1 = sl::float3(i_f, height, -limit);
     auto p2 = sl::float3(i_f, height, limit);
     auto p3 = sl::float3(-limit, height, i_f);
@@ -40,15 +37,15 @@ void addVert(Simple3DObject &obj, float i_f, float limit, float height, sl::floa
 
 GLViewer* currentInstance_ = nullptr;
 
-GLViewer::GLViewer() : available(false) {
+GLViewer::GLViewer()
+    : available(false) {
     currentInstance_ = this;
     mouseButton_[0] = mouseButton_[1] = mouseButton_[2] = false;
     clearInputs();
     previousMouseMotion_[0] = previousMouseMotion_[1] = 0;
 }
 
-GLViewer::~GLViewer() {
-}
+GLViewer::~GLViewer() { }
 
 void GLViewer::exit() {
     if (available) {
@@ -75,20 +72,20 @@ Simple3DObject createFrustum(sl::CameraParameters param) {
     float fy_ = 1.f / param.fy;
 
     cam_1.z = Z_;
-    cam_1.x = (0 - param.cx) * Z_ *fx_;
-    cam_1.y = (0 - param.cy) * Z_ *fy_;
+    cam_1.x = (0 - param.cx) * Z_ * fx_;
+    cam_1.y = (0 - param.cy) * Z_ * fy_;
 
     cam_2.z = Z_;
-    cam_2.x = (param.image_size.width - param.cx) * Z_ *fx_;
-    cam_2.y = (0 - param.cy) * Z_ *fy_;
+    cam_2.x = (param.image_size.width - param.cx) * Z_ * fx_;
+    cam_2.y = (0 - param.cy) * Z_ * fy_;
 
     cam_3.z = Z_;
-    cam_3.x = (param.image_size.width - param.cx) * Z_ *fx_;
-    cam_3.y = (param.image_size.height - param.cy) * Z_ *fy_;
+    cam_3.x = (param.image_size.width - param.cx) * Z_ * fx_;
+    cam_3.y = (param.image_size.height - param.cy) * Z_ * fy_;
 
     cam_4.z = Z_;
-    cam_4.x = (0 - param.cx) * Z_ *fx_;
-    cam_4.y = (param.image_size.height - param.cy) * Z_ *fy_;
+    cam_4.x = (0 - param.cx) * Z_ * fx_;
+    cam_4.y = (param.image_size.height - param.cy) * Z_ * fy_;
 
     sl::float4 clr(0.8f, 0.5f, 0.2f, 1.0f);
     it.addTriangle(cam_0, cam_1, cam_2, clr);
@@ -105,7 +102,7 @@ void CloseFunc(void) {
         currentInstance_->exit();
 }
 
-void GLViewer::init(int argc, char **argv, const sl::CameraParameters& param, bool isTrackingON) {
+void GLViewer::init(int argc, char** argv, const sl::CameraParameters& param, bool isTrackingON) {
     glutInit(&argc, argv);
     int wnd_w = glutGet(GLUT_SCREEN_WIDTH);
     int wnd_h = glutGet(GLUT_SCREEN_HEIGHT);
@@ -163,7 +160,7 @@ void GLViewer::init(int argc, char **argv, const sl::CameraParameters& param, bo
     sl::float4 clr_grid(80, 80, 80, 255);
     clr_grid /= 255.f;
     float height = -3;
-    for (int i = (int) (-limit); i <= (int) (limit); i++)
+    for (int i = (int)(-limit); i <= (int)(limit); i++)
         addVert(floor_grid, i * 1000, limit * 1000, height * 1000, clr_grid);
 
     floor_grid.pushToGPU();
@@ -191,7 +188,12 @@ void GLViewer::render() {
     }
 }
 
-void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs, sl::Transform& pose, const sl::CustomObjectDetectionRuntimeParameters& obj_runtime_params) {
+void GLViewer::updateData(
+    sl::Mat& matXYZRGBA,
+    std::vector<sl::ObjectData>& objs,
+    sl::Transform& pose,
+    const sl::CustomObjectDetectionRuntimeParameters& obj_runtime_params
+) {
     mtx.lock();
     pointCloud_.pushNewPC(matXYZRGBA);
     BBox_edges.clear();
@@ -207,11 +209,11 @@ void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs
 
         // We can still display the object even if it is tracked and static, even if its state is SEARCHING
         if (!show && isTrackingON_ && objs[i].tracking_state == sl::OBJECT_TRACKING_STATE::SEARCHING) {
-            if (obj_runtime_params.object_class_detection_properties.find(objs[i].raw_label) != obj_runtime_params.object_class_detection_properties.end()) {
+            if (obj_runtime_params.object_class_detection_properties.find(objs[i].raw_label)
+                != obj_runtime_params.object_class_detection_properties.end()) {
                 if (obj_runtime_params.object_class_detection_properties.at(objs[i].raw_label).is_static)
                     show = true;
-            }
-            else {
+            } else {
                 if (obj_runtime_params.object_detection_properties.is_static)
                     show = true;
             }
@@ -220,7 +222,7 @@ void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs
         if (show) {
             auto bb_ = objs[i].bounding_box;
             if (!bb_.empty()) {
-                auto clr_class = getColorClass((int) objs[i].raw_label);
+                auto clr_class = getColorClass((int)objs[i].raw_label);
                 auto clr_id = generateColorID_f(objs[i].id);
 
                 if (objs[i].tracking_state != sl::OBJECT_TRACKING_STATE::OK)
@@ -244,8 +246,8 @@ void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs
                     BBox_edges.addLine(centroid3, centroid4, sl::float4(1.f, 0.5f, 0.5f, 1.f));
                 }
 
-                //Display sekeleton if available
-                #if 0
+// Display sekeleton if available
+#if 0
                 auto clr_bones = generateColorID_f(objs[i].id);
                 auto keypoints = objs[i].keypoint;
                 if (keypoints.size() > 0) {
@@ -256,7 +258,7 @@ void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs
                             skeletons.addLine(kp_1, kp_2, clr_bones);
                     }
                 }
-                #endif
+#endif
                 createBboxRendering(bb_, clr_id);
             }
         }
@@ -264,7 +266,7 @@ void GLViewer::updateData(sl::Mat &matXYZRGBA, std::vector<sl::ObjectData> &objs
     mtx.unlock();
 }
 
-void GLViewer::createBboxRendering(std::vector<sl::float3> &bbox, sl::float4 bbox_clr) {
+void GLViewer::createBboxRendering(std::vector<sl::float3>& bbox, sl::float4 bbox_clr) {
     // First create top and bottom full edges
     BBox_edges.addFullEdges(bbox, bbox_clr);
     // Add faded vertical edges
@@ -275,7 +277,7 @@ void GLViewer::createBboxRendering(std::vector<sl::float3> &bbox, sl::float4 bbo
     BBox_faces.addTopFace(bbox, bbox_clr);
 }
 
-void GLViewer::createIDRendering(sl::float3 & center, sl::float4 clr, unsigned int id) {
+void GLViewer::createIDRendering(sl::float3& center, sl::float4 clr, unsigned int id) {
     ObjectClassName tmp;
     tmp.name = "ID: " + std::to_string(id);
     tmp.color = clr;
@@ -291,7 +293,7 @@ void GLViewer::update() {
 
     if (keyStates_['r'] == KEY_STATE::UP || keyStates_['R'] == KEY_STATE::UP) {
         camera_.setPosition(sl::Translation(0.0f, 0.0f, 1500.0f));
-        //camera_.setOffsetFromPosition(sl::Translation(0.0f, 0.0f, 1500.0f));
+        // camera_.setOffsetFromPosition(sl::Translation(0.0f, 0.0f, 1500.0f));
         camera_.setDirection(sl::Translation(0.0f, 0.0f, 1.0f), sl::Translation(0.0f, 1.0f, 0.0f));
     }
 
@@ -304,23 +306,23 @@ void GLViewer::update() {
 
     // Rotate camera with mouse
     if (mouseButton_[MOUSE_BUTTON::LEFT]) {
-        camera_.rotate(sl::Rotation((float) mouseMotion_[1] * MOUSE_R_SENSITIVITY, camera_.getRight()));
-        camera_.rotate(sl::Rotation((float) mouseMotion_[0] * MOUSE_R_SENSITIVITY, camera_.getVertical() * -1.f));
+        camera_.rotate(sl::Rotation((float)mouseMotion_[1] * MOUSE_R_SENSITIVITY, camera_.getRight()));
+        camera_.rotate(sl::Rotation((float)mouseMotion_[0] * MOUSE_R_SENSITIVITY, camera_.getVertical() * -1.f));
     }
 
     // Translate camera with mouse
     if (mouseButton_[MOUSE_BUTTON::RIGHT]) {
-        camera_.translate(camera_.getUp() * (float) mouseMotion_[1] * MOUSE_T_SENSITIVITY * 1000);
-        camera_.translate(camera_.getRight() * (float) mouseMotion_[0] * MOUSE_T_SENSITIVITY * 1000);
+        camera_.translate(camera_.getUp() * (float)mouseMotion_[1] * MOUSE_T_SENSITIVITY * 1000);
+        camera_.translate(camera_.getRight() * (float)mouseMotion_[0] * MOUSE_T_SENSITIVITY * 1000);
     }
 
     // Zoom in with mouse wheel
     if (mouseWheelPosition_ != 0) {
-        //float distance = sl::Translation(camera_.getOffsetFromPosition()).norm();
+        // float distance = sl::Translation(camera_.getOffsetFromPosition()).norm();
         if (mouseWheelPosition_ > 0 /* && distance > camera_.getZNear()*/) { // zoom
             camera_.translate(camera_.getForward() * MOUSE_UZ_SENSITIVITY * 1000 * -1);
-        } else if (/*distance < camera_.getZFar()*/ mouseWheelPosition_ < 0) {// unzoom
-            //camera_.setOffsetFromPosition(camera_.getOffsetFromPosition() * MOUSE_DZ_SENSITIVITY);
+        } else if (/*distance < camera_.getZFar()*/ mouseWheelPosition_ < 0) { // unzoom
+            // camera_.setOffsetFromPosition(camera_.getOffsetFromPosition() * MOUSE_DZ_SENSITIVITY);
             camera_.translate(camera_.getForward() * MOUSE_UZ_SENSITIVITY * 1000);
         }
     }
@@ -365,7 +367,7 @@ void GLViewer::draw() {
     glUseProgram(0);
 }
 
-sl::float2 compute3Dprojection(sl::float3 &pt, const sl::Transform &cam, sl::Resolution wnd_size) {
+sl::float2 compute3Dprojection(sl::float3& pt, const sl::Transform& cam, sl::Resolution wnd_size) {
     sl::float4 pt4d(pt.x, pt.y, pt.z, 1.);
     auto proj3D_cam = pt4d * cam;
     proj3D_cam.y += 1000.f;
@@ -381,9 +383,9 @@ void GLViewer::printText() {
     for (auto it : objectsName) {
         auto pt2d = compute3Dprojection(it.position, vpMatrix, wnd_size);
         glColor4f(it.color.b, it.color.g, it.color.r, it.color.a);
-        const auto *string = it.name.c_str();
+        const auto* string = it.name.c_str();
         glWindowPos2f(pt2d.x, pt2d.y);
-        int len = (int) strlen(string);
+        int len = (int)strlen(string);
         for (int i = 0; i < len; i++)
             glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, string[i]);
     }
@@ -444,7 +446,8 @@ void GLViewer::idle() {
     glutPostRedisplay();
 }
 
-Simple3DObject::Simple3DObject(sl::Translation position, bool isStatic) : isStatic_(isStatic) {
+Simple3DObject::Simple3DObject(sl::Translation position, bool isStatic)
+    : isStatic_(isStatic) {
     vaoID_ = 0;
     drawingType_ = GL_TRIANGLES;
     position_ = position;
@@ -458,7 +461,7 @@ Simple3DObject::~Simple3DObject() {
     }
 }
 
-void Simple3DObject::addBBox(std::vector<sl::float3> &pts, sl::float4 clr) {
+void Simple3DObject::addBBox(std::vector<sl::float3>& pts, sl::float4 clr) {
     int start_id = vertices_.size() / 3;
 
     float transparency_top = 0.05f, transparency_bottom = 0.75f;
@@ -492,7 +495,7 @@ void Simple3DObject::addClr(sl::float4 clr) {
 void Simple3DObject::addPoint(sl::float3 pt, sl::float4 clr) {
     addPt(pt);
     addClr(clr);
-    indices_.push_back((int) indices_.size());
+    indices_.push_back((int)indices_.size());
 }
 
 void Simple3DObject::addLine(sl::float3 p1, sl::float3 p2, sl::float4 clr) {
@@ -506,7 +509,7 @@ void Simple3DObject::addTriangle(sl::float3 p1, sl::float3 p2, sl::float3 p3, sl
     addPoint(p3, clr);
 }
 
-void Simple3DObject::addFullEdges(std::vector<sl::float3> &pts, sl::float4 clr) {
+void Simple3DObject::addFullEdges(std::vector<sl::float3>& pts, sl::float4 clr) {
     clr.w = 0.4f;
 
     int start_id = vertices_.size() / 3;
@@ -529,15 +532,16 @@ void Simple3DObject::addFullEdges(std::vector<sl::float3> &pts, sl::float4 clr) 
     }
 }
 
-void Simple3DObject::addVerticalEdges(std::vector<sl::float3> &pts, sl::float4 clr) {
+void Simple3DObject::addVerticalEdges(std::vector<sl::float3>& pts, sl::float4 clr) {
     auto addSingleVerticalLine = [&](sl::float3 top_pt, sl::float3 bot_pt) {
-        std::vector<sl::float3> current_pts{
+        std::vector<sl::float3> current_pts {
             top_pt,
             ((grid_size - 1.0f) * top_pt + bot_pt) / grid_size,
             ((grid_size - 2.0f) * top_pt + bot_pt * 2.0f) / grid_size,
             (2.0f * top_pt + bot_pt * (grid_size - 2.0f)) / grid_size,
             (top_pt + bot_pt * (grid_size - 1.0f)) / grid_size,
-            bot_pt};
+            bot_pt
+        };
 
         int start_id = vertices_.size() / 3;
         for (unsigned int i = 0; i < current_pts.size(); i++) {
@@ -559,13 +563,13 @@ void Simple3DObject::addVerticalEdges(std::vector<sl::float3> &pts, sl::float4 c
     addSingleVerticalLine(pts[3], pts[7]);
 }
 
-void Simple3DObject::addTopFace(std::vector<sl::float3> &pts, sl::float4 clr) {
+void Simple3DObject::addTopFace(std::vector<sl::float3>& pts, sl::float4 clr) {
     clr.a = 0.3f;
     for (auto it : pts)
         addPoint(it, clr);
 }
 
-void Simple3DObject::addVerticalFaces(std::vector<sl::float3> &pts, sl::float4 clr) {
+void Simple3DObject::addVerticalFaces(std::vector<sl::float3>& pts, sl::float4 clr) {
     auto addQuad = [&](std::vector<sl::float3> quad_pts, float alpha1, float alpha2) { // To use only with 4 points
         for (unsigned int i = 0; i < quad_pts.size(); ++i) {
             addPt(quad_pts[i]);
@@ -573,88 +577,87 @@ void Simple3DObject::addVerticalFaces(std::vector<sl::float3> &pts, sl::float4 c
             addClr(clr);
         }
 
-        indices_.push_back((int) indices_.size());
-        indices_.push_back((int) indices_.size());
-        indices_.push_back((int) indices_.size());
-        indices_.push_back((int) indices_.size());
+        indices_.push_back((int)indices_.size());
+        indices_.push_back((int)indices_.size());
+        indices_.push_back((int)indices_.size());
+        indices_.push_back((int)indices_.size());
     };
 
     // For each face, we need to add 4 quads (the first 2 indexes are always the top points of the quad)
-    std::vector<std::vector<int>> quads
-    {
-        {
-            0, 3, 7, 4
-        }, // front face
-        {
-            3, 2, 6, 7
-        }, // right face
-        {
-            2, 1, 5, 6
-        }, // back face
-        {
-            1, 0, 4, 5
-        } // left face
+    std::vector<std::vector<int>> quads {
+        {0, 3, 7, 4}, // front face
+        {3, 2, 6, 7}, // right face
+        {2, 1, 5, 6}, // back face
+        {1, 0, 4, 5}  // left face
     };
     float alpha = 0.5f;
 
     for (const auto quad : quads) {
 
         // Top quads
-        std::vector<sl::float3> quad_pts_1{
+        std::vector<sl::float3> quad_pts_1 {
             pts[quad[0]],
             pts[quad[1]],
             ((grid_size - 0.5f) * pts[quad[1]] + 0.5f * pts[quad[2]]) / grid_size,
-            ((grid_size - 0.5f) * pts[quad[0]] + 0.5f * pts[quad[3]]) / grid_size};
+            ((grid_size - 0.5f) * pts[quad[0]] + 0.5f * pts[quad[3]]) / grid_size
+        };
         addQuad(quad_pts_1, alpha, alpha);
 
-        std::vector<sl::float3> quad_pts_2{
+        std::vector<sl::float3> quad_pts_2 {
             ((grid_size - 0.5f) * pts[quad[0]] + 0.5f * pts[quad[3]]) / grid_size,
             ((grid_size - 0.5f) * pts[quad[1]] + 0.5f * pts[quad[2]]) / grid_size,
             ((grid_size - 1.0f) * pts[quad[1]] + pts[quad[2]]) / grid_size,
-            ((grid_size - 1.0f) * pts[quad[0]] + pts[quad[3]]) / grid_size};
+            ((grid_size - 1.0f) * pts[quad[0]] + pts[quad[3]]) / grid_size
+        };
         addQuad(quad_pts_2, alpha, 2 * alpha / 3);
 
-        std::vector<sl::float3> quad_pts_3{
+        std::vector<sl::float3> quad_pts_3 {
             ((grid_size - 1.0f) * pts[quad[0]] + pts[quad[3]]) / grid_size,
             ((grid_size - 1.0f) * pts[quad[1]] + pts[quad[2]]) / grid_size,
             ((grid_size - 1.5f) * pts[quad[1]] + 1.5f * pts[quad[2]]) / grid_size,
-            ((grid_size - 1.5f) * pts[quad[0]] + 1.5f * pts[quad[3]]) / grid_size};
+            ((grid_size - 1.5f) * pts[quad[0]] + 1.5f * pts[quad[3]]) / grid_size
+        };
         addQuad(quad_pts_3, 2 * alpha / 3, alpha / 3);
 
-        std::vector<sl::float3> quad_pts_4{
+        std::vector<sl::float3> quad_pts_4 {
             ((grid_size - 1.5f) * pts[quad[0]] + 1.5f * pts[quad[3]]) / grid_size,
             ((grid_size - 1.5f) * pts[quad[1]] + 1.5f * pts[quad[2]]) / grid_size,
             ((grid_size - 2.0f) * pts[quad[1]] + 2.0f * pts[quad[2]]) / grid_size,
-            ((grid_size - 2.0f) * pts[quad[0]] + 2.0f * pts[quad[3]]) / grid_size};
+            ((grid_size - 2.0f) * pts[quad[0]] + 2.0f * pts[quad[3]]) / grid_size
+        };
         addQuad(quad_pts_4, alpha / 3, 0.0f);
 
         // Bottom quads
-        std::vector<sl::float3> quad_pts_5{
+        std::vector<sl::float3> quad_pts_5 {
             (pts[quad[1]] * 2.0f + (grid_size - 2.0f) * pts[quad[2]]) / grid_size,
             (pts[quad[0]] * 2.0f + (grid_size - 2.0f) * pts[quad[3]]) / grid_size,
             (pts[quad[0]] * 1.5f + (grid_size - 1.5f) * pts[quad[3]]) / grid_size,
-            (pts[quad[1]] * 1.5f + (grid_size - 1.5f) * pts[quad[2]]) / grid_size};
+            (pts[quad[1]] * 1.5f + (grid_size - 1.5f) * pts[quad[2]]) / grid_size
+        };
         addQuad(quad_pts_5, 0.0f, alpha / 3);
 
-        std::vector<sl::float3> quad_pts_6{
+        std::vector<sl::float3> quad_pts_6 {
             (pts[quad[1]] * 1.5f + (grid_size - 1.5f) * pts[quad[2]]) / grid_size,
             (pts[quad[0]] * 1.5f + (grid_size - 1.5f) * pts[quad[3]]) / grid_size,
             (pts[quad[0]] + (grid_size - 1.0f) * pts[quad[3]]) / grid_size,
-            (pts[quad[1]] + (grid_size - 1.0f) * pts[quad[2]]) / grid_size};
+            (pts[quad[1]] + (grid_size - 1.0f) * pts[quad[2]]) / grid_size
+        };
         addQuad(quad_pts_6, alpha / 3, 2 * alpha / 3);
 
-        std::vector<sl::float3> quad_pts_7{
+        std::vector<sl::float3> quad_pts_7 {
             (pts[quad[1]] + (grid_size - 1.0f) * pts[quad[2]]) / grid_size,
             (pts[quad[0]] + (grid_size - 1.0f) * pts[quad[3]]) / grid_size,
             (pts[quad[0]] * 0.5f + (grid_size - 0.5f) * pts[quad[3]]) / grid_size,
-            (pts[quad[1]] * 0.5f + (grid_size - 0.5f) * pts[quad[2]]) / grid_size};
+            (pts[quad[1]] * 0.5f + (grid_size - 0.5f) * pts[quad[2]]) / grid_size
+        };
         addQuad(quad_pts_7, 2 * alpha / 3, alpha);
 
-        std::vector<sl::float3> quad_pts_8{
+        std::vector<sl::float3> quad_pts_8 {
             (pts[quad[0]] * 0.5f + (grid_size - 0.5f) * pts[quad[3]]) / grid_size,
             (pts[quad[1]] * 0.5f + (grid_size - 0.5f) * pts[quad[2]]) / grid_size,
             pts[quad[2]],
-            pts[quad[3]]};
+            pts[quad[3]]
+        };
         addQuad(quad_pts_8, alpha, alpha);
     }
 }
@@ -669,21 +672,26 @@ void Simple3DObject::pushToGPU() {
         if (vertices_.size() > 0) {
             glBindVertexArray(vaoID_);
             glBindBuffer(GL_ARRAY_BUFFER, vboID_[0]);
-            glBufferData(GL_ARRAY_BUFFER, vertices_.size() * sizeof (float), &vertices_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, vertices_.size() * sizeof(float), &vertices_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
             glVertexAttribPointer(Shader::ATTRIB_VERTICES_POS, 3, GL_FLOAT, GL_FALSE, 0, 0);
             glEnableVertexAttribArray(Shader::ATTRIB_VERTICES_POS);
         }
 
         if (colors_.size() > 0) {
             glBindBuffer(GL_ARRAY_BUFFER, vboID_[1]);
-            glBufferData(GL_ARRAY_BUFFER, colors_.size() * sizeof (float), &colors_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, colors_.size() * sizeof(float), &colors_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
             glVertexAttribPointer(Shader::ATTRIB_COLOR_POS, 4, GL_FLOAT, GL_FALSE, 0, 0);
             glEnableVertexAttribArray(Shader::ATTRIB_COLOR_POS);
         }
 
         if (indices_.size() > 0) {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID_[2]);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_.size() * sizeof (unsigned int), &indices_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
+            glBufferData(
+                GL_ELEMENT_ARRAY_BUFFER,
+                indices_.size() * sizeof(unsigned int),
+                &indices_[0],
+                isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW
+            );
         }
 
         glBindVertexArray(0);
@@ -705,7 +713,7 @@ void Simple3DObject::setDrawingType(GLenum type) {
 void Simple3DObject::draw() {
     if (indices_.size() && vaoID_) {
         glBindVertexArray(vaoID_);
-        glDrawElements(drawingType_, (GLsizei) indices_.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(drawingType_, (GLsizei)indices_.size(), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 }
@@ -779,7 +787,7 @@ void Shader::set(const GLchar* vs, const GLchar* fs) {
         GLint errorSize(0);
         glGetProgramiv(programId_, GL_INFO_LOG_LENGTH, &errorSize);
 
-        char *error = new char[errorSize + 1];
+        char* error = new char[errorSize + 1];
         glGetShaderInfoLog(programId_, errorSize, &errorSize, error);
         error[errorSize] = '\0';
         std::cout << error << std::endl;
@@ -802,13 +810,13 @@ GLuint Shader::getProgramId() {
     return programId_;
 }
 
-bool Shader::compile(GLuint &shaderId, GLenum type, const GLchar* src) {
+bool Shader::compile(GLuint& shaderId, GLenum type, const GLchar* src) {
     shaderId = glCreateShader(type);
     if (shaderId == 0) {
         std::cout << "ERROR: shader type (" << type << ") does not exist" << std::endl;
         return false;
     }
-    glShaderSource(shaderId, 1, (const char**) &src, 0);
+    glShaderSource(shaderId, 1, (const char**)&src, 0);
     glCompileShader(shaderId);
 
     GLint errorCp(0);
@@ -818,7 +826,7 @@ bool Shader::compile(GLuint &shaderId, GLenum type, const GLchar* src) {
         GLint errorSize(0);
         glGetShaderiv(shaderId, GL_INFO_LOG_LENGTH, &errorSize);
 
-        char *error = new char[errorSize + 1];
+        char* error = new char[errorSize + 1];
         glGetShaderInfoLog(shaderId, errorSize, &errorSize, error);
         error[errorSize] = '\0';
         std::cout << error << std::endl;
@@ -830,29 +838,29 @@ bool Shader::compile(GLuint &shaderId, GLenum type, const GLchar* src) {
     return true;
 }
 
-const GLchar* POINTCLOUD_VERTEX_SHADER =
-        "#version 330 core\n"
-        "layout(location = 0) in vec4 in_VertexRGBA;\n"
-        "uniform mat4 u_mvpMatrix;\n"
-        "out vec4 b_color;\n"
-        "void main() {\n"
-        // Decompose the 4th channel of the XYZRGBA buffer to retrieve the color of the point (1float to 4uint)
-        "   uint vertexColor = floatBitsToUint(in_VertexRGBA.w); \n"
-        "   vec3 clr_int = vec3((vertexColor & uint(0x000000FF)), (vertexColor & uint(0x0000FF00)) >> 8, (vertexColor & uint(0x00FF0000)) >> 16);\n"
-        "   b_color = vec4(clr_int.r / 255.0f, clr_int.g / 255.0f, clr_int.b / 255.0f, 1.f);"
-        "	gl_Position = u_mvpMatrix * vec4(in_VertexRGBA.xyz, 1);\n"
-        "}";
+const GLchar* POINTCLOUD_VERTEX_SHADER
+    = "#version 330 core\n"
+      "layout(location = 0) in vec4 in_VertexRGBA;\n"
+      "uniform mat4 u_mvpMatrix;\n"
+      "out vec4 b_color;\n"
+      "void main() {\n"
+      // Decompose the 4th channel of the XYZRGBA buffer to retrieve the color of the point (1float to 4uint)
+      "   uint vertexColor = floatBitsToUint(in_VertexRGBA.w); \n"
+      "   vec3 clr_int = vec3((vertexColor & uint(0x000000FF)), (vertexColor & uint(0x0000FF00)) >> 8, (vertexColor & uint(0x00FF0000)) >> "
+      "16);\n"
+      "   b_color = vec4(clr_int.r / 255.0f, clr_int.g / 255.0f, clr_int.b / 255.0f, 1.f);"
+      "	gl_Position = u_mvpMatrix * vec4(in_VertexRGBA.xyz, 1);\n"
+      "}";
 
-const GLchar* POINTCLOUD_FRAGMENT_SHADER =
-        "#version 330 core\n"
-        "in vec4 b_color;\n"
-        "layout(location = 0) out vec4 out_Color;\n"
-        "void main() {\n"
-        "   out_Color = b_color;\n"
-        "}";
+const GLchar* POINTCLOUD_FRAGMENT_SHADER = "#version 330 core\n"
+                                           "in vec4 b_color;\n"
+                                           "layout(location = 0) out vec4 out_Color;\n"
+                                           "void main() {\n"
+                                           "   out_Color = b_color;\n"
+                                           "}";
 
-PointCloud::PointCloud() : hasNewPCL_(false) {
-}
+PointCloud::PointCloud()
+    : hasNewPCL_(false) { }
 
 PointCloud::~PointCloud() {
     close();
@@ -874,7 +882,7 @@ void PointCloud::close() {
 void PointCloud::initialize(sl::Resolution res) {
     glGenBuffers(1, &bufferGLID_);
     glBindBuffer(GL_ARRAY_BUFFER, bufferGLID_);
-    glBufferData(GL_ARRAY_BUFFER, res.area() * 4 * sizeof (float), 0, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, res.area() * 4 * sizeof(float), 0, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     checkError(cudaGraphicsGLRegisterBuffer(&bufferCudaID_, bufferGLID_, cudaGraphicsRegisterFlagsWriteDiscard));
@@ -885,10 +893,10 @@ void PointCloud::initialize(sl::Resolution res) {
     matGPU_.alloc(res, sl::MAT_TYPE::F32_C4, sl::MEM::GPU);
 
     checkError(cudaGraphicsMapResources(1, &bufferCudaID_, 0));
-    checkError(cudaGraphicsResourceGetMappedPointer((void**) &xyzrgbaMappedBuf_, &numBytes_, bufferCudaID_));
+    checkError(cudaGraphicsResourceGetMappedPointer((void**)&xyzrgbaMappedBuf_, &numBytes_, bufferCudaID_));
 }
 
-void PointCloud::pushNewPC(sl::Mat &matXYZRGBA) {
+void PointCloud::pushNewPC(sl::Mat& matXYZRGBA) {
     if (matGPU_.isInit()) {
         matGPU_.setFrom(matXYZRGBA, sl::COPY_TYPE::GPU_GPU);
         hasNewPCL_ = true;
@@ -932,8 +940,7 @@ CameraGL::CameraGL(sl::Translation position, sl::Translation direction, sl::Tran
     updateVPMatrix();
 }
 
-CameraGL::~CameraGL() {
-}
+CameraGL::~CameraGL() { }
 
 void CameraGL::update() {
     if (sl::Translation::dot(vertical_, up_) < 0)

@@ -33,7 +33,7 @@
 using namespace sl;
 using namespace std;
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     // Create a ZED camera
     CameraOne zed;
 
@@ -45,14 +45,16 @@ int main(int argc, char **argv) {
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
 
     StreamingParameters stream_params;
-    if (argc == 2 && res_arg == 1) stream_params.port = atoi(argv[1]);
-    if (argc > 2) stream_params.port = atoi(argv[2]);
+    if (argc == 2 && res_arg == 1)
+        stream_params.port = atoi(argv[1]);
+    if (argc > 2)
+        stream_params.port = atoi(argv[2]);
 
     returned_state = zed.enableStreaming(stream_params);
     if (returned_state != ERROR_CODE::SUCCESS) {

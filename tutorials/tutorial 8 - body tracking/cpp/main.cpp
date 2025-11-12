@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         cout << "Error " << returned_state << ", exit program.\n";
         return EXIT_FAILURE;
     }
@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
     int nb_detection = 0;
     while (nb_detection < 100) {
 
-        if (zed.grab() == ERROR_CODE::SUCCESS) {
+        if (zed.grab() <= ERROR_CODE::SUCCESS) {
             zed.retrieveBodies(bodies, detection_parameters_rt);
 
             if (bodies.is_new) {
@@ -97,11 +97,10 @@ int main(int argc, char** argv) {
                     cout << " Confidence (" << first_object.confidence << "/100)\n";
 
                     if (detection_parameters.enable_tracking)
-                        cout << " Tracking ID: " << first_object.id << " tracking state: " <<
-                            first_object.tracking_state << " / " << first_object.action_state << "\n";
+                        cout << " Tracking ID: " << first_object.id << " tracking state: " << first_object.tracking_state << " / "
+                             << first_object.action_state << "\n";
 
-                    cout << " 3D position: " << first_object.position <<
-                            " Velocity: " << first_object.velocity << "\n";
+                    cout << " 3D position: " << first_object.position << " Velocity: " << first_object.velocity << "\n";
 
                     cout << " 3D dimensions: " << first_object.dimensions << "\n";
 
@@ -109,15 +108,15 @@ int main(int argc, char** argv) {
                     // The body part meaning can be obtained by casting the index into a BODY_PARTS
                     // to get the BODY_PARTS index the getIdx function is available
                     for (int i = 0; i < first_object.keypoint_2d.size(); i++) {
-                        auto &kp = first_object.keypoint_2d[i];
+                        auto& kp = first_object.keypoint_2d[i];
                         cout << "    " << i << " " << kp.x << ", " << kp.y << "\n";
                     }
 
                     // The BODY_PARTS can be link as bones, using sl::BODY_BONES which gives the BODY_PARTS pair for each
                     cout << " Keypoints 3D \n";
                     for (int i = 0; i < first_object.keypoint.size(); i++) {
-                        auto &kp = first_object.keypoint[i];
-                        cout << "    " <<  i << " " << kp.x << ", " << kp.y << ", " << kp.z << "\n";
+                        auto& kp = first_object.keypoint[i];
+                        cout << "    " << i << " " << kp.x << ", " << kp.y << ", " << kp.z << "\n";
                     }
 
                     cout << "\nPress 'Enter' to continue...\n";

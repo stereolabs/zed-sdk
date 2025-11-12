@@ -33,7 +33,7 @@ def main():
     init_params = sl.InitParameters()
     init_params.sdk_verbose = 1 
     status = zed.open(init_params)
-    if status != sl.ERROR_CODE.SUCCESS:
+    if status > sl.ERROR_CODE.SUCCESS:
         print("[ZED][ERROR] Camera Open : "+repr(status)+". Exit program.")
         exit()
 

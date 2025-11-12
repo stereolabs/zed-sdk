@@ -18,13 +18,12 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-
 /****************************************************************************************************
  ** This sample demonstrates how to grab and process images/depth on a CUDA kernel                 **
  ** This sample creates a simple layered depth-of-filed rendering based on CUDAconvolution sample  **
  ****************************************************************************************************/
 
- // ZED SDK include
+// ZED SDK include
 #include <sl/Camera.hpp>
 
 // OpenGL extensions
@@ -34,7 +33,7 @@
 // CUDA specific for OpenGL interoperability
 #include <cuda_gl_interop.h>
 
-// CUDA functions 
+// CUDA functions
 #include "dof_gpu.h"
 
 using namespace sl;
@@ -84,19 +83,51 @@ void draw() {
         float max_range = zed.getInitParameters().depth_maximum_distance;
         float min_range = zed.getInitParameters().depth_minimum_distance;
 
-
-        normalizeDepth(gpu_depth.getPtr<float>(MEM::GPU), gpu_depth_normalized.getPtr<float>(MEM::GPU), gpu_depth.getStep(MEM::GPU), min_range, max_range, gpu_depth.getWidth(), gpu_depth.getHeight());
-        convolutionRows(gpu_image_convol.getPtr<sl::uchar4>(MEM::GPU), gpu_image_left.getPtr<sl::uchar4>(MEM::GPU), gpu_depth_normalized.getPtr<float>(MEM::GPU), gpu_image_left.getWidth(), gpu_image_left.getHeight(), gpu_depth_normalized.getStep(MEM::GPU), norm_depth_focus_point);
-        convolutionColumns(gpu_Image_render.getPtr<sl::uchar4>(MEM::GPU), gpu_image_convol.getPtr<sl::uchar4>(MEM::GPU), gpu_depth_normalized.getPtr<float>(MEM::GPU), gpu_image_left.getWidth(), gpu_image_left.getHeight(), gpu_depth_normalized.getStep(MEM::GPU), norm_depth_focus_point);
+        normalizeDepth(
+            gpu_depth.getPtr<float>(MEM::GPU),
+            gpu_depth_normalized.getPtr<float>(MEM::GPU),
+            gpu_depth.getStep(MEM::GPU),
+            min_range,
+            max_range,
+            gpu_depth.getWidth(),
+            gpu_depth.getHeight()
+        );
+        convolutionRows(
+            gpu_image_convol.getPtr<sl::uchar4>(MEM::GPU),
+            gpu_image_left.getPtr<sl::uchar4>(MEM::GPU),
+            gpu_depth_normalized.getPtr<float>(MEM::GPU),
+            gpu_image_left.getWidth(),
+            gpu_image_left.getHeight(),
+            gpu_depth_normalized.getStep(MEM::GPU),
+            norm_depth_focus_point
+        );
+        convolutionColumns(
+            gpu_Image_render.getPtr<sl::uchar4>(MEM::GPU),
+            gpu_image_convol.getPtr<sl::uchar4>(MEM::GPU),
+            gpu_depth_normalized.getPtr<float>(MEM::GPU),
+            gpu_image_left.getWidth(),
+            gpu_image_left.getHeight(),
+            gpu_depth_normalized.getStep(MEM::GPU),
+            norm_depth_focus_point
+        );
 
         // Map to OpenGL and display
         cudaArray_t ArrIm;
         cudaGraphicsMapResources(1, &pcuImageRes, 0);
         cudaGraphicsSubResourceGetMappedArray(&ArrIm, pcuImageRes, 0, 0);
-        cudaMemcpy2DToArray(ArrIm, 0, 0, gpu_Image_render.getPtr<sl::uchar4>(MEM::GPU), gpu_Image_render.getStepBytes(MEM::GPU), gpu_Image_render.getWidth() * sizeof(sl::uchar4), gpu_Image_render.getHeight(), cudaMemcpyDeviceToDevice);
+        cudaMemcpy2DToArray(
+            ArrIm,
+            0,
+            0,
+            gpu_Image_render.getPtr<sl::uchar4>(MEM::GPU),
+            gpu_Image_render.getStepBytes(MEM::GPU),
+            gpu_Image_render.getWidth() * sizeof(sl::uchar4),
+            gpu_Image_render.getHeight(),
+            cudaMemcpyDeviceToDevice
+        );
         cudaGraphicsUnmapResources(1, &pcuImageRes, 0);
 
-        //OpenGL Part
+        // OpenGL Part
         glDrawBuffer(GL_BACK);
         glLoadIdentity();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -120,7 +151,7 @@ void draw() {
     glutPostRedisplay();
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
     if (argc > 2) {
         cout << "Only the path of a SVO can be passed in arg" << endl;
@@ -130,15 +161,15 @@ int main(int argc, char **argv) {
     // Init glut
     glutInit(&argc, argv);
 
-    //Create Window
+    // Create Window
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
     glutInitWindowPosition(50, 25);
     glutInitWindowSize(1280, 720);
     glutCreateWindow("ZED CUDA Refocus");
 
-    //init GLEW
+    // init GLEW
     glewInit();
-    
+
     InitParameters init_parameters;
     init_parameters.depth_mode = DEPTH_MODE::NEURAL;
     init_parameters.coordinate_units = UNIT::MILLIMETER;
@@ -146,7 +177,7 @@ int main(int argc, char **argv) {
 
     // Open the camera
     ERROR_CODE zed_open_state = zed.open(init_parameters);
-    if (zed_open_state != ERROR_CODE::SUCCESS) {
+    if (zed_open_state > ERROR_CODE::SUCCESS) {
         std::cout << "Error " << zed_open_state << ", exit program.\n";
         return EXIT_FAILURE;
     }
@@ -182,7 +213,7 @@ int main(int argc, char **argv) {
 
         // Compute Gaussian coeff
         int rad = (gauss_vec.size() - 1) / 2;
-        float sigma = 0.3f * ((gauss_vec.size() - 1.f)*0.5f - 1.f) + 0.8f;
+        float sigma = 0.3f * ((gauss_vec.size() - 1.f) * 0.5f - 1.f) + 0.8f;
         float sum = 0;
         for (int u = -rad; u <= rad; u++) {
             float gauss_value = expf(-1.f * (powf(u, 2.f) / (2.f * powf(sigma, 2.f))));
@@ -201,9 +232,9 @@ int main(int argc, char **argv) {
 
     glutDisplayFunc(draw);
     glutMouseFunc(mouseButtonCallback);
-    glutMainLoop(); // Start main loop 
+    glutMainLoop(); // Start main loop
 
-    //On close
+    // On close
     gpu_image_left.free();
     gpu_Image_render.free();
     gpu_depth.free();

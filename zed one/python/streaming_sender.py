@@ -57,7 +57,7 @@ def main(opt):
     parse_args(init, opt)
     cam = sl.CameraOne()
     status = cam.open(init)
-    if status != sl.ERROR_CODE.SUCCESS: #Ensure the camera has opened succesfully
+    if status > sl.ERROR_CODE.SUCCESS: #Ensure the camera has opened succesfully
         print("Camera Open : "+repr(status)+". Exit program.")
         exit()
     stream_params = sl.StreamingParameters()

@@ -41,7 +41,7 @@ def main(opt):
     init.async_image_retrieval = False; # This parameter can be used to record SVO in camera FPS even if the grab loop is running at a lower FPS (due to compute for ex.)
 
     status = cam.open(init) 
-    if status != sl.ERROR_CODE.SUCCESS: 
+    if status > sl.ERROR_CODE.SUCCESS: 
         print("Camera Open", status, "Exit program.")
         exit(1)
         

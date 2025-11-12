@@ -1,4 +1,4 @@
-#ifndef  __SENDER_RUNNER_HDR__
+#ifndef __SENDER_RUNNER_HDR__
 #define __SENDER_RUNNER_HDR__
 
 #include <sl/Camera.hpp>
@@ -6,7 +6,7 @@
 
 #include <thread>
 
-class ClientPublisher{
+class ClientPublisher {
 
 public:
     ClientPublisher();

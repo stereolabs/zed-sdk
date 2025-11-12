@@ -204,7 +204,7 @@ if __name__ == "__main__":
     init_params = sl.InitParameters()
     init_params.sdk_verbose = 1
     err = zed.open(init_params)
-    if err != sl.ERROR_CODE.SUCCESS:
+    if err > sl.ERROR_CODE.SUCCESS:
         print("❌ Failed to open ZED camera. Ensure it is connected and accessible.")
         exit(1)
     print("ZED camera opened successfully.")
@@ -216,7 +216,7 @@ if __name__ == "__main__":
     runtime_parameters = sl.RuntimeParameters()
     print("Retrieving image data...")
     while i < 50:
-        if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
+        if zed.grab(runtime_parameters) <= sl.ERROR_CODE.SUCCESS:
             # Retrieve colored point cloud. Point cloud is aligned on the left image.
             zed.retrieve_image(sl_img, sl.VIEW.LEFT, sl.MEM.GPU)
             retrieved = True

@@ -23,7 +23,7 @@
  **      with the ZED SDK and display the result                                **
  *********************************************************************************/
 
- // Standard includes
+// Standard includes
 #include <iostream>
 #include <fstream>
 
@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         cout << "Error " << returned_state << ", exit program.\n";
         return EXIT_FAILURE;
     }
@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
 
     // If you want to have object tracking you need to enable positional tracking first
     if (detection_parameters.enable_tracking)
-        zed.enablePositionalTracking();    
+        zed.enablePositionalTracking();
 
     cout << "Object Detection: Loading Module..." << endl;
     returned_state = zed.enableObjectDetection(detection_parameters);
@@ -80,26 +80,23 @@ int main(int argc, char** argv) {
     int nb_detection = 0;
     while (nb_detection < 100) {
 
-        if(zed.grab() == ERROR_CODE::SUCCESS){
-           zed.retrieveObjects(objects);
+        if (zed.grab() <= ERROR_CODE::SUCCESS) {
+            zed.retrieveObjects(objects);
 
             if (objects.is_new) {
-                cout << objects.object_list.size() << " Object(s) detected ("
-                     << zed.getCurrentFPS() << " FPS)\n\n";
+                cout << objects.object_list.size() << " Object(s) detected (" << zed.getCurrentFPS() << " FPS)\n\n";
                 if (!objects.object_list.empty()) {
 
                     auto first_object = objects.object_list.front();
 
                     cout << "First object attributes :\n";
-                    cout << " Label '" << first_object.label << "' (conf. "
-                        << first_object.confidence << "/100)\n";
+                    cout << " Label '" << first_object.label << "' (conf. " << first_object.confidence << "/100)\n";
 
                     if (detection_parameters.enable_tracking)
-                        cout << " Tracking ID: " << first_object.id << " tracking state: " <<
-                        first_object.tracking_state << " / " << first_object.action_state << "\n";
+                        cout << " Tracking ID: " << first_object.id << " tracking state: " << first_object.tracking_state << " / "
+                             << first_object.action_state << "\n";
 
-                    cout << " 3D position: " << first_object.position <<
-                        " Velocity: " << first_object.velocity << "\n";
+                    cout << " 3D position: " << first_object.position << " Velocity: " << first_object.velocity << "\n";
 
                     cout << " 3D dimensions: " << first_object.dimensions << "\n";
 
@@ -108,12 +105,11 @@ int main(int argc, char** argv) {
 
                     cout << " Bounding Box 2D \n";
                     for (auto it : first_object.bounding_box_2d)
-                        cout << "    " << it<<"\n";
+                        cout << "    " << it << "\n";
 
                     cout << " Bounding Box 3D \n";
                     for (auto it : first_object.bounding_box)
                         cout << "    " << it << "\n";
-
                 }
                 nb_detection++;
             }

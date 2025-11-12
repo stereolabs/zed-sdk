@@ -13,7 +13,7 @@
 #include <cuda_gl_interop.h>
 
 #ifndef M_PI
-#define M_PI 3.141592653f
+    #define M_PI 3.141592653f
 #endif
 
 #define MOUSE_R_SENSITIVITY 0.03f
@@ -22,13 +22,14 @@
 #define MOUSE_T_SENSITIVITY 0.5f
 #define KEY_T_SENSITIVITY 0.1f
 
-
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 class Shader {
 public:
-
-    Shader() : verterxId_(0), fragmentId_(0), programId_(0) {}
+    Shader()
+        : verterxId_(0)
+        , fragmentId_(0)
+        , programId_(0) { }
     Shader(const GLchar* vs, const GLchar* fs);
     ~Shader();
 
@@ -46,8 +47,9 @@ public:
     static const GLint ATTRIB_VERTICES_POS = 0;
     static const GLint ATTRIB_COLOR_POS = 1;
     static const GLint ATTRIB_NORMAL = 2;
+
 private:
-    bool compile(GLuint &shaderId, GLenum type, const GLchar* src);
+    bool compile(GLuint& shaderId, GLenum type, const GLchar* src);
     GLuint verterxId_;
     GLuint fragmentId_;
     GLuint programId_;
@@ -60,7 +62,6 @@ struct ShaderData {
 
 class Simple3DObject {
 public:
-
     Simple3DObject();
 
     ~Simple3DObject();
@@ -94,14 +95,21 @@ private:
 
 class CameraGL {
 public:
-
-    CameraGL() {
-    }
+    CameraGL() { }
 
     enum DIRECTION {
-        UP, DOWN, LEFT, RIGHT, FORWARD, BACK
+        UP,
+        DOWN,
+        LEFT,
+        RIGHT,
+        FORWARD,
+        BACK
     };
-    CameraGL(sl::Translation position, sl::Translation direction, sl::Translation vertical = sl::Translation(0, 1, 0)); // vertical = Eigen::Vector3f(0, 1, 0)
+    CameraGL(
+        sl::Translation position,
+        sl::Translation direction,
+        sl::Translation vertical = sl::Translation(0, 1, 0)
+    ); // vertical = Eigen::Vector3f(0, 1, 0)
     ~CameraGL();
 
     void update();
@@ -117,7 +125,7 @@ public:
     void setOffsetFromPosition(const sl::Translation& offset);
     const sl::Translation& getOffsetFromPosition() const;
 
-    void setDirection(const sl::Translation& direction, const sl::Translation &vertical);
+    void setDirection(const sl::Translation& direction, const sl::Translation& vertical);
     void translate(const sl::Translation& t);
     void setPosition(const sl::Translation& p);
     void rotate(const sl::Orientation& rot);
@@ -139,6 +147,7 @@ public:
 
     sl::Transform projection_;
     bool usePerspective_;
+
 private:
     void updateVectors();
     void updateView();
@@ -160,7 +169,6 @@ private:
     float znear_;
     float zfar_;
 };
-
 
 class PointCloud {
 public:
@@ -209,10 +217,11 @@ public:
     void close();
 
     Simple3DObject frustum;
+
 private:
     sl::Mat ref;
-	cudaArray_t ArrIm;
-    cudaGraphicsResource* cuda_gl_ressource;//cuda GL resource
+    cudaArray_t ArrIm;
+    cudaGraphicsResource* cuda_gl_ressource; // cuda GL resource
     Shader shader;
     GLuint shMVPMatrixLocTex_;
 
@@ -239,13 +248,13 @@ public:
     ~GLViewer();
     bool isAvailable();
 
-    void init(int argc, char **argv);
+    void init(int argc, char** argv);
 
-    void updateCamera(int, sl::Mat &, sl::Mat &);
-    void updateCamera(sl::Mat &);
+    void updateCamera(int, sl::Mat&, sl::Mat&);
+    void updateCamera(sl::Mat&);
 
     void updateMetric(sl::FusionMetrics& metrics);
-    
+
     void setCameraPose(int, sl::Transform);
 
     int getKey() {
@@ -255,6 +264,7 @@ public:
     }
 
     void exit();
+
 private:
     void render();
     void update();
@@ -311,7 +321,7 @@ private:
     std::map<int, PointCloud> point_clouds;
     std::map<int, CameraViewer> viewers;
     std::map<int, sl::Transform> poses;
-    
+
     std::map<int, sl::float3> colors;
 
     std::vector<ObjectClassName> fusionStats;

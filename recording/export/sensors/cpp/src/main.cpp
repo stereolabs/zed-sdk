@@ -38,19 +38,18 @@ nlohmann::json MagnetometerData2Json(sl::SensorsData::MagnetometerData magnetome
  */
 nlohmann::json TemperatureData2Json(sl::SensorsData::TemperatureData temperature_data);
 
-int main(int argc, char **argv)
-{
+int main(int argc, char** argv) {
     // Open camera:
     sl::Camera zed;
     sl::InitParameters init_params;
     init_params.depth_mode = sl::DEPTH_MODE::NONE; // No depth required
 
     bool read_svo = false;
-    if(argc == 2){
+    if (argc == 2) {
         init_params.input.setFromSVOFile(argv[1]);
         read_svo = true;
     }
-    
+
     zed.open(init_params);
 
     // Grab data:
@@ -59,14 +58,12 @@ int main(int argc, char **argv)
     sl::Timestamp old_imu_timestamp;
     std::vector<nlohmann::json> all_sensors_data_serialized;
     std::vector<sl::SensorsData> all_sensors_data_in_current_frame;
-    while (imu_data_grabbed_number < 4000)
-    {
+    while (imu_data_grabbed_number < 4000) {
         all_sensors_data_in_current_frame.clear();
         zed.grab();
         zed.getSensorsDataBatch(all_sensors_data_in_current_frame);
         imu_data_grabbed_number += all_sensors_data_in_current_frame.size();
-        for (const auto& sensor_data : all_sensors_data_in_current_frame)
-        {
+        for (const auto& sensor_data : all_sensors_data_in_current_frame) {
             nlohmann::json sensors_data_serialized = SensorsData2Json(sensor_data);
             all_sensors_data_serialized.push_back(sensors_data_serialized);
         }
@@ -83,23 +80,21 @@ int main(int argc, char **argv)
     return 0;
 }
 
-nlohmann::json SensorsData2Json(sl::SensorsData sensors_data)
-{
+nlohmann::json SensorsData2Json(sl::SensorsData sensors_data) {
     nlohmann::json out;
     out["temperature"] = TemperatureData2Json(sensors_data.temperature);
-    if(sensors_data.barometer.is_available)
+    if (sensors_data.barometer.is_available)
         out["barometer"] = BarometerData2Json(sensors_data.barometer);
-    if(sensors_data.magnetometer.is_available)
+    if (sensors_data.magnetometer.is_available)
         out["magnetometer"] = MagnetometerData2Json(sensors_data.magnetometer);
-    if(sensors_data.imu.is_available)
+    if (sensors_data.imu.is_available)
         out["imu"] = IMUData2Json(sensors_data.imu);
     out["camera_moving_state"] = sl::toString(sensors_data.camera_moving_state).c_str();
     out["image_sync_trigger"] = sensors_data.image_sync_trigger;
     return out;
 }
 
-nlohmann::json BarometerData2Json(sl::SensorsData::BarometerData barometer_data)
-{
+nlohmann::json BarometerData2Json(sl::SensorsData::BarometerData barometer_data) {
     nlohmann::json out;
     out["is_available"] = barometer_data.is_available;
     out["timestamp"] = barometer_data.timestamp.getNanoseconds();
@@ -109,8 +104,7 @@ nlohmann::json BarometerData2Json(sl::SensorsData::BarometerData barometer_data)
     return out;
 }
 
-nlohmann::json IMUData2Json(sl::SensorsData::IMUData imu_data)
-{
+nlohmann::json IMUData2Json(sl::SensorsData::IMUData imu_data) {
     nlohmann::json out;
     out["is_available"] = imu_data.is_available;
     out["timestamp"] = imu_data.timestamp.getNanoseconds();
@@ -163,8 +157,7 @@ nlohmann::json IMUData2Json(sl::SensorsData::IMUData imu_data)
     return out;
 }
 
-nlohmann::json MagnetometerData2Json(sl::SensorsData::MagnetometerData magnetometer_data)
-{
+nlohmann::json MagnetometerData2Json(sl::SensorsData::MagnetometerData magnetometer_data) {
     nlohmann::json out;
     out["is_available"] = magnetometer_data.is_available;
     out["timestamp"] = magnetometer_data.timestamp.getNanoseconds();
@@ -186,11 +179,9 @@ nlohmann::json MagnetometerData2Json(sl::SensorsData::MagnetometerData magnetome
     return out;
 }
 
-nlohmann::json TemperatureData2Json(sl::SensorsData::TemperatureData temperature_data)
-{
+nlohmann::json TemperatureData2Json(sl::SensorsData::TemperatureData temperature_data) {
     nlohmann::json out;
-    for (auto &kv : temperature_data.temperature_map)
-    {
+    for (auto& kv : temperature_data.temperature_map) {
         out[sl::toString(kv.first).c_str()] = kv.second;
     }
     return out;

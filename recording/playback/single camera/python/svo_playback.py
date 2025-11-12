@@ -43,7 +43,7 @@ def main(opt):
     init.depth_mode = sl.DEPTH_MODE.NEURAL 
     cam = sl.Camera()
     status = cam.open(init)
-    if status != sl.ERROR_CODE.SUCCESS: #Ensure the camera opened succesfully 
+    if status > sl.ERROR_CODE.SUCCESS: #Ensure the camera opened succesfully 
         print("Camera Open", status, "Exit program.")
         exit(1)
 

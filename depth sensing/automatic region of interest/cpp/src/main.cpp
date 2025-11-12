@@ -23,7 +23,6 @@
  ** This can be very useful to avoid noise from a vehicle bonnet or drone propellers for instance  **
  ***************************************************************************************************/
 
-
 // Standard includes
 #include <stdio.h>
 #include <string.h>
@@ -39,9 +38,9 @@ using namespace std;
 using namespace sl;
 
 void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix);
-void parseArgs(int argc, char **argv, InitParameters& param);
+void parseArgs(int argc, char** argv, InitParameters& param);
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
     // Create a ZED Camera object
     Camera zed;
@@ -53,7 +52,7 @@ int main(int argc, char **argv) {
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
@@ -68,9 +67,10 @@ int main(int argc, char **argv) {
     cv::namedWindow(depthWndName, cv::WINDOW_NORMAL);
 
     std::cout << "Press 'a' to apply the ROI\n"
-            "Press 'r' to reset the ROI\n"
-            "Press 's' to save the ROI as image file to reload it later\n"
-            "Press 'l' to load the ROI from an image file" << std::endl;
+                 "Press 'r' to reset the ROI\n"
+                 "Press 's' to save the ROI as image file to reload it later\n"
+                 "Press 'l' to load the ROI from an image file"
+              << std::endl;
 
     auto resolution = zed.getCameraInformation().camera_configuration.resolution;
     // Create a Mat to store images
@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
 
     bool roi_running = false;
     sl::RegionOfInterestParameters roi_param;
-    //roi_param.auto_apply_module = {sl::MODULE::ALL};
+    // roi_param.auto_apply_module = {sl::MODULE::ALL};
     roi_param.depth_far_threshold_meters = 2.5;
     roi_param.image_height_ratio_cutoff = 0.5;
     zed.startRegionOfInterestAutoDetection(roi_param);
@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
         key = cv::waitKey(15);
 
         // Apply Current ROI
-        if (key == 'r') { //Reset ROI
+        if (key == 'r') { // Reset ROI
             if (!roi_running) {
                 Mat emptyROI;
                 zed.setRegionOfInterest(emptyROI);
@@ -135,7 +135,8 @@ int main(int argc, char **argv) {
             if (!tmp.empty()) {
                 Mat slROI(sl::Resolution(tmp.cols, tmp.rows), MAT_TYPE::U8_C1, tmp.data, tmp.step);
                 zed.setRegionOfInterest(slROI);
-            } else std::cout << mask_name << " could not be found" << std::endl;
+            } else
+                std::cout << mask_name << " could not be found" << std::endl;
         }
     }
 
@@ -146,8 +147,10 @@ int main(int argc, char **argv) {
 
 void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     cout << "[Sample]";
-    if (err_code != ERROR_CODE::SUCCESS)
+    if (err_code > ERROR_CODE::SUCCESS)
         cout << "[Error] ";
+    else if (err_code < ERROR_CODE::SUCCESS)
+        cout << "[Warning] ";
     else
         cout << " ";
     cout << msg_prefix << " ";
@@ -160,7 +163,7 @@ void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     cout << endl;
 }
 
-void parseArgs(int argc, char **argv, InitParameters& param) {
+void parseArgs(int argc, char** argv, InitParameters& param) {
     if (argc > 1 && string(argv[1]).find(".svo") != string::npos) {
         param.input.setFromSVOFile(argv[1]);
     } else if (argc > 1 && string(argv[1]).find(".svo") == string::npos) {

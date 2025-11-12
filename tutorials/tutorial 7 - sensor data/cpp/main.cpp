@@ -18,7 +18,6 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-
 #include <sl/Camera.hpp>
 
 using namespace std;
@@ -30,7 +29,8 @@ struct TimestampHandler {
     // Compare the new timestamp to the last valid one. If it is higher, save it as new reference.
     inline bool isNew(Timestamp& ts_curr, Timestamp& ts_ref) {
         bool new_ = ts_curr > ts_ref;
-        if (new_) ts_ref = ts_curr;
+        if (new_)
+            ts_ref = ts_curr;
         return new_;
     }
     // Specific function for IMUData.
@@ -49,22 +49,22 @@ struct TimestampHandler {
     Timestamp ts_imu = 0, ts_baro = 0, ts_mag = 0; // Initial values
 };
 
-
 // Function to display sensor parameters.
 void printSensorConfiguration(SensorParameters& sensor_parameters) {
     if (sensor_parameters.isAvailable) {
         cout << "*****************************" << endl;
         cout << "Sensor Type: " << sensor_parameters.type << endl;
-        cout << "Max Rate: "    << sensor_parameters.sampling_rate << SENSORS_UNIT::HERTZ << endl;
-        cout << "Range: ["      << sensor_parameters.range << "] " << sensor_parameters.sensor_unit << endl;
-        cout << "Resolution: "  << sensor_parameters.resolution << " " << sensor_parameters.sensor_unit << endl;
-        if (isfinite(sensor_parameters.noise_density)) cout << "Noise Density: " << sensor_parameters.noise_density <<" "<< sensor_parameters.sensor_unit<<"/√Hz"<<endl;
-        if (isfinite(sensor_parameters.random_walk)) cout << "Random Walk: " << sensor_parameters.random_walk <<" "<< sensor_parameters.sensor_unit<<"/s/√Hz"<<endl;
+        cout << "Max Rate: " << sensor_parameters.sampling_rate << SENSORS_UNIT::HERTZ << endl;
+        cout << "Range: [" << sensor_parameters.range << "] " << sensor_parameters.sensor_unit << endl;
+        cout << "Resolution: " << sensor_parameters.resolution << " " << sensor_parameters.sensor_unit << endl;
+        if (isfinite(sensor_parameters.noise_density))
+            cout << "Noise Density: " << sensor_parameters.noise_density << " " << sensor_parameters.sensor_unit << "/√Hz" << endl;
+        if (isfinite(sensor_parameters.random_walk))
+            cout << "Random Walk: " << sensor_parameters.random_walk << " " << sensor_parameters.sensor_unit << "/s/√Hz" << endl;
     }
 }
 
-
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
     // Create a ZED camera object.
     Camera zed;
@@ -72,21 +72,21 @@ int main(int argc, char **argv) {
     // Set configuration parameters.
     InitParameters init_parameters;
     init_parameters.depth_mode = DEPTH_MODE::NONE; // No depth computation required here.
-    //For Virtual ZED-X with Media Server
-    //init_parameters.input.setFromStream("127.0.0.1",34000);
+    // For Virtual ZED-X with Media Server
+    // init_parameters.input.setFromStream("127.0.0.1",34000);
 
     // Open the camera.
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         cout << "Error " << returned_state << ", exit program.\n";
         return EXIT_FAILURE;
     }
 
     // Check camera model.
     auto info = zed.getCameraInformation();
-    MODEL cam_model =info.camera_model;
+    MODEL cam_model = info.camera_model;
     if (cam_model == MODEL::ZED) {
-        cout << "This tutorial only works with ZED 2 and ZED-M cameras. ZED does not have additional sensors.\n"<<endl;
+        cout << "This tutorial only works with ZED 2 and ZED-M cameras. ZED does not have additional sensors.\n" << endl;
         return EXIT_FAILURE;
     }
 
@@ -138,9 +138,8 @@ int main(int argc, char **argv) {
                 if (ts.isNew(sensors_data.barometer))
                     cout << " - Barometer\n \t Atmospheric pressure:" << sensors_data.barometer.pressure << " [hPa]\n";
             }
-        }
-        else
-            std::cout<<"{getSensorsData} Error : "<<(int)r<<std::endl;
+        } else
+            std::cout << "{getSensorsData} Error : " << (int)r << std::endl;
 
         sl::sleep_ms(10);
         // Compute the elapsed time since the beginning of the main loop.

@@ -31,8 +31,7 @@ using OpenCvSharp;
 using sl;
 using System.Net;
 
-class Program
-{
+class Program {
     // Sample variables
     static VIDEO_SETTINGS camera_settings_ = VIDEO_SETTINGS.BRIGHTNESS;
     static string str_camera_settings = "BRIGHTNESS";
@@ -43,21 +42,15 @@ class Program
     static sl.Rect selectionRect = new sl.Rect();
     static bool selectInProgress = false;
 
-    static void Main(string[] args)
-    {
+    static void Main(string[] args) {
         Camera zed = new Camera(0);
 
-        InitParameters initParameters = new InitParameters()
-        {
-            resolution = RESOLUTION.AUTO,
-            depthMode = DEPTH_MODE.NONE
-        };
+        InitParameters initParameters = new InitParameters() { resolution = RESOLUTION.AUTO, depthMode = DEPTH_MODE.NONE };
 
         parseArgs(args, ref initParameters);
 
         ERROR_CODE returnedState = zed.Open(ref initParameters);
-        if (returnedState != ERROR_CODE.SUCCESS)
-        {
+        if (returnedState > ERROR_CODE.SUCCESS) {
             Environment.Exit(-1);
         }
 
@@ -83,27 +76,28 @@ class Program
         char key = ' ';
 
         RuntimeParameters rtParams = new RuntimeParameters();
-        while (key != 'q')
-        {
+        while (key != 'q') {
             // Check that a new image is successfully acquired
             returnedState = zed.Grab(ref rtParams);
-            if (returnedState <= ERROR_CODE.SUCCESS)
-            {
-                //Retrieve left image
+            if (returnedState <= ERROR_CODE.SUCCESS) {
+                // Retrieve left image
                 zed.RetrieveImage(zedImage, VIEW.LEFT);
 
                 // Convert to cvMat
-                OpenCvSharp.Mat cvImage = new OpenCvSharp.Mat(zedImage.GetHeight(), zedImage.GetWidth(), OpenCvSharp.MatType.CV_8UC4, zedImage.GetPtr());
+                OpenCvSharp.Mat cvImage
+                    = new OpenCvSharp.Mat(zedImage.GetHeight(), zedImage.GetWidth(), OpenCvSharp.MatType.CV_8UC4, zedImage.GetPtr());
 
                 // Check that selection rectangle is valid and draw it on the image
-                if (!(selectionRect.width == 0))
-                {
-                    Cv2.Rectangle(cvImage, new OpenCvSharp.Rect(selectionRect.x, selectionRect.y, selectionRect.width, selectionRect.height), new OpenCvSharp.Scalar(220, 180, 20), 2);
+                if (!(selectionRect.width == 0)) {
+                    Cv2.Rectangle(
+                        cvImage,
+                        new OpenCvSharp.Rect(selectionRect.x, selectionRect.y, selectionRect.width, selectionRect.height),
+                        new OpenCvSharp.Scalar(220, 180, 20),
+                        2
+                    );
                 }
                 Cv2.ImShow(winName, cvImage);
-            }
-            else
-            {
+            } else {
                 Console.WriteLine("ERROR during capture");
                 break;
             }
@@ -114,13 +108,11 @@ class Program
         }
     }
 
-    static void updateCameraSettings(char key, ref Camera zed)
-    {
+    static void updateCameraSettings(char key, ref Camera zed) {
         int current_value;
 
         // Keyboard shortcuts
-        switch (key)
-        {
+        switch (key) {
 
             // Switch to the next camera parameter
             case 's':
@@ -138,12 +130,13 @@ class Program
             // Decrease camera settings value ('-' key)
             case '-':
                 current_value = zed.GetCameraSettings(camera_settings_);
-                current_value = current_value > 0 ? current_value - step_camera_setting : 0; // take care of the 'default' value parameter:  VIDEO_SETTINGS_VALUE_AUTO
+                current_value = current_value > 0 ? current_value - step_camera_setting
+                                                  : 0; // take care of the 'default' value parameter:  VIDEO_SETTINGS_VALUE_AUTO
                 zed.SetCameraSettings(camera_settings_, current_value);
                 Console.WriteLine(str_camera_settings + ": " + zed.GetCameraSettings(camera_settings_));
                 break;
 
-            //switch LED On :
+            // switch LED On :
             case 'l':
                 led_on = !led_on;
                 zed.SetCameraSettings(sl.VIDEO_SETTINGS.LED_STATUS, Convert.ToInt32(led_on));
@@ -157,7 +150,10 @@ class Program
 
             case 'a':
                 {
-                    Console.WriteLine("[Sample] set AEC_AGC_ROI on target [" + selectionRect.x + "," + selectionRect.y + "," + selectionRect.width + "," + selectionRect.height + "]");
+                    Console.WriteLine(
+                        "[Sample] set AEC_AGC_ROI on target [" + selectionRect.x + "," + selectionRect.y + "," + selectionRect.width + ","
+                        + selectionRect.height + "]"
+                    );
                     zed.SetCameraSettings(VIDEO_SETTINGS.AEC_AGC_ROI, sl.SIDE.BOTH, selectionRect, false);
                 }
                 break;
@@ -166,12 +162,10 @@ class Program
                 Console.WriteLine("reset AEC_AGC_ROI to full res");
                 zed.SetCameraSettings(VIDEO_SETTINGS.AEC_AGC_ROI, sl.SIDE.BOTH, selectionRect, true);
                 break;
-
         }
     }
 
-    static void switchCameraSettings()
-    {
+    static void switchCameraSettings() {
         camera_settings_ = (VIDEO_SETTINGS)((int)camera_settings_ + 1);
 
         // reset to 1st setting
@@ -191,10 +185,8 @@ class Program
         Console.WriteLine("Switch to camera settings : " + str_camera_settings);
     }
 
-    static void onMouse(MouseEventTypes @event, int x, int y, MouseEventFlags flags, IntPtr userData)
-    {
-        switch (@event)
-        {
+    static void onMouse(MouseEventTypes @event, int x, int y, MouseEventFlags flags, IntPtr userData) {
+        switch (@event) {
             case OpenCvSharp.MouseEventTypes.LButtonDown:
                 {
                     originRect = new OpenCvSharp.Point(x, y);
@@ -210,7 +202,7 @@ class Program
 
             case OpenCvSharp.MouseEventTypes.RButtonDown:
                 {
-                    //Reset selection
+                    // Reset selection
                     selectInProgress = false;
                     selectionRect = new sl.Rect();
                     selectionRect.x = 0;
@@ -220,8 +212,7 @@ class Program
                     break;
                 }
         }
-        if (selectInProgress)
-        {
+        if (selectInProgress) {
             selectionRect.x = Math.Min(x, originRect.X);
             selectionRect.y = Math.Min(y, originRect.Y);
             selectionRect.width = Math.Abs(x - originRect.X) + 1;
@@ -229,49 +220,34 @@ class Program
         }
     }
 
-    static private void parseArgs(string[] args, ref sl.InitParameters param)
-    {
-        if (args.Length > 0 && args[0].IndexOf(".svo") != -1)
-        {
+    static private void parseArgs(string[] args, ref sl.InitParameters param) {
+        if (args.Length > 0 && args[0].IndexOf(".svo") != -1) {
             // SVO input mode
             param.inputType = INPUT_TYPE.SVO;
             param.pathSVO = args[0];
             Console.WriteLine("[Sample] Using SVO File input: " + args[0]);
-        }
-        else if (args.Length > 0 && args[0].IndexOf(".svo") == -1)
-        {
+        } else if (args.Length > 0 && args[0].IndexOf(".svo") == -1) {
             IPAddress ip;
             string arg = args[0];
-            if (IPAddress.TryParse(arg, out ip))
-            {
+            if (IPAddress.TryParse(arg, out ip)) {
                 // Stream input mode - IP + port
                 param.inputType = INPUT_TYPE.STREAM;
                 param.ipStream = ip.ToString();
                 Console.WriteLine("[Sample] Using Stream input, IP : " + ip);
-            }
-            else if (args[0].IndexOf("HD2K") != -1)
-            {
+            } else if (args[0].IndexOf("HD2K") != -1) {
                 param.resolution = sl.RESOLUTION.HD2K;
                 Console.WriteLine("[Sample] Using Camera in resolution HD2K");
-            }
-            else if (args[0].IndexOf("HD1080") != -1)
-            {
+            } else if (args[0].IndexOf("HD1080") != -1) {
                 param.resolution = sl.RESOLUTION.HD1080;
                 Console.WriteLine("[Sample] Using Camera in resolution HD1080");
-            }
-            else if (args[0].IndexOf("HD720") != -1)
-            {
+            } else if (args[0].IndexOf("HD720") != -1) {
                 param.resolution = sl.RESOLUTION.HD720;
                 Console.WriteLine("[Sample] Using Camera in resolution HD720");
-            }
-            else if (args[0].IndexOf("VGA") != -1)
-            {
+            } else if (args[0].IndexOf("VGA") != -1) {
                 param.resolution = sl.RESOLUTION.VGA;
                 Console.WriteLine("[Sample] Using Camera in resolution VGA");
             }
-        }
-        else
-        {
+        } else {
             //
         }
     }
@@ -279,8 +255,7 @@ class Program
     /**
     This function displays help
     **/
-    static void printHelp()
-    {
+    static void printHelp() {
         Console.WriteLine("Camera controls hotkeys:");
         Console.WriteLine("* Increase camera settings value:  '+'");
         Console.WriteLine("* Decrease camera settings value:  '-'");

@@ -88,7 +88,7 @@ if __name__ == "__main__":
     init_params.depth_mode = sl.DEPTH_MODE.NEURAL
     zed = sl.Camera()
     error_code = zed.open(init_params)
-    if(error_code != sl.ERROR_CODE.SUCCESS):
+    if(error_code > sl.ERROR_CODE.SUCCESS):
         print("Can't open camera: ", error_code)
 
     positional_tracking_parameters = sl.PositionalTrackingParameters()

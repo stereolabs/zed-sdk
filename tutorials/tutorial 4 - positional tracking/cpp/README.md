@@ -48,7 +48,7 @@ init_params.coordinate_units = UNIT::METER; // Set units in meters
 
 // Open the camera
 ERROR_CODE err = zed.open(init_params);
-if (err != ERROR_CODE::SUCCESS)
+if (err > ERROR_CODE::SUCCESS)
     exit(-1);
 ```
 
@@ -79,7 +79,7 @@ In the example, we get the device position in the World Frame.
 int i = 0;
 sl::Pose zed_pose;
 while (i < 1000) {
-    if (zed.grab() == ERROR_CODE::SUCCESS) {
+    if (zed.grab() <= ERROR_CODE::SUCCESS) {
 
         zed.getPosition(zed_pose, REFERENCE_FRAME::WORLD); // Get the pose of the left eye of the camera with reference to the world frame
 

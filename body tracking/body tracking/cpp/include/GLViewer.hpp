@@ -15,7 +15,7 @@
 #include <cuda_gl_interop.h>
 
 #ifndef M_PI
-#define M_PI 3.141592653f
+    #define M_PI 3.141592653f
 #endif
 
 #define MOUSE_R_SENSITIVITY 0.03f
@@ -26,108 +26,51 @@
 
 using namespace sl;
 
-const std::vector<std::pair<BODY_38_PARTS, BODY_38_PARTS>> BODY_BONES_FAST_RENDER
-{
-    {
-        BODY_38_PARTS::PELVIS, BODY_38_PARTS::SPINE_1
-    },
-    {
-        BODY_38_PARTS::SPINE_1, BODY_38_PARTS::SPINE_2
-    },
-    {
-        BODY_38_PARTS::SPINE_2, BODY_38_PARTS::SPINE_3
-    },
-    {
-        BODY_38_PARTS::SPINE_3, BODY_38_PARTS::NECK
-    },
+const std::vector<std::pair<BODY_38_PARTS, BODY_38_PARTS>> BODY_BONES_FAST_RENDER {
+    {BODY_38_PARTS::PELVIS,         BODY_38_PARTS::SPINE_1        },
+    {BODY_38_PARTS::SPINE_1,        BODY_38_PARTS::SPINE_2        },
+    {BODY_38_PARTS::SPINE_2,        BODY_38_PARTS::SPINE_3        },
+    {BODY_38_PARTS::SPINE_3,        BODY_38_PARTS::NECK           },
     // Face
-    {
-        BODY_38_PARTS::NECK, BODY_38_PARTS::NOSE
-    },
-    {
-        BODY_38_PARTS::NOSE, BODY_38_PARTS::LEFT_EYE
-    },
-    {
-        BODY_38_PARTS::LEFT_EYE, BODY_38_PARTS::LEFT_EAR
-    },
-    {
-        BODY_38_PARTS::NOSE, BODY_38_PARTS::RIGHT_EYE
-    },
-    {
-        BODY_38_PARTS::RIGHT_EYE, BODY_38_PARTS::RIGHT_EAR
-    },
+    {BODY_38_PARTS::NECK,           BODY_38_PARTS::NOSE           },
+    {BODY_38_PARTS::NOSE,           BODY_38_PARTS::LEFT_EYE       },
+    {BODY_38_PARTS::LEFT_EYE,       BODY_38_PARTS::LEFT_EAR       },
+    {BODY_38_PARTS::NOSE,           BODY_38_PARTS::RIGHT_EYE      },
+    {BODY_38_PARTS::RIGHT_EYE,      BODY_38_PARTS::RIGHT_EAR      },
     // Left arm
-    {
-        BODY_38_PARTS::SPINE_3, BODY_38_PARTS::LEFT_CLAVICLE
-    },
-    {
-        BODY_38_PARTS::LEFT_CLAVICLE, BODY_38_PARTS::LEFT_SHOULDER
-    },
-    {
-        BODY_38_PARTS::LEFT_SHOULDER, BODY_38_PARTS::LEFT_ELBOW
-    },
-    {
-        BODY_38_PARTS::LEFT_ELBOW, BODY_38_PARTS::LEFT_WRIST
-    },
+    {BODY_38_PARTS::SPINE_3,        BODY_38_PARTS::LEFT_CLAVICLE  },
+    {BODY_38_PARTS::LEFT_CLAVICLE,  BODY_38_PARTS::LEFT_SHOULDER  },
+    {BODY_38_PARTS::LEFT_SHOULDER,  BODY_38_PARTS::LEFT_ELBOW     },
+    {BODY_38_PARTS::LEFT_ELBOW,     BODY_38_PARTS::LEFT_WRIST     },
     // Right arm
-    {
-        BODY_38_PARTS::SPINE_3, BODY_38_PARTS::RIGHT_CLAVICLE
-    },
-    {
-        BODY_38_PARTS::RIGHT_CLAVICLE, BODY_38_PARTS::RIGHT_SHOULDER
-    },
-    {
-        BODY_38_PARTS::RIGHT_SHOULDER, BODY_38_PARTS::RIGHT_ELBOW
-    },
-    {
-        BODY_38_PARTS::RIGHT_ELBOW, BODY_38_PARTS::RIGHT_WRIST
-    },
+    {BODY_38_PARTS::SPINE_3,        BODY_38_PARTS::RIGHT_CLAVICLE },
+    {BODY_38_PARTS::RIGHT_CLAVICLE, BODY_38_PARTS::RIGHT_SHOULDER },
+    {BODY_38_PARTS::RIGHT_SHOULDER, BODY_38_PARTS::RIGHT_ELBOW    },
+    {BODY_38_PARTS::RIGHT_ELBOW,    BODY_38_PARTS::RIGHT_WRIST    },
     // Left leg
-    {
-        BODY_38_PARTS::PELVIS, BODY_38_PARTS::LEFT_HIP
-    },
-    {
-        BODY_38_PARTS::LEFT_HIP, BODY_38_PARTS::LEFT_KNEE
-    },
-    {
-        BODY_38_PARTS::LEFT_KNEE, BODY_38_PARTS::LEFT_ANKLE
-    },
-    {
-        BODY_38_PARTS::LEFT_ANKLE, BODY_38_PARTS::LEFT_HEEL
-    },
-    {
-        BODY_38_PARTS::LEFT_ANKLE, BODY_38_PARTS::LEFT_BIG_TOE
-    },
-    {
-        BODY_38_PARTS::LEFT_ANKLE, BODY_38_PARTS::LEFT_SMALL_TOE
-    },
+    {BODY_38_PARTS::PELVIS,         BODY_38_PARTS::LEFT_HIP       },
+    {BODY_38_PARTS::LEFT_HIP,       BODY_38_PARTS::LEFT_KNEE      },
+    {BODY_38_PARTS::LEFT_KNEE,      BODY_38_PARTS::LEFT_ANKLE     },
+    {BODY_38_PARTS::LEFT_ANKLE,     BODY_38_PARTS::LEFT_HEEL      },
+    {BODY_38_PARTS::LEFT_ANKLE,     BODY_38_PARTS::LEFT_BIG_TOE   },
+    {BODY_38_PARTS::LEFT_ANKLE,     BODY_38_PARTS::LEFT_SMALL_TOE },
     // Right leg
-    {
-        BODY_38_PARTS::PELVIS, BODY_38_PARTS::RIGHT_HIP
-    },
-    {
-        BODY_38_PARTS::RIGHT_HIP, BODY_38_PARTS::RIGHT_KNEE
-    },
-    {
-        BODY_38_PARTS::RIGHT_KNEE, BODY_38_PARTS::RIGHT_ANKLE
-    },
-    {
-        BODY_38_PARTS::RIGHT_ANKLE, BODY_38_PARTS::RIGHT_HEEL
-    },
-    {
-        BODY_38_PARTS::RIGHT_ANKLE, BODY_38_PARTS::RIGHT_BIG_TOE
-    },
-    {
-        BODY_38_PARTS::RIGHT_ANKLE, BODY_38_PARTS::RIGHT_SMALL_TOE
-    },
+    {BODY_38_PARTS::PELVIS,         BODY_38_PARTS::RIGHT_HIP      },
+    {BODY_38_PARTS::RIGHT_HIP,      BODY_38_PARTS::RIGHT_KNEE     },
+    {BODY_38_PARTS::RIGHT_KNEE,     BODY_38_PARTS::RIGHT_ANKLE    },
+    {BODY_38_PARTS::RIGHT_ANKLE,    BODY_38_PARTS::RIGHT_HEEL     },
+    {BODY_38_PARTS::RIGHT_ANKLE,    BODY_38_PARTS::RIGHT_BIG_TOE  },
+    {BODY_38_PARTS::RIGHT_ANKLE,    BODY_38_PARTS::RIGHT_SMALL_TOE},
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 class Shader {
 public:
-
-    Shader() : verterxId_(0), fragmentId_(0), programId_(0) {}
+    Shader()
+        : verterxId_(0)
+        , fragmentId_(0)
+        , programId_(0) { }
     Shader(const GLchar* vs, const GLchar* fs);
     ~Shader();
 
@@ -145,8 +88,9 @@ public:
     static const GLint ATTRIB_VERTICES_POS = 0;
     static const GLint ATTRIB_COLOR_POS = 1;
     static const GLint ATTRIB_NORMAL = 2;
+
 private:
-    bool compile(GLuint &shaderId, GLenum type, const GLchar* src);
+    bool compile(GLuint& shaderId, GLenum type, const GLchar* src);
     GLuint verterxId_;
     GLuint fragmentId_;
     GLuint programId_;
@@ -159,7 +103,6 @@ struct ShaderData {
 
 class Simple3DObject {
 public:
-
     Simple3DObject();
     Simple3DObject(sl::Translation position, bool isStatic);
     ~Simple3DObject();
@@ -220,14 +163,21 @@ private:
 
 class CameraGL {
 public:
-
-    CameraGL() {
-    }
+    CameraGL() { }
 
     enum DIRECTION {
-        UP, DOWN, LEFT, RIGHT, FORWARD, BACK
+        UP,
+        DOWN,
+        LEFT,
+        RIGHT,
+        FORWARD,
+        BACK
     };
-    CameraGL(sl::Translation position, sl::Translation direction, sl::Translation vertical = sl::Translation(0, 1, 0)); // vertical = Eigen::Vector3f(0, 1, 0)
+    CameraGL(
+        sl::Translation position,
+        sl::Translation direction,
+        sl::Translation vertical = sl::Translation(0, 1, 0)
+    ); // vertical = Eigen::Vector3f(0, 1, 0)
     ~CameraGL();
 
     void update();
@@ -243,7 +193,7 @@ public:
     void setOffsetFromPosition(const sl::Translation& offset);
     const sl::Translation& getOffsetFromPosition() const;
 
-    void setDirection(const sl::Translation& direction, const sl::Translation &vertical);
+    void setDirection(const sl::Translation& direction, const sl::Translation& vertical);
     void translate(const sl::Translation& t);
     void setPosition(const sl::Translation& p);
     void rotate(const sl::Orientation& rot);
@@ -265,6 +215,7 @@ public:
 
     sl::Transform projection_;
     bool usePerspective_;
+
 private:
     void updateVectors();
     void updateView();
@@ -294,8 +245,8 @@ public:
     GLViewer();
     ~GLViewer();
     bool isAvailable();
-    void init(int argc, char **argv);
-    void updateData(Bodies &, sl::Transform&);
+    void init(int argc, char** argv);
+    void updateData(Bodies&, sl::Transform&);
     void exit();
 
 private:

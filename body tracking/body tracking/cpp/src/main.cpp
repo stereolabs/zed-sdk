@@ -30,15 +30,14 @@
 #include "GLViewer.hpp"
 #include "TrackingViewer.hpp"
 
-
 // Using std and sl namespaces
 using namespace std;
 using namespace sl;
 
 void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
-void parseArgs(int argc, char **argv, InitParameters& param);
+void parseArgs(int argc, char** argv, InitParameters& param);
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
 #ifdef _SL_JETSON_
     const bool isJetson = true;
@@ -57,7 +56,7 @@ int main(int argc, char **argv) {
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("Open Camera", returned_state, "\nExit program.");
         zed.close();
         return EXIT_FAILURE;
@@ -65,8 +64,8 @@ int main(int argc, char **argv) {
 
     // Enable Positional tracking (mandatory for object detection)
     PositionalTrackingParameters positional_tracking_parameters;
-    //If the camera is static, uncomment the following line to have better performances
-    //positional_tracking_parameters.set_as_static = true;
+    // If the camera is static, uncomment the following line to have better performances
+    // positional_tracking_parameters.set_as_static = true;
 
     returned_state = zed.enablePositionalTracking(positional_tracking_parameters);
     if (returned_state != ERROR_CODE::SUCCESS) {
@@ -77,12 +76,12 @@ int main(int argc, char **argv) {
 
     // Enable the Body tracking module
     BodyTrackingParameters body_tracker_params;
-    body_tracker_params.enable_tracking = true; // track people across images flow
+    body_tracker_params.enable_tracking = true;      // track people across images flow
     body_tracker_params.enable_body_fitting = false; // smooth skeletons moves
     body_tracker_params.body_format = sl::BODY_FORMAT::BODY_34;
     body_tracker_params.enable_segmentation = true;
     body_tracker_params.detection_model = isJetson ? BODY_TRACKING_MODEL::HUMAN_BODY_FAST : BODY_TRACKING_MODEL::HUMAN_BODY_ACCURATE;
-    //body_tracker_params.allow_reduced_precision_inference = true;
+    // body_tracker_params.allow_reduced_precision_inference = true;
 
     returned_state = zed.enableBodyTracking(body_tracker_params);
     if (returned_state != ERROR_CODE::SUCCESS) {
@@ -100,8 +99,10 @@ int main(int argc, char **argv) {
 
     cv::Mat image_left_ocv(display_resolution.height, display_resolution.width, CV_8UC4, 1);
     Mat image_left(display_resolution, MAT_TYPE::U8_C4, image_left_ocv.data, image_left_ocv.step);
-    sl::float2 img_scale(display_resolution.width / (float) camera_config.resolution.width, display_resolution.height / (float) camera_config.resolution.height);
-
+    sl::float2 img_scale(
+        display_resolution.width / (float)camera_config.resolution.width,
+        display_resolution.height / (float)camera_config.resolution.height
+    );
 
     // Create OpenGL Viewer
     GLViewer viewer;
@@ -114,7 +115,7 @@ int main(int argc, char **argv) {
     BodyTrackingRuntimeParameters body_tracker_parameters_rt;
     body_tracker_parameters_rt.detection_confidence_threshold = 40;
     body_tracker_parameters_rt.skeleton_smoothing = 0.7;
-    
+
     // Create ZED Bodies filled in the main loop
     Bodies bodies;
 
@@ -130,31 +131,32 @@ int main(int argc, char **argv) {
             // Retrieve Detected Human Bodies
             zed.retrieveBodies(bodies, body_tracker_parameters_rt);
 
-            //OCV View
+            // OCV View
             zed.retrieveImage(image_left, VIEW::LEFT, MEM::CPU, display_resolution);
             zed.getPosition(cam_pose, REFERENCE_FRAME::WORLD);
 
-            //Update GL View
+            // Update GL View
             viewer.updateData(bodies, cam_pose.pose_data);
 
-            //printf("bodies is tracked %d \n", bodies.is_tracked);
+            // printf("bodies is tracked %d \n", bodies.is_tracked);
             render_2D(image_left_ocv, img_scale, bodies.body_list, bodies.is_tracked);
             cv::imshow(window_name, image_left_ocv);
 
             key = cv::waitKey(key_wait);
 
-            if (key == 'q') quit = true;
+            if (key == 'q')
+                quit = true;
             if (key == 'm') {
-                if (key_wait > 0) key_wait = 0;
-                else key_wait = 10;
+                if (key_wait > 0)
+                    key_wait = 0;
+                else
+                    key_wait = 10;
             }
-            if (!viewer.isAvailable()) quit = true;
-        } 
-        else if (err == sl::ERROR_CODE::END_OF_SVOFILE_REACHED)
-        {
+            if (!viewer.isAvailable())
+                quit = true;
+        } else if (err == sl::ERROR_CODE::END_OF_SVOFILE_REACHED) {
             zed.setSVOPosition(0);
-        }
-        else
+        } else
             quit = true;
     }
 
@@ -171,7 +173,7 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 
-void parseArgs(int argc, char **argv, InitParameters& param) {
+void parseArgs(int argc, char** argv, InitParameters& param) {
     if (argc > 1 && string(argv[1]).find(".svo") != string::npos) {
         // SVO input mode
         param.input.setFromSVOFile(argv[1]);
@@ -191,7 +193,7 @@ void parseArgs(int argc, char **argv, InitParameters& param) {
         } else if (arg.find("HD2K") != string::npos) {
             param.camera_resolution = RESOLUTION::HD2K;
             cout << "[Sample] Using Camera in resolution HD2K" << endl;
-        }else if (arg.find("HD1200") != string::npos) {
+        } else if (arg.find("HD1200") != string::npos) {
             param.camera_resolution = RESOLUTION::HD1200;
             cout << "[Sample] Using Camera in resolution HD1200" << endl;
         } else if (arg.find("HD1080") != string::npos) {
@@ -200,10 +202,10 @@ void parseArgs(int argc, char **argv, InitParameters& param) {
         } else if (arg.find("HD720") != string::npos) {
             param.camera_resolution = RESOLUTION::HD720;
             cout << "[Sample] Using Camera in resolution HD720" << endl;
-        }else if (arg.find("SVGA") != string::npos) {
+        } else if (arg.find("SVGA") != string::npos) {
             param.camera_resolution = RESOLUTION::SVGA;
             cout << "[Sample] Using Camera in resolution SVGA" << endl;
-        }else if (arg.find("VGA") != string::npos) {
+        } else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;
         }
@@ -212,8 +214,10 @@ void parseArgs(int argc, char **argv, InitParameters& param) {
 
 void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     cout << "[Sample]";
-    if (err_code != ERROR_CODE::SUCCESS)
+    if (err_code > ERROR_CODE::SUCCESS)
         cout << "[Error]";
+    else if (err_code < ERROR_CODE::SUCCESS)
+        cout << "[Warning]";
     cout << " " << msg_prefix << " ";
     if (err_code != ERROR_CODE::SUCCESS) {
         cout << " | " << toString(err_code) << " : ";

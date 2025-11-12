@@ -40,7 +40,7 @@ def main(opt):
     init.depth_mode = sl.DEPTH_MODE.NONE # Set configuration parameters for the ZED
 
     status = cam.open(init) 
-    if status != sl.ERROR_CODE.SUCCESS: 
+    if status > sl.ERROR_CODE.SUCCESS: 
         print("Camera Open", status, "Exit program.")
         exit(1)
 

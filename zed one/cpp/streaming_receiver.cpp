@@ -34,7 +34,7 @@ using namespace std;
 using namespace sl;
 
 // Sample functions
-void updateCameraSettings(char key, sl::CameraOne &zed);
+void updateCameraSettings(char key, sl::CameraOne& zed);
 void switchCameraSettings();
 void printHelp();
 
@@ -46,34 +46,31 @@ int step_camera_setting = 1;
 bool selectInProgress = false;
 sl::Rect selection_rect;
 cv::Point origin_rect;
-static void onMouse(int event, int x, int y, int, void*)
-{
-    switch (event)
-    {
+static void onMouse(int event, int x, int y, int, void*) {
+    switch (event) {
         case cv::EVENT_LBUTTONDOWN:
-        {
-            origin_rect = cv::Point(x, y);
-            selectInProgress = true;
-            break;
-        }
+            {
+                origin_rect = cv::Point(x, y);
+                selectInProgress = true;
+                break;
+            }
 
-    case cv::EVENT_LBUTTONUP:
-        {
-            selectInProgress = false;
-            break;
-        }
+        case cv::EVENT_LBUTTONUP:
+            {
+                selectInProgress = false;
+                break;
+            }
 
-    case cv::EVENT_RBUTTONDOWN:
-        {
-            //Reset selection
-            selectInProgress = false;
-            selection_rect = sl::Rect(0,0,0,0);
-            break;
-        }
+        case cv::EVENT_RBUTTONDOWN:
+            {
+                // Reset selection
+                selectInProgress = false;
+                selection_rect = sl::Rect(0, 0, 0, 0);
+                break;
+            }
     }
 
-    if (selectInProgress)
-    {
+    if (selectInProgress) {
         selection_rect.x = MIN(x, origin_rect.x);
         selection_rect.y = MIN(y, origin_rect.y);
         selection_rect.width = abs(x - origin_rect.x) + 1;
@@ -81,8 +78,8 @@ static void onMouse(int event, int x, int y, int, void*)
     }
 }
 
-vector< string> split(const string& s, char seperator) {
-    vector< string> output;
+vector<string> split(const string& s, char seperator) {
+    vector<string> output;
     string::size_type prev_pos = 0, pos = 0;
 
     while ((pos = s.find(seperator, pos)) != string::npos) {
@@ -96,14 +93,15 @@ vector< string> split(const string& s, char seperator) {
 }
 
 void setStreamParameter(InitParametersOne& init_p, string& argument) {
-    vector< string> configStream = split(argument, ':');
+    vector<string> configStream = split(argument, ':');
     String ip(configStream.at(0).c_str());
     if (configStream.size() == 2) {
         init_p.input.setFromStream(ip, atoi(configStream.at(1).c_str()));
-    } else init_p.input.setFromStream(ip);
+    } else
+        init_p.input.setFromStream(ip);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     CameraOne zed;
     // Set configuration parameters for the ZED
     InitParametersOne init_parameters;
@@ -127,7 +125,7 @@ int main(int argc, char **argv) {
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
@@ -137,8 +135,10 @@ int main(int argc, char **argv) {
     cout << endl;
     cout << "ZED Model                 : " << camera_info.camera_model << endl;
     cout << "ZED Serial Number         : " << camera_info.serial_number << endl;
-    cout << "ZED Camera Firmware       : " << camera_info.camera_configuration.firmware_version << "/" << camera_info.sensors_configuration.firmware_version << endl;
-    cout << "ZED Camera Resolution     : " << camera_info.camera_configuration.resolution.width << "x" << camera_info.camera_configuration.resolution.height << endl;
+    cout << "ZED Camera Firmware       : " << camera_info.camera_configuration.firmware_version << "/"
+         << camera_info.sensors_configuration.firmware_version << endl;
+    cout << "ZED Camera Resolution     : " << camera_info.camera_configuration.resolution.width << "x"
+         << camera_info.camera_configuration.resolution.height << endl;
     cout << "ZED Camera FPS            : " << zed.getInitParameters().camera_fps << endl;
 
     // Print help in console
@@ -161,10 +161,15 @@ int main(int argc, char **argv) {
 
             // Convert sl::Mat to cv::Mat (share buffer)
             cv::Mat cvImage = slMat2cvMat(image);
-            
-            //Check that selection rectangle is valid and draw it on the image
+
+            // Check that selection rectangle is valid and draw it on the image
             if (!selection_rect.isEmpty() && selection_rect.isContained(sl::Resolution(cvImage.cols, cvImage.rows)))
-                cv::rectangle(cvImage, cv::Rect(selection_rect.x,selection_rect.y,selection_rect.width,selection_rect.height),cv::Scalar(0, 255, 0), 2);
+                cv::rectangle(
+                    cvImage,
+                    cv::Rect(selection_rect.x, selection_rect.y, selection_rect.width, selection_rect.height),
+                    cv::Scalar(0, 255, 0),
+                    2
+                );
 
             // Display image with OpenCV
             cv::imshow(win_name, cvImage);
@@ -187,54 +192,55 @@ int main(int argc, char **argv) {
 /**
     This function updates camera settings
  **/
-void updateCameraSettings(char key, sl::CameraOne &zed) {
+void updateCameraSettings(char key, sl::CameraOne& zed) {
     int current_value;
 
     // Keyboard shortcuts
     switch (key) {
-            // Switch to the next camera parameter
-            case 's':
+        // Switch to the next camera parameter
+        case 's':
             switchCameraSettings();
-            zed.getCameraSettings(camera_settings_,current_value);
+            zed.getCameraSettings(camera_settings_, current_value);
             break;
 
-            // Increase camera settings value ('+' key)
-            case '+':
-            zed.getCameraSettings(camera_settings_,current_value);
+        // Increase camera settings value ('+' key)
+        case '+':
+            zed.getCameraSettings(camera_settings_, current_value);
             zed.setCameraSettings(camera_settings_, current_value + step_camera_setting);
-            zed.getCameraSettings(camera_settings_,current_value);
-            print(str_camera_settings+": "+std::to_string(current_value));
+            zed.getCameraSettings(camera_settings_, current_value);
+            print(str_camera_settings + ": " + std::to_string(current_value));
             break;
 
-            // Decrease camera settings value ('-' key)
-            case '-':
-            zed.getCameraSettings(camera_settings_,current_value);
-            current_value = current_value > 0 ? current_value - step_camera_setting : 0; // take care of the 'default' value parameter:  VIDEO_SETTINGS_VALUE_AUTO
+        // Decrease camera settings value ('-' key)
+        case '-':
+            zed.getCameraSettings(camera_settings_, current_value);
+            current_value = current_value > 0 ? current_value - step_camera_setting
+                                              : 0; // take care of the 'default' value parameter:  VIDEO_SETTINGS_VALUE_AUTO
             zed.setCameraSettings(camera_settings_, current_value);
-            zed.getCameraSettings(camera_settings_,current_value);
-            print(str_camera_settings+": "+std::to_string(current_value));
+            zed.getCameraSettings(camera_settings_, current_value);
+            print(str_camera_settings + ": " + std::to_string(current_value));
             break;
 
             // Reset to default parameters
         case 'r':
             print("Reset all settings to default");
-            for (int s = (int) VIDEO_SETTINGS::BRIGHTNESS; s < (int) VIDEO_SETTINGS::LAST; s++){
-                auto setting = static_cast<VIDEO_SETTINGS> (s);
+            for (int s = (int)VIDEO_SETTINGS::BRIGHTNESS; s < (int)VIDEO_SETTINGS::LAST; s++) {
+                auto setting = static_cast<VIDEO_SETTINGS>(s);
                 auto state = zed.setCameraSettings(setting, sl::VIDEO_SETTINGS_VALUE_AUTO);
-                std::cout<< "Setting " << sl::toString(setting) << " reset to default: " << state << std::endl;
+                std::cout << "Setting " << sl::toString(setting) << " reset to default: " << state << std::endl;
             }
             break;
 
-        default :
-        break;
-        }
+        default:
+            break;
+    }
 }
 
 /**
     This function toggles between camera settings
  **/
 void switchCameraSettings() {
-    camera_settings_ = static_cast<VIDEO_SETTINGS> ((int) camera_settings_ + 1);
+    camera_settings_ = static_cast<VIDEO_SETTINGS>((int)camera_settings_ + 1);
 
     // reset to 1st setting
     if (camera_settings_ == VIDEO_SETTINGS::LED_STATUS)

@@ -24,20 +24,37 @@
 #include <sl/Camera.hpp>
 
 // If the current project uses openCV
-#if defined (__OPENCV_ALL_HPP__) || defined(OPENCV_ALL_HPP)
+#if defined(__OPENCV_ALL_HPP__) || defined(OPENCV_ALL_HPP)
 // Conversion function between sl::Mat and cv::Mat
-cv::Mat slMat2cvMat(sl::Mat &input) {
+cv::Mat slMat2cvMat(sl::Mat& input) {
     int cv_type = -1;
     switch (input.getDataType()) {
-        case sl::MAT_TYPE::F32_C1: cv_type = CV_32FC1; break;
-        case sl::MAT_TYPE::F32_C2: cv_type = CV_32FC2; break;
-        case sl::MAT_TYPE::F32_C3: cv_type = CV_32FC3; break;
-        case sl::MAT_TYPE::F32_C4: cv_type = CV_32FC4; break;
-        case sl::MAT_TYPE::U8_C1: cv_type = CV_8UC1; break;
-        case sl::MAT_TYPE::U8_C2: cv_type = CV_8UC2; break;
-        case sl::MAT_TYPE::U8_C3: cv_type = CV_8UC3; break;
-        case sl::MAT_TYPE::U8_C4: cv_type = CV_8UC4; break;
-        default: break;
+        case sl::MAT_TYPE::F32_C1:
+            cv_type = CV_32FC1;
+            break;
+        case sl::MAT_TYPE::F32_C2:
+            cv_type = CV_32FC2;
+            break;
+        case sl::MAT_TYPE::F32_C3:
+            cv_type = CV_32FC3;
+            break;
+        case sl::MAT_TYPE::F32_C4:
+            cv_type = CV_32FC4;
+            break;
+        case sl::MAT_TYPE::U8_C1:
+            cv_type = CV_8UC1;
+            break;
+        case sl::MAT_TYPE::U8_C2:
+            cv_type = CV_8UC2;
+            break;
+        case sl::MAT_TYPE::U8_C3:
+            cv_type = CV_8UC3;
+            break;
+        case sl::MAT_TYPE::U8_C4:
+            cv_type = CV_8UC4;
+            break;
+        default:
+            break;
     }
     // Since cv::Mat data requires a uchar* pointer, we get the uchar1 pointer from sl::Mat (getPtr<T>())
     // cv::Mat and sl::Mat will share a single memory structure
@@ -48,13 +65,13 @@ cv::Mat slMat2cvMat(sl::Mat &input) {
 // Compute the starting frame of all data if started out of sync
 
 /*Camera idx / SVO frame*/
-std::map<int, int> syncDATA(const std::map<int, std::string> &svo_files) {
+std::map<int, int> syncDATA(const std::map<int, std::string>& svo_files) {
     std::map<int, int> output; // map of camera index and frame index of the starting point for each
 
     // Open all SVO
     std::map<int, std::shared_ptr<sl::Camera>> p_zeds;
 
-    for (auto &it : svo_files) {
+    for (auto& it : svo_files) {
         auto p_zed = std::make_shared<sl::Camera>();
 
         sl::InitParameters init_param;
@@ -62,13 +79,13 @@ std::map<int, int> syncDATA(const std::map<int, std::string> &svo_files) {
         init_param.camera_disable_self_calib = true;
         init_param.input.setFromSVOFile(it.second.c_str());
 
-        if (p_zed->open(init_param) == sl::ERROR_CODE::SUCCESS)
+        if (p_zed->open(init_param) <= sl::ERROR_CODE::SUCCESS)
             p_zeds.insert(std::make_pair(it.first, p_zed));
     }
 
     // Compute the starting point, we have to take the latest one
     sl::Timestamp start_ts = 0;
-    for (auto &it : p_zeds) {
+    for (auto& it : p_zeds) {
         it.second->grab();
         auto ts = it.second->getTimestamp(sl::TIME_REFERENCE::IMAGE);
 
@@ -79,14 +96,15 @@ std::map<int, int> syncDATA(const std::map<int, std::string> &svo_files) {
     std::cout << "Found SVOs common starting time: " << start_ts << std::endl;
 
     // The starting point is now known, let's find the frame idx for all corresponding
-    for (auto &it : p_zeds) {
+    for (auto& it : p_zeds) {
         auto frame_position_at_ts = it.second->getSVOPositionAtTimestamp(start_ts);
 
         if (frame_position_at_ts != -1)
             output.insert(std::make_pair(it.first, frame_position_at_ts));
     }
 
-    for (auto &it : p_zeds) it.second->close();
+    for (auto& it : p_zeds)
+        it.second->close();
 
     return output;
 }

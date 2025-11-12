@@ -2,12 +2,11 @@
 #include "json.hpp"
 #include "utils.hpp"
 
-
 /**
  * @brief Construct a new GNSSSaver object
  *
  */
-GNSSSaver::GNSSSaver(sl::Camera *zed) {
+GNSSSaver::GNSSSaver(sl::Camera* zed) {
     std::string current_date = getCurrentDatetime();
     this->file_path = "GNSS_" + current_date + ".json";
 
@@ -22,15 +21,15 @@ GNSSSaver::~GNSSSaver() {
     saveAllData();
 }
 
-inline nlohmann::json convertGNSSData2JSON(sl::GNSSData &gnss_data) {
+inline nlohmann::json convertGNSSData2JSON(sl::GNSSData& gnss_data) {
     double latitude, longitude, altitude;
     gnss_data.getCoordinates(latitude, longitude, altitude, false);
     nlohmann::json gnss_measure;
     gnss_measure["ts"] = gnss_data.ts.getNanoseconds();
     gnss_measure["coordinates"] = {
-        {"latitude", latitude},
+        {"latitude",  latitude },
         {"longitude", longitude},
-        {"altitude", altitude}
+        {"altitude",  altitude }
     };
     std::array<double, 9> position_covariance;
     for (unsigned j = 0; j < 9; j++) {
@@ -43,7 +42,7 @@ inline nlohmann::json convertGNSSData2JSON(sl::GNSSData &gnss_data) {
 
     gnss_measure["mode"] = gnss_data.gnss_mode;
     gnss_measure["status"] = gnss_data.gnss_status;
-    
+
     return gnss_measure;
 }
 

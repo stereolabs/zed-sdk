@@ -6,26 +6,33 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <GL/gl.h>
-#include <GL/glut.h>   /* OpenGL Utility Toolkit header */
+#include <GL/glut.h> /* OpenGL Utility Toolkit header */
 
 #include <list>
 
 #include <cuda_gl_interop.h>
 
 #ifndef M_PI
-#define M_PI 3.141592653f
+    #define M_PI 3.141592653f
 #endif
 
-#define SAFE_DELETE( res ) if( res!=NULL )  { delete res; res = NULL; }
+#define SAFE_DELETE(res) \
+    if (res != NULL) {   \
+        delete res;      \
+        res = NULL;      \
+    }
 
 class CameraGL {
 public:
-
-    CameraGL() {
-    }
+    CameraGL() { }
 
     enum DIRECTION {
-        UP, DOWN, LEFT, RIGHT, FORWARD, BACK
+        UP,
+        DOWN,
+        LEFT,
+        RIGHT,
+        FORWARD,
+        BACK
     };
 
     CameraGL(sl::Translation position, sl::Translation direction, sl::Translation vertical = sl::Translation(0, 1, 0));
@@ -44,7 +51,7 @@ public:
     void setOffsetFromPosition(const sl::Translation& offset);
     const sl::Translation& getOffsetFromPosition() const;
 
-    void setDirection(const sl::Translation& direction, const sl::Translation &vertical);
+    void setDirection(const sl::Translation& direction, const sl::Translation& vertical);
     void translate(const sl::Translation& t);
     void setPosition(const sl::Translation& p);
     void rotate(const sl::Orientation& rot);
@@ -65,7 +72,7 @@ public:
     static const sl::Translation ORIGINAL_RIGHT;
 
     sl::Transform projection_;
-    //private:
+    // private:
     void updateVectors();
     void updateView();
     void updateVPMatrix();
@@ -89,8 +96,10 @@ public:
 
 class Shader {
 public:
-
-    Shader() : verterxId_(0), fragmentId_(0), programId_(0) {}
+    Shader()
+        : verterxId_(0)
+        , fragmentId_(0)
+        , programId_(0) { }
     Shader(const GLchar* vs, const GLchar* fs);
     ~Shader();
 
@@ -107,9 +116,9 @@ public:
 
     static const GLint ATTRIB_VERTICES_POS = 0;
     static const GLint ATTRIB_COLOR_POS = 1;
-    
+
 private:
-    bool compile(GLuint &shaderId, GLenum type, const GLchar* src);
+    bool compile(GLuint& shaderId, GLenum type, const GLchar* src);
     GLuint verterxId_;
     GLuint fragmentId_;
     GLuint programId_;
@@ -117,7 +126,6 @@ private:
 
 class Simple3DObject {
 public:
-
     Simple3DObject();
 
     ~Simple3DObject();
@@ -156,7 +164,7 @@ public:
     FpcObj();
     ~FpcObj();
 
-    void add(std::vector<sl::float4> &);
+    void add(std::vector<sl::float4>&);
     void pushToGPU();
     void clear();
     void draw();
@@ -185,8 +193,8 @@ private:
 public:
     MeshObject();
     ~MeshObject();
-    
-    void add(std::vector<sl::float3> &vertices, std::vector<sl::uint3> &triangles, std::vector<sl::uchar3> &colors);
+
+    void add(std::vector<sl::float3>& vertices, std::vector<sl::uint3>& triangles, std::vector<sl::uchar3>& colors);
 
     void pushToGPU();
     void draw(bool draw_wire);
@@ -241,10 +249,11 @@ public:
 
     Simple3DObject frustum;
     float aspect_ratio;
+
 private:
     sl::Mat ref;
-	cudaArray_t ArrIm;
-    cudaGraphicsResource* cuda_gl_ressource;//cuda GL resource
+    cudaArray_t ArrIm;
+    cudaGraphicsResource* cuda_gl_ressource; // cuda GL resource
     Shader shader;
     Shader shader_im;
     GLuint shMVPMatrixLocTex_;
@@ -256,7 +265,6 @@ private:
     std::vector<sl::uint3> faces;
     std::vector<sl::float3> vert;
     std::vector<sl::float2> uv;
-
 };
 
 // This class manages input events, window and Opengl rendering pipeline
@@ -270,12 +278,12 @@ public:
 
     void exit();
 
-    void init(int argc, char **argv, sl::Mat &, sl::Mat &, CUstream);
+    void init(int argc, char** argv, sl::Mat&, sl::Mat&, CUstream);
     void updateCameraPose(sl::Transform, sl::POSITIONAL_TRACKING_STATE);
 
-    void updateMap(sl::FusedPointCloud &);
-    void updateMap(sl::Mesh &);
-    
+    void updateMap(sl::FusedPointCloud&);
+    void updateMap(sl::Mesh&);
+
 private:
     // Rendering loop method called each frame by glutDisplayFunc
     void render();

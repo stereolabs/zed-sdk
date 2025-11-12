@@ -34,9 +34,9 @@ using namespace sl;
 using namespace std;
 
 void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
-int parseArgs(int argc, char **argv, sl::InitParameters& param);
+int parseArgs(int argc, char** argv, sl::InitParameters& param);
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     // Create a ZED camera
     Camera zed;
 
@@ -49,14 +49,16 @@ int main(int argc, char **argv) {
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
 
     StreamingParameters stream_params;
-    if (argc == 2 && res_arg == 1) stream_params.port = atoi(argv[1]);
-    if (argc > 2) stream_params.port = atoi(argv[2]);
+    if (argc == 2 && res_arg == 1)
+        stream_params.port = atoi(argv[1]);
+    if (argc > 2)
+        stream_params.port = atoi(argv[2]);
 
     returned_state = zed.enableStreaming(stream_params);
     if (returned_state != ERROR_CODE::SUCCESS) {
@@ -85,8 +87,10 @@ int main(int argc, char **argv) {
 
 void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     cout << "[Sample]";
-    if (err_code != ERROR_CODE::SUCCESS)
+    if (err_code > ERROR_CODE::SUCCESS)
         cout << "[Error] ";
+    else if (err_code < ERROR_CODE::SUCCESS)
+        cout << "[Warning] ";
     else
         cout << " ";
     cout << msg_prefix << " ";
@@ -99,7 +103,7 @@ void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     cout << endl;
 }
 
-int parseArgs(int argc, char **argv, sl::InitParameters& param) {
+int parseArgs(int argc, char** argv, sl::InitParameters& param) {
     if (argc > 1 && string(argv[1]).find(".svo") != string::npos) {
         // SVO input mode
         param.input.setFromSVOFile(argv[1]);
@@ -119,7 +123,7 @@ int parseArgs(int argc, char **argv, sl::InitParameters& param) {
         } else if (arg.find("HD2K") != string::npos) {
             param.camera_resolution = RESOLUTION::HD2K;
             cout << "[Sample] Using Camera in resolution HD2K" << endl;
-        }else if (arg.find("HD1200") != string::npos) {
+        } else if (arg.find("HD1200") != string::npos) {
             param.camera_resolution = RESOLUTION::HD1200;
             cout << "[Sample] Using Camera in resolution HD1200" << endl;
         } else if (arg.find("HD1080") != string::npos) {
@@ -128,23 +132,19 @@ int parseArgs(int argc, char **argv, sl::InitParameters& param) {
         } else if (arg.find("HD720") != string::npos) {
             param.camera_resolution = RESOLUTION::HD720;
             cout << "[Sample] Using Camera in resolution HD720" << endl;
-        }else if (arg.find("SVGA") != string::npos) {
+        } else if (arg.find("SVGA") != string::npos) {
             param.camera_resolution = RESOLUTION::SVGA;
             cout << "[Sample] Using Camera in resolution SVGA" << endl;
-        }else if (arg.find("VGA") != string::npos) {
+        } else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;
-        }
-        else if (arg.find("IN0") != string::npos) {
+        } else if (arg.find("IN0") != string::npos) {
             param.input.setFromCameraID(0);
-        }
-        else if (arg.find("IN1") != string::npos) {
+        } else if (arg.find("IN1") != string::npos) {
             param.input.setFromCameraID(1);
-        }
-        else if (arg.find("IN2") != string::npos) {
+        } else if (arg.find("IN2") != string::npos) {
             param.input.setFromCameraID(2);
-        }
-        else
+        } else
             return 1;
     } else {
         // Default
@@ -152,4 +152,3 @@ int parseArgs(int argc, char **argv, sl::InitParameters& param) {
     }
     return 0;
 }
-

@@ -26,7 +26,7 @@ init_params.coordinate_units = sl.UNIT.METER # Set units in meters
 
 # Open the camera
 err = zed.open(init_params)
-if (err != sl.ERROR_CODE.SUCCESS):
+if (err > sl.ERROR_CODE.SUCCESS):
     exit(-1)
 ```
 
@@ -68,7 +68,7 @@ In this tutorial, we grab 500 frames and then stop the loop to extract mesh.
 	i = 0
 	mesh = sl.Mesh() # Create a mesh object
 	while (i < 500) :
-		if (zed.grab() == sl.ERROR_CODE.SUCCESS) :
+		if (zed.grab() <= sl.ERROR_CODE.SUCCESS) :
 			# In background, spatial mapping will use new images, depth and pose to create and update the mesh. No specific functions are required here
 			mapping_state = zed.get_spatial_mapping_state()
 

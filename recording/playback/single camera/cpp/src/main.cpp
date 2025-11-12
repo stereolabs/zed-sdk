@@ -36,9 +36,9 @@ using namespace std;
 
 void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
-    if (argc<=1)  {
+    if (argc <= 1) {
         cout << "Usage: \n";
         cout << "$ ZED_SVO_Playback <SVO_file> \n";
         cout << "  ** SVO file is mandatory in the application ** \n\n";
@@ -54,7 +54,7 @@ int main(int argc, char **argv) {
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
@@ -74,11 +74,11 @@ int main(int argc, char **argv) {
 
     int svo_frame_rate = zed.getInitParameters().camera_fps;
     int nb_frames = zed.getSVONumberOfFrames();
-    print("[Info] SVO contains " +to_string(nb_frames)+" frames");
+    print("[Info] SVO contains " + to_string(nb_frames) + " frames");
 
     // Start SVO playback
 
-     while (key != 'q') {
+    while (key != 'q') {
         returned_state = zed.grab();
         if (returned_state <= ERROR_CODE::SUCCESS) {
             // Get the side by side image
@@ -88,42 +88,41 @@ int main(int argc, char **argv) {
             // Display the frame
             cv::imshow("View", svo_image_ocv);
             key = cv::waitKey(10);
-            
+
             switch (key) {
-            case 's':
-                svo_image.write(("capture_" + to_string(svo_position) + ".png").c_str());
-                break;
-            case 'f':
-                zed.setSVOPosition(svo_position + svo_frame_rate);
-                break;
-            case 'b':
-                zed.setSVOPosition(svo_position - svo_frame_rate);
-                break;
+                case 's':
+                    svo_image.write(("capture_" + to_string(svo_position) + ".png").c_str());
+                    break;
+                case 'f':
+                    zed.setSVOPosition(svo_position + svo_frame_rate);
+                    break;
+                case 'b':
+                    zed.setSVOPosition(svo_position - svo_frame_rate);
+                    break;
             }
 
             ProgressBar((float)(svo_position / (float)nb_frames), 30);
-        }
-        else if (returned_state == sl::ERROR_CODE::END_OF_SVOFILE_REACHED)
-        {
+        } else if (returned_state == sl::ERROR_CODE::END_OF_SVOFILE_REACHED) {
             print("SVO end has been reached. Looping back to 0\n");
             zed.setSVOPosition(0);
             break;
-        }
-        else {
+        } else {
             print("Grab ZED : ", returned_state);
             break;
         }
-     } 
+    }
     zed.close();
     return EXIT_SUCCESS;
 }
 
 void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
-    cout <<"[Sample]";
-    if (err_code != ERROR_CODE::SUCCESS)
+    cout << "[Sample]";
+    if (err_code > ERROR_CODE::SUCCESS)
         cout << "[Error] ";
+    else if (err_code < ERROR_CODE::SUCCESS)
+        cout << "[Warning] ";
     else
-        cout<<" ";
+        cout << " ";
     cout << msg_prefix << " ";
     if (err_code != ERROR_CODE::SUCCESS) {
         cout << " | " << toString(err_code) << " : ";

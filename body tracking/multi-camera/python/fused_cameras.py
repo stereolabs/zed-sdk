@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
             init_params.set_from_serial_number(conf.serial_number)
             status = senders[conf.serial_number].open(init_params)
-            if status != sl.ERROR_CODE.SUCCESS:
+            if status > sl.ERROR_CODE.SUCCESS:
                 print("Error opening the camera", conf.serial_number, status)
                 del senders[conf.serial_number]
                 continue

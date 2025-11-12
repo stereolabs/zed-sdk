@@ -9,11 +9,11 @@
 #include <mutex>
 
 #ifndef M_PI
-#define M_PI 3.141592653f
+    #define M_PI 3.141592653f
 #endif
 
 //// UTILS //////
-void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, std::string msg_suffix = "") ;
+void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CODE::SUCCESS, std::string msg_suffix = "");
 
 /////////////////
 
@@ -30,7 +30,10 @@ struct UserAction {
 
 class Shader {
 public:
-    Shader() : verterxId_(0), fragmentId_(0), programId_(0) {}
+    Shader()
+        : verterxId_(0)
+        , fragmentId_(0)
+        , programId_(0) { }
     Shader(const GLchar* vs, const GLchar* fs);
     ~Shader();
 
@@ -50,7 +53,7 @@ public:
     static const GLint ATTRIB_VERTICES_DIST = 1;
 
 private:
-    bool compile(GLuint &shaderId, GLenum type, const GLchar* src);
+    bool compile(GLuint& shaderId, GLenum type, const GLchar* src);
     GLuint verterxId_;
     GLuint fragmentId_;
     GLuint programId_;
@@ -75,7 +78,7 @@ class MeshObject {
 public:
     MeshObject();
     ~MeshObject();
-    void updateMesh(std::vector<sl::float3> &vertices, std::vector<sl::uint3> &triangles, std::vector<int> &border);
+    void updateMesh(std::vector<sl::float3>& vertices, std::vector<sl::uint3>& triangles, std::vector<int>& border);
     void pushToGPU();
     void draw();
     void alloc();
@@ -84,7 +87,7 @@ public:
 };
 
 class ImageHandler {
-    public:
+public:
     ImageHandler();
     ~ImageHandler();
 
@@ -97,10 +100,10 @@ class ImageHandler {
     // Close (disable update)
     void close();
 
-    private:
+private:
     GLuint texID;
     GLuint imageTex;
-    cudaGraphicsResource* cuda_gl_ressource;//cuda GL resource
+    cudaGraphicsResource* cuda_gl_ressource; // cuda GL resource
     ShaderData shader;
     GLuint quad_vb;
 };
@@ -110,11 +113,12 @@ public:
     GLViewer();
     ~GLViewer();
     bool isAvailable();
-    bool init(int argc, char **argv, sl::CameraParameters &camLeft, bool has_imu);
-    UserAction updateImageAndState(sl::Mat &image, sl::Transform &pose, sl::POSITIONAL_TRACKING_STATE track_state);
-    void updateMesh(sl::Mesh &mesh, sl::PLANE_TYPE type);
-    
+    bool init(int argc, char** argv, sl::CameraParameters& camLeft, bool has_imu);
+    UserAction updateImageAndState(sl::Mat& image, sl::Transform& pose, sl::POSITIONAL_TRACKING_STATE track_state);
+    void updateMesh(sl::Mesh& mesh, sl::PLANE_TYPE type);
+
     void exit();
+
 private:
     // Rendering loop method called each frame by glutDisplayFunc
     void render();
@@ -135,7 +139,7 @@ private:
 
     std::mutex mtx;
 
-    bool available;    
+    bool available;
     sl::Transform pose;
     sl::POSITIONAL_TRACKING_STATE tracking_state;
     UserAction user_action;

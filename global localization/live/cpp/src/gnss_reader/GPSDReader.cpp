@@ -1,6 +1,6 @@
 #include "gnss_reader/IGNSSReader.h"
 
-std::shared_ptr<IGNSSReader> IGNSSReader::create(sl::Camera *zed, bool read_from_svo) {
+std::shared_ptr<IGNSSReader> IGNSSReader::create(sl::Camera* zed, bool read_from_svo) {
     std::shared_ptr<IGNSSReader> reader = nullptr;
     if (read_from_svo) {
         reader = std::make_shared<SVOReader>();
@@ -12,8 +12,9 @@ std::shared_ptr<IGNSSReader> IGNSSReader::create(sl::Camera *zed, bool read_from
         reader->initialize(nullptr, false);
     }
 #else
-    else if(!read_from_svo) {
-        std::cerr << "[GNSS] No GNSS reader available. Please enable USE_GPSD to use GPSD or USE_SVO to use SVO embedded GNSS data." << std::endl;
+    else if (!read_from_svo) {
+        std::cerr << "[GNSS] No GNSS reader available. Please enable USE_GPSD to use GPSD or USE_SVO to use SVO embedded GNSS data."
+                  << std::endl;
         exit(EXIT_FAILURE);
     }
 #endif
@@ -23,9 +24,8 @@ std::shared_ptr<IGNSSReader> IGNSSReader::create(sl::Camera *zed, bool read_from
 
 #ifdef USE_GPSD
 
-GPSDReader::GPSDReader(): IGNSSReader() {
-
-}
+GPSDReader::GPSDReader()
+    : IGNSSReader() { }
 
 GPSDReader::~GPSDReader() {
     continue_to_grab = false;
@@ -33,7 +33,7 @@ GPSDReader::~GPSDReader() {
         grab_gnss_data.join();
 }
 
-void GPSDReader::initialize(sl::Camera *, bool) {
+void GPSDReader::initialize(sl::Camera*, bool) {
     if (grab_gnss_data.joinable())
         grab_gnss_data.join();
     continue_to_grab = true;
@@ -47,7 +47,7 @@ void GPSDReader::initialize(sl::Camera *, bool) {
     std::cout << "Waiting for GNSS fix" << std::endl;
 
     bool received_fix = false;
-    struct gps_data_t *gpsd_data;
+    struct gps_data_t* gpsd_data;
     while (!received_fix) {
         if (!gnss_getter->waiting(0))
             continue;
@@ -65,19 +65,22 @@ void GPSDReader::initialize(sl::Camera *, bool) {
 }
 
 sl::GNSSData GPSDReader::getNextGNSSValue() {
-    
+
     // 0. Check if GNSS is initialized:
     // 1. Get GNSS datas:
-    struct gps_data_t *gpsd_data;
+    struct gps_data_t* gpsd_data;
     while ((gpsd_data = gnss_getter->read()) == NULL)
         ;
     if (gpsd_data->fix.mode >= MODE_2D) {
         int nb_low_snr = 0;
         for (int i = 0; i < gpsd_data->satellites_visible; i++) {
-            satellite_t &satellite = gpsd_data->skyview[i];
-            if (satellite.used && satellite.ss < 16) nb_low_snr++;
+            satellite_t& satellite = gpsd_data->skyview[i];
+            if (satellite.used && satellite.ss < 16)
+                nb_low_snr++;
         }
-        if (nb_low_snr > 0) std::cout << "[Warning] Low SNR (<16) on " << nb_low_snr << " satellite(s) (using " << gpsd_data->satellites_used << " out of " << gpsd_data->satellites_visible << " visible)" << std::endl;
+        if (nb_low_snr > 0)
+            std::cout << "[Warning] Low SNR (<16) on " << nb_low_snr << " satellite(s) (using " << gpsd_data->satellites_used << " out of "
+                      << gpsd_data->satellites_visible << " visible)" << std::endl;
 
         sl::GNSSData current_gnss_data;
         // Fill out coordinates:
@@ -162,16 +165,16 @@ sl::GNSSData GPSDReader::getNextGNSSValue() {
 
         return current_gnss_data;
     } else {
-        std::cout << "Fix lost: reinit GNSS "<< (int) gpsd_data->fix.mode << std::endl;
+        std::cout << "Fix lost: reinit GNSS " << (int)gpsd_data->fix.mode << std::endl;
         continue_to_grab = false;
         initialize(nullptr, false);
         return getNextGNSSValue();
     }
-    
+
     return sl::GNSSData();
 }
 
-sl::FUSION_ERROR_CODE GPSDReader::grab(sl::GNSSData & current_data, uint64_t current_timestamp) {
+sl::FUSION_ERROR_CODE GPSDReader::grab(sl::GNSSData& current_data, uint64_t current_timestamp) {
     if (new_data) {
         new_data = false;
         current_data = current_gnss_data;
@@ -210,20 +213,20 @@ inline bool is_nanoseconds(uint64_t timestamp) {
     return (1'000'000'000'000'000'000 <= timestamp && timestamp < 10'000'000'000'000'000'000ULL);
 }
 
-SVOReader::SVOReader(): IGNSSReader() {
-}
+SVOReader::SVOReader()
+    : IGNSSReader() { }
 
 SVOReader::~SVOReader() {
     gnss_data.clear();
     current_gnss_idx = 0;
 }
 
-void SVOReader::initialize(sl::Camera *zed, bool read_from_svo) {
+void SVOReader::initialize(sl::Camera* zed, bool read_from_svo) {
 
     auto svo_custom_data_keys = zed->getSVODataKeys();
     std::string gnss_key = "GNSS_json";
     bool found = false;
-    for (auto &it : svo_custom_data_keys) {
+    for (auto& it : svo_custom_data_keys) {
         if (it.find(gnss_key) != std::string::npos) {
             found = true;
             break;
@@ -235,7 +238,7 @@ void SVOReader::initialize(sl::Camera *zed, bool read_from_svo) {
 
     /*
      We handle 2 formats:
-     * 
+     *
      * {
             "coordinates": {
                 "latitude": XXX,
@@ -287,18 +290,17 @@ void SVOReader::initialize(sl::Camera *zed, bool read_from_svo) {
         }
      */
 
-
     auto tmp_array = json::array();
-    for (auto &it : data) {
+    for (auto& it : data) {
         try {
             auto gnss_data_point = json::parse(it.second.content.begin(), it.second.content.end());
             auto gnss_data_point_formatted = json::object();
 
             if (!gnss_data_point["Geopoint"].is_null()) {
                 gnss_data_point_formatted["coordinates"] = {
-                    {"latitude", gnss_data_point["Geopoint"]["Latitude"]},
+                    {"latitude",  gnss_data_point["Geopoint"]["Latitude"] },
                     {"longitude", gnss_data_point["Geopoint"]["Longitude"]},
-                    {"altitude", gnss_data_point["Geopoint"]["Altitude"]},
+                    {"altitude",  gnss_data_point["Geopoint"]["Altitude"] },
                 };
                 gnss_data_point_formatted["ts"] = gnss_data_point["EpochTimeStamp"];
 
@@ -310,20 +312,21 @@ void SVOReader::initialize(sl::Camera *zed, bool read_from_svo) {
                 gnss_data_point_formatted["longitude_std"] = longitude_std;
                 gnss_data_point_formatted["altitude_std"] = altitude_std;
 
-                gnss_data_point_formatted["position_covariance"] = json::array({
-                    longitude_std * longitude_std, 0, 0, 0, latitude_std * latitude_std, 0, 0, 0, altitude_std * altitude_std
-                });
+                gnss_data_point_formatted["position_covariance"] = json::array(
+                    {longitude_std * longitude_std, 0, 0, 0, latitude_std * latitude_std, 0, 0, 0, altitude_std * altitude_std}
+                );
 
                 gnss_data_point_formatted["original_gnss_data"] = gnss_data_point;
 
-            } else if (!gnss_data_point["coordinates"].is_null() && !gnss_data_point["latitude_std"].is_null() && !gnss_data_point["longitude_std"].is_null()) {
+            } else if (!gnss_data_point["coordinates"].is_null() && !gnss_data_point["latitude_std"].is_null()
+                       && !gnss_data_point["longitude_std"].is_null()) {
                 // no conversion
                 gnss_data_point_formatted = gnss_data_point;
             }
 
             tmp_array.push_back(gnss_data_point_formatted);
 
-        } catch (const std::runtime_error &e) {
+        } catch (const std::runtime_error& e) {
             std::cerr << "Error while reading GNSS data: " << e.what() << std::endl;
         }
     }
@@ -391,7 +394,7 @@ inline std::string gps_mode2str(int status) {
     return out;
 }
 
-sl::GNSSData getGNSSData(json &gnss_data, int gnss_idx) {
+sl::GNSSData getGNSSData(json& gnss_data, int gnss_idx) {
     sl::GNSSData current_gnss_data;
     current_gnss_data.ts = 0;
 
@@ -403,13 +406,9 @@ sl::GNSSData getGNSSData(json &gnss_data, int gnss_idx) {
 
     json current_gnss_data_json = gnss_data["GNSS"][gnss_idx];
     // Check inputs:
-    if (
-            current_gnss_data_json["coordinates"].is_null()
-            || current_gnss_data_json["coordinates"]["latitude"].is_null()
-            || current_gnss_data_json["coordinates"]["longitude"].is_null()
-            || current_gnss_data_json["coordinates"]["altitude"].is_null()
-            || current_gnss_data_json["ts"].is_null()
-            ) {
+    if (current_gnss_data_json["coordinates"].is_null() || current_gnss_data_json["coordinates"]["latitude"].is_null()
+        || current_gnss_data_json["coordinates"]["longitude"].is_null() || current_gnss_data_json["coordinates"]["altitude"].is_null()
+        || current_gnss_data_json["ts"].is_null()) {
         std::cout << "Null GNSS playback data." << std::endl;
         return current_gnss_data;
     }
@@ -417,7 +416,9 @@ sl::GNSSData getGNSSData(json &gnss_data, int gnss_idx) {
     if (!current_gnss_data_json["original_gnss_data"].is_null()) {
         if (!current_gnss_data_json["original_gnss_data"]["fix"].is_null()) {
             if (!current_gnss_data_json["original_gnss_data"]["fix"]["status"].is_null())
-                std::cout << std::setprecision(3) << "GNSS info: " << gps_status2str(current_gnss_data_json["original_gnss_data"]["fix"]["status"]) << " " << float(current_gnss_data_json["longitude_std"]) << " " << float(current_gnss_data_json["altitude_std"]) << "\r";
+                std::cout << std::setprecision(3)
+                          << "GNSS info: " << gps_status2str(current_gnss_data_json["original_gnss_data"]["fix"]["status"]) << " "
+                          << float(current_gnss_data_json["longitude_std"]) << " " << float(current_gnss_data_json["altitude_std"]) << "\r";
         }
     }
 
@@ -431,10 +432,12 @@ sl::GNSSData getGNSSData(json &gnss_data, int gnss_idx) {
         std::cerr << "Warning: Invalid timestamp format from GNSS file" << std::endl;
 
     // Fill out coordinates:
-    current_gnss_data.setCoordinates(current_gnss_data_json["coordinates"]["latitude"].get<float>(),
-            current_gnss_data_json["coordinates"]["longitude"].get<float>(),
-            current_gnss_data_json["coordinates"]["altitude"].get<float>(),
-            false);
+    current_gnss_data.setCoordinates(
+        current_gnss_data_json["coordinates"]["latitude"].get<float>(),
+        current_gnss_data_json["coordinates"]["longitude"].get<float>(),
+        current_gnss_data_json["coordinates"]["altitude"].get<float>(),
+        false
+    );
 
     // Fill out default standard deviation:
     current_gnss_data.longitude_std = current_gnss_data_json["longitude_std"];
@@ -464,7 +467,7 @@ sl::GNSSData getGNSSData(json &gnss_data, int gnss_idx) {
                 // Acquisition comes from GPSD https://gitlab.com/gpsd/gpsd/-/blob/master/include/gps.h#L183-211
                 int gpsd_mode = current_gnss_data_json["original_gnss_data"]["fix"]["mode"];
                 sl::GNSS_MODE sl_mode = sl::GNSS_MODE::UNKNOWN;
-                
+
                 switch (gpsd_mode) {
                     case 0: // MODE_NOT_SEEN
                         sl_mode = sl::GNSS_MODE::UNKNOWN;
@@ -546,7 +549,7 @@ sl::GNSSData SVOReader::getNextGNSSValue(uint64_t current_timestamp) {
         last_data = current_gnss_data;
         int diff_last = current_timestamp - current_gnss_data.ts.data_ns;
         current_gnss_data = getGNSSData(gnss_data, current_gnss_idx + step++);
-        if (current_gnss_data.ts.data_ns == 0) //error / end of file 
+        if (current_gnss_data.ts.data_ns == 0) // error / end of file
             break;
 
         if (current_gnss_data.ts.data_ns > current_timestamp) {
@@ -560,7 +563,7 @@ sl::GNSSData SVOReader::getNextGNSSValue(uint64_t current_timestamp) {
     return current_gnss_data;
 }
 
-sl::FUSION_ERROR_CODE SVOReader::grab(sl::GNSSData &current_data, uint64_t current_timestamp) {
+sl::FUSION_ERROR_CODE SVOReader::grab(sl::GNSSData& current_data, uint64_t current_timestamp) {
     current_data.ts.data_ns = 0;
 
     if (current_timestamp > 0 && (current_timestamp > last_cam_ts))

@@ -2,60 +2,56 @@
 #include <random>
 
 #if defined(_DEBUG) && defined(_WIN32)
-#error "This sample should not be built in Debug mode, use RelWithDebInfo if you want to do step by step."
+    #error "This sample should not be built in Debug mode, use RelWithDebInfo if you want to do step by step."
 #endif
 
-const GLchar* VERTEX_SHADER =
-        "#version 330 core\n"
-        "layout(location = 0) in vec3 in_Vertex;\n"
-        "layout(location = 1) in vec4 in_Color;\n"
-        "uniform mat4 u_mvpMatrix;\n"
-        "out vec4 b_color;\n"
-        "void main() {\n"
-        "   b_color = in_Color;\n"
-        "	gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
-        "}";
+const GLchar* VERTEX_SHADER = "#version 330 core\n"
+                              "layout(location = 0) in vec3 in_Vertex;\n"
+                              "layout(location = 1) in vec4 in_Color;\n"
+                              "uniform mat4 u_mvpMatrix;\n"
+                              "out vec4 b_color;\n"
+                              "void main() {\n"
+                              "   b_color = in_Color;\n"
+                              "	gl_Position = u_mvpMatrix * vec4(in_Vertex, 1);\n"
+                              "}";
 
-const GLchar* FRAGMENT_SHADER =
-        "#version 330 core\n"
-        "in vec4 b_color;\n"
-        "layout(location = 0) out vec4 out_Color;\n"
-        "void main() {\n"
-        "   out_Color = b_color;\n"
-        "}";
+const GLchar* FRAGMENT_SHADER = "#version 330 core\n"
+                                "in vec4 b_color;\n"
+                                "layout(location = 0) out vec4 out_Color;\n"
+                                "void main() {\n"
+                                "   out_Color = b_color;\n"
+                                "}";
 
-const GLchar* SK_VERTEX_SHADER =
-        "#version 330 core\n"
-        "layout(location = 0) in vec3 in_Vertex;\n"
-        "layout(location = 1) in vec4 in_Color;\n"
-        "layout(location = 2) in vec3 in_Normal;\n"
-        "out vec4 b_color;\n"
-        "out vec3 b_position;\n"
-        "out vec3 b_normal;\n"
-        "uniform mat4 u_mvpMatrix;\n"
-        "uniform vec4 u_color;\n"
-        "void main() {\n"
-        "   b_color = in_Color;\n"
-        "   b_position = in_Vertex;\n"
-        "   b_normal = in_Normal;\n"
-        "	gl_Position =  u_mvpMatrix * vec4(in_Vertex, 1);\n"
-        "}";
+const GLchar* SK_VERTEX_SHADER = "#version 330 core\n"
+                                 "layout(location = 0) in vec3 in_Vertex;\n"
+                                 "layout(location = 1) in vec4 in_Color;\n"
+                                 "layout(location = 2) in vec3 in_Normal;\n"
+                                 "out vec4 b_color;\n"
+                                 "out vec3 b_position;\n"
+                                 "out vec3 b_normal;\n"
+                                 "uniform mat4 u_mvpMatrix;\n"
+                                 "uniform vec4 u_color;\n"
+                                 "void main() {\n"
+                                 "   b_color = in_Color;\n"
+                                 "   b_position = in_Vertex;\n"
+                                 "   b_normal = in_Normal;\n"
+                                 "	gl_Position =  u_mvpMatrix * vec4(in_Vertex, 1);\n"
+                                 "}";
 
-const GLchar* SK_FRAGMENT_SHADER =
-        "#version 330 core\n"
-        "in vec4 b_color;\n"
-        "in vec3 b_position;\n"
-        "in vec3 b_normal;\n"
-        "layout(location = 0) out vec4 out_Color;\n"
-        "void main() {\n"
-        "	vec3 lightPosition = vec3(3000, 5000, 0);\n"
-        "	vec3 ambient = 0.6f * vec3(0.95,0.98,0.99);\n"
-        "	vec3 lightDir = normalize(lightPosition - b_position);\n"
-        "	float diffuse = max(dot(b_normal, lightDir), 0.0);\n"
-        "   out_Color = vec4(b_color.rgb * (ambient + diffuse), 1.f);\n"
-        "}";
+const GLchar* SK_FRAGMENT_SHADER = "#version 330 core\n"
+                                   "in vec4 b_color;\n"
+                                   "in vec3 b_position;\n"
+                                   "in vec3 b_normal;\n"
+                                   "layout(location = 0) out vec4 out_Color;\n"
+                                   "void main() {\n"
+                                   "	vec3 lightPosition = vec3(3000, 5000, 0);\n"
+                                   "	vec3 ambient = 0.6f * vec3(0.95,0.98,0.99);\n"
+                                   "	vec3 lightDir = normalize(lightPosition - b_position);\n"
+                                   "	float diffuse = max(dot(b_normal, lightDir), 0.0);\n"
+                                   "   out_Color = vec4(b_color.rgb * (ambient + diffuse), 1.f);\n"
+                                   "}";
 
-void addVert(Simple3DObject &obj, float i_f, float limit, float height, sl::float4 &clr) {
+void addVert(Simple3DObject& obj, float i_f, float limit, float height, sl::float4& clr) {
     auto p1 = sl::float3(i_f, height, -limit);
     auto p2 = sl::float3(i_f, height, limit);
     auto p3 = sl::float3(-limit, height, i_f);
@@ -68,10 +64,10 @@ void addVert(Simple3DObject &obj, float i_f, float limit, float height, sl::floa
 GLViewer* currentInstance_ = nullptr;
 
 float const colors[5][3] = {
-    {.231f, .909f, .69f},
+    {.231f, .909f, .69f },
     {.098f, .686f, .816f},
-    {.412f, .4f, .804f},
-    {1, .725f, .0f},
+    {.412f, .4f,   .804f},
+    {1,     .725f, .0f  },
     {.989f, .388f, .419f}
 };
 
@@ -81,33 +77,34 @@ inline sl::float4 generateColorClass(int idx) {
 }
 
 float const id_colors[8][3] = {
-    { 232.0f, 176.0f, 59.0f},
-    { 175.0f, 208.0f, 25.0f},
-    { 102.0f, 205.0f, 105.0f},
-    { 185.0f, 0.0f, 255.0f},
-    { 99.0f, 107.0f, 252.0f},
-    {252.0f, 225.0f, 8.0f},
+    {232.0f, 176.0f, 59.0f },
+    {175.0f, 208.0f, 25.0f },
+    {102.0f, 205.0f, 105.0f},
+    {185.0f, 0.0f,   255.0f},
+    {99.0f,  107.0f, 252.0f},
+    {252.0f, 225.0f, 8.0f  },
     {167.0f, 130.0f, 141.0f},
-    {194.0f, 72.0f, 113.0f}
+    {194.0f, 72.0f,  113.0f}
 };
 
 inline sl::float4 generateColorID(int idx) {
-    if (idx < 0) return sl::float4(236 / 255.0f, 184 / 255.0f, 36 / 255.0f, 255 / 255.0f);
+    if (idx < 0)
+        return sl::float4(236 / 255.0f, 184 / 255.0f, 36 / 255.0f, 255 / 255.0f);
     else {
         int const offset = std::max(0, idx % 8);
         return sl::float4(id_colors[offset][2] / 255.0f, id_colors[offset][1] / 255.0f, id_colors[offset][0] / 255.0f, 1.f);
     }
 }
 
-GLViewer::GLViewer() : available(false) {
+GLViewer::GLViewer()
+    : available(false) {
     currentInstance_ = this;
     mouseButton_[0] = mouseButton_[1] = mouseButton_[2] = false;
     clearInputs();
     previousMouseMotion_[0] = previousMouseMotion_[1] = 0;
 }
 
-GLViewer::~GLViewer() {
-}
+GLViewer::~GLViewer() { }
 
 void GLViewer::exit() {
     if (currentInstance_) {
@@ -120,7 +117,7 @@ bool GLViewer::isAvailable() {
     return available;
 }
 
-void GLViewer::init(int argc, char **argv) {
+void GLViewer::init(int argc, char** argv) {
 
     glutInit(&argc, argv);
     int wnd_w = glutGet(GLUT_SCREEN_WIDTH);
@@ -153,7 +150,7 @@ void GLViewer::init(int argc, char **argv) {
 
     // Create the camera
     camera_ = CameraGL(sl::Translation(0, 0, 0), sl::Translation(0, 0, -100));
-    //camera_.setOffsetFromPosition(sl::Translation(0, 0, 1000));
+    // camera_.setOffsetFromPosition(sl::Translation(0, 0, 1000));
 
     // Create the skeletons objects
     skeletons = Simple3DObject(sl::Translation(0, 0, 0), false);
@@ -170,7 +167,7 @@ void GLViewer::init(int argc, char **argv) {
     clr_grid /= 255.f;
 
     float grid_height = -3;
-    for (int i = (int) (-limit); i <= (int) (limit); i++)
+    for (int i = (int)(-limit); i <= (int)(limit); i++)
         addVert(floor_grid, i * 1000, limit * 1000, grid_height * 1000, clr_grid);
 
     floor_grid.pushToGPU();
@@ -206,25 +203,25 @@ inline bool renderObject(const sl::BodyData& i, const bool isTrackingON) {
         return (i.tracking_state == sl::OBJECT_TRACKING_STATE::OK || i.tracking_state == sl::OBJECT_TRACKING_STATE::OFF);
 }
 
-template<typename T>
-void createSKPrimitive(sl::BodyData& body, const std::vector<std::pair<T, T>> &map, Simple3DObject &skp, sl::float4 clr_id) {
+template <typename T>
+void createSKPrimitive(sl::BodyData& body, const std::vector<std::pair<T, T>>& map, Simple3DObject& skp, sl::float4 clr_id) {
     for (auto& limb : map) {
         sl::float3 kp_1 = body.keypoint[getIdx(limb.first)];
         sl::float3 kp_2 = body.keypoint[getIdx(limb.second)];
         float norm_1 = kp_1.norm();
         float norm_2 = kp_2.norm();
         // draw cylinder between two keypoints
-        if (std::isfinite(norm_1) && std::isfinite(norm_2)) 
-            skp.addCylinder(kp_1, kp_2, clr_id);        
+        if (std::isfinite(norm_1) && std::isfinite(norm_2))
+            skp.addCylinder(kp_1, kp_2, clr_id);
     }
-    for (int j = 0; j < static_cast<int> (T::LAST); j++) {
+    for (int j = 0; j < static_cast<int>(T::LAST); j++) {
         sl::float3 kp = body.keypoint[j];
         if (std::isfinite(kp.norm()))
             skp.addSphere(kp, clr_id, 0.01f * 1000.0f);
     }
 }
 
-void createSKPrimitivePtOnly(sl::BodyData& body, const int idx_start, const int idx_end, Simple3DObject &skp, sl::float4 clr_id) {
+void createSKPrimitivePtOnly(sl::BodyData& body, const int idx_start, const int idx_end, Simple3DObject& skp, sl::float4 clr_id) {
     for (int j = idx_start; j <= idx_end; j++) {
         sl::float3 kp = body.keypoint[j];
         if (std::isfinite(kp.norm()))
@@ -232,11 +229,11 @@ void createSKPrimitivePtOnly(sl::BodyData& body, const int idx_start, const int 
     }
 }
 
-void GLViewer::updateData(Bodies &bodies) {
+void GLViewer::updateData(Bodies& bodies) {
     mtx.lock();
     skeletons.clear();
 
-    for(auto &it: bodies.body_list){
+    for (auto& it : bodies.body_list) {
         if (renderObject(it, bodies.is_tracked)) {
             // draw skeletons
             auto clr_id = generateColorID(it.id);
@@ -245,7 +242,7 @@ void GLViewer::updateData(Bodies &bodies) {
             else if (it.keypoint.size() == 34) {
                 createSKPrimitive(it, BODY_34_BONES, skeletons, clr_id);
             } else {
-                createSKPrimitive(it, BODY_BONES_FAST_RENDER, skeletons, clr_id);            
+                createSKPrimitive(it, BODY_BONES_FAST_RENDER, skeletons, clr_id);
                 // Draw rest of the body with kp only, and smaller (for high link density parts like hands)
                 createSKPrimitivePtOnly(it, getIdx(BODY_38_PARTS::RIGHT_WRIST) + 1, it.keypoint.size() - 1, skeletons, clr_id);
             }
@@ -274,23 +271,23 @@ void GLViewer::update() {
 
     // Rotate camera with mouse
     if (mouseButton_[MOUSE_BUTTON::LEFT]) {
-        camera_.rotate(sl::Rotation((float) mouseMotion_[1] * MOUSE_R_SENSITIVITY, camera_.getRight()));
-        camera_.rotate(sl::Rotation((float) mouseMotion_[0] * MOUSE_R_SENSITIVITY, camera_.getVertical() * -1.f));
+        camera_.rotate(sl::Rotation((float)mouseMotion_[1] * MOUSE_R_SENSITIVITY, camera_.getRight()));
+        camera_.rotate(sl::Rotation((float)mouseMotion_[0] * MOUSE_R_SENSITIVITY, camera_.getVertical() * -1.f));
     }
 
     // Translate camera with mouse
     if (mouseButton_[MOUSE_BUTTON::RIGHT]) {
-        camera_.translate(camera_.getUp() * (float) mouseMotion_[1] * MOUSE_T_SENSITIVITY);
-        camera_.translate(camera_.getRight() * (float) mouseMotion_[0] * MOUSE_T_SENSITIVITY);
+        camera_.translate(camera_.getUp() * (float)mouseMotion_[1] * MOUSE_T_SENSITIVITY);
+        camera_.translate(camera_.getRight() * (float)mouseMotion_[0] * MOUSE_T_SENSITIVITY);
     }
 
     // Zoom in with mouse wheel
     if (mouseWheelPosition_ != 0) {
-        //float distance = sl::Translation(camera_.getOffsetFromPosition()).norm();
+        // float distance = sl::Translation(camera_.getOffsetFromPosition()).norm();
         if (mouseWheelPosition_ > 0 /* && distance > camera_.getZNear()*/) { // zoom
             camera_.translate(camera_.getForward() * MOUSE_UZ_SENSITIVITY * 500 * -1);
-        } else if (/*distance < camera_.getZFar()*/ mouseWheelPosition_ < 0) {// unzoom
-            //camera_.setOffsetFromPosition(camera_.getOffsetFromPosition() * MOUSE_DZ_SENSITIVITY);
+        } else if (/*distance < camera_.getZFar()*/ mouseWheelPosition_ < 0) { // unzoom
+            // camera_.setOffsetFromPosition(camera_.getOffsetFromPosition() * MOUSE_DZ_SENSITIVITY);
             camera_.translate(camera_.getForward() * MOUSE_UZ_SENSITIVITY * 500);
         }
     }
@@ -362,7 +359,7 @@ void GLViewer::reshapeCallback(int width, int height) {
 
 void GLViewer::keyPressedCallback(unsigned char c, int x, int y) {
     currentInstance_->keyStates_[c] = KEY_STATE::DOWN;
-    //glutPostRedisplay();
+    // glutPostRedisplay();
 }
 
 void GLViewer::keyReleasedCallback(unsigned char c, int x, int y) {
@@ -373,7 +370,8 @@ void GLViewer::idle() {
     glutPostRedisplay();
 }
 
-Simple3DObject::Simple3DObject() : vaoID_(0) {}
+Simple3DObject::Simple3DObject()
+    : vaoID_(0) { }
 
 Simple3DObject::~Simple3DObject() {
     if (vaoID_ != 0) {
@@ -382,7 +380,8 @@ Simple3DObject::~Simple3DObject() {
     }
 }
 
-Simple3DObject::Simple3DObject(sl::Translation position, bool isStatic) : isStatic_(isStatic) {
+Simple3DObject::Simple3DObject(sl::Translation position, bool isStatic)
+    : isStatic_(isStatic) {
     vaoID_ = 0;
     drawingType_ = GL_TRIANGLES;
     position_ = position;
@@ -427,7 +426,7 @@ void Simple3DObject::addPoints(std::vector<sl::float3> pts, sl::float4 base_clr)
 void Simple3DObject::addPoint(sl::float3 pt, sl::float4 clr) {
     addPt(pt);
     addClr(clr);
-    indices_.push_back((int) indices_.size());
+    indices_.push_back((int)indices_.size());
 }
 
 const std::vector<int> boxLinks = {0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7};
@@ -465,7 +464,7 @@ void Simple3DObject::addBoundingBox(std::vector<sl::float3> bbox, sl::float4 bas
         colors_.push_back(base_clr.r);
         colors_.push_back(base_clr.g);
         colors_.push_back(base_clr.b);
-        colors_.push_back(((i > 3) && (i < 12)) ? 0 : base_clr.a); //fading
+        colors_.push_back(((i > 3) && (i < 12)) ? 0 : base_clr.a); // fading
     }
 
     for (int i = 0; i < boxLinks.size(); i += 4) {
@@ -502,8 +501,8 @@ void Simple3DObject::addLine(sl::float3 p1, sl::float3 p2, sl::float3 clr) {
     colors_.push_back(clr.b);
     colors_.push_back(1.f);
 
-    indices_.push_back((int) indices_.size());
-    indices_.push_back((int) indices_.size());
+    indices_.push_back((int)indices_.size());
+    indices_.push_back((int)indices_.size());
 }
 
 void Simple3DObject::addCylinder(sl::float3 startPosition, sl::float3 endPosition, sl::float4 clr) {
@@ -523,10 +522,7 @@ void Simple3DObject::addCylinder(sl::float3 startPosition, sl::float3 endPositio
         float cosTheta = sl::float3::dot(dir, yAxis);
         float scale = (1.f - cosTheta) / (1.f - (cosTheta * cosTheta));
 
-        float data[] = {0, v[2], -v[1], 0,
-            -v[2], 0, v[0], 0,
-            v[1], -v[0], 0, 0,
-            0, 0, 0, 1.f};
+        float data[] = {0, v[2], -v[1], 0, -v[2], 0, v[0], 0, v[1], -v[0], 0, 0, 0, 0, 0, 1.f};
 
         sl::Transform vx = sl::Transform(data);
         rotation.setIdentity();
@@ -569,7 +565,7 @@ void Simple3DObject::addCylinder(sl::float3 startPosition, sl::float3 endPositio
 }
 
 void Simple3DObject::addSphere(sl::float3 position, sl::float4 clr, float m_radius) {
-   // const float m_radius = 0.01f * 1000.0f * 2; // convert to millimeters
+    // const float m_radius = 0.01f * 1000.0f * 2; // convert to millimeters
     const int m_stackCount = 12;
     const int m_sectorCount = 12;
 
@@ -578,15 +574,15 @@ void Simple3DObject::addSphere(sl::float3 position, sl::float4 clr, float m_radi
 
     int i, j;
     for (i = 0; i <= m_stackCount; i++) {
-        double lat0 = M_PI * (-0.5 + (double) (i - 1) / m_stackCount);
+        double lat0 = M_PI * (-0.5 + (double)(i - 1) / m_stackCount);
         double z0 = sin(lat0);
         double zr0 = cos(lat0);
 
-        double lat1 = M_PI * (-0.5 + (double) i / m_stackCount);
+        double lat1 = M_PI * (-0.5 + (double)i / m_stackCount);
         double z1 = sin(lat1);
         double zr1 = cos(lat1);
         for (j = 0; j <= m_sectorCount - 1; j++) {
-            double lng = 2 * M_PI * (double) (j - 1) / m_sectorCount;
+            double lng = 2 * M_PI * (double)(j - 1) / m_sectorCount;
             double x = cos(lng);
             double y = sin(lng);
 
@@ -602,7 +598,7 @@ void Simple3DObject::addSphere(sl::float3 position, sl::float4 clr, float m_radi
             addPoint(point, clr);
             addNormal(normal);
 
-            lng = 2 * M_PI * (double) (j) / m_sectorCount;
+            lng = 2 * M_PI * (double)(j) / m_sectorCount;
             x = cos(lng);
             y = sin(lng);
 
@@ -631,27 +627,32 @@ void Simple3DObject::pushToGPU() {
         if (vertices_.size() > 0) {
             glBindVertexArray(vaoID_);
             glBindBuffer(GL_ARRAY_BUFFER, vboID_[Shader::ATTRIB_VERTICES_POS]);
-            glBufferData(GL_ARRAY_BUFFER, vertices_.size() * sizeof (float), &vertices_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, vertices_.size() * sizeof(float), &vertices_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
             glVertexAttribPointer(Shader::ATTRIB_VERTICES_POS, 3, GL_FLOAT, GL_FALSE, 0, 0);
             glEnableVertexAttribArray(Shader::ATTRIB_VERTICES_POS);
         }
         if (colors_.size() > 0) {
             glBindBuffer(GL_ARRAY_BUFFER, vboID_[Shader::ATTRIB_COLOR_POS]);
-            glBufferData(GL_ARRAY_BUFFER, colors_.size() * sizeof (float), &colors_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, colors_.size() * sizeof(float), &colors_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
             glVertexAttribPointer(Shader::ATTRIB_COLOR_POS, 4, GL_FLOAT, GL_FALSE, 0, 0);
             glEnableVertexAttribArray(Shader::ATTRIB_COLOR_POS);
         }
 
         if (normals_.size() > 0) {
             glBindBuffer(GL_ARRAY_BUFFER, vboID_[Shader::ATTRIB_NORMAL]);
-            glBufferData(GL_ARRAY_BUFFER, normals_.size() * sizeof (float), &normals_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, normals_.size() * sizeof(float), &normals_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
             glVertexAttribPointer(Shader::ATTRIB_NORMAL, 3, GL_FLOAT, GL_FALSE, 0, 0);
             glEnableVertexAttribArray(Shader::ATTRIB_NORMAL);
         }
 
         if (indices_.size() > 0) {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID_[3]);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_.size() * sizeof (unsigned int), &indices_[0], isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
+            glBufferData(
+                GL_ELEMENT_ARRAY_BUFFER,
+                indices_.size() * sizeof(unsigned int),
+                &indices_[0],
+                isStatic_ ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW
+            );
         }
 
         glBindVertexArray(0);
@@ -674,7 +675,7 @@ void Simple3DObject::setDrawingType(GLenum type) {
 void Simple3DObject::draw() {
     if (indices_.size() && vaoID_) {
         glBindVertexArray(vaoID_);
-        glDrawElements(drawingType_, (GLsizei) indices_.size(), GL_UNSIGNED_INT, 0);
+        glDrawElements(drawingType_, (GLsizei)indices_.size(), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 }
@@ -748,7 +749,7 @@ void Shader::set(const GLchar* vs, const GLchar* fs) {
         GLint errorSize(0);
         glGetProgramiv(programId_, GL_INFO_LOG_LENGTH, &errorSize);
 
-        char *error = new char[errorSize + 1];
+        char* error = new char[errorSize + 1];
         glGetShaderInfoLog(programId_, errorSize, &errorSize, error);
         error[errorSize] = '\0';
         std::cout << error << std::endl;
@@ -771,13 +772,13 @@ GLuint Shader::getProgramId() {
     return programId_;
 }
 
-bool Shader::compile(GLuint &shaderId, GLenum type, const GLchar* src) {
+bool Shader::compile(GLuint& shaderId, GLenum type, const GLchar* src) {
     shaderId = glCreateShader(type);
     if (shaderId == 0) {
         std::cout << "ERROR: shader type (" << type << ") does not exist" << std::endl;
         return false;
     }
-    glShaderSource(shaderId, 1, (const char**) &src, 0);
+    glShaderSource(shaderId, 1, (const char**)&src, 0);
     glCompileShader(shaderId);
 
     GLint errorCp(0);
@@ -787,7 +788,7 @@ bool Shader::compile(GLuint &shaderId, GLenum type, const GLchar* src) {
         GLint errorSize(0);
         glGetShaderiv(shaderId, GL_INFO_LOG_LENGTH, &errorSize);
 
-        char *error = new char[errorSize + 1];
+        char* error = new char[errorSize + 1];
         glGetShaderInfoLog(shaderId, errorSize, &errorSize, error);
         error[errorSize] = '\0';
         std::cout << error << std::endl;
@@ -814,8 +815,7 @@ CameraGL::CameraGL(sl::Translation position, sl::Translation direction, sl::Tran
     updateVPMatrix();
 }
 
-CameraGL::~CameraGL() {
-}
+CameraGL::~CameraGL() { }
 
 void CameraGL::update() {
     if (sl::Translation::dot(vertical_, up_) < 0)

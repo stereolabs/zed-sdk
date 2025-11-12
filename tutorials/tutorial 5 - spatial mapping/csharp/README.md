@@ -33,7 +33,7 @@ init_params.coordinateUnits = UNIT.METER; // Set units in meters
 
 // Open the camera
 ERROR_CODE err = zed.Open(ref init_params);
-if (err != ERROR_CODE.SUCCESS)
+if (err > ERROR_CODE.SUCCESS)
     Enviromnent.Exit(-1);
 ```
 
@@ -75,7 +75,7 @@ In this tutorial, we grab 500 frames and then stop the loop to extract mesh.
 int i = 0;
 RuntimeParameters runtimeParameters = new RuntimeParameters();
 while (i < 500) {
-	if (zed.Grab(ref runtimeParameters) == ERROR_CODE.SUCCESS) {
+	if (zed.Grab(ref runtimeParameters) <= ERROR_CODE.SUCCESS) {
 		// In background, spatial mapping will use new images, depth and pose to create and update the mesh. No specific functions are required here.
 		SPATIAL_MAPPING_STATE mapping_state = zed.GetSpatialMappingState();
 		// Print spatial mapping state

@@ -32,7 +32,7 @@ def main():
 
     # Open the camera
     err = zed.open(init_params)
-    if err != sl.ERROR_CODE.SUCCESS:
+    if err > sl.ERROR_CODE.SUCCESS:
         print("Camera Open : "+repr(err)+". Exit program.")
         exit()
 
@@ -43,8 +43,8 @@ def main():
     runtime_parameters = sl.RuntimeParameters()
     while i < 50:
         # Grab an image, a RuntimeParameters object must be given to grab()
-        if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
-            # A new image is available if grab() returns SUCCESS
+        if zed.grab(runtime_parameters) <= sl.ERROR_CODE.SUCCESS:
+            # A new image is available if grab() returns ERROR_CODE.SUCCESS or a WARNING (an error_code lower than ERROR_CODE.SUCCESS)
             zed.retrieve_image(image, sl.VIEW.LEFT)
             timestamp = zed.get_timestamp(sl.TIME_REFERENCE.CURRENT)  # Get the timestamp at the time the image was captured
             print("Image resolution: {0} x {1} || Image timestamp: {2}\n".format(image.get_width(), image.get_height(),

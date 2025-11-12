@@ -33,7 +33,7 @@
 using namespace sl;
 using namespace std;
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
     if (argc < 2) {
         cout << "No arguments provided, an output SVO name is expected.\n";
@@ -46,10 +46,10 @@ int main(int argc, char **argv) {
     // Set configuration parameters for the ZED
     InitParametersOne init_parameters;
     init_parameters.sdk_verbose = 1;
-    
+
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
@@ -88,7 +88,6 @@ int main(int argc, char **argv) {
 
                 frames_recorded++;
                 std::cout << "Frame count: " << frames_recorded << std::endl;
-
             }
         } else
             break;

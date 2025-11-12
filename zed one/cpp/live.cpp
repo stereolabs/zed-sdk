@@ -33,8 +33,7 @@
 using namespace std;
 using namespace sl;
 
-int main(int argc, char **argv)
-{
+int main(int argc, char** argv) {
     // Create a ZED Camera object
     CameraOne zed;
 
@@ -44,8 +43,7 @@ int main(int argc, char **argv)
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS)
-    {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
@@ -54,28 +52,24 @@ int main(int argc, char **argv)
 
     auto _cam_infos = zed.getCameraInformation();
 
-    std::cout<<"CAM INFOS\n "<<
-        "MODEL "<<_cam_infos.camera_model<<"\n"<<
-        "INPUT "<<_cam_infos.input_type<<"\n"<<
-        "SERIAL "<<_cam_infos.serial_number<<"\n"<<
-        "Resolution "<<_cam_infos.camera_configuration.resolution.width <<"x"<<_cam_infos.camera_configuration.resolution.height<<"\n"<<
-        "FPS "<<_cam_infos.camera_configuration.fps<<std::endl;
-        
+    std::cout << "CAM INFOS\n " << "MODEL " << _cam_infos.camera_model << "\n"
+              << "INPUT " << _cam_infos.input_type << "\n"
+              << "SERIAL " << _cam_infos.serial_number << "\n"
+              << "Resolution " << _cam_infos.camera_configuration.resolution.width << "x"
+              << _cam_infos.camera_configuration.resolution.height << "\n"
+              << "FPS " << _cam_infos.camera_configuration.fps << std::endl;
+
     // Capture new images until 'q' is pressed
     char key = ' ';
-    while (key != 'q')
-    {
+    while (key != 'q') {
         // Check that a new image is successfully acquired
         returned_state = zed.grab();
-        if (returned_state <= ERROR_CODE::SUCCESS)
-        {
+        if (returned_state <= ERROR_CODE::SUCCESS) {
             // Retrieve  image
             zed.retrieveImage(zed_image);
             // Display the image
             cv::imshow("ZED-One", slMat2cvMat(zed_image));
-        }
-        else
-        {
+        } else {
             print("Grab", returned_state);
             if (returned_state != sl::ERROR_CODE::CAMERA_REBOOTING)
                 break;

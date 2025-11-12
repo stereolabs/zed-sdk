@@ -160,7 +160,7 @@ def main_(args: argparse.Namespace):
     print("Initializing Camera...")
     zed = sl.Camera()
     status = zed.open(init_params)
-    if status != sl.ERROR_CODE.SUCCESS:
+    if status > sl.ERROR_CODE.SUCCESS:
         print(repr(status))
         exit()
     print("Camera Initialized")

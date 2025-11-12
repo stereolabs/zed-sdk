@@ -9,12 +9,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
-namespace sl
-{
-    class GLViewer
-    {
-        public GLViewer()
-        {
+namespace sl {
+    class GLViewer {
+        public GLViewer() {
             floor_grid = new Simple3DObject(true);
             zedModel = new Simple3DObject(false);
             zedPath = new Simple3DObject(false);
@@ -27,14 +24,11 @@ namespace sl
             clearInputs();
         }
 
-        public bool isAvailable()
-        {
+        public bool isAvailable() {
             return available;
         }
 
-
-        public void init(CameraParameters param, MODEL cameraModel)
-        {
+        public void init(CameraParameters param, MODEL cameraModel) {
 
             mainShader = new ShaderData();
             mainShader.it = new Shader(Shader.VERTEX_SHADER, Shader.FRAGMENT_SHADER);
@@ -44,7 +38,7 @@ namespace sl
             shaderLine.it = new Shader(Shader.VERTEX_SHADER, Shader.FRAGMENT_SHADER);
             shaderLine.MVP_Mat = Gl.GetUniformLocation(shaderLine.it.getProgramId(), "u_mvpMatrix");
 
-            //Create Camera
+            // Create Camera
             camera_ = new CameraGL(new Vector3(0f, 1f, 1f), new Vector3(0, -1, -4f), Vector3.UnitY);
             camera_.setOffsetFromPosition(new Vector3(0, 0, 1.0f));
 
@@ -70,15 +64,11 @@ namespace sl
             clr2.w = 1f;
 
             float height = 0.0f;
-            for (int i = (int)(limit * -5); i <= (int)(limit * 5); i++)
-            {
+            for (int i = (int)(limit * -5); i <= (int)(limit * 5); i++) {
                 float i_f = i / 5.0f;
-                if ((i % 5) == 0)
-                {
+                if ((i % 5) == 0) {
                     addVert(ref floor_grid, i_f, limit, height, clr2);
-                }
-                else
-                {
+                } else {
                     addVert(ref floor_grid, i_f, limit, height, clr1);
                 }
             }
@@ -90,8 +80,7 @@ namespace sl
             available = true;
         }
 
-        public void updateData(Pose zedRT)
-        {
+        public void updateData(Pose zedRT) {
             vecPath.Add(new float3(zedRT.translation.X, zedRT.translation.Y, zedRT.translation.Z));
             zedModel.setRT(zedRT.translation, zedRT.rotation);
 
@@ -101,7 +90,7 @@ namespace sl
         void createFrustrum(ref Simple3DObject obj) {
             float Z_ = -0.25f;
             float Y_ = Z_ * (float)Math.Tan(95.0f * Math.PI / 180.0f / 2.0f);
-            float X_ = Y_ * 16.0f/9.0f;
+            float X_ = Y_ * 16.0f / 9.0f;
 
             float3 A, B, C, D, E;
             A = new float3(0, 0, 0);
@@ -110,7 +99,7 @@ namespace sl
             D = new float3(-X_, -Y_, Z_);
             E = new float3(X_, -Y_, Z_);
 
-            float4 lime_clr = new float4() ;
+            float4 lime_clr = new float4();
             lime_clr.x = 217 / 255.0f;
             lime_clr.y = 255 / 255.0f;
             lime_clr.z = 66 / 255.0f;
@@ -129,8 +118,7 @@ namespace sl
             obj.pushToGPU();
         }
 
-        void addVert(ref Simple3DObject obj, float i_f, float limit, float height, float4 clr)
-        {
+        void addVert(ref Simple3DObject obj, float i_f, float limit, float height, float4 clr) {
             float3 p1 = new float3(i_f, height, -limit);
             float3 p2 = new float3(i_f, height, limit);
             float3 p3 = new float3(-limit, height, i_f);
@@ -140,17 +128,17 @@ namespace sl
             obj.addLine(p3, p4, clr);
         }
 
-        public void update()
-        {
-            if (updateZEDposition)
-            {
+        public void update() {
+            if (updateZEDposition) {
                 zedPath.clear();
                 float3 clr = new float3(0.1f, 0.5f, 0.9f);
-                for (int i = 1; i < vecPath.Count(); i++)
-                {
+                for (int i = 1; i < vecPath.Count(); i++) {
                     float fade = (i * 1.0f) / vecPath.Count();
                     float4 new_color = new float4();
-                    new_color.x = clr.x * fade; new_color.y = clr.y * fade; new_color.z = clr.z * fade; new_color.w = fade;
+                    new_color.x = clr.x * fade;
+                    new_color.y = clr.y * fade;
+                    new_color.z = clr.z * fade;
+                    new_color.w = fade;
                     zedPath.addPoint(vecPath[i], new_color);
                 }
                 zedPath.pushToGPU();
@@ -158,51 +146,41 @@ namespace sl
             }
         }
 
-        public void render()
-        {
+        public void render() {
             camera_.update();
 
             update();
             draw();
 
-            //clearInputs();
+            // clearInputs();
         }
 
-        public void keyEventFunction(NativeWindowKeyEventArgs e)
-        {
-            if (e.Key == KeyCode.R)
-            {
+        public void keyEventFunction(NativeWindowKeyEventArgs e) {
+            if (e.Key == KeyCode.R) {
                 camera_.setPosition(new Vector3(0f, 1f, 1f));
                 camera_.setDirection(new Vector3(0, -1, -4f), Vector3.UnitY);
             }
-            if (e.Key == KeyCode.Up || e.Key == KeyCode.Z)
-            {
+            if (e.Key == KeyCode.Up || e.Key == KeyCode.Z) {
                 camera_.translate(camera_.getForward() * -1f * MOUSE_ZOOM_SENSITIVITY);
             }
-            if (e.Key == KeyCode.Down || e.Key == KeyCode.S)
-            {
+            if (e.Key == KeyCode.Down || e.Key == KeyCode.S) {
                 camera_.translate(camera_.getForward() * 1f * MOUSE_ZOOM_SENSITIVITY);
             }
         }
 
-        public void mouseEventFunction(NativeWindowMouseEventArgs e)
-        {
+        public void mouseEventFunction(NativeWindowMouseEventArgs e) {
             // Rotate camera with mouse
-            if (e.Buttons == OpenGL.CoreUI.MouseButton.Left)
-            {
+            if (e.Buttons == OpenGL.CoreUI.MouseButton.Left) {
                 camera_.rotate(Quaternion.CreateFromAxisAngle(camera_.getRight(), (float)mouseMotion_[1] * MOUSE_R_SENSITIVITY));
                 camera_.rotate(Quaternion.CreateFromAxisAngle(camera_.getVertical() * -1f, (float)mouseMotion_[0] * MOUSE_R_SENSITIVITY));
             }
-            if (e.Buttons == OpenGL.CoreUI.MouseButton.Right)
-            {
-                camera_.translate(camera_.getUp() *  (float)mouseMotion_[1] * MOUSE_T_SENSITIVITY);
-                camera_.translate(camera_.getRight() *  -(float)mouseMotion_[0] * MOUSE_T_SENSITIVITY);
+            if (e.Buttons == OpenGL.CoreUI.MouseButton.Right) {
+                camera_.translate(camera_.getUp() * (float)mouseMotion_[1] * MOUSE_T_SENSITIVITY);
+                camera_.translate(camera_.getRight() * -(float)mouseMotion_[0] * MOUSE_T_SENSITIVITY);
             }
-
         }
 
-        public void resizeCallback(int width, int height)
-        {
+        public void resizeCallback(int width, int height) {
             Gl.Viewport(0, 0, width, height);
             float hfov = (180.0f / (float)Math.PI) * (float)(2.0 * Math.Atan(width / (2.0f * 500)));
             float vfov = (180.0f / (float)Math.PI) * (float)(2.0f * Math.Atan(height / (2.0f * 500)));
@@ -210,16 +188,14 @@ namespace sl
             camera_.setProjection(hfov, vfov, camera_.getZNear(), camera_.getZFar());
         }
 
-        public void computeMouseMotion(int x, int y)
-        {
+        public void computeMouseMotion(int x, int y) {
             currentInstance.mouseMotion_[0] = x - currentInstance.previousMouseMotion_[0];
             currentInstance.mouseMotion_[1] = currentInstance.previousMouseMotion_[1] - y;
             currentInstance.previousMouseMotion_[0] = x;
             currentInstance.previousMouseMotion_[1] = y;
         }
 
-        public void draw()
-        {
+        public void draw() {
             Matrix4x4 vpMatrix = camera_.getViewProjectionMatrix();
 
             Gl.UseProgram(shaderLine.it.getProgramId());
@@ -241,8 +217,7 @@ namespace sl
             Gl.UseProgram(0);
         }
 
-        sl.float4 generateColorClass(int idx)
-        {
+        sl.float4 generateColorClass(int idx) {
 
             int offset = Math.Max(0, idx % 5);
             sl.float4 color = new float4();
@@ -253,26 +228,25 @@ namespace sl
             return color;
         }
 
-        float[,] id_colors = new float[5, 3]{
+        float[,] id_colors = new float[5, 3] {
 
-            {.231f, .909f, .69f},
+            {.231f, .909f, .69f },
             {.098f, .686f, .816f},
-            {.412f, .4f, .804f},
-            {1, .725f, .0f},
+            {.412f, .4f,   .804f},
+            {1,     .725f, .0f  },
             {.989f, .388f, .419f}
         };
 
-        float[,] class_colors = new float[6, 3]{
-            { 44.0f, 117.0f, 255.0f}, // PEOPLE
-            { 255.0f, 0.0f, 255.0f}, // VEHICLE
-            { 0.0f, 0.0f, 255.0f},
-            { 0.0f, 255.0f, 255.0f},
-            { 0.0f, 255.0f, 0.0f},
-            { 255.0f, 255.0f, 255.0f}
+        float[,] class_colors = new float[6, 3] {
+            {44.0f,  117.0f, 255.0f}, // PEOPLE
+            {255.0f, 0.0f,   255.0f}, // VEHICLE
+            {0.0f,   0.0f,   255.0f},
+            {0.0f,   255.0f, 255.0f},
+            {0.0f,   255.0f, 0.0f  },
+            {255.0f, 255.0f, 255.0f}
         };
 
-        float4 getColorClass(int idx)
-        {
+        float4 getColorClass(int idx) {
             idx = Math.Min(5, idx);
             sl.float4 color = new float4();
             color.x = class_colors[idx, 0];
@@ -286,46 +260,44 @@ namespace sl
             return (i.objectTrackingState == OBJECT_TRACKING_STATE.OK || i.objectTrackingState == OBJECT_TRACKING_STATE.OFF);
         }
 
-        private void setRenderCameraProjection(CameraParameters camParams, float znear, float zfar)
-            {
-                float PI = 3.141592653f;
-                // Just slightly up the ZED camera FOV to make a small black border
-                float fov_y = (camParams.vFOV+0.5f) *PI / 180;
-                float fov_x = (camParams.hFOV+0.5f) * PI / 180;
+        private void setRenderCameraProjection(CameraParameters camParams, float znear, float zfar) {
+            float PI = 3.141592653f;
+            // Just slightly up the ZED camera FOV to make a small black border
+            float fov_y = (camParams.vFOV + 0.5f) * PI / 180;
+            float fov_x = (camParams.hFOV + 0.5f) * PI / 180;
 
-                projection_.M11 = 1.0f / (float)Math.Tan(fov_x * 0.5f);
-                projection_.M22 = 1.0f / (float)Math.Tan(fov_y * 0.5f);
-                projection_.M33 = -(zfar + znear) / (zfar - znear);
-                projection_.M43 = -1;
-                projection_.M34 = -(2.0f * zfar * znear) / (zfar - znear);
-                projection_.M44 = 0;
+            projection_.M11 = 1.0f / (float)Math.Tan(fov_x * 0.5f);
+            projection_.M22 = 1.0f / (float)Math.Tan(fov_y * 0.5f);
+            projection_.M33 = -(zfar + znear) / (zfar - znear);
+            projection_.M43 = -1;
+            projection_.M34 = -(2.0f * zfar * znear) / (zfar - znear);
+            projection_.M44 = 0;
 
-                projection_.M12 = 0;
-                projection_.M13 = 2.0f * (((int)camParams.resolution.width - 1.0f * camParams.cx) / (int)camParams.resolution.width) -1.0f; //Horizontal offset.
-                projection_.M14 = 0;
+            projection_.M12 = 0;
+            projection_.M13 = 2.0f * (((int)camParams.resolution.width - 1.0f * camParams.cx) / (int)camParams.resolution.width)
+                - 1.0f; // Horizontal offset.
+            projection_.M14 = 0;
 
-                projection_.M21 = 0;
-                projection_.M22 = 1.0f / (float)Math.Tan(fov_y * 0.5f); //Vertical FoV.
-                projection_.M23 = -(2.0f * (((int)camParams.resolution.height -1.0f * camParams.cy) / (int)camParams.resolution.height) -1.0f); //Vertical offset.
-                projection_.M24 = 0;
+            projection_.M21 = 0;
+            projection_.M22 = 1.0f / (float)Math.Tan(fov_y * 0.5f); // Vertical FoV.
+            projection_.M23
+                = -(2.0f * (((int)camParams.resolution.height - 1.0f * camParams.cy) / (int)camParams.resolution.height) - 1.0f
+                ); // Vertical offset.
+            projection_.M24 = 0;
 
-                projection_.M31 = 0;
-                projection_.M32 = 0;
+            projection_.M31 = 0;
+            projection_.M32 = 0;
 
-                projection_.M41 = 0;
-                projection_.M42 = 0;
-            }
+            projection_.M41 = 0;
+            projection_.M42 = 0;
+        }
 
-
-        void clearInputs()
-        {
+        void clearInputs() {
             mouseMotion_[0] = mouseMotion_[1] = 0;
         }
 
-        public void exit()
-        {
-            if (currentInstance != null)
-            {
+        public void exit() {
+            if (currentInstance != null) {
                 available = false;
             }
         }
@@ -355,16 +327,14 @@ namespace sl
         Simple3DObject floor_grid;
         Simple3DObject zedModel;
         Simple3DObject zedPath;
-        
+
         GLViewer currentInstance;
     };
 
-    class CameraGL
-        {
+    class CameraGL {
         public CameraGL() { }
 
-        public CameraGL(Vector3 position, Vector3 direction, Vector3 vertical)
-        {
+        public CameraGL(Vector3 position, Vector3 direction, Vector3 vertical) {
             position_ = position;
             setDirection(direction, vertical);
             offset_ = new Vector3(0, 0, 0);
@@ -374,18 +344,15 @@ namespace sl
             updateVPMatrix();
         }
 
-        public void update()
-        {
-            if (Vector3.Dot(vertical_, up_) < 0)
-            {
+        public void update() {
+            if (Vector3.Dot(vertical_, up_) < 0) {
                 vertical_ = vertical_ * -1f;
             }
             updateView();
             updateVPMatrix();
         }
 
-        public void setProjection(float horizontalFOV, float verticalFOV, float znear, float zfar)
-        {
+        public void setProjection(float horizontalFOV, float verticalFOV, float znear, float zfar) {
             horizontalFieldOfView_ = horizontalFOV;
             verticalFieldOfView_ = verticalFOV;
             znear_ = znear;
@@ -402,21 +369,29 @@ namespace sl
             projection_.M43 = -1;
             projection_.M34 = -(2.0f * zfar * znear) / (zfar - znear);
             projection_.M44 = 0;
-
         }
 
-        public Matrix4x4 getViewProjectionMatrix(){ return vpMatrix_; }
+        public Matrix4x4 getViewProjectionMatrix() {
+            return vpMatrix_;
+        }
 
-        public float getHorizontalFOV() { return horizontalFieldOfView_; }
+        public float getHorizontalFOV() {
+            return horizontalFieldOfView_;
+        }
 
-        public float getVerticalFOV() { return verticalFieldOfView_; }
+        public float getVerticalFOV() {
+            return verticalFieldOfView_;
+        }
 
-        public void setOffsetFromPosition(Vector3 o) { offset_ = o; }
+        public void setOffsetFromPosition(Vector3 o) {
+            offset_ = o;
+        }
 
-        public Vector3 getOffsetFromPosition() { return offset_; }
+        public Vector3 getOffsetFromPosition() {
+            return offset_;
+        }
 
-        public void setDirection(Vector3 direction, Vector3 vertical)
-        {
+        public void setDirection(Vector3 direction, Vector3 vertical) {
             Vector3 dirNormalized = Vector3.Normalize(direction);
 
             // Create rotation
@@ -439,58 +414,71 @@ namespace sl
             ///////////////////////
             updateVectors();
             vertical_ = vertical;
-            if (Vector3.Dot(vertical, up_) < 0) rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitZ, (float)Math.PI));
+            if (Vector3.Dot(vertical, up_) < 0)
+                rotate(Quaternion.CreateFromAxisAngle(Vector3.UnitZ, (float)Math.PI));
         }
 
-        public void translate(Vector3 t) { position_ = position_ + t; }
+        public void translate(Vector3 t) {
+            position_ = position_ + t;
+        }
 
-        public void setPosition(Vector3 p) { position_ = p; }
+        public void setPosition(Vector3 p) {
+            position_ = p;
+        }
 
-        public void rotate(Quaternion rot)
-        {
+        public void rotate(Quaternion rot) {
             rotation_ = rot * rotation_;
             updateVectors();
         }
 
-        public void rotate(Matrix4x4 m)
-        {
+        public void rotate(Matrix4x4 m) {
             rotate(Quaternion.CreateFromRotationMatrix(m));
         }
 
-        public void setRotation(Quaternion rot)
-        {
+        public void setRotation(Quaternion rot) {
             rotation_ = rot;
             updateVectors();
         }
 
-        public void setRotation(Matrix4x4 m)
-        {
+        public void setRotation(Matrix4x4 m) {
             setRotation(Quaternion.CreateFromRotationMatrix(m));
         }
 
-        public Vector3 getPosition() { return position_; }
+        public Vector3 getPosition() {
+            return position_;
+        }
 
-        public Vector3 getForward() { return forward_; }
+        public Vector3 getForward() {
+            return forward_;
+        }
 
-        public Vector3 getRight() { return right_; }
+        public Vector3 getRight() {
+            return right_;
+        }
 
-        public Vector3 getUp() { return up_; }
+        public Vector3 getUp() {
+            return up_;
+        }
 
-        public Vector3 getVertical(){ return vertical_;}
+        public Vector3 getVertical() {
+            return vertical_;
+        }
 
-        public float getZNear() { return znear_; }
+        public float getZNear() {
+            return znear_;
+        }
 
-        public float getZFar() { return zfar_; }
+        public float getZFar() {
+            return zfar_;
+        }
 
-        void updateVectors()
-        {
+        void updateVectors() {
             forward_ = Vector3.Transform(Vector3.UnitZ, rotation_);
             up_ = Vector3.Transform(Vector3.UnitY, rotation_);
             right_ = Vector3.Transform(Vector3.UnitX, rotation_);
         }
 
-        void updateView()
-        {
+        void updateView() {
             Matrix4x4 transformation = Matrix4x4.Identity;
 
             transformation = Matrix4x4.Transform(transformation, rotation_);
@@ -500,8 +488,7 @@ namespace sl
             Matrix4x4.Invert(transformation, out view_);
         }
 
-        void updateVPMatrix()
-        {
+        void updateVPMatrix() {
             vpMatrix_ = projection_ * view_;
         }
 
@@ -525,8 +512,7 @@ namespace sl
         float zfar_;
     };
 
-    class Shader
-    {
+    class Shader {
 
         public static readonly string[] IMAGE_VERTEX_SHADER = new string[] {
             "#version 330\n",
@@ -562,7 +548,8 @@ namespace sl
             "void main() {\n",
             // Decompose the 4th channel of the XYZRGBA buffer to retrieve the color of the point (1float to 4uint)
             "   uint vertexColor = floatBitsToUint(in_VertexRGBA.w); \n",
-            "   vec3 clr_int = vec3((vertexColor & uint(0x000000FF)), (vertexColor & uint(0x0000FF00)) >> 8, (vertexColor & uint(0x00FF0000)) >> 16);\n",
+            "   vec3 clr_int = vec3((vertexColor & uint(0x000000FF)), (vertexColor & uint(0x0000FF00)) >> 8, (vertexColor & "
+                + "uint(0x00FF0000)) >> 16);\n",
             "   b_color = vec4(clr_int.r / 255.0f, clr_int.g / 255.0f, clr_int.b / 255.0f, 1.f);",
             "	gl_Position = u_mvpMatrix * vec4(in_VertexRGBA.xyz, 1);\n",
             "}"
@@ -599,14 +586,11 @@ namespace sl
             "}"
         };
 
-        public Shader(string[] vs, string[] fs)
-        {
-            if (!compile(ref verterxId_, ShaderType.VertexShader, vs))
-            {
+        public Shader(string[] vs, string[] fs) {
+            if (!compile(ref verterxId_, ShaderType.VertexShader, vs)) {
                 Console.WriteLine("ERROR: while compiling vertex shader");
             }
-            if (!compile(ref fragmentId_, ShaderType.FragmentShader, fs))
-            {
+            if (!compile(ref fragmentId_, ShaderType.FragmentShader, fs)) {
                 Console.WriteLine("ERROR: while compiling fragment shader");
             }
 
@@ -622,8 +606,7 @@ namespace sl
 
             int errorlk = 0;
             Gl.GetProgram(programId_, ProgramProperty.LinkStatus, out errorlk);
-            if (errorlk != Gl.TRUE)
-            {
+            if (errorlk != Gl.TRUE) {
                 Console.WriteLine("ERROR: while linking Shader :");
                 int errorSize = 0;
                 Gl.GetProgram(programId_, ProgramProperty.InfoLogLength, out errorSize);
@@ -635,8 +618,7 @@ namespace sl
             }
         }
 
-        public uint getProgramId()
-        {
+        public uint getProgramId() {
             return programId_;
         }
 
@@ -644,13 +626,11 @@ namespace sl
         public static uint ATTRIB_COLOR_POS = 1;
         public static uint ATTRIB_NORMAL = 2;
 
-        private bool compile(ref uint shaderId, ShaderType type, string[] src)
-        {
+        private bool compile(ref uint shaderId, ShaderType type, string[] src) {
             int errorcp = 0;
 
             shaderId = Gl.CreateShader(type);
-            if (shaderId == 0)
-            {
+            if (shaderId == 0) {
                 Console.WriteLine("ERROR: shader type (" + type + ") does not exist");
             }
 
@@ -658,8 +638,7 @@ namespace sl
             Gl.CompileShader(shaderId);
             Gl.GetShader(shaderId, ShaderParameterName.CompileStatus, out errorcp);
 
-            if (errorcp != Gl.TRUE)
-            {
+            if (errorcp != Gl.TRUE) {
                 Console.WriteLine("ERROR: while compiling Shader :");
                 int errorSize;
                 Gl.GetShader(shaderId, ShaderParameterName.InfoLogLength, out errorSize);
@@ -681,24 +660,20 @@ namespace sl
         uint programId_;
     };
 
-    struct ShaderData
-        {
+    struct ShaderData {
         public Shader it;
         public int MVP_Mat;
-        };
+    };
 
-    class Simple3DObject
-    {
-        public Simple3DObject(bool isStatic)
-        {
+    class Simple3DObject {
+        public Simple3DObject(bool isStatic) {
             is_init = false;
             isStatic_ = isStatic;
             position_ = new Vector3();
             rotation_ = new Quaternion();
         }
 
-        public void init()
-        {
+        public void init() {
             vaoID_ = 0;
 
             shader.it = new Shader(Shader.VERTEX_SHADER, Shader.FRAGMENT_SHADER);
@@ -712,52 +687,44 @@ namespace sl
             is_init = true;
         }
 
-        public bool isInit()
-        {
+        public bool isInit() {
             return is_init;
         }
 
-        public void addPt(float3 pt)
-        {
+        public void addPt(float3 pt) {
             vertices_.Add(pt.x);
             vertices_.Add(pt.y);
             vertices_.Add(pt.z);
         }
 
-        public void addClr(float4 clr)
-        {
+        public void addClr(float4 clr) {
             colors_.Add(clr.x);
             colors_.Add(clr.y);
             colors_.Add(clr.z);
             colors_.Add(clr.w);
         }
 
-        public void addNormal(float3 normal)
-        {
+        public void addNormal(float3 normal) {
             normals_.Add(normal.x);
             normals_.Add(normal.y);
             normals_.Add(normal.z);
         }
-        public Matrix4x4 getModelMatrix()
-        {
+        public Matrix4x4 getModelMatrix() {
             Matrix4x4 transform = Matrix4x4.Identity;
             transform = Matrix4x4.CreateFromQuaternion(rotation_);
             transform.Translation = position_;
             return Matrix4x4.Transpose(transform);
         }
 
-        public void setRT(Vector3 translation, Quaternion rotation)
-        {
+        public void setRT(Vector3 translation, Quaternion rotation) {
             position_ = translation;
             rotation_ = rotation;
         }
-        void addBBox(List<float3> pts, float4 clr)
-        {
+        void addBBox(List<float3> pts, float4 clr) {
             int start_id = vertices_.Count / 3;
 
             float transparency_top = 0.05f, transparency_bottom = 0.75f;
-            for (int i = 0; i < pts.Count; i++)
-            {
+            for (int i = 0; i < pts.Count; i++) {
                 addPt(pts[i]);
                 clr.w = (i < 4 ? transparency_top : transparency_bottom);
                 addClr(clr);
@@ -765,89 +732,75 @@ namespace sl
 
             uint[] boxLinks = new uint[] { 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 2, 6, 3, 7 };
 
-            for (int i = 0; i < boxLinks.Length; i += 2)
-            {
+            for (int i = 0; i < boxLinks.Length; i += 2) {
                 indices_.Add((uint)start_id + boxLinks[i]);
                 indices_.Add((uint)start_id + boxLinks[i + 1]);
             }
         }
 
-        public void addPoint(float3 pt, float4 clr)
-        {
+        public void addPoint(float3 pt, float4 clr) {
             addPt(pt);
             addClr(clr);
             indices_.Add((uint)indices_.Count());
         }
 
-        public void addLine(float3 p1, float3 p2, float4 clr)
-        {
+        public void addLine(float3 p1, float3 p2, float4 clr) {
             addPoint(p1, clr);
             addPoint(p2, clr);
         }
 
-        public void addTriangle(float3 p1, float3 p2, float3 p3, float4 clr)
-        {
+        public void addTriangle(float3 p1, float3 p2, float3 p3, float4 clr) {
             addPoint(p1, clr);
             addPoint(p2, clr);
             addPoint(p3, clr);
         }
 
-        public void addFullEdges(List<Vector3> pts, float4 clr)
-        {
+        public void addFullEdges(List<Vector3> pts, float4 clr) {
             clr.w = 0.4f;
             int start_id = vertices_.Count / 3;
 
-            for (int i = 0; i < pts.Count; i++)
-            {
+            for (int i = 0; i < pts.Count; i++) {
                 addPt(new float3(pts[i].X, pts[i].Y, pts[i].Z));
                 addClr(clr);
             }
 
             uint[] boxLinksTop = new uint[] { 0, 1, 1, 2, 2, 3, 3, 0 };
-            for (int i = 0; i < boxLinksTop.Length; i += 2)
-            {
+            for (int i = 0; i < boxLinksTop.Length; i += 2) {
                 indices_.Add((uint)start_id + boxLinksTop[i]);
                 indices_.Add((uint)start_id + boxLinksTop[i + 1]);
             }
 
             uint[] boxLinksBottom = new uint[] { 4, 5, 5, 6, 6, 7, 7, 4 };
-            for (int i = 0; i < boxLinksBottom.Length; i += 2)
-            {
+            for (int i = 0; i < boxLinksBottom.Length; i += 2) {
                 indices_.Add((uint)start_id + boxLinksBottom[i]);
                 indices_.Add((uint)start_id + boxLinksBottom[i + 1]);
             }
         }
 
-        public void addSingleVerticalLine(Vector3 top_pt, Vector3 bot_pt, float4 clr)
-        {
-            List<Vector3> current_pts = new List<Vector3>()
-            {
-                top_pt,
+        public void addSingleVerticalLine(Vector3 top_pt, Vector3 bot_pt, float4 clr) {
+            List<Vector3> current_pts = new List<Vector3>(
+            ) { top_pt,
                 ((grid_size - 1.0f) * top_pt + bot_pt) / grid_size,
-                ((grid_size - 2.0f) * top_pt + bot_pt* 2.0f) / grid_size,
-                (2.0f * top_pt + bot_pt* (grid_size - 2.0f)) / grid_size,
-                (top_pt + bot_pt* (grid_size - 1.0f)) / grid_size,
-                bot_pt
-            };
+                ((grid_size - 2.0f) * top_pt + bot_pt * 2.0f) / grid_size,
+                (2.0f * top_pt + bot_pt * (grid_size - 2.0f)) / grid_size,
+                (top_pt + bot_pt * (grid_size - 1.0f)) / grid_size,
+                bot_pt };
 
             int start_id = vertices_.Count / 3;
-            for (int i = 0; i < current_pts.Count; i++)
-            {
+            for (int i = 0; i < current_pts.Count; i++) {
                 addPt(new float3(current_pts[i].X, current_pts[i].Y, current_pts[i].Z));
                 clr.w = (i == 2 || i == 3) ? 0.0f : 0.4f;
                 addClr(clr);
             }
 
             uint[] boxLinks = new uint[] { 0, 1, 1, 2, 2, 3, 3, 4, 4, 5 };
-            for (int i = 0; i < boxLinks.Length; i += 2)
-            {
+            for (int i = 0; i < boxLinks.Length; i += 2) {
                 indices_.Add((uint)start_id + boxLinks[i]);
                 indices_.Add((uint)start_id + boxLinks[i + 1]);
             }
         }
 
-        public void addVerticalEdges(List<Vector3> pts, float4 clr)
-        {
+        public void addVerticalEdges(List<Vector3> pts, float4 clr) {
 
             addSingleVerticalLine(pts[0], pts[4], clr);
             addSingleVerticalLine(pts[1], pts[5], clr);
@@ -855,17 +808,14 @@ namespace sl
             addSingleVerticalLine(pts[3], pts[7], clr);
         }
 
-        public void addTopFace(List<Vector3> pts, float4 clr)
-        {
+        public void addTopFace(List<Vector3> pts, float4 clr) {
             clr.w = 0.3f;
             foreach (Vector3 it in pts)
                 addPoint(new float3(it.X, it.Y, it.Z), clr);
         }
 
-        void addQuad(List<Vector3> quad_pts, float alpha1, float alpha2, float4 clr)
-        { // To use only with 4 points
-            for (int i = 0; i < quad_pts.Count; ++i)
-            {
+        void addQuad(List<Vector3> quad_pts, float alpha1, float alpha2, float4 clr) { // To use only with 4 points
+            for (int i = 0; i < quad_pts.Count; ++i) {
                 addPt(new float3(quad_pts[i].X, quad_pts[i].Y, quad_pts[i].Z));
                 clr.w = (i < 2 ? alpha1 : alpha2);
                 addClr(clr);
@@ -877,60 +827,49 @@ namespace sl
             indices_.Add((uint)indices_.Count);
         }
 
-        public void addVerticalFaces(List<Vector3> pts, float4 clr)
-        {
+        public void addVerticalFaces(List<Vector3> pts, float4 clr) {
             // For each face, we need to add 4 quads (the first 2 indexes are always the top points of the quad)
-            int[][] quads = new int[4][]
-            {
-                new int[4]
-                {
-                    0, 3, 7, 4
-                }, // front face
-                    new int[4]
-                {
-                        3, 2, 6, 7
-                }, // right face
-                new int[4]
-                {
-                        2, 1, 5, 6
-                }, // back face
-                new int[4]
-                {
-                        1, 0, 4, 5
-                } // left face
+            int[][] quads = new int [4][] {
+                new int[4] {0, 3, 7, 4}, // front face
+                new int[4] {3, 2, 6, 7}, // right face
+                new int[4] {2, 1, 5, 6}, // back face
+                new int[4] {1, 0, 4, 5}  // left face
             };
             float alpha = 0.5f;
 
-            foreach (int[] quad in quads)
-            {
+            foreach (int[] quad in quads) {
 
                 // Top quads
                 List<Vector3> quad_pts_1 = new List<Vector3> {
                     pts[quad[0]],
                     pts[quad[1]],
-                    ((grid_size - 0.5f) * pts[quad[1]] +  0.5f * pts[quad[2]]) / grid_size,
-                    ((grid_size - 0.5f) * pts[quad[0]] + 0.5f * pts[quad[3]]) / grid_size };
+                    ((grid_size - 0.5f) * pts[quad[1]] + 0.5f * pts[quad[2]]) / grid_size,
+                    ((grid_size - 0.5f) * pts[quad[0]] + 0.5f * pts[quad[3]]) / grid_size
+                };
                 addQuad(quad_pts_1, alpha, alpha, clr);
 
                 List<Vector3> quad_pts_2 = new List<Vector3> {
                     ((grid_size - 0.5f) * pts[quad[0]] + 0.5f * pts[quad[3]]) / grid_size,
-                    ((grid_size - 0.5f) * pts[quad[1]] +  0.5f * pts[quad[2]]) / grid_size,
+                    ((grid_size - 0.5f) * pts[quad[1]] + 0.5f * pts[quad[2]]) / grid_size,
                     ((grid_size - 1.0f) * pts[quad[1]] + pts[quad[2]]) / grid_size,
-                    ((grid_size - 1.0f) * pts[quad[0]] + pts[quad[3]]) / grid_size};
+                    ((grid_size - 1.0f) * pts[quad[0]] + pts[quad[3]]) / grid_size
+                };
                 addQuad(quad_pts_2, alpha, 2 * alpha / 3, clr);
 
                 List<Vector3> quad_pts_3 = new List<Vector3> {
                     ((grid_size - 1.0f) * pts[quad[0]] + pts[quad[3]]) / grid_size,
                     ((grid_size - 1.0f) * pts[quad[1]] + pts[quad[2]]) / grid_size,
                     ((grid_size - 1.5f) * pts[quad[1]] + 1.5f * pts[quad[2]]) / grid_size,
-                    ((grid_size - 1.5f) * pts[quad[0]] + 1.5f * pts[quad[3]]) / grid_size};
+                    ((grid_size - 1.5f) * pts[quad[0]] + 1.5f * pts[quad[3]]) / grid_size
+                };
                 addQuad(quad_pts_3, 2 * alpha / 3, alpha / 3, clr);
 
                 List<Vector3> quad_pts_4 = new List<Vector3> {
                     ((grid_size - 1.5f) * pts[quad[0]] + 1.5f * pts[quad[3]]) / grid_size,
                     ((grid_size - 1.5f) * pts[quad[1]] + 1.5f * pts[quad[2]]) / grid_size,
                     ((grid_size - 2.0f) * pts[quad[1]] + 2.0f * pts[quad[2]]) / grid_size,
-                    ((grid_size - 2.0f) * pts[quad[0]] + 2.0f * pts[quad[3]]) / grid_size};
+                    ((grid_size - 2.0f) * pts[quad[0]] + 2.0f * pts[quad[3]]) / grid_size
+                };
                 addQuad(quad_pts_4, alpha / 3, 0.0f, clr);
 
                 // Bottom quads
@@ -938,40 +877,43 @@ namespace sl
                     (pts[quad[1]] * 2.0f + (grid_size - 2.0f) * pts[quad[2]]) / grid_size,
                     (pts[quad[0]] * 2.0f + (grid_size - 2.0f) * pts[quad[3]]) / grid_size,
                     (pts[quad[0]] * 1.5f + (grid_size - 1.5f) * pts[quad[3]]) / grid_size,
-                    (pts[quad[1]] * 1.5f + (grid_size - 1.5f) * pts[quad[2]]) / grid_size };
+                    (pts[quad[1]] * 1.5f + (grid_size - 1.5f) * pts[quad[2]]) / grid_size
+                };
                 addQuad(quad_pts_5, 0.0f, alpha / 3, clr);
 
                 List<Vector3> quad_pts_6 = new List<Vector3> {
                     (pts[quad[1]] * 1.5f + (grid_size - 1.5f) * pts[quad[2]]) / grid_size,
                     (pts[quad[0]] * 1.5f + (grid_size - 1.5f) * pts[quad[3]]) / grid_size,
                     (pts[quad[0]] + (grid_size - 1.0f) * pts[quad[3]]) / grid_size,
-                    (pts[quad[1]] + (grid_size - 1.0f) * pts[quad[2]]) / grid_size};
+                    (pts[quad[1]] + (grid_size - 1.0f) * pts[quad[2]]) / grid_size
+                };
                 addQuad(quad_pts_6, alpha / 3, 2 * alpha / 3, clr);
 
                 List<Vector3> quad_pts_7 = new List<Vector3> {
                     (pts[quad[1]] + (grid_size - 1.0f) * pts[quad[2]]) / grid_size,
                     (pts[quad[0]] + (grid_size - 1.0f) * pts[quad[3]]) / grid_size,
                     (pts[quad[0]] * 0.5f + (grid_size - 0.5f) * pts[quad[3]]) / grid_size,
-                    (pts[quad[1]] * 0.5f + (grid_size - 0.5f) * pts[quad[2]]) / grid_size};
+                    (pts[quad[1]] * 0.5f + (grid_size - 0.5f) * pts[quad[2]]) / grid_size
+                };
                 addQuad(quad_pts_7, 2 * alpha / 3, alpha, clr);
 
                 List<Vector3> quad_pts_8 = new List<Vector3> {
                     (pts[quad[0]] * 0.5f + (grid_size - 0.5f) * pts[quad[3]]) / grid_size,
                     (pts[quad[1]] * 0.5f + (grid_size - 0.5f) * pts[quad[2]]) / grid_size,
                     pts[quad[2]],
-                    pts[quad[3]]};
+                    pts[quad[3]]
+                };
                 addQuad(quad_pts_8, alpha, alpha, clr);
             }
         }
 
-        public void createFrustum(CameraParameters param)
-        {
+        public void createFrustum(CameraParameters param) {
 
             // Create 3D axis
             /*Simple3DObject it = new Simple3DObject();
             it.init();*/
 
-            //float Z_ = -150;
+            // float Z_ = -150;
             float Z_ = -0.15f;
             float3 cam_0 = new float3(0, 0, 0);
             float3 cam_1, cam_2, cam_3, cam_4;
@@ -1016,94 +958,100 @@ namespace sl
             addTriangle(cam_0, cam_4, cam_1, clr);
         }
 
-        public void addCylinder(float3 startPosition, float3 endPosition, float4 clr)
-    {
+        public void addCylinder(float3 startPosition, float3 endPosition, float4 clr) {
 
-        /////////////////////////////
-        /// Compute Rotation Matrix
-        /////////////////////////////
+            /////////////////////////////
+            /// Compute Rotation Matrix
+            /////////////////////////////
 
-        const float PI = 3.1415926f;
+            const float PI = 3.1415926f;
 
-        float m_radius = 0.010f;
+            float m_radius = 0.010f;
 
-        float3 dir = endPosition.sub(startPosition);
+            float3 dir = endPosition.sub(startPosition);
 
-        float m_height = dir.norm();
-        float x = 0.0f, y = 0.0f, z = 0.0f;
+            float m_height = dir.norm();
+            float x = 0.0f, y = 0.0f, z = 0.0f;
 
-        dir.divide(m_height);
+            dir.divide(m_height);
 
-        float3 yAxis = new float3(0,1,0);
+            float3 yAxis = new float3(0, 1, 0);
 
-        float3 v = dir.cross(yAxis); ;
+            float3 v = dir.cross(yAxis);
+            ;
 
-        Matrix4x4 rotation;
+            Matrix4x4 rotation;
 
-        float sinTheta = v.norm();
-        if (sinTheta < 0.00001f)
-        {
-            rotation = Matrix4x4.Identity;
+            float sinTheta = v.norm();
+            if (sinTheta < 0.00001f) {
+                rotation = Matrix4x4.Identity;
+            } else {
+                float cosTheta = dir.dot(yAxis);
+                float scale = (1.0f - cosTheta) / (1.0f - (cosTheta * cosTheta));
+
+                Matrix4x4 vx = new Matrix4x4(0, v.z, -v.y, 0, -v.z, 0, v.x, 0, v.y, -v.x, 0, 0, 0, 0, 0, 1.0f);
+
+                Matrix4x4 vx2 = vx * vx;
+                Matrix4x4 vx2Scaled = vx2 * scale;
+
+                rotation = Matrix4x4.Identity;
+                rotation = rotation + vx;
+                rotation = rotation + vx2Scaled;
+            }
+
+            /////////////////////////////
+            /// Create Cylinder
+            /////////////////////////////
+
+            Matrix3x3 rotationMatrix = new Matrix3x3();
+            float[] data = new float[9] {
+                rotation.M11,
+                rotation.M12,
+                rotation.M13,
+                rotation.M21,
+                rotation.M22,
+                rotation.M23,
+                rotation.M31,
+                rotation.M32,
+                rotation.M33
+            };
+            rotationMatrix.m = data;
+
+            float3 v1;
+            float3 v2;
+            float3 v3;
+            float3 v4;
+            float3 normal;
+            float resolution = 0.1f;
+
+            for (double i = 0; i <= 2 * PI - 1; i += resolution) {
+                v1 = rotationMatrix.multiply(new float3(m_radius * (float)Math.Cos(i), 0, m_radius * (float)Math.Sin(i)))
+                         .add(startPosition);
+                v2 = rotationMatrix.multiply(new float3(m_radius * (float)Math.Cos(i), m_height, m_radius * (float)Math.Sin(i)))
+                         .add(startPosition);
+                v4 = rotationMatrix.multiply(new float3(m_radius * (float)Math.Cos(i + 1), m_height, m_radius * (float)Math.Sin(i + 1)))
+                         .add(startPosition);
+                v3 = rotationMatrix.multiply(new float3(m_radius * (float)Math.Cos(i + 1), 0, m_radius * (float)Math.Sin(i + 1)))
+                         .add(startPosition);
+
+                float3 a = v2.sub(v1);
+                float3 b = v3.sub(v1);
+                normal = a.cross(b);
+                normal.divide(normal.norm());
+
+                addPoint(v1, clr);
+                addPoint(v2, clr);
+                addPoint(v4, clr);
+                addPoint(v3, clr);
+
+                addNormal(normal);
+                addNormal(normal);
+                addNormal(normal);
+                addNormal(normal);
+            }
         }
-        else
-        {
-            float cosTheta = dir.dot(yAxis);
-            float scale = (1.0f - cosTheta) / (1.0f - (cosTheta * cosTheta));
 
-            Matrix4x4 vx = new Matrix4x4(0, v.z, -v.y, 0,
-                                        -v.z, 0, v.x, 0,
-                                        v.y, -v.x, 0, 0,
-                                        0, 0, 0, 1.0f);
-
-            Matrix4x4 vx2 = vx * vx;
-            Matrix4x4 vx2Scaled = vx2 * scale;
-
-            rotation = Matrix4x4.Identity;
-            rotation = rotation + vx;
-            rotation = rotation + vx2Scaled;
-        }
-
-        /////////////////////////////
-        /// Create Cylinder
-        /////////////////////////////
-
-        Matrix3x3 rotationMatrix = new Matrix3x3();
-        float[] data = new float[9] { rotation.M11, rotation.M12, rotation.M13, rotation.M21, rotation.M22, rotation.M23, rotation.M31, rotation.M32, rotation.M33 };
-        rotationMatrix.m = data;
-
-        float3 v1;
-        float3 v2;
-        float3 v3;
-        float3 v4;
-        float3 normal;
-        float resolution = 0.1f;
-
-        for (double i = 0; i <= 2 * PI - 1; i += resolution)
-        {
-            v1 = rotationMatrix.multiply(new float3(m_radius * (float)Math.Cos(i), 0, m_radius * (float)Math.Sin(i))).add(startPosition);
-            v2 = rotationMatrix.multiply(new float3(m_radius * (float)Math.Cos(i), m_height, m_radius * (float)Math.Sin(i))).add(startPosition);
-            v4 = rotationMatrix.multiply(new float3(m_radius * (float)Math.Cos(i + 1), m_height, m_radius * (float)Math.Sin(i + 1))).add(startPosition);
-            v3 = rotationMatrix.multiply(new float3(m_radius * (float)Math.Cos(i + 1), 0, m_radius * (float)Math.Sin(i + 1))).add(startPosition);
-
-            float3 a = v2.sub(v1);
-            float3 b = v3.sub(v1);
-            normal = a.cross(b);
-            normal.divide(normal.norm());
-
-            addPoint(v1, clr);
-            addPoint(v2, clr);
-            addPoint(v4, clr);
-            addPoint(v3, clr);
-
-            addNormal(normal);
-            addNormal(normal);
-            addNormal(normal);
-            addNormal(normal);
-        }
-    }
-
-        public void addSphere(float3 position, float4 clr)
-        {
+        public void addSphere(float3 position, float4 clr) {
             const float PI = 3.1415926f;
 
             float m_radius = 0.02f;
@@ -1118,8 +1066,7 @@ namespace sl
             float3 v4;
             float3 normal;
 
-            for (int i = 0; i <= m_stackCount; i++)
-            {
+            for (int i = 0; i <= m_stackCount; i++) {
                 double lat0 = PI * (-0.5 + (double)(i - 1) / m_stackCount);
                 float z0 = (float)Math.Sin(lat0);
                 float zr0 = (float)Math.Cos(lat0);
@@ -1128,8 +1075,7 @@ namespace sl
                 float z1 = (float)Math.Sin(lat1);
                 float zr1 = (float)Math.Cos(lat1);
 
-                for (int j = 0; j <= m_sectorCount - 1; j++)
-                {
+                for (int j = 0; j <= m_sectorCount - 1; j++) {
                     double lng = 2 * PI * (double)(j - 1) / m_sectorCount;
                     float x = (float)Math.Cos(lng);
                     float y = (float)Math.Sin(lng);
@@ -1161,43 +1107,56 @@ namespace sl
             }
         }
 
-        public void pushToGPU()
-        {
-            if (!isStatic_ || vaoID_ == 0)
-            {
-                if (vaoID_ == 0)
-                {
+        public void pushToGPU() {
+            if (!isStatic_ || vaoID_ == 0) {
+                if (vaoID_ == 0) {
                     vaoID_ = Gl.GenVertexArray();
                     Gl.GenBuffers(vboID_);
                 }
 
                 Gl.ShadeModel(ShadingModel.Smooth);
-                if (vertices_.Count() > 0)
-                {
+                if (vertices_.Count() > 0) {
                     Gl.BindVertexArray(vaoID_);
                     Gl.BindBuffer(BufferTarget.ArrayBuffer, vboID_[0]);
-                    Gl.BufferData(BufferTarget.ArrayBuffer, (uint)vertices_.Count() * sizeof(float), vertices_.ToArray(), isStatic_ ? BufferUsage.StaticDraw : BufferUsage.DynamicDraw);
+                    Gl.BufferData(
+                        BufferTarget.ArrayBuffer,
+                        (uint)vertices_.Count() * sizeof(float),
+                        vertices_.ToArray(),
+                        isStatic_ ? BufferUsage.StaticDraw : BufferUsage.DynamicDraw
+                    );
                     Gl.VertexAttribPointer(Shader.ATTRIB_VERTICES_POS, 3, VertexAttribType.Float, false, 0, IntPtr.Zero);
                     Gl.EnableVertexAttribArray(Shader.ATTRIB_VERTICES_POS);
                 }
-                if (colors_.Count() > 0)
-                {
+                if (colors_.Count() > 0) {
 
                     Gl.BindBuffer(BufferTarget.ArrayBuffer, vboID_[1]);
-                    Gl.BufferData(BufferTarget.ArrayBuffer, (uint)colors_.Count() * sizeof(float), colors_.ToArray(), isStatic_ ? BufferUsage.StaticDraw : BufferUsage.DynamicDraw);
+                    Gl.BufferData(
+                        BufferTarget.ArrayBuffer,
+                        (uint)colors_.Count() * sizeof(float),
+                        colors_.ToArray(),
+                        isStatic_ ? BufferUsage.StaticDraw : BufferUsage.DynamicDraw
+                    );
                     Gl.VertexAttribPointer(Shader.ATTRIB_COLOR_POS, 4, VertexAttribType.Float, false, 0, IntPtr.Zero);
                     Gl.EnableVertexAttribArray(Shader.ATTRIB_COLOR_POS);
                 }
-                if (indices_.Count() > 0)
-                {
+                if (indices_.Count() > 0) {
 
                     Gl.BindBuffer(BufferTarget.ElementArrayBuffer, vboID_[2]);
-                    Gl.BufferData(BufferTarget.ElementArrayBuffer, (uint)indices_.Count() * sizeof(float), indices_.ToArray(), isStatic_ ? BufferUsage.StaticDraw : BufferUsage.DynamicDraw);
+                    Gl.BufferData(
+                        BufferTarget.ElementArrayBuffer,
+                        (uint)indices_.Count() * sizeof(float),
+                        indices_.ToArray(),
+                        isStatic_ ? BufferUsage.StaticDraw : BufferUsage.DynamicDraw
+                    );
                 }
-                if (normals_.Count() > 0)
-                {
+                if (normals_.Count() > 0) {
                     Gl.BindBuffer(BufferTarget.ArrayBuffer, vboID_[3]);
-                    Gl.BufferData(BufferTarget.ArrayBuffer, (uint)normals_.Count() * sizeof(float), normals_.ToArray(), isStatic_ ? BufferUsage.StaticDraw : BufferUsage.DynamicDraw);
+                    Gl.BufferData(
+                        BufferTarget.ArrayBuffer,
+                        (uint)normals_.Count() * sizeof(float),
+                        normals_.ToArray(),
+                        isStatic_ ? BufferUsage.StaticDraw : BufferUsage.DynamicDraw
+                    );
                     Gl.VertexAttribPointer(Shader.ATTRIB_NORMAL, 3, VertexAttribType.Float, false, 0, IntPtr.Zero);
                     Gl.EnableVertexAttribArray(Shader.ATTRIB_NORMAL);
                 }
@@ -1208,23 +1167,19 @@ namespace sl
             }
         }
 
-        public void clear()
-        {
+        public void clear() {
             vertices_.Clear();
             colors_.Clear();
             indices_.Clear();
             normals_.Clear();
         }
 
-        public void setDrawingType(PrimitiveType type)
-        {
+        public void setDrawingType(PrimitiveType type) {
             drawingType_ = type;
         }
 
-        public void draw()
-        {
-            if (indices_.Count() > 0 && vaoID_ != 0)
-            {
+        public void draw() {
+            if (indices_.Count() > 0 && vaoID_ != 0) {
                 Gl.BindVertexArray(vaoID_);
                 Gl.DrawElements(drawingType_, indices_.Count(), DrawElementsType.UnsignedInt, IntPtr.Zero);
                 Gl.BindVertexArray(0);
@@ -1240,7 +1195,6 @@ namespace sl
 
         private bool isStatic_;
         private bool is_init;
-
 
         private uint vaoID_;
 

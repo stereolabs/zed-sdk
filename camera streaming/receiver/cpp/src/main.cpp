@@ -38,7 +38,7 @@ using namespace std;
 using namespace sl;
 
 // Sample functions
-void updateCameraSettings(char key, sl::Camera &zed);
+void updateCameraSettings(char key, sl::Camera& zed);
 void switchCameraSettings();
 void switchViewMode();
 void printHelp();
@@ -51,38 +51,34 @@ string str_camera_settings = "BRIGHTNESS";
 int step_camera_setting = 1;
 bool led_on = true;
 
-
 bool selectInProgress = false;
 sl::Rect selection_rect;
 cv::Point origin_rect;
-static void onMouse(int event, int x, int y, int, void*)
-{
-    switch (event)
-    {
+static void onMouse(int event, int x, int y, int, void*) {
+    switch (event) {
         case cv::EVENT_LBUTTONDOWN:
-        {
-            origin_rect = cv::Point(x, y);
-            selectInProgress = true;
-            break;
-        }
+            {
+                origin_rect = cv::Point(x, y);
+                selectInProgress = true;
+                break;
+            }
 
-    case cv::EVENT_LBUTTONUP:
-        {
-            selectInProgress = false;
-            break;
-        }
+        case cv::EVENT_LBUTTONUP:
+            {
+                selectInProgress = false;
+                break;
+            }
 
-    case cv::EVENT_RBUTTONDOWN:
-        {
-            //Reset selection
-            selectInProgress = false;
-            selection_rect = sl::Rect(0,0,0,0);
-            break;
-        }
+        case cv::EVENT_RBUTTONDOWN:
+            {
+                // Reset selection
+                selectInProgress = false;
+                selection_rect = sl::Rect(0, 0, 0, 0);
+                break;
+            }
     }
 
-    if (selectInProgress)
-    {
+    if (selectInProgress) {
         selection_rect.x = MIN(x, origin_rect.x);
         selection_rect.y = MIN(y, origin_rect.y);
         selection_rect.width = abs(x - origin_rect.x) + 1;
@@ -90,8 +86,8 @@ static void onMouse(int event, int x, int y, int, void*)
     }
 }
 
-vector< string> split(const string& s, char seperator) {
-    vector< string> output;
+vector<string> split(const string& s, char seperator) {
+    vector<string> output;
     string::size_type prev_pos = 0, pos = 0;
 
     while ((pos = s.find(seperator, pos)) != string::npos) {
@@ -105,14 +101,15 @@ vector< string> split(const string& s, char seperator) {
 }
 
 void setStreamParameter(InitParameters& init_p, string& argument) {
-    vector< string> configStream = split(argument, ':');
+    vector<string> configStream = split(argument, ':');
     String ip(configStream.at(0).c_str());
     if (configStream.size() == 2) {
         init_p.input.setFromStream(ip, atoi(configStream.at(1).c_str()));
-    } else init_p.input.setFromStream(ip);
+    } else
+        init_p.input.setFromStream(ip);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     Camera zed;
     // Set configuration parameters for the ZED
     InitParameters init_parameters;
@@ -137,7 +134,7 @@ int main(int argc, char **argv) {
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("Camera Open", returned_state, "Exit program.");
         return EXIT_FAILURE;
     }
@@ -147,8 +144,10 @@ int main(int argc, char **argv) {
     cout << endl;
     cout << "ZED Model                 : " << camera_info.camera_model << endl;
     cout << "ZED Serial Number         : " << camera_info.serial_number << endl;
-    cout << "ZED Camera Firmware       : " << camera_info.camera_configuration.firmware_version << "/" << camera_info.sensors_configuration.firmware_version << endl;
-    cout << "ZED Camera Resolution     : " << camera_info.camera_configuration.resolution.width << "x" << camera_info.camera_configuration.resolution.height << endl;
+    cout << "ZED Camera Firmware       : " << camera_info.camera_configuration.firmware_version << "/"
+         << camera_info.sensors_configuration.firmware_version << endl;
+    cout << "ZED Camera Resolution     : " << camera_info.camera_configuration.resolution.width << "x"
+         << camera_info.camera_configuration.resolution.height << endl;
     cout << "ZED Camera FPS            : " << zed.getInitParameters().camera_fps << endl;
 
     // Print help in console
@@ -170,16 +169,26 @@ int main(int argc, char **argv) {
             zed.retrieveImage(image, view_mode);
 
             // Convert sl::Mat to cv::Mat (share buffer)
-            cv::Mat cvImage(image.getHeight(), image.getWidth(), (image.getChannels() == 1) ? CV_8UC1 : CV_8UC4, image.getPtr<sl::uchar1>(sl::MEM::CPU));
-            
-            //Check that selection rectangle is valid and draw it on the image
+            cv::Mat cvImage(
+                image.getHeight(),
+                image.getWidth(),
+                (image.getChannels() == 1) ? CV_8UC1 : CV_8UC4,
+                image.getPtr<sl::uchar1>(sl::MEM::CPU)
+            );
+
+            // Check that selection rectangle is valid and draw it on the image
             if (!selection_rect.isEmpty() && selection_rect.isContained(sl::Resolution(cvImage.cols, cvImage.rows)))
-                cv::rectangle(cvImage, cv::Rect(selection_rect.x,selection_rect.y,selection_rect.width,selection_rect.height),cv::Scalar(0, 255, 0), 2);
+                cv::rectangle(
+                    cvImage,
+                    cv::Rect(selection_rect.x, selection_rect.y, selection_rect.width, selection_rect.height),
+                    cv::Scalar(0, 255, 0),
+                    2
+                );
 
             // Display image with OpenCV
             cv::imshow(win_name, cvImage);
 
-            if (key== 'a') {
+            if (key == 'a') {
                 if (zed.getRecordingStatus().is_recording) {
                     std::cout << "Stop recording" << std::endl;
                     zed.disableRecording();
@@ -209,7 +218,7 @@ int main(int argc, char **argv) {
 /**
     This function updates camera settings
  **/
-void updateCameraSettings(char key, sl::Camera &zed) {
+void updateCameraSettings(char key, sl::Camera& zed) {
     int current_value;
 
     // Keyboard shortcuts
@@ -220,31 +229,32 @@ void updateCameraSettings(char key, sl::Camera &zed) {
             switchViewMode();
             break;
 
-            // Switch to the next camera parameter
-            case 's':
+        // Switch to the next camera parameter
+        case 's':
             switchCameraSettings();
-            zed.getCameraSettings(camera_settings_,current_value);
-            print(str_camera_settings+": "+std::to_string(current_value));
+            zed.getCameraSettings(camera_settings_, current_value);
+            print(str_camera_settings + ": " + std::to_string(current_value));
             break;
 
-            // Increase camera settings value ('+' key)
-            case '+':
-            zed.getCameraSettings(camera_settings_,current_value);
+        // Increase camera settings value ('+' key)
+        case '+':
+            zed.getCameraSettings(camera_settings_, current_value);
             zed.setCameraSettings(camera_settings_, current_value + step_camera_setting);
-            zed.getCameraSettings(camera_settings_,current_value);
-            print(str_camera_settings+": "+std::to_string(current_value));
+            zed.getCameraSettings(camera_settings_, current_value);
+            print(str_camera_settings + ": " + std::to_string(current_value));
             break;
 
-            // Decrease camera settings value ('-' key)
-            case '-':
-            zed.getCameraSettings(camera_settings_,current_value);
-            current_value = current_value > 0 ? current_value - step_camera_setting : 0; // take care of the 'default' value parameter:  VIDEO_SETTINGS_VALUE_AUTO
+        // Decrease camera settings value ('-' key)
+        case '-':
+            zed.getCameraSettings(camera_settings_, current_value);
+            current_value = current_value > 0 ? current_value - step_camera_setting
+                                              : 0; // take care of the 'default' value parameter:  VIDEO_SETTINGS_VALUE_AUTO
             zed.setCameraSettings(camera_settings_, current_value);
-            zed.getCameraSettings(camera_settings_,current_value);
-            print(str_camera_settings+": "+std::to_string(current_value));
+            zed.getCameraSettings(camera_settings_, current_value);
+            print(str_camera_settings + ": " + std::to_string(current_value));
             break;
 
-            //switch LED On :
+            // switch LED On :
         case 'l':
             led_on = !led_on;
             zed.setCameraSettings(sl::VIDEO_SETTINGS::LED_STATUS, led_on);
@@ -253,36 +263,37 @@ void updateCameraSettings(char key, sl::Camera &zed) {
             // Reset to default parameters
         case 'r':
             print("Reset all settings to default");
-            for (int s = (int) VIDEO_SETTINGS::BRIGHTNESS; s <= (int) VIDEO_SETTINGS::WHITEBALANCE_TEMPERATURE; s++)
-                zed.setCameraSettings(static_cast<VIDEO_SETTINGS> (s), sl::VIDEO_SETTINGS_VALUE_AUTO);
+            for (int s = (int)VIDEO_SETTINGS::BRIGHTNESS; s <= (int)VIDEO_SETTINGS::WHITEBALANCE_TEMPERATURE; s++)
+                zed.setCameraSettings(static_cast<VIDEO_SETTINGS>(s), sl::VIDEO_SETTINGS_VALUE_AUTO);
             break;
 
         case 'a':
             {
-            cout<<"[Sample] set AEC_AGC_ROI on target ["<<selection_rect.x<<","<<selection_rect.y<<","<<selection_rect.width<<","<<selection_rect.height<<"]\n";
-            zed.setCameraSettings(VIDEO_SETTINGS::AEC_AGC_ROI,selection_rect,sl::SIDE::BOTH);
+                cout << "[Sample] set AEC_AGC_ROI on target [" << selection_rect.x << "," << selection_rect.y << "," << selection_rect.width
+                     << "," << selection_rect.height << "]\n";
+                zed.setCameraSettings(VIDEO_SETTINGS::AEC_AGC_ROI, selection_rect, sl::SIDE::BOTH);
             }
             break;
 
-        case 'f' :
+        case 'f':
             print("reset AEC_AGC_ROI to full res");
-            zed.setCameraSettings(VIDEO_SETTINGS::AEC_AGC_ROI,selection_rect,sl::SIDE::BOTH,true);
+            zed.setCameraSettings(VIDEO_SETTINGS::AEC_AGC_ROI, selection_rect, sl::SIDE::BOTH, true);
             break;
 
-        default :
-        break;
-        }
+        default:
+            break;
+    }
 }
 
 /**
     This function toggles between camera settings
  **/
 void switchCameraSettings() {
-    camera_settings_ = static_cast<VIDEO_SETTINGS> ((int) camera_settings_ + 1);
+    camera_settings_ = static_cast<VIDEO_SETTINGS>((int)camera_settings_ + 1);
 
     // reset to 1st setting
     if (camera_settings_ == VIDEO_SETTINGS::LAST)
-        camera_settings_ = static_cast<VIDEO_SETTINGS> (0);
+        camera_settings_ = static_cast<VIDEO_SETTINGS>(0);
 
     // select the right step
     step_camera_setting = (camera_settings_ == VIDEO_SETTINGS::WHITEBALANCE_TEMPERATURE) ? 100 : 1;
@@ -297,12 +308,11 @@ void switchCameraSettings() {
     This function toggles between view mode
  **/
 void switchViewMode() {
-    view_mode = static_cast<VIEW> ((int) view_mode + 1);
+    view_mode = static_cast<VIEW>((int)view_mode + 1);
 
     // reset to 1st setting
     if (view_mode == VIEW::DEPTH_RIGHT)
         view_mode = VIEW::LEFT;
-
 
     print("Switch to view mode: ", ERROR_CODE::SUCCESS, string(sl::toString(view_mode).c_str()));
 }
@@ -324,8 +334,10 @@ void printHelp() {
 
 void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     cout << "[Sample]";
-    if (err_code != ERROR_CODE::SUCCESS)
+    if (err_code > ERROR_CODE::SUCCESS)
         cout << "[Error] ";
+    else if (err_code < ERROR_CODE::SUCCESS)
+        cout << "[Warning] ";
     else
         cout << " ";
     cout << msg_prefix << " ";
@@ -338,7 +350,7 @@ void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     cout << endl;
 }
 
-void parseArgs(int argc, char **argv, sl::InitParameters& param) {
+void parseArgs(int argc, char** argv, sl::InitParameters& param) {
     if (argc > 1 && string(argv[1]).find(".svo") != string::npos) {
         // SVO input mode not available in camera control
         cout << "SVO Input mode is not available for camera control sample" << endl;

@@ -14,15 +14,20 @@
 //            2D LEFT VIEW
 // -------------------------------------------------
 
-inline sl::float2 getImagePosition(std::vector<sl::uint2> &bounding_box_image, sl::float2 img_scale) {
+inline sl::float2 getImagePosition(std::vector<sl::uint2>& bounding_box_image, sl::float2 img_scale) {
     sl::float2 position;
-    position.x = (bounding_box_image[0].x + (bounding_box_image[2].x - bounding_box_image[0].x)*0.5f) * img_scale.x;
-    position.y = (bounding_box_image[0].y + (bounding_box_image[2].y - bounding_box_image[0].y)*0.5f) * img_scale.y;
+    position.x = (bounding_box_image[0].x + (bounding_box_image[2].x - bounding_box_image[0].x) * 0.5f) * img_scale.x;
+    position.y = (bounding_box_image[0].y + (bounding_box_image[2].y - bounding_box_image[0].y) * 0.5f) * img_scale.y;
     return position;
 }
 
-void render_2D(cv::Mat &left, sl::float2 img_scale, std::vector<sl::ObjectData> &objects, bool render_mask = false, bool isTrackingON = false);
-
+void render_2D(
+    cv::Mat& left,
+    sl::float2 img_scale,
+    std::vector<sl::ObjectData>& objects,
+    bool render_mask = false,
+    bool isTrackingON = false
+);
 
 // -------------------------------------------------
 //            2D TRACKING VIEW
@@ -39,8 +44,7 @@ enum class TrackPointState {
 
 struct TrackPoint {
 
-    TrackPoint() {
-    };
+    TrackPoint() {};
 
     TrackPoint(sl::float3 pos, sl::OBJECT_TRACKING_STATE state, uint64_t timestamp_) {
         x = pos.x;
@@ -55,7 +59,7 @@ struct TrackPoint {
         timestamp = timestamp_;
     };
 
-    TrackPoint(sl::float3 pos,TrackPointState state, uint64_t timestamp_) {
+    TrackPoint(sl::float3 pos, TrackPointState state, uint64_t timestamp_) {
         x = pos.x;
         y = pos.y;
         z = pos.z;
@@ -75,7 +79,6 @@ struct TrackPoint {
 
 class Tracklet {
 public:
-
     Tracklet(const sl::ObjectData obj, sl::OBJECT_CLASS type, uint64_t timestamp = 0) {
         id = obj.id;
         positions.push_back(TrackPoint(obj.position, obj.tracking_state, timestamp));
@@ -90,8 +93,8 @@ public:
     void addDetectedPoint(const sl::ObjectData obj, uint64_t timestamp, int smoothing_window_size = 0);
 
     unsigned int id;
-    std::deque<TrackPoint> positions; // Will store detected positions and the predicted ones
-    std::deque<TrackPoint> positions_to_draw; // Will store the visualization output 
+    std::deque<TrackPoint> positions;         // Will store detected positions and the predicted ones
+    std::deque<TrackPoint> positions_to_draw; // Will store the visualization output
     sl::OBJECT_TRACKING_STATE tracking_state;
     sl::OBJECT_CLASS object_type;
     uint64_t last_detected_timestamp;
@@ -111,10 +114,16 @@ public:
     // duration: duration of the trajectory in seconds
     TrackingViewer(sl::Resolution res, const int fps_, const float D_max, const int duration);
 
-    ~TrackingViewer() {
-    };
+    ~TrackingViewer() {};
 
-    void generate_view(sl::Objects &objects, cv::Mat &left_display, sl::float2 img_scale, sl::Pose current_camera_pose, cv::Mat &tracking_view, bool tracking_enabled);
+    void generate_view(
+        sl::Objects& objects,
+        cv::Mat& left_display,
+        sl::float2 img_scale,
+        sl::Pose current_camera_pose,
+        cv::Mat& tracking_view,
+        bool tracking_enabled
+    );
 
     void setCameraCalibration(const sl::CalibrationParameters calib) {
         camera_calibration = calib;
@@ -124,11 +133,12 @@ public:
     // Zoom functions
     void zoomIn();
     void zoomOut();
-    void render_2D(cv::Mat &left_display, sl::float2 img_scale, std::vector<sl::ObjectData> &objects, bool render_mask, bool isTrackingON);
+    void render_2D(cv::Mat& left_display, sl::float2 img_scale, std::vector<sl::ObjectData>& objects, bool render_mask, bool isTrackingON);
+
 private:
     float x_min, x_max; // show objects between [x_min; x_max] (in millimeters)
-    float z_min; // show objects between [z_min; 0] (z_min < 0) (in millimeters)
-    
+    float z_min;        // show objects between [z_min; 0] (z_min < 0) (in millimeters)
+
     // Conversion from world position to pixel coordinates
     float x_step, z_step;
 
@@ -139,7 +149,7 @@ private:
     std::vector<Tracklet> tracklets;
 
     // history management
-    uint64_t history_duration; //in ns
+    uint64_t history_duration; // in ns
     int min_length_to_draw;
 
     // Visualization configuration
@@ -157,7 +167,7 @@ private:
     int smoothing_window_size;
 
     // ----------- Private methods ----------------------
-    void addToTracklets(sl::Objects &objects);
+    void addToTracklets(sl::Objects& objects);
     void detectUnchangedTrack(uint64_t current_timestamp);
     void pruneOldPoints(uint64_t current_timestamp);
     void computeFOV();
@@ -171,9 +181,9 @@ private:
     cv::Point2i toCVPoint(TrackPoint position);
 
     // vizualization methods
-    void drawTracklets(cv::Mat &tracking_view, sl::Pose current_camera_pose);
-    void drawPosition(sl::Objects &objects, cv::Mat &tracking_view, sl::Pose current_camera_pose);
-    void drawScale(cv::Mat &tracking_view);
+    void drawTracklets(cv::Mat& tracking_view, sl::Pose current_camera_pose);
+    void drawPosition(sl::Objects& objects, cv::Mat& tracking_view, sl::Pose current_camera_pose);
+    void drawScale(cv::Mat& tracking_view);
 
     // background generation
     void generateBackground();

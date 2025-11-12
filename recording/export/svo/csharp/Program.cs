@@ -18,38 +18,37 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
- /***********************************************************************
-  ** This sample demonstrates how to read a SVO file 		    		  **
-  ** and convert it into an AVI file (LEFT + RIGHT) or (LEFT + DEPTH)   **
-  ************************************************************************/
-  
+/***********************************************************************
+ ** This sample demonstrates how to read a SVO file 		    		  **
+ ** and convert it into an AVI file (LEFT + RIGHT) or (LEFT + DEPTH)   **
+ ************************************************************************/
+
 using System;
 using System.IO;
 using OpenCvSharp;
 using sl;
 
-class Program
-{
+class Program {
 
-    public enum APP_TYPE
-    {
+    public enum APP_TYPE {
         LEFT_AND_RIGHT,
         LEFT_AND_DEPTH,
         LEFT_AND_DEPTH_16
-    };
+    }
+    ;
 
     static bool exit_app = false;
 
     [STAThread]
-    static void Main(string[] args)
-    {
-        if (args.Length != 3)
-        {
+    static void Main(string[] args) {
+        if (args.Length != 3) {
             Console.WriteLine("Usage: ");
             Console.WriteLine("    ZED_SVO_Export A B C ");
             Console.WriteLine("Please use the following parameters from the command line:");
             Console.WriteLine(" A - SVO file path (input) : \"path/to/file.svo\"");
-            Console.WriteLine(" B - AVI file path (output) or image sequence folder(output) : \"path/to/output/file.avi\" or \"path/to/output/folder\"");
+            Console.WriteLine(
+                " B - AVI file path (output) or image sequence folder(output) : \"path/to/output/file.avi\" or \"path/to/output/folder\""
+            );
             Console.WriteLine(" C - Export mode:  0=Export LEFT+RIGHT AVI.");
             Console.WriteLine("                   1=Export LEFT+DEPTH_VIEW AVI.");
             Console.WriteLine("                   2=Export LEFT+RIGHT image sequence.");
@@ -78,13 +77,11 @@ class Program
         if (!args[2].Equals("0") && !args[2].Equals("1"))
             outputAsVideo = false;
 
-        if (!outputAsVideo && !Directory.Exists(outputPath))
-        {
+        if (!outputAsVideo && !Directory.Exists(outputPath)) {
             Console.WriteLine("Input directory doesn't exist. Check permissions or create it. " + outputPath);
             Environment.Exit(-1);
         }
-        if (!outputAsVideo && outputPath.Substring(outputPath.Length - 1) != "/" && outputPath.Substring(outputPath.Length - 1) != "\\")
-        {
+        if (!outputAsVideo && outputPath.Substring(outputPath.Length - 1) != "/" && outputPath.Substring(outputPath.Length - 1) != "\\") {
             Console.WriteLine("Error: output folder needs to end with '/' or '\\'." + outputPath);
             Environment.Exit(-1);
         }
@@ -92,18 +89,12 @@ class Program
         // Create ZED Camera
         Camera zed = new Camera(0);
 
-        //Specify SVO path parameters
-        InitParameters initParameters = new InitParameters()
-        {
-            inputType = INPUT_TYPE.SVO,
-            pathSVO = svoInputPath,
-            svoRealTimeMode = true,
-            coordinateUnits = UNIT.MILLIMETER
-        };
+        // Specify SVO path parameters
+        InitParameters initParameters = new InitParameters(
+        ) { inputType = INPUT_TYPE.SVO, pathSVO = svoInputPath, svoRealTimeMode = true, coordinateUnits = UNIT.MILLIMETER };
 
         ERROR_CODE zedOpenState = zed.Open(ref initParameters);
-        if (zedOpenState != ERROR_CODE.SUCCESS)
-        {
+        if (zedOpenState > ERROR_CODE.SUCCESS) {
             Environment.Exit(-1);
         }
 
@@ -122,23 +113,20 @@ class Program
         OpenCvSharp.Mat depthImageOCV = SLMat2CVMat(ref depthImage, MAT_TYPE.MAT_8U_C4);
 
         OpenCvSharp.Mat imageSideBySide = new OpenCvSharp.Mat();
-        if (outputAsVideo)
-        {
+        if (outputAsVideo) {
             imageSideBySide = new OpenCvSharp.Mat((int)imageSize.height, (int)imageSize.width * 2, OpenCvSharp.MatType.CV_8UC3);
         }
 
         OpenCvSharp.VideoWriter videoWriter = new OpenCvSharp.VideoWriter();
 
-        //Create Video writter
-        if (outputAsVideo)
-        {
+        // Create Video writter
+        if (outputAsVideo) {
             int fourcc = OpenCvSharp.VideoWriter.FourCC('M', '4', 'S', '2'); // MPEG-4 part 2 codec
 
             int frameRate = Math.Max(zed.GetInitParameters().cameraFPS, 25); // Minimum write rate in OpenCV is 25
             Console.WriteLine(outputPath);
             videoWriter.Open(outputPath, fourcc, frameRate, new OpenCvSharp.Size((int)imageSize.width * 2, (int)imageSize.height));
-            if (!videoWriter.IsOpened())
-            {
+            if (!videoWriter.IsOpened()) {
                 Console.WriteLine("Error: OpenCV video writer cannot be opened. Please check the .avi file path and write permissions.");
                 zed.Close();
                 Environment.Exit(-1);
@@ -154,20 +142,16 @@ class Program
         int svoPosition = 0;
         zed.SetSVOPosition(svoPosition);
 
-
-        while (!exit_app)
-        {
+        while (!exit_app) {
             exit_app = (System.Windows.Input.Keyboard.IsKeyDown(System.Windows.Input.Key.Q) == true);
             ERROR_CODE err = zed.Grab(ref rtParams);
-            if (err <= ERROR_CODE.SUCCESS)
-            {
+            if (err <= ERROR_CODE.SUCCESS) {
                 svoPosition = zed.GetSVOPosition();
 
                 // Retrieve SVO images
                 zed.RetrieveImage(leftImage, VIEW.LEFT);
 
-                switch (appType)
-                {
+                switch (appType) {
                     case APP_TYPE.LEFT_AND_RIGHT:
                         zed.RetrieveImage(rightImage, VIEW.RIGHT);
                         break;
@@ -181,31 +165,35 @@ class Program
                         break;
                 }
 
-                if (outputAsVideo)
-                {
+                if (outputAsVideo) {
                     // Convert SVO image from RGBA to RGB
-                    Cv2.CvtColor(leftImageOCV, imageSideBySide[new OpenCvSharp.Rect(0,0, (int)imageSize.width, (int)imageSize.height)], ColorConversionCodes.BGRA2BGR);
-                    Cv2.CvtColor(rightImageOCV, imageSideBySide[new OpenCvSharp.Rect((int)imageSize.width, 0, (int)imageSize.width, (int)imageSize.height)], ColorConversionCodes.BGRA2BGR);
+                    Cv2.CvtColor(
+                        leftImageOCV,
+                        imageSideBySide[new OpenCvSharp.Rect(0, 0, (int)imageSize.width, (int)imageSize.height)],
+                        ColorConversionCodes.BGRA2BGR
+                    );
+                    Cv2.CvtColor(
+                        rightImageOCV,
+                        imageSideBySide[new OpenCvSharp.Rect((int)imageSize.width, 0, (int)imageSize.width, (int)imageSize.height)],
+                        ColorConversionCodes.BGRA2BGR
+                    );
                     // Write the RGB image in the video
                     videoWriter.Write(imageSideBySide);
-                }
-                else
-                {
+                } else {
                     // Generate filenames
                     string filename1 = "";
                     filename1 = outputPath + "/left" + svoPosition + ".png";
                     string filename2 = "";
-                    filename2 = outputPath + (appType == APP_TYPE.LEFT_AND_RIGHT ? "/right" : "/depth") +svoPosition + ".png";
+                    filename2 = outputPath + (appType == APP_TYPE.LEFT_AND_RIGHT ? "/right" : "/depth") + svoPosition + ".png";
 
                     // Save Left images
                     Cv2.ImWrite(filename1, leftImageOCV);
 
-                    //Save depth
+                    // Save depth
                     if (appType != APP_TYPE.LEFT_AND_DEPTH_16)
                         Cv2.ImWrite(filename2, rightImageOCV);
-                    else
-                    {
-                        //Convert to 16 bit
+                    else {
+                        // Convert to 16 bit
                         OpenCvSharp.Mat depth16 = new OpenCvSharp.Mat();
                         depthImageOCV.ConvertTo(depth16, MatType.CV_16UC1);
                         Cv2.ImWrite(filename2, depth16);
@@ -214,22 +202,17 @@ class Program
 
                 // Display Progress
                 ProgressBar((float)svoPosition / (float)nbFrames, 30);
-            }
-            else if (zed.GetSVOPosition() >= nbFrames - (zed.GetInitParameters().svoRealTimeMode ? 2 : 1))
-            {
+            } else if (zed.GetSVOPosition() >= nbFrames - (zed.GetInitParameters().svoRealTimeMode ? 2 : 1)) {
                 Console.WriteLine("SVO end has been reached. Exiting now.");
                 Environment.Exit(-1);
                 exit_app = true;
-            }
-            else
-            {
+            } else {
                 Console.WriteLine("Grab Error : " + err);
                 exit_app = true;
             }
         }
-        if (outputAsVideo)
-        {
-            //Close the video writer
+        if (outputAsVideo) {
+            // Close the video writer
             videoWriter.Release();
         }
 
@@ -237,13 +220,12 @@ class Program
     }
 
     /// <summary>
-    ///  Creates an OpenCV version of a ZED Mat. 
+    ///  Creates an OpenCV version of a ZED Mat.
     /// </summary>
     /// <param name="zedmat">Source ZED Mat.</param>
     /// <param name="zedmattype">Type of ZED Mat - data type and channel number.
     /// <returns></returns>
-    private static OpenCvSharp.Mat SLMat2CVMat(ref sl.Mat zedmat, MAT_TYPE zedmattype)
-    {
+    private static OpenCvSharp.Mat SLMat2CVMat(ref sl.Mat zedmat, MAT_TYPE zedmattype) {
         int cvmattype = SLMatType2CVMatType(zedmattype);
         OpenCvSharp.Mat cvmat = new OpenCvSharp.Mat(zedmat.GetHeight(), zedmat.GetWidth(), cvmattype, zedmat.GetPtr());
 
@@ -251,12 +233,10 @@ class Program
     }
 
     /// <summary>
-    /// Returns the OpenCV type that corresponds to a given ZED Mat type. 
+    /// Returns the OpenCV type that corresponds to a given ZED Mat type.
     /// </summary>
-    private static int SLMatType2CVMatType(MAT_TYPE zedmattype)
-    {
-        switch (zedmattype)
-        {
+    private static int SLMatType2CVMatType(MAT_TYPE zedmattype) {
+        switch (zedmattype) {
             case sl.MAT_TYPE.MAT_32F_C1:
                 return OpenCvSharp.MatType.CV_32FC1;
             case sl.MAT_TYPE.MAT_32F_C2:
@@ -279,13 +259,13 @@ class Program
     }
 
     // Display progress bar
-    static void ProgressBar(float ratio, uint w)
-    {
+    static void ProgressBar(float ratio, uint w) {
         uint c = (uint)(ratio * w);
-        for (uint x = 0; x < c; x++) Console.Write("=");
-        for (uint x = c; x < w; x++) Console.Write(" ");
+        for (uint x = 0; x < c; x++)
+            Console.Write("=");
+        for (uint x = c; x < w; x++)
+            Console.Write(" ");
         Console.Write((int)(ratio * 100) + "% ");
         Console.Write("\r");
     }
-
 }

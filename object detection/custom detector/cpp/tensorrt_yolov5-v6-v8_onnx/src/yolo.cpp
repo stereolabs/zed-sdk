@@ -6,20 +6,21 @@ using namespace nvinfer1;
 static Logger gLogger;
 
 inline int clamp(int val, int min, int max) {
-    if (val <= min) return min;
-    if (val >= max) return max;
+    if (val <= min)
+        return min;
+    if (val >= max)
+        return max;
     return val;
 }
-
 
 #define WEIGHTED_NMS
 
 #if NV_TENSORRT_MAJOR >= 10
-#define trt_name_engine_get_binding_name getIOTensorName
-#define trt_name_engine_get_nb_binding getNbIOTensors
+    #define trt_name_engine_get_binding_name getIOTensorName
+    #define trt_name_engine_get_nb_binding getNbIOTensors
 #else
-#define trt_name_engine_get_binding_name getBindingName
-#define trt_name_engine_get_nb_binding getNbBindings
+    #define trt_name_engine_get_binding_name getBindingName
+    #define trt_name_engine_get_nb_binding getNbBindings
 #endif
 
 std::vector<BBoxInfo> nonMaximumSuppression(const float nmsThresh, std::vector<BBoxInfo> binfo) {
@@ -32,7 +33,7 @@ std::vector<BBoxInfo> nonMaximumSuppression(const float nmsThresh, std::vector<B
         return x1max < x2min ? 0 : std::min(x1max, x2max) - x2min;
     };
 
-    auto computeIoU = [&overlap1D](BBox& bbox1, BBox & bbox2) -> float {
+    auto computeIoU = [&overlap1D](BBox& bbox1, BBox& bbox2) -> float {
         float overlapX = overlap1D(bbox1.x1, bbox1.x2, bbox2.x1, bbox2.x2);
         float overlapY = overlap1D(bbox1.y1, bbox1.y2, bbox2.y1, bbox2.y2);
         float area1 = (bbox1.x2 - bbox1.x1) * (bbox1.y2 - bbox1.y1);
@@ -42,13 +43,14 @@ std::vector<BBoxInfo> nonMaximumSuppression(const float nmsThresh, std::vector<B
         return u == 0 ? 0 : overlap2D / u;
     };
 
-    std::stable_sort(binfo.begin(), binfo.end(), [](const BBoxInfo& b1, const BBoxInfo & b2) {
-        return b1.prob > b2.prob; });
+    std::stable_sort(binfo.begin(), binfo.end(), [](const BBoxInfo& b1, const BBoxInfo& b2) {
+        return b1.prob > b2.prob;
+    });
 
     std::vector<BBoxInfo> out;
 
 #if defined(WEIGHTED_NMS)
-    std::vector<std::vector < BBoxInfo> > weigthed_nms_candidates;
+    std::vector<std::vector<BBoxInfo>> weigthed_nms_candidates;
 #endif
     for (auto& i : binfo) {
         bool keep = true;
@@ -68,10 +70,9 @@ std::vector<BBoxInfo> nonMaximumSuppression(const float nmsThresh, std::vector<B
             } else
                 break;
 
-#if defined(WEIGHTED_NMS)  
+#if defined(WEIGHTED_NMS)
             j_index++;
 #endif
-
         }
         if (keep) {
             out.push_back(i);
@@ -113,8 +114,7 @@ std::vector<BBoxInfo> nonMaximumSuppression(const float nmsThresh, std::vector<B
     return out;
 }
 
-Yolo::Yolo() {
-}
+Yolo::Yolo() { }
 
 Yolo::~Yolo() {
     if (is_init) {
@@ -141,13 +141,13 @@ Yolo::~Yolo() {
 
 int Yolo::build_engine(std::string onnx_path, std::string engine_path, OptimDim dyn_dim_profile) {
 
-
     std::vector<uint8_t> onnx_file_content;
-    if (readFile(onnx_path, onnx_file_content)) return 1;
+    if (readFile(onnx_path, onnx_file_content))
+        return 1;
 
     if ((!onnx_file_content.empty())) {
 
-        ICudaEngine * engine;
+        ICudaEngine* engine;
         // Create engine (onnx)
         std::cout << "Creating engine from onnx model" << std::endl;
 
@@ -158,7 +158,7 @@ int Yolo::build_engine(std::string onnx_path, std::string engine_path, OptimDim 
             return 1;
         }
 
-        auto explicitBatch = 1U << static_cast<uint32_t> (nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
+        auto explicitBatch = 1U << static_cast<uint32_t>(nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
         auto network = builder->createNetworkV2(explicitBatch);
 
         if (!network) {
@@ -194,8 +194,8 @@ int Yolo::build_engine(std::string onnx_path, std::string engine_path, OptimDim 
         }
 
         bool parsed = false;
-        unsigned char *onnx_model_buffer = onnx_file_content.data();
-        size_t onnx_model_buffer_size = onnx_file_content.size() * sizeof (char);
+        unsigned char* onnx_model_buffer = onnx_file_content.data();
+        size_t onnx_model_buffer_size = onnx_file_content.size() * sizeof(char);
         parsed = parser->parse(onnx_model_buffer, onnx_model_buffer_size);
 
         if (!parsed) {
@@ -213,7 +213,7 @@ int Yolo::build_engine(std::string onnx_path, std::string engine_path, OptimDim 
 #if NV_TENSORRT_MAJOR >= 10
         engine = nullptr;
         if (builder->isNetworkSupported(*network, *config)) {
-            std::unique_ptr<IHostMemory> serializedEngine{builder->buildSerializedNetwork(*network, *config)};
+            std::unique_ptr<IHostMemory> serializedEngine {builder->buildSerializedNetwork(*network, *config)};
             if (serializedEngine != nullptr && serializedEngine.get() && serializedEngine->size() > 0) {
                 nvinfer1::IRuntime* infer = createInferRuntime(gLogger);
                 engine = infer->deserializeCudaEngine(serializedEngine->data(), serializedEngine->size());
@@ -225,14 +225,16 @@ int Yolo::build_engine(std::string onnx_path, std::string engine_path, OptimDim 
 
         onnx_file_content.clear();
 
-        // write plan file if it is specified        
-        if (engine == nullptr) return 1;
+        // write plan file if it is specified
+        if (engine == nullptr)
+            return 1;
         IHostMemory* ptr = engine->serialize();
         assert(ptr);
-        if (ptr == nullptr) return 1;
+        if (ptr == nullptr)
+            return 1;
 
-        FILE *fp = fopen(engine_path.c_str(), "wb");
-        fwrite(reinterpret_cast<const char*> (ptr->data()), ptr->size() * sizeof (char), 1, fp);
+        FILE* fp = fopen(engine_path.c_str(), "wb");
+        fwrite(reinterpret_cast<const char*>(ptr->data()), ptr->size() * sizeof(char), 1, fp);
         fclose(fp);
 
 #if NV_TENSORRT_MAJOR >= 10
@@ -250,13 +252,11 @@ int Yolo::build_engine(std::string onnx_path, std::string engine_path, OptimDim 
 #endif
 
         return 0;
-    } else return 1;
-
-
+    } else
+        return 1;
 }
 
 int Yolo::init(std::string engine_name) {
-
 
     // deserialize the .engine and run inference
     std::ifstream file(engine_name, std::ios::binary);
@@ -264,27 +264,31 @@ int Yolo::init(std::string engine_name) {
         std::cerr << "read " << engine_name << " error!" << std::endl;
         return -1;
     }
-    char *trtModelStream = nullptr;
+    char* trtModelStream = nullptr;
     size_t size = 0;
     file.seekg(0, file.end);
     size = file.tellg();
     file.seekg(0, file.beg);
     trtModelStream = new char[size];
-    if (!trtModelStream) return 1;
+    if (!trtModelStream)
+        return 1;
     file.read(trtModelStream, size);
     file.close();
 
     // prepare input data ---------------------------
     runtime = createInferRuntime(gLogger);
-    if (runtime == nullptr) return 1;
+    if (runtime == nullptr)
+        return 1;
     engine = runtime->deserializeCudaEngine(trtModelStream, size);
-    if (engine == nullptr) return 1;
+    if (engine == nullptr)
+        return 1;
     context = engine->createExecutionContext();
-    if (context == nullptr) return 1;
+    if (context == nullptr)
+        return 1;
 
     delete[] trtModelStream;
-    if (engine->trt_name_engine_get_nb_binding() != 2) return 1;
-
+    if (engine->trt_name_engine_get_nb_binding() != 2)
+        return 1;
 
     const int bindings = engine->trt_name_engine_get_nb_binding();
     for (int i = 0; i < bindings; i++) {
@@ -305,7 +309,7 @@ int Yolo::init(std::string engine_name) {
             input_height = bind_dim.d[2];
             inputIndex = i;
             std::cout << "Inference size : " << input_height << "x" << input_width << std::endl;
-        }//if (engine->getTensorIOMode(engine->trt_name_engine_get_binding_name(i)) == TensorIOMode::kOUTPUT) 
+        } // if (engine->getTensorIOMode(engine->trt_name_engine_get_binding_name(i)) == TensorIOMode::kOUTPUT)
         else {
             output_name = engine->trt_name_engine_get_binding_name(i);
             // fill size, allocation must be done externally
@@ -347,24 +351,33 @@ int Yolo::init(std::string engine_name) {
     assert(inputIndex == 0);
     assert(outputIndex == 1);
     // Create GPU buffers on device
-    CUDA_CHECK(cudaMalloc(&d_output, batch_size * output_size * sizeof (float)));
+    CUDA_CHECK(cudaMalloc(&d_output, batch_size * output_size * sizeof(float)));
     // Create stream
     CUDA_CHECK(cudaStreamCreate(&stream));
 
-    if (batch_size != 1) return 1; // This sample only support batch 1 for now
+    if (batch_size != 1)
+        return 1; // This sample only support batch 1 for now
 
     is_init = true;
     return 0;
 }
 
-std::vector<BBoxInfo> Yolo::run(sl::Mat &left_sl, int orig_image_h, int orig_image_w, float thres) {
+std::vector<BBoxInfo> Yolo::run(sl::Mat& left_sl, int orig_image_h, int orig_image_w, float thres) {
     std::vector<BBoxInfo> binfo;
 
-    
     /////// Preparing inference
     // Converting image to YOLO input tensor
-    sl::blobFromImage(left_sl, blob, sl::Resolution(input_width, input_height), 1 / 255.f,
-            sl::float3(0, 0, 0), sl::float3(1, 1, 1), true, true, stream);
+    sl::blobFromImage(
+        left_sl,
+        blob,
+        sl::Resolution(input_width, input_height),
+        1 / 255.f,
+        sl::float3(0, 0, 0),
+        sl::float3(1, 1, 1),
+        true,
+        true,
+        stream
+    );
 
 #if (NV_TENSORRT_MAJOR < 8) || (NV_TENSORRT_MAJOR == 8 && NV_TENSORRT_MINOR < 5)
     std::vector<void*> d_buffers_nvinfer(2);
@@ -377,150 +390,146 @@ std::vector<BBoxInfo> Yolo::run(sl::Mat &left_sl, int orig_image_h, int orig_ima
     context->enqueueV3(stream);
 #endif
 
-    CUDA_CHECK(cudaMemcpyAsync(h_output, d_output, batch_size * output_size * sizeof (float), cudaMemcpyDeviceToHost, stream));
+    CUDA_CHECK(cudaMemcpyAsync(h_output, d_output, batch_size * output_size * sizeof(float), cudaMemcpyDeviceToHost, stream));
     cudaStreamSynchronize(stream);
-
 
     /////// Extraction
 
-    float scalingFactor = std::min(static_cast<float> (input_width) / orig_image_w, static_cast<float> (input_height) / orig_image_h);
+    float scalingFactor = std::min(static_cast<float>(input_width) / orig_image_w, static_cast<float>(input_height) / orig_image_h);
     float xOffset = (input_width - scalingFactor * orig_image_w) * 0.5f;
     float yOffset = (input_height - scalingFactor * orig_image_h) * 0.5f;
     scalingFactor = 1.f / scalingFactor;
     float scalingFactor_x = scalingFactor;
     float scalingFactor_y = scalingFactor;
 
-
     switch (yolo_model_version) {
         default:
         case YOLO_MODEL_VERSION_OUTPUT_STYLE::YOLOV8_V5:
-        {
-            // https://github.com/triple-Mu/YOLOv8-TensorRT/blob/df11cec3abaab7fefb28fb760f1cebbddd5ec826/csrc/detect/normal/include/yolov8.hpp#L343
-            auto num_channels = out_class_number + out_box_struct_number;
-            auto num_anchors = out_dim;
-            auto num_labels = out_class_number;
+            {
+                // https://github.com/triple-Mu/YOLOv8-TensorRT/blob/df11cec3abaab7fefb28fb760f1cebbddd5ec826/csrc/detect/normal/include/yolov8.hpp#L343
+                auto num_channels = out_class_number + out_box_struct_number;
+                auto num_anchors = out_dim;
+                auto num_labels = out_class_number;
 
-            auto& dw = xOffset;
-            auto& dh = yOffset;
+                auto& dw = xOffset;
+                auto& dh = yOffset;
 
-            auto& width = orig_image_w;
-            auto& height = orig_image_h;
+                auto& width = orig_image_w;
+                auto& height = orig_image_h;
 
-            cv::Mat output = cv::Mat(
-                    num_channels,
-                    num_anchors,
-                    CV_32F,
-                    static_cast<float*> (h_output)
-                    );
-            output = output.t();
-            for (int i = 0; i < num_anchors; i++) {
-                auto row_ptr = output.row(i).ptr<float>();
-                auto bboxes_ptr = row_ptr;
-                auto scores_ptr = row_ptr + out_box_struct_number;
-                auto max_s_ptr = std::max_element(scores_ptr, scores_ptr + num_labels);
-                float score = *max_s_ptr;
-                if (score > thres) {
-                    int label = max_s_ptr - scores_ptr;
+                cv::Mat output = cv::Mat(num_channels, num_anchors, CV_32F, static_cast<float*>(h_output));
+                output = output.t();
+                for (int i = 0; i < num_anchors; i++) {
+                    auto row_ptr = output.row(i).ptr<float>();
+                    auto bboxes_ptr = row_ptr;
+                    auto scores_ptr = row_ptr + out_box_struct_number;
+                    auto max_s_ptr = std::max_element(scores_ptr, scores_ptr + num_labels);
+                    float score = *max_s_ptr;
+                    if (score > thres) {
+                        int label = max_s_ptr - scores_ptr;
 
-                    BBoxInfo bbi;
+                        BBoxInfo bbi;
 
-                    float x = *bboxes_ptr++ - dw;
-                    float y = *bboxes_ptr++ - dh;
-                    float w = *bboxes_ptr++;
-                    float h = *bboxes_ptr;
+                        float x = *bboxes_ptr++ - dw;
+                        float y = *bboxes_ptr++ - dh;
+                        float w = *bboxes_ptr++;
+                        float h = *bboxes_ptr;
 
-                    float x0 = clamp((x - 0.5f * w) * scalingFactor_x, 0.f, width);
-                    float y0 = clamp((y - 0.5f * h) * scalingFactor_y, 0.f, height);
-                    float x1 = clamp((x + 0.5f * w) * scalingFactor_x, 0.f, width);
-                    float y1 = clamp((y + 0.5f * h) * scalingFactor_y, 0.f, height);
+                        float x0 = clamp((x - 0.5f * w) * scalingFactor_x, 0.f, width);
+                        float y0 = clamp((y - 0.5f * h) * scalingFactor_y, 0.f, height);
+                        float x1 = clamp((x + 0.5f * w) * scalingFactor_x, 0.f, width);
+                        float y1 = clamp((y + 0.5f * h) * scalingFactor_y, 0.f, height);
 
-                    cv::Rect_<float> bbox;
-                    bbox.x = x0;
-                    bbox.y = y0;
-                    bbox.width = x1 - x0;
-                    bbox.height = y1 - y0;
+                        cv::Rect_<float> bbox;
+                        bbox.x = x0;
+                        bbox.y = y0;
+                        bbox.width = x1 - x0;
+                        bbox.height = y1 - y0;
 
-                    bbi.box.x1 = x0;
-                    bbi.box.y1 = y0;
-                    bbi.box.x2 = x1;
-                    bbi.box.y2 = y1;
+                        bbi.box.x1 = x0;
+                        bbi.box.y1 = y0;
+                        bbi.box.x2 = x1;
+                        bbi.box.y2 = y1;
 
-                    if ((bbi.box.x1 > bbi.box.x2) || (bbi.box.y1 > bbi.box.y2)) break;
+                        if ((bbi.box.x1 > bbi.box.x2) || (bbi.box.y1 > bbi.box.y2))
+                            break;
 
-                    bbi.label = label;
-                    bbi.prob = score;
+                        bbi.label = label;
+                        bbi.prob = score;
 
-                    binfo.push_back(bbi);
+                        binfo.push_back(bbi);
+                    }
                 }
+                break;
             }
-            break;
-        }
         case YOLO_MODEL_VERSION_OUTPUT_STYLE::YOLOV6:
-        {
-            // https://github.com/DefTruth/lite.ai.toolkit/blob/1267584d5dae6269978e17ffd5ec29da496e503e/lite/ort/cv/yolov6.cpp#L97
+            {
+                // https://github.com/DefTruth/lite.ai.toolkit/blob/1267584d5dae6269978e17ffd5ec29da496e503e/lite/ort/cv/yolov6.cpp#L97
 
-            auto& dw_ = xOffset;
-            auto& dh_ = yOffset;
+                auto& dw_ = xOffset;
+                auto& dh_ = yOffset;
 
-            auto& width = orig_image_w;
-            auto& height = orig_image_h;
+                auto& width = orig_image_w;
+                auto& height = orig_image_h;
 
-            const unsigned int num_anchors = out_dim; // n = ?
-            const unsigned int num_classes = out_class_number; // - out_box_struct_number; // 80
+                const unsigned int num_anchors = out_dim;          // n = ?
+                const unsigned int num_classes = out_class_number; // - out_box_struct_number; // 80
 
-            for (unsigned int i = 0; i < num_anchors; ++i) {
-                const float *offset_obj_cls_ptr = h_output + (i * (num_classes + 5)); // row ptr
-                float obj_conf = offset_obj_cls_ptr[4]; /*always == 1 for some reasons*/
-                float cls_conf = offset_obj_cls_ptr[5];
+                for (unsigned int i = 0; i < num_anchors; ++i) {
+                    const float* offset_obj_cls_ptr = h_output + (i * (num_classes + 5)); // row ptr
+                    float obj_conf = offset_obj_cls_ptr[4];                               /*always == 1 for some reasons*/
+                    float cls_conf = offset_obj_cls_ptr[5];
 
-                // The confidence is remapped because it output basically garbage with conf < ~0.1 and we don't want to clamp it either
-                const float conf_offset = 0.1;
-                const float input_start = 0;
-                const float output_start = input_start;
-                const float output_end = 1;
-                const float input_end = output_end - conf_offset;
+                    // The confidence is remapped because it output basically garbage with conf < ~0.1 and we don't want to clamp it either
+                    const float conf_offset = 0.1;
+                    const float input_start = 0;
+                    const float output_start = input_start;
+                    const float output_end = 1;
+                    const float input_end = output_end - conf_offset;
 
-                float conf = (obj_conf * cls_conf) - conf_offset;
-                if (conf < 0) conf = 0;
-                conf = (conf - input_start) / (input_end - input_start) * (output_end - output_start) + output_start;
+                    float conf = (obj_conf * cls_conf) - conf_offset;
+                    if (conf < 0)
+                        conf = 0;
+                    conf = (conf - input_start) / (input_end - input_start) * (output_end - output_start) + output_start;
 
-                if (conf > thres) {
+                    if (conf > thres) {
 
-                    unsigned int label = 0;
-                    for (unsigned int j = 0; j < num_classes; ++j) {
-                        float tmp_conf = offset_obj_cls_ptr[j + 5];
-                        if (tmp_conf > cls_conf) {
-                            cls_conf = tmp_conf;
-                            label = j;
-                        }
-                    } // argmax
+                        unsigned int label = 0;
+                        for (unsigned int j = 0; j < num_classes; ++j) {
+                            float tmp_conf = offset_obj_cls_ptr[j + 5];
+                            if (tmp_conf > cls_conf) {
+                                cls_conf = tmp_conf;
+                                label = j;
+                            }
+                        } // argmax
 
-                    BBoxInfo bbi;
+                        BBoxInfo bbi;
 
-                    float cx = offset_obj_cls_ptr[0];
-                    float cy = offset_obj_cls_ptr[1];
-                    float w = offset_obj_cls_ptr[2];
-                    float h = offset_obj_cls_ptr[3];
-                    float x1 = ((cx - w / 2.f) - (float) dw_) * scalingFactor_x;
-                    float y1 = ((cy - h / 2.f) - (float) dh_) * scalingFactor_y;
-                    float x2 = ((cx + w / 2.f) - (float) dw_) * scalingFactor_x;
-                    float y2 = ((cy + h / 2.f) - (float) dh_) * scalingFactor_y;
+                        float cx = offset_obj_cls_ptr[0];
+                        float cy = offset_obj_cls_ptr[1];
+                        float w = offset_obj_cls_ptr[2];
+                        float h = offset_obj_cls_ptr[3];
+                        float x1 = ((cx - w / 2.f) - (float)dw_) * scalingFactor_x;
+                        float y1 = ((cy - h / 2.f) - (float)dh_) * scalingFactor_y;
+                        float x2 = ((cx + w / 2.f) - (float)dw_) * scalingFactor_x;
+                        float y2 = ((cy + h / 2.f) - (float)dh_) * scalingFactor_y;
 
-                    bbi.box.x1 = std::max(0.f, x1);
-                    bbi.box.y1 = std::max(0.f, y1);
-                    bbi.box.x2 = std::min(x2, (float) width - 1.f);
-                    bbi.box.y2 = std::min(y2, (float) height - 1.f);
+                        bbi.box.x1 = std::max(0.f, x1);
+                        bbi.box.y1 = std::max(0.f, y1);
+                        bbi.box.x2 = std::min(x2, (float)width - 1.f);
+                        bbi.box.y2 = std::min(y2, (float)height - 1.f);
 
-                    if ((bbi.box.x1 > bbi.box.x2) || (bbi.box.y1 > bbi.box.y2)) break;
+                        if ((bbi.box.x1 > bbi.box.x2) || (bbi.box.y1 > bbi.box.y2))
+                            break;
 
-                    bbi.label = label;
-                    bbi.prob = conf;
+                        bbi.label = label;
+                        bbi.prob = conf;
 
-                    binfo.push_back(bbi);
+                        binfo.push_back(bbi);
+                    }
                 }
+                break;
             }
-            break;
-        }
     };
 
     /// NMS

@@ -73,7 +73,7 @@ def main(opt):
 
     # Open the SVO file specified as a parameter
     err = zed.open(init_params)
-    if err != sl.ERROR_CODE.SUCCESS:
+    if err > sl.ERROR_CODE.SUCCESS:
         sys.stdout.write(repr(err))
         zed.close()
         exit()

@@ -35,7 +35,7 @@ def main():
 
     # Open the camera
     status = zed.open(init_params)
-    if status != sl.ERROR_CODE.SUCCESS: #Ensure the camera has opened succesfully
+    if status > sl.ERROR_CODE.SUCCESS: #Ensure the camera has opened succesfully
         print("Camera Open : "+repr(status)+". Exit program.")
         exit()
 
@@ -51,8 +51,8 @@ def main():
     mirror_ref.set_translation(sl.Translation(2.75,4.0,0))
 
     while i < 50:
-        # A new image is available if grab() returns SUCCESS
-        if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
+        # A new image is available if grab() returns ERROR_CODE.SUCCESS or a WARNING (an error_code lower than ERROR_CODE.SUCCESS)
+        if zed.grab(runtime_parameters) <= sl.ERROR_CODE.SUCCESS:
             # Retrieve left image
             zed.retrieve_image(image, sl.VIEW.LEFT)
             # Retrieve depth map. Depth is aligned on the left image

@@ -29,10 +29,8 @@ using System.Windows.Forms;
 using OpenGL;
 using OpenGL.CoreUI;
 
-namespace sl
-{
-    class MainWindow
-    {
+namespace sl {
+    class MainWindow {
         GLViewer viewer;
         Camera zedCamera;
         RuntimeParameters runtimeParameters;
@@ -40,8 +38,7 @@ namespace sl
         Pose cam_pose;
         Resolution res;
 
-        public MainWindow(string[] args)
-        {
+        public MainWindow(string[] args) {
             // Set configuration parameters
             InitParameters init_params = new InitParameters();
             init_params.resolution = RESOLUTION.AUTO;
@@ -55,7 +52,7 @@ namespace sl
             zedCamera = new Camera(0);
             ERROR_CODE err = zedCamera.Open(ref init_params);
 
-            if (err != ERROR_CODE.SUCCESS)
+            if (err > ERROR_CODE.SUCCESS)
                 Environment.Exit(-1);
 
             // Enable tracking
@@ -81,18 +78,14 @@ namespace sl
         }
 
         // Create Window
-        public void CreateWindow()
-        {
-            using (OpenGL.CoreUI.NativeWindow nativeWindow = OpenGL.CoreUI.NativeWindow.Create())
-            {
+        public void CreateWindow() {
+            using (OpenGL.CoreUI.NativeWindow nativeWindow = OpenGL.CoreUI.NativeWindow.Create()) {
                 nativeWindow.ContextCreated += NativeWindow_ContextCreated;
                 nativeWindow.Render += NativeWindow_Render;
                 nativeWindow.MouseMove += NativeWindow_MouseEvent;
                 nativeWindow.Resize += NativeWindow_Resize;
-                nativeWindow.KeyDown += (object obj, NativeWindowKeyEventArgs e) =>
-                {
-                    switch (e.Key)
-                    {
+                nativeWindow.KeyDown += (object obj, NativeWindowKeyEventArgs e) => {
+                    switch (e.Key) {
                         case KeyCode.Escape:
                             close();
                             nativeWindow.Stop();
@@ -106,7 +99,7 @@ namespace sl
                     viewer.keyEventFunction(e);
                 };
 
-                //nativeWindow.MultisampleBits = 4;
+                // nativeWindow.MultisampleBits = 4;
 
                 int wnd_h = Screen.PrimaryScreen.Bounds.Height;
                 int wnd_w = Screen.PrimaryScreen.Bounds.Width;
@@ -114,41 +107,40 @@ namespace sl
                 int height = (int)(wnd_h * 0.9f);
                 int width = (int)(wnd_w * 0.9f);
 
-                if (width > zedCamera.ImageWidth && height > zedCamera.ImageHeight)
-                {
+                if (width > zedCamera.ImageWidth && height > zedCamera.ImageHeight) {
                     width = zedCamera.ImageWidth;
                     height = zedCamera.ImageHeight;
                 }
 
-                nativeWindow.Create((int)(zedCamera.ImageWidth * 0.05f), (int)(zedCamera.ImageHeight * 0.05f), 1200, 700, NativeWindowStyle.Resizeable);
+                nativeWindow.Create(
+                    (int)(zedCamera.ImageWidth * 0.05f),
+                    (int)(zedCamera.ImageHeight * 0.05f),
+                    1200,
+                    700,
+                    NativeWindowStyle.Resizeable
+                );
                 nativeWindow.Show();
-                try
-                {
+                try {
                     nativeWindow.Run();
-                }
-                catch (Exception e)
-                {
+                } catch (Exception e) {
                     Console.WriteLine("Mouse wheel is broken in the current OPENGL .NET VERSION. Please do not use it.");
                 }
             }
         }
 
-        private void NativeWindow_Resize(object sender, EventArgs e)
-        {
+        private void NativeWindow_Resize(object sender, EventArgs e) {
             OpenGL.CoreUI.NativeWindow nativeWindow = (OpenGL.CoreUI.NativeWindow)sender;
 
             viewer.resizeCallback((int)nativeWindow.Width, (int)nativeWindow.Height);
         }
 
-        private void NativeWindow_MouseEvent(object sender, NativeWindowMouseEventArgs e)
-        {
+        private void NativeWindow_MouseEvent(object sender, NativeWindowMouseEventArgs e) {
             viewer.mouseEventFunction(e);
             viewer.computeMouseMotion(e.Location.X, e.Location.Y);
         }
 
         // Init Window
-        private void NativeWindow_ContextCreated(object sender, NativeWindowEventArgs e)
-        {
+        private void NativeWindow_ContextCreated(object sender, NativeWindowEventArgs e) {
             OpenGL.CoreUI.NativeWindow nativeWindow = (OpenGL.CoreUI.NativeWindow)sender;
 
             Gl.ReadBuffer(ReadBufferMode.Back);
@@ -166,76 +158,57 @@ namespace sl
         }
 
         // Render loop
-        private void NativeWindow_Render(object sender, NativeWindowEventArgs e)
-        {
+        private void NativeWindow_Render(object sender, NativeWindowEventArgs e) {
             OpenGL.CoreUI.NativeWindow nativeWindow = (OpenGL.CoreUI.NativeWindow)sender;
             Gl.Viewport(0, 0, (int)nativeWindow.Width, (int)nativeWindow.Height);
             Gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            if (viewer.isAvailable() && zedCamera.Grab(ref runtimeParameters) <= ERROR_CODE.SUCCESS)
-            {
-                if (point_cloud.IsInit())
-                {
+            if (viewer.isAvailable() && zedCamera.Grab(ref runtimeParameters) <= ERROR_CODE.SUCCESS) {
+                if (point_cloud.IsInit()) {
                     // Retrieve left image
                     zedCamera.RetrieveMeasure(point_cloud, sl.MEASURE.XYZRGBA, sl.MEM.CPU, res);
                     zedCamera.GetPosition(ref cam_pose, REFERENCE_FRAME.WORLD);
-                    //Update GL View
+                    // Update GL View
                     viewer.update(point_cloud, cam_pose);
                     viewer.render();
                 }
             }
         }
 
-        private void close()
-        {
+        private void close() {
             zedCamera.DisablePositionalTracking();
             zedCamera.Close();
             viewer.exit();
         }
 
-        private void parseArgs(string[] args , ref sl.InitParameters param)
-        {
-            if (args.Length > 0 && args[0].IndexOf(".svo") != -1)
-            {
+        private void parseArgs(string[] args, ref sl.InitParameters param) {
+            if (args.Length > 0 && args[0].IndexOf(".svo") != -1) {
                 // SVO input mode
                 param.inputType = INPUT_TYPE.SVO;
                 param.pathSVO = args[0];
                 Console.WriteLine("[Sample] Using SVO File input: " + args[0]);
-            }
-            else if (args.Length > 0 && args[0].IndexOf(".svo") == -1)
-            {
+            } else if (args.Length > 0 && args[0].IndexOf(".svo") == -1) {
                 IPAddress ip;
                 string arg = args[0];
-                if (IPAddress.TryParse(arg, out ip))
-                {
+                if (IPAddress.TryParse(arg, out ip)) {
                     // Stream input mode - IP + port
                     param.inputType = INPUT_TYPE.STREAM;
                     param.ipStream = ip.ToString();
                     Console.WriteLine("[Sample] Using Stream input, IP : " + ip);
-                }
-                else if (args[0].IndexOf("HD2K") != -1)
-                {
+                } else if (args[0].IndexOf("HD2K") != -1) {
                     param.resolution = sl.RESOLUTION.HD2K;
                     Console.WriteLine("[Sample] Using Camera in resolution HD2K");
-                }
-                else if (args[0].IndexOf("HD1080") != -1)
-                {
+                } else if (args[0].IndexOf("HD1080") != -1) {
                     param.resolution = sl.RESOLUTION.HD1080;
                     Console.WriteLine("[Sample] Using Camera in resolution HD1080");
-                }
-                else if (args[0].IndexOf("HD720") != -1)
-                {
+                } else if (args[0].IndexOf("HD720") != -1) {
                     param.resolution = sl.RESOLUTION.HD720;
                     Console.WriteLine("[Sample] Using Camera in resolution HD720");
-                }
-                else if (args[0].IndexOf("VGA") != -1)
-                {
+                } else if (args[0].IndexOf("VGA") != -1) {
                     param.resolution = sl.RESOLUTION.VGA;
                     Console.WriteLine("[Sample] Using Camera in resolution VGA");
                 }
-            }
-            else
-            {
+            } else {
                 //
             }
         }

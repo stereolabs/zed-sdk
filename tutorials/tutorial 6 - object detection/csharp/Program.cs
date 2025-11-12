@@ -3,12 +3,9 @@ using System;
 using System.Runtime.InteropServices;
 using System.Numerics;
 
-namespace sl
-{
-    class Program
-    {
-        static void Main(string[] args)
-        {
+namespace sl {
+    class Program {
+        static void Main(string[] args) {
             // Set Initialization parameters
             InitParameters init_params = new InitParameters();
             init_params.resolution = RESOLUTION.HD2K;
@@ -19,18 +16,16 @@ namespace sl
             Camera zedCamera = new Camera(0);
             // Open the camera
             ERROR_CODE err = zedCamera.Open(ref init_params);
-            if (err != ERROR_CODE.SUCCESS)
+            if (err > ERROR_CODE.SUCCESS)
                 Environment.Exit(-1);
 
             // Enable positional tracking
             PositionalTrackingParameters trackingParams = new PositionalTrackingParameters();
             err = zedCamera.EnablePositionalTracking(ref trackingParams);
-            if (err != ERROR_CODE.SUCCESS)
-            {
+            if (err != ERROR_CODE.SUCCESS) {
                 Console.WriteLine("ERROR in Enable Tracking. Exiting...");
                 Environment.Exit(-1);
             }
-
 
             // Enable Object Detection
             ObjectDetectionParameters object_detection_parameters = new ObjectDetectionParameters();
@@ -42,8 +37,7 @@ namespace sl
             object_detection_parameters.enableObjectTracking = true;
 
             err = zedCamera.EnableObjectDetection(ref object_detection_parameters);
-            if (err != ERROR_CODE.SUCCESS)
-            {
+            if (err != ERROR_CODE.SUCCESS) {
                 Console.WriteLine("ERROR in Enable OD. Exiting...");
                 Environment.Exit(-1);
             }
@@ -57,20 +51,19 @@ namespace sl
             obj_runtime_parameters.detectionConfidenceThreshold = 50;
 
             int i = 0;
-            while (i < 1000)
-            {
-                if (zedCamera.Grab(ref runtimeParameters) == ERROR_CODE.SUCCESS)
-                {
-                    //Retrieve Objects from Object detection
-                    err  = zedCamera.RetrieveObjects(ref objects, ref obj_runtime_parameters);
-                    //Console.WriteLine("Retrieve objects state : " + (ERROR_CODE)err);
-                    // Display the data each 10 frames
-                    if (i % 10 == 0)
-                    {
+            while (i < 1000) {
+                if (zedCamera.Grab(ref runtimeParameters) <= ERROR_CODE.SUCCESS) {
+                    // Retrieve Objects from Object detection
+                    err = zedCamera.RetrieveObjects(ref objects, ref obj_runtime_parameters);
+                    // Console.WriteLine("Retrieve objects state : " + (ERROR_CODE)err);
+                    //  Display the data each 10 frames
+                    if (i % 10 == 0) {
                         Console.WriteLine("Nb Objects Detection : " + objects.numObject);
-                        for (int p = 0; p < objects.numObject; p++)
-                        {
-                            Console.WriteLine("Position of object " + p + " : " + objects.objectData[p].position + "Tracked? : " + objects.objectData[p].objectTrackingState);
+                        for (int p = 0; p < objects.numObject; p++) {
+                            Console.WriteLine(
+                                "Position of object " + p + " : " + objects.objectData[p].position
+                                + "Tracked? : " + objects.objectData[p].objectTrackingState
+                            );
                         }
                     }
                     i++;

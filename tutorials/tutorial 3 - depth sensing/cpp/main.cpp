@@ -18,25 +18,24 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-
 #include <sl/Camera.hpp>
 
 using namespace std;
 using namespace sl;
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
     // Create a ZED camera object
     Camera zed;
 
     // Set configuration parameters
     InitParameters init_parameters;
-    init_parameters.depth_mode = DEPTH_MODE::NEURAL; // Use NEURAL depth mode
+    init_parameters.depth_mode = DEPTH_MODE::NEURAL;     // Use NEURAL depth mode
     init_parameters.coordinate_units = UNIT::MILLIMETER; // Use millimeter units (for depth measurements)
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         cout << "Error " << returned_state << ", exit program." << endl;
         return EXIT_FAILURE;
     }
@@ -48,8 +47,8 @@ int main(int argc, char **argv) {
     sl::Resolution default_image_size = zed.getRetrieveMeasureResolution();
 
     while (i < 50) {
-        // A new image is available if grab() returns ERROR_CODE::SUCCESS
-        if (zed.grab() == ERROR_CODE::SUCCESS) {
+        // A new image is available if grab() returns ERROR_CODE::SUCCESS or a WARNING (an error_code lower than ERROR_CODE::SUCCESS)
+        if (zed.grab() <= ERROR_CODE::SUCCESS) {
             // Retrieve left image
             zed.retrieveImage(image, VIEW::LEFT, MEM::CPU, default_image_size);
             // Retrieve depth map. Depth is aligned on the left image
@@ -64,11 +63,14 @@ int main(int argc, char **argv) {
             sl::float4 point_cloud_value;
             point_cloud.getValue(x, y, &point_cloud_value);
 
-            if(std::isfinite(point_cloud_value.z)){
-                float distance = sqrt(point_cloud_value.x * point_cloud_value.x + point_cloud_value.y * point_cloud_value.y + point_cloud_value.z * point_cloud_value.z);
-                cout<<"Distance to Camera at {"<<x<<";"<<y<<"}: "<<distance<<"mm"<<endl;
-            }else
-                cout<<"The Distance can not be computed at {"<<x<<";"<<y<<"}"<<endl;           
+            if (std::isfinite(point_cloud_value.z)) {
+                float distance = sqrt(
+                    point_cloud_value.x * point_cloud_value.x + point_cloud_value.y * point_cloud_value.y
+                    + point_cloud_value.z * point_cloud_value.z
+                );
+                cout << "Distance to Camera at {" << x << ";" << y << "}: " << distance << "mm" << endl;
+            } else
+                cout << "The Distance can not be computed at {" << x << ";" << y << "}" << endl;
 
             // Increment the loop
             i++;

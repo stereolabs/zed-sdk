@@ -33,15 +33,13 @@ using System.Windows.Forms;
 using OpenGL;
 using OpenGL.CoreUI;
 
-namespace sl
-{
-    class MainWindow
-    {
+namespace sl {
+    class MainWindow {
         GLViewer viewer;
         Camera zedCamera;
         SpatialMappingParameters spatialMappingParameters;
         RuntimeParameters runtimeParameters;
-        POSITIONAL_TRACKING_STATE tracking_state; 
+        POSITIONAL_TRACKING_STATE tracking_state;
         SPATIAL_MAPPING_STATE mapping_state;
         bool mapping_activated;
         Pose cam_pose;
@@ -53,8 +51,7 @@ namespace sl
         // Choose between MESH and FUSED_POINT_CLOUD
         const bool CREATE_MESH = true;
 
-        public MainWindow(string[] args)
-        {
+        public MainWindow(string[] args) {
             // Set configuration parameters
             InitParameters init_params = new InitParameters();
             init_params.resolution = RESOLUTION.AUTO;
@@ -67,9 +64,8 @@ namespace sl
             zedCamera = new Camera(0);
             ERROR_CODE err = zedCamera.Open(ref init_params);
 
-            if (err != ERROR_CODE.SUCCESS)
-            {
-                Console.WriteLine("Error while opening camera "  + err.ToString() + " exiting...");  
+            if (err > ERROR_CODE.SUCCESS) {
+                Console.WriteLine("Error while opening camera " + err.ToString() + " exiting...");
                 Environment.Exit(-1);
             }
 
@@ -82,8 +78,7 @@ namespace sl
             positionalTrackingParameters.mode = POSITIONAL_TRACKING_MODE.GEN_1;
             err = zedCamera.EnablePositionalTracking(ref positionalTrackingParameters);
 
-            if (err != ERROR_CODE.SUCCESS)
-            {
+            if (err != ERROR_CODE.SUCCESS) {
                 Console.WriteLine("Error while enabling tracking " + err.ToString() + " exitin...");
                 Environment.Exit(-1);
             }
@@ -96,14 +91,16 @@ namespace sl
             spatialMappingParameters.reverseVertexOrder = false;
             spatialMappingParameters.maxMemoryUsage = 4096;
             spatialMappingParameters.saveTexture = true;
-            if (CREATE_MESH)    spatialMappingParameters.map_type = SPATIAL_MAP_TYPE.MESH;
-            else   spatialMappingParameters.map_type = SPATIAL_MAP_TYPE.FUSED_POINT_CLOUD;
+            if (CREATE_MESH)
+                spatialMappingParameters.map_type = SPATIAL_MAP_TYPE.MESH;
+            else
+                spatialMappingParameters.map_type = SPATIAL_MAP_TYPE.FUSED_POINT_CLOUD;
 
             // Create ZED Objects filled in the main loop
             zedMat = new Mat();
             cam_pose = new Pose();
 
-            //Create mesh.
+            // Create mesh.
             mesh = new Mesh();
             fusedPointCloud = new FusedPointCloud();
             int Height = zedCamera.ImageHeight;
@@ -122,16 +119,12 @@ namespace sl
         }
 
         // Create Window
-        public void CreateWindow()
-        {
-            using (OpenGL.CoreUI.NativeWindow nativeWindow = OpenGL.CoreUI.NativeWindow.Create())
-            {
+        public void CreateWindow() {
+            using (OpenGL.CoreUI.NativeWindow nativeWindow = OpenGL.CoreUI.NativeWindow.Create()) {
                 nativeWindow.ContextCreated += NativeWindow_ContextCreated;
                 nativeWindow.Render += NativeWindow_Render;
-                nativeWindow.KeyDown += (object obj, NativeWindowKeyEventArgs e) =>
-                {
-                    switch (e.Key)
-                    {
+                nativeWindow.KeyDown += (object obj, NativeWindowKeyEventArgs e) => {
+                    switch (e.Key) {
                         case KeyCode.Escape:
                             close();
                             nativeWindow.Stop();
@@ -154,28 +147,29 @@ namespace sl
                 int height = (int)(wnd_h * 0.9f);
                 int width = (int)(wnd_w * 0.9f);
 
-                if (width > zedCamera.ImageWidth && height > zedCamera.ImageHeight)
-                {
+                if (width > zedCamera.ImageWidth && height > zedCamera.ImageHeight) {
                     width = zedCamera.ImageWidth;
                     height = zedCamera.ImageHeight;
                 }
 
-                nativeWindow.Create((int)(zedCamera.ImageWidth * 0.05f), (int)(zedCamera.ImageHeight * 0.05f), (uint)width, (uint)height, NativeWindowStyle.Resizeable);
+                nativeWindow.Create(
+                    (int)(zedCamera.ImageWidth * 0.05f),
+                    (int)(zedCamera.ImageHeight * 0.05f),
+                    (uint)width,
+                    (uint)height,
+                    NativeWindowStyle.Resizeable
+                );
                 nativeWindow.Show();
-				try
-				{
-					nativeWindow.Run();
-				}
-				catch (Exception e)
-				{
-					Console.WriteLine("Mouse wheel is broken in the current OPENGL .NET VERSION. Please do not use it.");
-				}
+                try {
+                    nativeWindow.Run();
+                } catch (Exception e) {
+                    Console.WriteLine("Mouse wheel is broken in the current OPENGL .NET VERSION. Please do not use it.");
+                }
             }
         }
 
         // Init Window
-        private void NativeWindow_ContextCreated(object sender, NativeWindowEventArgs e)
-        {
+        private void NativeWindow_ContextCreated(object sender, NativeWindowEventArgs e) {
             OpenGL.CoreUI.NativeWindow nativeWindow = (OpenGL.CoreUI.NativeWindow)sender;
 
             Gl.ReadBuffer(ReadBufferMode.Back);
@@ -191,47 +185,38 @@ namespace sl
         }
 
         // Render loop
-        private void NativeWindow_Render(object sender, NativeWindowEventArgs e)
-        {
+        private void NativeWindow_Render(object sender, NativeWindowEventArgs e) {
             OpenGL.CoreUI.NativeWindow nativeWindow = (OpenGL.CoreUI.NativeWindow)sender;
             Gl.Viewport(0, 0, (int)nativeWindow.Width, (int)nativeWindow.Height);
             Gl.Clear(ClearBufferMask.ColorBufferBit);
 
             ERROR_CODE err = ERROR_CODE.FAILURE;
-            if (viewer.isAvailable() && zedCamera.Grab(ref runtimeParameters) <= ERROR_CODE.SUCCESS)
-            {
-                if (zedMat.IsInit())
-                {
+            if (viewer.isAvailable() && zedCamera.Grab(ref runtimeParameters) <= ERROR_CODE.SUCCESS) {
+                if (zedMat.IsInit()) {
                     // Retrieve left image
                     err = zedCamera.RetrieveImage(zedMat, sl.VIEW.LEFT, sl.MEM.CPU);
                     // Update pose data (used for projection of the mesh over the current image)
                     tracking_state = zedCamera.GetPosition(ref cam_pose);
-                    
-                    if (mapping_activated)
-                    {
+
+                    if (mapping_activated) {
                         mapping_state = zedCamera.GetSpatialMappingState();
-                        if (timer % 60 == 0 && viewer.chunksUpdated() == true)
-                        {
+                        if (timer % 60 == 0 && viewer.chunksUpdated() == true) {
                             zedCamera.RequestSpatialMap();
                         }
-                        if (zedCamera.GetMeshRequestStatus() == ERROR_CODE.SUCCESS && timer > 0)
-                        {
+                        if (zedCamera.GetMeshRequestStatus() == ERROR_CODE.SUCCESS && timer > 0) {
                             /// MAP_TYPE == MESH
-                            if (CREATE_MESH)
-                            {
-                                //Retrieves data for mesh visualization only (vertices + triangles);
+                            if (CREATE_MESH) {
+                                // Retrieves data for mesh visualization only (vertices + triangles);
                                 err = zedCamera.RetrieveChunks(ref mesh);
 
-                                if (err == ERROR_CODE.SUCCESS)
-                                {
+                                if (err == ERROR_CODE.SUCCESS) {
                                     var chunks = new List<Chunk>(mesh.chunks.Values);
                                     viewer.updateData(chunks);
                                 }
                             }
 
                             /// MAP_TYPE == FUSED_POINT_CLOUD
-                            else
-                            {
+                            else {
                                 zedCamera.RetrieveSpatialMap(ref fusedPointCloud);
                                 viewer.updateData(fusedPointCloud.vertices);
                             }
@@ -240,17 +225,15 @@ namespace sl
 
                     bool change_state = viewer.updateImageAndState(zedMat, cam_pose, tracking_state, mapping_state);
 
-                    if (change_state)
-                    {
-                        if (!mapping_activated)
-                        {
-                            Quaternion quat = Quaternion.Identity; Vector3 vec = Vector3.Zero;
-                            zedCamera.ResetPositionalTracking(quat, vec);                       
+                    if (change_state) {
+                        if (!mapping_activated) {
+                            Quaternion quat = Quaternion.Identity;
+                            Vector3 vec = Vector3.Zero;
+                            zedCamera.ResetPositionalTracking(quat, vec);
 
                             err = zedCamera.EnableSpatialMapping(ref spatialMappingParameters);
 
-                            if (err != ERROR_CODE.SUCCESS)
-                            {
+                            if (err != ERROR_CODE.SUCCESS) {
                                 Console.WriteLine("Error while enabling mapping" + err.ToString() + " exitin...");
                                 Environment.Exit(-1);
                             }
@@ -260,42 +243,31 @@ namespace sl
                             viewer.clearCurrentMesh();
 
                             mapping_activated = true;
-                        }
-                        else
-                        {
+                        } else {
                             // Filter the mesh (remove unnecessary vertices and faces)
-                            if (CREATE_MESH)
-                            {
+                            if (CREATE_MESH) {
                                 zedCamera.ExtractWholeSpatialMap();
                                 zedCamera.FilterMesh(MESH_FILTER.MEDIUM, ref mesh);
                             }
 
-                            if (CREATE_MESH && spatialMappingParameters.saveTexture)
-                            {
+                            if (CREATE_MESH && spatialMappingParameters.saveTexture) {
                                 zedCamera.ApplyTexture(ref mesh);
                             }
 
                             bool error_save = false;
                             string saveName = "";
-                            //Save mesh as obj file
-                            if (CREATE_MESH)
-                            {
+                            // Save mesh as obj file
+                            if (CREATE_MESH) {
                                 saveName = "mesh_gen.obj";
                                 error_save = zedCamera.SaveMesh(saveName, MESH_FILE_FORMAT.OBJ);
-                            }
-                            else
-                            {
+                            } else {
                                 saveName = "point_cloud.ply";
                                 error_save = zedCamera.SavePointCloud(saveName, MESH_FILE_FORMAT.PLY);
                             }
 
-
-                            if (error_save)
-                            {
+                            if (error_save) {
                                 Console.WriteLine("Mesh saved under: " + saveName);
-                            }
-                            else
-                            {
+                            } else {
                                 Console.WriteLine("Failed to save the mesh under: " + saveName);
                             }
 
@@ -312,57 +284,41 @@ namespace sl
             }
         }
 
-        private void close()
-        {
+        private void close() {
             zedCamera.DisableSpatialMapping();
             zedCamera.DisablePositionalTracking();
             zedCamera.Close();
             viewer.exit();
         }
 
-        private void parseArgs(string[] args , ref sl.InitParameters param)
-        {
-            if (args.Length > 0 && args[0].IndexOf(".svo") != -1)
-            {
+        private void parseArgs(string[] args, ref sl.InitParameters param) {
+            if (args.Length > 0 && args[0].IndexOf(".svo") != -1) {
                 // SVO input mode
                 param.inputType = INPUT_TYPE.SVO;
                 param.pathSVO = args[0];
                 Console.WriteLine("[Sample] Using SVO File input: " + args[0]);
-            }
-            else if (args.Length > 0 && args[0].IndexOf(".svo") == -1)
-            {
+            } else if (args.Length > 0 && args[0].IndexOf(".svo") == -1) {
                 IPAddress ip;
                 string arg = args[0];
-                if (IPAddress.TryParse(arg, out ip))
-                {
+                if (IPAddress.TryParse(arg, out ip)) {
                     // Stream input mode - IP + port
                     param.inputType = INPUT_TYPE.STREAM;
                     param.ipStream = ip.ToString();
                     Console.WriteLine("[Sample] Using Stream input, IP : " + ip);
-                }
-                else if (args[0].IndexOf("HD2K") != -1)
-                {
+                } else if (args[0].IndexOf("HD2K") != -1) {
                     param.resolution = sl.RESOLUTION.HD2K;
                     Console.WriteLine("[Sample] Using Camera in resolution HD2K");
-                }
-                else if (args[0].IndexOf("HD1080") != -1)
-                {
+                } else if (args[0].IndexOf("HD1080") != -1) {
                     param.resolution = sl.RESOLUTION.HD1080;
                     Console.WriteLine("[Sample] Using Camera in resolution HD1080");
-                }
-                else if (args[0].IndexOf("HD720") != -1)
-                {
+                } else if (args[0].IndexOf("HD720") != -1) {
                     param.resolution = sl.RESOLUTION.HD720;
                     Console.WriteLine("[Sample] Using Camera in resolution HD720");
-                }
-                else if (args[0].IndexOf("VGA") != -1)
-                {
+                } else if (args[0].IndexOf("VGA") != -1) {
                     param.resolution = sl.RESOLUTION.VGA;
                     Console.WriteLine("[Sample] Using Camera in resolution VGA");
                 }
-            }
-            else
-            {
+            } else {
                 //
             }
         }

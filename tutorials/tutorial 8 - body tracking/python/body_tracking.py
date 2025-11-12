@@ -36,7 +36,7 @@ def main():
 
     # Open the camera
     err = zed.open(init_params)
-    if err != sl.ERROR_CODE.SUCCESS:
+    if err > sl.ERROR_CODE.SUCCESS:
         print("Camera Open : "+repr(err)+". Exit program.")
         exit()
 
@@ -68,7 +68,7 @@ def main():
     body_runtime_param.detection_confidence_threshold = 40
     i = 0 
     while i < 100:
-        if zed.grab() == sl.ERROR_CODE.SUCCESS:
+        if zed.grab() <= sl.ERROR_CODE.SUCCESS:
             err = zed.retrieve_bodies(bodies, body_runtime_param)
             if bodies.is_new:
                 body_array = bodies.body_list

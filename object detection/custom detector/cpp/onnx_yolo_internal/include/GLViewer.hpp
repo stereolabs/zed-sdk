@@ -16,9 +16,8 @@
 
 #include "utils.h"
 
-
 #ifndef M_PI
-#define M_PI 3.141592653f
+    #define M_PI 3.141592653f
 #endif
 
 #define MOUSE_R_SENSITIVITY 0.03f
@@ -28,20 +27,27 @@
 #define KEY_T_SENSITIVITY 0.1f
 
 // Utils
-std::vector<sl::float3> getBBoxOnFloorPlane(std::vector<sl::float3> &bbox, sl::Pose cam_pose);
+std::vector<sl::float3> getBBoxOnFloorPlane(std::vector<sl::float3>& bbox, sl::Pose cam_pose);
 
 // 3D
 
 class CameraGL {
 public:
-
-    CameraGL() {
-    }
+    CameraGL() { }
 
     enum DIRECTION {
-        UP, DOWN, LEFT, RIGHT, FORWARD, BACK
+        UP,
+        DOWN,
+        LEFT,
+        RIGHT,
+        FORWARD,
+        BACK
     };
-    CameraGL(sl::Translation position, sl::Translation direction, sl::Translation vertical = sl::Translation(0, 1, 0)); // vertical = Eigen::Vector3f(0, 1, 0)
+    CameraGL(
+        sl::Translation position,
+        sl::Translation direction,
+        sl::Translation vertical = sl::Translation(0, 1, 0)
+    ); // vertical = Eigen::Vector3f(0, 1, 0)
     ~CameraGL();
 
     void update();
@@ -57,7 +63,7 @@ public:
     void setOffsetFromPosition(const sl::Translation& offset);
     const sl::Translation& getOffsetFromPosition() const;
 
-    void setDirection(const sl::Translation& direction, const sl::Translation &vertical);
+    void setDirection(const sl::Translation& direction, const sl::Translation& vertical);
     void translate(const sl::Translation& t);
     void setPosition(const sl::Translation& p);
     void rotate(const sl::Orientation& rot);
@@ -79,6 +85,7 @@ public:
 
     sl::Transform projection_;
     bool usePerspective_;
+
 private:
     void updateVectors();
     void updateView();
@@ -103,8 +110,10 @@ private:
 
 class Shader {
 public:
-
-    Shader() : verterxId_(0), fragmentId_(0), programId_(0) {}
+    Shader()
+        : verterxId_(0)
+        , fragmentId_(0)
+        , programId_(0) { }
     Shader(const GLchar* vs, const GLchar* fs);
     ~Shader();
 
@@ -121,8 +130,9 @@ public:
 
     static const GLint ATTRIB_VERTICES_POS = 0;
     static const GLint ATTRIB_COLOR_POS = 1;
+
 private:
-    bool compile(GLuint &shaderId, GLenum type, const GLchar* src);
+    bool compile(GLuint& shaderId, GLenum type, const GLchar* src);
     GLuint verterxId_;
     GLuint fragmentId_;
     GLuint programId_;
@@ -135,25 +145,23 @@ struct ShaderData {
 
 class Simple3DObject {
 public:
-
-    Simple3DObject() {
-    }
+    Simple3DObject() { }
     Simple3DObject(sl::Translation position, bool isStatic);
     ~Simple3DObject();
 
     void addPt(sl::float3 pt);
     void addClr(sl::float4 clr);
 
-    void addBBox(std::vector<sl::float3> &pts, sl::float4 clr);
+    void addBBox(std::vector<sl::float3>& pts, sl::float4 clr);
     void addPoint(sl::float3 pt, sl::float4 clr);
     void addTriangle(sl::float3 p1, sl::float3 p2, sl::float3 p3, sl::float4 clr);
     void addLine(sl::float3 p1, sl::float3 p2, sl::float4 clr);
 
     // New 3D rendering
-    void addFullEdges(std::vector<sl::float3> &pts, sl::float4 clr);
-    void addVerticalEdges(std::vector<sl::float3> &pts, sl::float4 clr);
-    void addTopFace(std::vector<sl::float3> &pts, sl::float4 clr);
-    void addVerticalFaces(std::vector<sl::float3> &pts, sl::float4 clr);
+    void addFullEdges(std::vector<sl::float3>& pts, sl::float4 clr);
+    void addVerticalEdges(std::vector<sl::float3>& pts, sl::float4 clr);
+    void addTopFace(std::vector<sl::float3>& pts, sl::float4 clr);
+    void addVerticalFaces(std::vector<sl::float3>& pts, sl::float4 clr);
 
     void pushToGPU();
     void clear();
@@ -175,6 +183,7 @@ public:
     const sl::Translation& getPosition() const;
 
     sl::Transform getModelMatrix() const;
+
 private:
     std::vector<float> vertices_;
     std::vector<float> colors_;
@@ -206,7 +215,7 @@ public:
     void initialize(sl::Resolution res);
     // Push a new point cloud
     // Warning: can be called from any thread but the mutex "mutexData" must be locked
-    void pushNewPC(sl::Mat &matXYZRGBA);
+    void pushNewPC(sl::Mat& matXYZRGBA);
     // Update the Opengl buffer
     // Warning: must be called in the Opengl thread
     void update();
@@ -239,19 +248,29 @@ public:
     GLViewer();
     ~GLViewer();
     bool isAvailable();
-    bool isPlaying() const { return play; }
-    void setPlaying(const bool p) { play = p; }
+    bool isPlaying() const {
+        return play;
+    }
+    void setPlaying(const bool p) {
+        play = p;
+    }
 
-    void init(int argc, char **argv, const sl::CameraParameters& param, bool isTrackingON);
-    void updateData(sl::Mat& matXYZRGBA, std::vector<sl::ObjectData>& objs, sl::Transform &cam_pose, const sl::CustomObjectDetectionRuntimeParameters& obj_runtime_params);
+    void init(int argc, char** argv, const sl::CameraParameters& param, bool isTrackingON);
+    void updateData(
+        sl::Mat& matXYZRGBA,
+        std::vector<sl::ObjectData>& objs,
+        sl::Transform& cam_pose,
+        const sl::CustomObjectDetectionRuntimeParameters& obj_runtime_params
+    );
 
     int getKey() {
-        int const key{last_key};
+        int const key {last_key};
         last_key = -1;
         return key;
     }
 
     void exit();
+
 private:
     // Rendering loop method called each frame by glutDisplayFunc
     void render();
@@ -263,8 +282,8 @@ private:
     void clearInputs();
 
     void printText();
-    void createBboxRendering(std::vector<sl::float3> &bbox, sl::float4 bbox_clr);
-    void createIDRendering(sl::float3 &center, sl::float4 clr, unsigned int id);
+    void createBboxRendering(std::vector<sl::float3>& bbox, sl::float4 bbox_clr);
+    void createIDRendering(sl::float3& center, sl::float4 clr, unsigned int id);
 
     // Glut functions callbacks
     static void drawCallback();
@@ -316,8 +335,8 @@ private:
     Simple3DObject skeletons;
     Simple3DObject floor_grid;
 
-    bool play{true};
-    int last_key{-1};
+    bool play {true};
+    int last_key {-1};
 };
 
 #endif /* __VIEWER_INCLUDE__ */

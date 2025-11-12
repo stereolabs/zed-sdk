@@ -23,7 +23,7 @@
 #include "GLViewer.hpp"
 #include "utils.hpp"
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     std::string configuration_json, optional_custom_onnx_yolo_model;
 
     if (argc < 2 || (argc == 2 && !hasExtension(std::string(argv[1]), ".json"))) {
@@ -82,14 +82,14 @@ int main(int argc, char **argv) {
         std::cout << "Starting SVO sync process..." << std::endl;
         std::map<int, int> cam_idx_to_svo_frame_idx = syncDATA(svo_files);
 
-        for (auto &it : cam_idx_to_svo_frame_idx) {
+        for (auto& it : cam_idx_to_svo_frame_idx) {
             std::cout << "Setting camera " << it.first << " to frame " << it.second << std::endl;
             clients[it.first].setStartSVOPosition(it.second);
         }
     }
 
     // start camera threads
-    for (auto &it : clients)
+    for (auto& it : clients)
         it.start();
 
     // Now that the ZED camera are running, we need to initialize the fusion module
@@ -104,9 +104,10 @@ int main(int argc, char **argv) {
 
     // subscribe to every cameras of the setup to internally gather their data
     std::vector<sl::CameraIdentifier> cameras;
-    for (auto &it : configurations) {
+    for (auto& it : configurations) {
         sl::CameraIdentifier uuid(it.serial_number);
-        // to subscribe to a camera you must give its serial number, the way to communicate with it (shared memory or local network), and its world pose in the setup.
+        // to subscribe to a camera you must give its serial number, the way to communicate with it (shared memory or local network), and
+        // its world pose in the setup.
         auto state = fusion.subscribe(uuid, it.communication_parameters, it.pose, it.override_gravity);
         if (state != sl::FUSION_ERROR_CODE::SUCCESS)
             std::cout << "Unable to subscribe to " << std::to_string(uuid.sn) << " . " << state << std::endl;
@@ -138,13 +139,13 @@ int main(int argc, char **argv) {
     viewer.init(argc, argv, cameras);
 
     std::cout << "Viewer Shortcuts\n"
-            << "\t- 'q': quit the application\n"
-            << "\t- 'p': play/pause the GLViewer\n"
-            << "\t- 'f': swicth on/off for fused bbox display\n"
-            << "\t- 'r': swicth on/off for raw bbox display\n"
-            << "\t- 's': swicth on/off for live point cloud display\n"
-            << "\t- 'c': swicth on/off point cloud display with raw color\n"
-            << std::endl;
+              << "\t- 'q': quit the application\n"
+              << "\t- 'p': play/pause the GLViewer\n"
+              << "\t- 'f': swicth on/off for fused bbox display\n"
+              << "\t- 'r': swicth on/off for raw bbox display\n"
+              << "\t- 's': swicth on/off for live point cloud display\n"
+              << "\t- 'c': swicth on/off point cloud display with raw color\n"
+              << std::endl;
 
     // fusion outputs
     std::unordered_map<sl::String /*Group name*/, sl::Objects> fused_objects;
@@ -194,7 +195,7 @@ int main(int argc, char **argv) {
     trigger.running = false;
     trigger.notifyZED();
 
-    for (auto &it : clients)
+    for (auto& it : clients)
         it.stop();
 
     fusion.close();

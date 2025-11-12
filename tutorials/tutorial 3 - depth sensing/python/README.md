@@ -27,7 +27,7 @@ init_params.coordinate_units = sl.UNIT.MILLIMETER  # Use meter units (for depth 
 
 # Open the camera
 err = zed.open(init_params)
-if (err!=sl.ERROR_CODE.SUCCESS):
+if (err > sl.ERROR_CODE.SUCCESS):
   exit(-1)
 ```
 
@@ -47,8 +47,8 @@ image = sl.Mat()
 depth = sl.Mat()
 while (i < 50) :
     # Grab an image
-    if (zed.grab() == sl.ERROR_CODE.SUCCESS) :
-        # A new image is available if grab() returns SUCCESS
+    if (zed.grab() <= sl.ERROR_CODE.SUCCESS) :
+        # A new image is available if grab() returns ERROR_CODE.SUCCESS or a WARNING (an error_code lower than ERROR_CODE.SUCCESS)
         zed.retrieve_image(image, sl.VIEW.LEFT) # Get the left image
         zed.retrieve_measure(depth, sl.MEASURE.DEPTH) # Retrieve depth Mat. Depth is aligned on the left image
         i = i + 1
