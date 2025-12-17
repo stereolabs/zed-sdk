@@ -43,6 +43,7 @@ struct Arguments {
     std::optional<std::string> roiFile = std::nullopt;
     bool customInitialPose = false;
     bool enable2dGroundMode = false;
+    bool exportTUMFile = false;
 };
 
 //
@@ -56,7 +57,7 @@ void printTrackingParameters(PositionalTrackingParameters trackingParameters);
 void print(std::string message, std::optional<ERROR_CODE> errorCode = std::nullopt, bool showErrorDetail = true);
 
 cv::Mat slMat2cvMat(Mat& input);
-cv::Scalar interpolate_color(const cv::Scalar& color1, const cv::Scalar& color2, float ratio);
+cv::Scalar interpolate_color(const cv::Scalar& color1, const cv::Scalar& color2, float dynamic_confidence);
 
 //
 // Main
@@ -90,6 +91,7 @@ int main(int argc, char** argv) {
     initParameters.depth_mode = DEPTH_MODE::NEURAL;
     initParameters.coordinate_units = UNIT::METER;
     initParameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
+    initParameters.camera_disable_self_calib = true;
 
     if (args.resolution) {
         initParameters.camera_resolution = args.resolution.value();
@@ -97,7 +99,6 @@ int main(int argc, char** argv) {
 
     if (args.svoFile) {
         initParameters.input.setFromSVOFile(args.svoFile.value().c_str());
-        initParameters.svo_real_time_mode = true;
     } else if (args.streamIP && args.streamPort) {
         initParameters.input.setFromStream(args.streamIP.value().c_str(), args.streamPort.value());
     } else if (args.streamIP) {
@@ -191,6 +192,13 @@ int main(int argc, char** argv) {
     Resolution displayResolution = zed.getRetrieveMeasureResolution();
 
     //
+    // Prepare out file for TUM trajectory
+    //
+    std::ofstream out_tum;
+    if (args.exportTUMFile)
+        out_tum.open("out.tum");
+
+    //
     // Main loop
     //
     Mat leftImage = sl::Mat();
@@ -222,18 +230,26 @@ int main(int argc, char** argv) {
         // Retrieve the calculated camera pose
         zed.getPosition(pose);
 
+        // Export the pose in TUM format
+        if (args.exportTUMFile) {
+            out_tum << std::fixed << std::setprecision(9) << pose.timestamp.getMilliseconds() << " " << pose.getTranslation().tx << " "
+                    << pose.getTranslation().ty << " " << pose.getTranslation().tz << " " << pose.getOrientation().ox << " "
+                    << pose.getOrientation().oy << " " << pose.getOrientation().oz << " " << pose.getOrientation().ow << std::endl;
+            out_tum.flush();
+        }
+
         // Update display
         //
         view.updatePoseTransform(pose.pose_data);
         view.updatePositionalTrackingStatus(zed.getPositionalTrackingStatus());
 
-        if (getCurrentTimeStamp().getSeconds() - lastLandmarkUpdate > 1) {
+        if (zed.getTimestamp(sl::TIME_REFERENCE::IMAGE).getSeconds() - lastLandmarkUpdate > 1) {
             zed.getPositionalTrackingLandmarks(landmarkMap);
             view.updateLandmarks(landmarkMap);
-            lastLandmarkUpdate = getCurrentTimeStamp().getSeconds();
+            lastLandmarkUpdate = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE).getSeconds();
         }
 
-        if (view.isLandmarkModeEnabled() && landmarkMap.size()) {
+        if (view.isLandmarkModeEnabled()) {
             zed.getPositionalTrackingLandmarks2D(landmarks2D);
 
             static const cv::Scalar inlierLandmarkColor(63, 255, 67, 255);
@@ -245,7 +261,7 @@ int main(int argc, char** argv) {
 
             cv::Mat leftImageCVMat = slMat2cvMat(leftImage);
             for (auto& landmark2D : landmarks2D) {
-                cv::Scalar color = interpolate_color(inlierLandmarkColor, outlierLandmarkColor, 1 - landmark2D.dynamic_confidence);
+                cv::Scalar color = interpolate_color(inlierLandmarkColor, outlierLandmarkColor, landmark2D.dynamic_confidence);
 
                 cv::circle(
                     leftImageCVMat,
@@ -257,6 +273,9 @@ int main(int argc, char** argv) {
             }
         }
     });
+
+    if (args.exportTUMFile)
+        out_tum.close();
 
     //
     // OpenGL cleanup
@@ -403,6 +422,8 @@ bool parseArgs(int argc, char* argv[], Arguments& args) {
             args.customInitialPose = true;
         } else if (arg == "--2d-ground-mode") {
             args.enable2dGroundMode = true;
+        } else if (arg == "--export-tum") {
+            args.exportTUMFile = true;
         } else {
             print("Unrecognized or incomplete argument: " + arg, ERROR_CODE::FAILURE, false);
             return false;
@@ -480,6 +501,10 @@ void printArgs(const Arguments& args) {
 
     if (args.enable2dGroundMode) {
         print("Enabled 2D ground mode");
+    }
+
+    if (args.exportTUMFile) {
+        print("Enabled TUM trajectory export to out.tum");
     }
 
     std::cout << "\n";
@@ -564,19 +589,24 @@ cv::Mat slMat2cvMat(Mat& input) {
     return cv::Mat(input.getHeight(), input.getWidth(), cv_type, input.getPtr<sl::uchar1>(MEM::CPU));
 }
 
-cv::Scalar interpolate_color(const cv::Scalar& color1, const cv::Scalar& color2, float ratio) {
-    if (ratio < 0.0f) {
-        ratio = 0.0f;
+cv::Scalar interpolate_color(const cv::Scalar& color1, const cv::Scalar& color2, float dynamic_confidence) {
+
+    if (dynamic_confidence == -1.f) {
+        return cv::Scalar(240, 25, 25, 255);
     }
 
-    if (ratio > 1.0f) {
-        ratio = 1.0f;
+    if (dynamic_confidence < 0.0f) {
+        dynamic_confidence = 0.0f;
+    }
+
+    if (dynamic_confidence > 1.0f) {
+        dynamic_confidence = 1.0f;
     }
 
     return cv::Scalar(
-        color1[0] * (1 - ratio) + color2[0] * ratio,
-        color1[1] * (1 - ratio) + color2[1] * ratio,
-        color1[2] * (1 - ratio) + color2[2] * ratio,
-        color1[3] * (1 - ratio) + color2[3] * ratio
+        color1[0] * dynamic_confidence + color2[0] * (1 - dynamic_confidence),
+        color1[1] * dynamic_confidence + color2[1] * (1 - dynamic_confidence),
+        color1[2] * dynamic_confidence + color2[2] * (1 - dynamic_confidence),
+        color1[3] * dynamic_confidence + color2[3] * (1 - dynamic_confidence)
     );
 }
