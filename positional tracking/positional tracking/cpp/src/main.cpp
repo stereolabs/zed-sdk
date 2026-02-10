@@ -91,7 +91,6 @@ int main(int argc, char** argv) {
     initParameters.depth_mode = DEPTH_MODE::NEURAL;
     initParameters.coordinate_units = UNIT::METER;
     initParameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
-    initParameters.camera_disable_self_calib = true;
 
     if (args.resolution) {
         initParameters.camera_resolution = args.resolution.value();
@@ -134,7 +133,7 @@ int main(int argc, char** argv) {
     trackingParameters.depth_min_range = -1;
     trackingParameters.enable_2d_ground_mode = args.enable2dGroundMode;
     trackingParameters.enable_localization_only = false;
-    trackingParameters.mode = POSITIONAL_TRACKING_MODE::GEN_1;
+    trackingParameters.mode = POSITIONAL_TRACKING_MODE::GEN_3;
 
     if (args.roiFile) {
         sl::Mat roi;
@@ -187,6 +186,7 @@ int main(int argc, char** argv) {
     //
     std::map<uint64_t, Landmark> landmarkMap;
     std::vector<Landmark2D> landmarks2D;
+    std::map<uint64_t, KeyFrame> keyframes;
 
     uint64_t lastLandmarkUpdate = getCurrentTimeStamp().getSeconds();
     Resolution displayResolution = zed.getRetrieveMeasureResolution();
@@ -222,7 +222,10 @@ int main(int argc, char** argv) {
         }
 
         // Retrieve the left image
-        zed.retrieveImage(leftImage, VIEW::LEFT, MEM::CPU, displayResolution);
+        if (trackingParameters.mode == POSITIONAL_TRACKING_MODE::GEN_3)
+            zed.retrieveImage(leftImage, VIEW::LEFT_UNRECTIFIED, MEM::CPU, displayResolution);
+        else
+            zed.retrieveImage(leftImage, VIEW::LEFT, MEM::CPU, displayResolution);
 
         // Retrieve the calculated point cloud
         zed.retrieveMeasure(pointCloud, MEASURE::XYZBGRA, MEM::GPU, displayResolution);
@@ -247,6 +250,9 @@ int main(int argc, char** argv) {
             zed.getPositionalTrackingLandmarks(landmarkMap);
             view.updateLandmarks(landmarkMap);
             lastLandmarkUpdate = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE).getSeconds();
+
+            zed.getPositionalTrackingKeyframes(keyframes);
+            view.updateKeyframes(keyframes);
         }
 
         if (view.isLandmarkModeEnabled()) {
@@ -351,6 +357,7 @@ void printUsage(const std::string& programName) {
               << "  --roi <roi_filepath>        Optional. Region of interest image mask to ignore a static area\n"
               << "  --custom-initial-pose       Optional. Use custom initial pose (see code comments for more detail)\n"
               << "  --2d-ground-mode            Optional. Enable 2D ground mode\n"
+              << "  --export-tum                Optional. Export camera trajectory to out.tum file in TUM format\n"
               << "\nExamples:\n"
               << "  " << programName << " --map -o new_map.area\n"
               << "  " << programName << " --svo recording.svo2 -i map.area\n";

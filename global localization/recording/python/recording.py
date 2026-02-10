@@ -60,7 +60,7 @@ def main():
     
     #Enable SVO recording :
     svo_path = "ZED_SN"+str(zed.get_camera_information().serial_number)+"_"+get_current_datetime()+".svo"
-    returned_state = zed.enable_recording(sl.RecordingParameters(svo_path,sl.SVO_COMPRESSION_MODE.H264_LOSSLESS))
+    returned_state = zed.enable_recording(sl.RecordingParameters(svo_path,sl.SVO_COMPRESSION_MODE.H265_LOSSLESS))
     if returned_state != sl.ERROR_CODE.SUCCESS:
         print("Recording ZED : "+repr(status)+". Exit program.")
         zed.close()
@@ -117,6 +117,7 @@ def main():
         # Get GNSS data:
         status, input_gnss = gnss_reader.grab()
         if status == sl.ERROR_CODE.SUCCESS:
+            assert input_gnss is not None
             # Display it on the Live Server
             viewer.updateRawGeoPoseData(input_gnss)
 

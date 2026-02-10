@@ -101,11 +101,14 @@ int main(int argc, char** argv) {
     // default detection threshold, apply to all object class
     int detection_confidence = 60;
     ObjectDetectionRuntimeParameters detection_parameters_rt(detection_confidence);
+    detection_parameters_rt.object_tracking_parameters.velocity_smoothing_factor = 0.5f; // Object tracking global setting
     // To select a set of specific object classes:
     detection_parameters_rt.object_class_filter = {OBJECT_CLASS::VEHICLE, OBJECT_CLASS::PERSON};
     // To set a specific threshold
     detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::PERSON] = detection_confidence;
     detection_parameters_rt.object_class_detection_confidence_threshold[OBJECT_CLASS::VEHICLE] = detection_confidence;
+    detection_parameters_rt.object_class_tracking_parameters[OBJECT_CLASS::VEHICLE].velocity_smoothing_factor
+        = 0.7; // Will override global setting for vehicles
 
     // Detection output
     bool quit = false;

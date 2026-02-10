@@ -178,7 +178,6 @@ int main(int argc, char** argv) {
     auto zed_cuda_stream = zed.getCUDAStream();
 
     sl::CustomObjectDetectionRuntimeParameters customObjectTracker_rt;
-
     while (key != 'q' && key != 27) {
         if (zed.grab() <= sl::ERROR_CODE::SUCCESS) {
             std::vector<seg::Object> objs;
@@ -207,6 +206,7 @@ int main(int argc, char** argv) {
                 tmp.label = obj.label;
                 tmp.bounding_box_2d = convertCvRect2SdkBbox(obj.rect);
                 tmp.is_grounded = (obj.label == 0); // Only the first class (person) is grounded, that is moving on the floor plane
+                tmp.velocity_smoothing_factor = 0.5f;
                 // others are tracked in full 3D space
                 cvMat2slMat(obj.boxMask).copyTo(tmp.box_mask, sl::COPY_TYPE::CPU_CPU);
             }

@@ -31,7 +31,7 @@ import pyzed.sl as sl
 
 # Test CuPy availability
 try:
-    import cupy as cp
+    import cupy as cp  # type: ignore[import-not-found]
     print("✅ CuPy detected - GPU acceleration available")
     print(f"   CuPy version: {cp.__version__}")
     print(f"   CUDA version: {cp.cuda.runtime.runtimeGetVersion()}")

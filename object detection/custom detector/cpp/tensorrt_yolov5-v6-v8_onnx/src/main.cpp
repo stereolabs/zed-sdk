@@ -193,6 +193,7 @@ int main(int argc, char** argv) {
                 tmp.label = (int)it.label;
                 tmp.bounding_box_2d = cvt(it.box);
                 tmp.is_grounded = ((int)it.label == 0); // Only the first class (person) is grounded, that is moving on the floor plane
+                tmp.velocity_smoothing_factor = 0.5f;
                 // others are tracked in full 3D space
                 objects_in.push_back(tmp);
             }

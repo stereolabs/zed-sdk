@@ -21,6 +21,7 @@ Options:
   --roi <roi_filepath>        Optional. Region of interest image mask to ignore a static area
   --custom-initial-pose       Optional. Use custom initial pose (see code comments for more detail)
   --2d-ground-mode            Optional. Enable 2D ground mode
+  --export-tum                Optional. Export camera trajectory to out.tum file in TUM format
 
 Examples:
   ./build/ZED_Positional_Tracking --map -o new_map.area

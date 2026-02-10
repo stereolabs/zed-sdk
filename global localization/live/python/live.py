@@ -97,6 +97,7 @@ def main():
         # Get GNSS data:
         status, input_gnss = gnss_reader.grab()
         if status == sl.ERROR_CODE.SUCCESS:
+            assert input_gnss is not None
             # Display it on the Live Server
             viewer.updateRawGeoPoseData(input_gnss)
 

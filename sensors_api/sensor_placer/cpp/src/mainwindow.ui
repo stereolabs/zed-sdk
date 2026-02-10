@@ -1,0 +1,380 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect><x>0</x><y>0</y><width>1200</width><height>750</height></rect>
+  </property>
+  <property name="windowTitle">
+   <string>Sensor Placer</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="mainLayout">
+    <property name="spacing"><number>6</number></property>
+    <property name="leftMargin"><number>4</number></property>
+    <property name="topMargin"><number>4</number></property>
+    <property name="rightMargin"><number>4</number></property>
+    <property name="bottomMargin"><number>4</number></property>
+
+    <!-- Left: 3D Viewer -->
+    <item>
+     <widget class="GlViewer" name="glWidget">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>1</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize"><size><width>500</width><height>400</height></size></property>
+     </widget>
+    </item>
+
+    <!-- Right: Controls Panel -->
+    <item>
+     <widget class="QWidget" name="sidePanel" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize"><size><width>350</width><height>0</height></size></property>
+      <property name="maximumSize"><size><width>370</width><height>16777215</height></size></property>
+      <layout class="QVBoxLayout" name="controlsLayout">
+       <property name="spacing"><number>8</number></property>
+       <property name="leftMargin"><number>0</number></property>
+       <property name="topMargin"><number>0</number></property>
+       <property name="rightMargin"><number>0</number></property>
+       <property name="bottomMargin"><number>0</number></property>
+
+       <!-- ═══ Add Sensor ═══ -->
+       <item>
+        <widget class="QGroupBox" name="group_add">
+         <property name="title"><string>Add Sensor</string></property>
+         <layout class="QGridLayout" name="addGrid">
+          <property name="horizontalSpacing"><number>6</number></property>
+          <property name="verticalSpacing"><number>4</number></property>
+          <item row="0" column="0" colspan="3">
+           <widget class="QPushButton" name="button_load">
+            <property name="text"><string>Load Configuration File…</string></property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_serial"><property name="text"><string>Serial</string></property></widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="edit_serial">
+            <property name="placeholderText"><string>ZED serial number</string></property>
+            <property name="maxLength"><number>50</number></property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QPushButton" name="button_serial"><property name="text"><string>Add ZED</string></property></widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_ip"><property name="text"><string>IP</string></property></widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="edit_ip">
+            <property name="placeholderText"><string>LiDAR IP (e.g. 192.168.1.3)</string></property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QPushButton" name="button_ip"><property name="text"><string>Add LiDAR</string></property></widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="label_svo"><property name="text"><string>SVO/OSF</string></property></widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QLineEdit" name="edit_svo">
+            <property name="placeholderText"><string>/path/to/file.svo2</string></property>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QPushButton" name="button_svo"><property name="text"><string>Add</string></property></widget>
+          </item>
+          <item row="4" column="0" colspan="3">
+           <widget class="QPushButton" name="button_autodetect">
+            <property name="text"><string>Auto-Detect All Sensors</string></property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+
+       <!-- ═══ Selected Sensor ═══ -->
+       <item>
+        <widget class="QGroupBox" name="group_select">
+         <property name="title"><string>Selected Sensor</string></property>
+         <layout class="QGridLayout" name="selectGrid">
+          <property name="horizontalSpacing"><number>6</number></property>
+          <property name="verticalSpacing"><number>4</number></property>
+          <item row="0" column="0">
+           <widget class="QComboBox" name="combo_select">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QPushButton" name="push_remove"><property name="text"><string>Remove</string></property></widget>
+          </item>
+          <item row="1" column="0" colspan="2">
+           <layout class="QHBoxLayout" name="viewOptionsLayout">
+            <item>
+             <widget class="QCheckBox" name="check_clr">
+              <property name="text"><string>Real Colors</string></property>
+              <property name="checked"><bool>true</bool></property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="check_edges">
+              <property name="text"><string>Edges Only</string></property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="check_hide">
+              <property name="text"><string>Hide</string></property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="2" column="0" colspan="2">
+           <layout class="QHBoxLayout" name="ptSizeLayout">
+            <item>
+             <widget class="QLabel" name="label_ptsize">
+              <property name="text"><string>Point Size</string></property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSlider" name="slider_ptsize">
+              <property name="maximum"><number>80</number></property>
+              <property name="value"><number>25</number></property>
+              <property name="orientation"><enum>Qt::Horizontal</enum></property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_ptval">
+              <property name="minimumSize"><size><width>30</width><height>0</height></size></property>
+              <property name="text"><string>2.5</string></property>
+              <property name="alignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="3" column="0" colspan="2">
+           <layout class="QHBoxLayout" name="actionButtonsLayout">
+            <item>
+             <widget class="QToolButton" name="button_findPlane">
+              <property name="text"><string>Align to Floor Plane</string></property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QToolButton" name="button_imuPose">
+              <property name="text"><string>Align to Gravity</string></property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+
+       <!-- ═══ Rotation ═══ -->
+       <item>
+        <widget class="QGroupBox" name="group_rotation">
+         <property name="title"><string>Rotation (degrees)</string></property>
+         <layout class="QGridLayout" name="rotGrid">
+          <property name="horizontalSpacing"><number>8</number></property>
+          <property name="verticalSpacing"><number>4</number></property>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_rx"><property name="text"><string>Pitch (X)</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="label_ry"><property name="text"><string>Yaw (Y)</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QLabel" name="label_rz"><property name="text"><string>Roll (Z)</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QDial" name="dial_x">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+              <horstretch>0</horstretch><verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize"><size><width>16777215</width><height>80</height></size></property>
+            <property name="maximum"><number>3600</number></property>
+            <property name="wrapping"><bool>true</bool></property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QDial" name="dial_y">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+              <horstretch>0</horstretch><verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize"><size><width>16777215</width><height>80</height></size></property>
+            <property name="maximum"><number>3600</number></property>
+            <property name="wrapping"><bool>true</bool></property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QDial" name="dial_z">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+              <horstretch>0</horstretch><verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize"><size><width>16777215</width><height>80</height></size></property>
+            <property name="maximum"><number>3600</number></property>
+            <property name="wrapping"><bool>true</bool></property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QDoubleSpinBox" name="spin_rx">
+            <property name="minimum"><double>-360.0</double></property>
+            <property name="maximum"><double>360.0</double></property>
+            <property name="singleStep"><double>0.1</double></property>
+            <property name="suffix"><string> °</string></property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QDoubleSpinBox" name="spin_ry">
+            <property name="minimum"><double>-360.0</double></property>
+            <property name="maximum"><double>360.0</double></property>
+            <property name="singleStep"><double>0.1</double></property>
+            <property name="suffix"><string> °</string></property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QDoubleSpinBox" name="spin_rz">
+            <property name="minimum"><double>-360.0</double></property>
+            <property name="maximum"><double>360.0</double></property>
+            <property name="singleStep"><double>0.1</double></property>
+            <property name="suffix"><string> °</string></property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+
+       <!-- ═══ Translation ═══ -->
+       <item>
+        <widget class="QGroupBox" name="group_translation">
+         <property name="title"><string>Translation (meters)</string></property>
+         <layout class="QGridLayout" name="transGrid">
+          <property name="horizontalSpacing"><number>8</number></property>
+          <property name="verticalSpacing"><number>4</number></property>
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_tx"><property name="text"><string>X</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="label_ty"><property name="text"><string>Y</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QLabel" name="label_tz"><property name="text"><string>Z</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QScrollBar" name="scroll_tx">
+            <property name="minimum"><number>-2000</number></property>
+            <property name="maximum"><number>2000</number></property>
+            <property name="pageStep"><number>3</number></property>
+            <property name="orientation"><enum>Qt::Horizontal</enum></property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QScrollBar" name="scroll_ty">
+            <property name="minimum"><number>-2000</number></property>
+            <property name="maximum"><number>2000</number></property>
+            <property name="pageStep"><number>3</number></property>
+            <property name="orientation"><enum>Qt::Horizontal</enum></property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QScrollBar" name="scroll_tz">
+            <property name="minimum"><number>-2000</number></property>
+            <property name="maximum"><number>2000</number></property>
+            <property name="pageStep"><number>3</number></property>
+            <property name="orientation"><enum>Qt::Horizontal</enum></property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QDoubleSpinBox" name="spin_tx">
+            <property name="minimum"><double>-100.0</double></property>
+            <property name="maximum"><double>100.0</double></property>
+            <property name="singleStep"><double>0.005</double></property>
+            <property name="suffix"><string> m</string></property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QDoubleSpinBox" name="spin_ty">
+            <property name="minimum"><double>-100.0</double></property>
+            <property name="maximum"><double>100.0</double></property>
+            <property name="singleStep"><double>0.005</double></property>
+            <property name="suffix"><string> m</string></property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QDoubleSpinBox" name="spin_tz">
+            <property name="minimum"><double>-100.0</double></property>
+            <property name="maximum"><double>100.0</double></property>
+            <property name="singleStep"><double>0.005</double></property>
+            <property name="suffix"><string> m</string></property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+
+       <!-- ═══ Spacer + Export ═══ -->
+       <item>
+        <spacer name="verticalSpacer">
+         <property name="orientation"><enum>Qt::Vertical</enum></property>
+         <property name="sizeHint" stdset="0"><size><width>20</width><height>10</height></size></property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="button_export">
+         <property name="text"><string>Save Configuration…</string></property>
+         <property name="minimumSize"><size><width>0</width><height>36</height></size></property>
+        </widget>
+       </item>
+
+      </layout>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>GlViewer</class>
+   <extends>QOpenGLWidget</extends>
+   <header>GlViewer.h</header>
+  </customwidget>
+ </customwidgets>
+</ui>

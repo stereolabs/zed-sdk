@@ -132,7 +132,7 @@ def main(opt):
                     # Extract whole mesh
                     zed.extract_whole_spatial_map(pymesh)
 
-                    if opt.build_mesh:
+                    if opt.build_mesh and isinstance(pymesh, sl.Mesh):
                         filter_params = sl.MeshFilterParameters()
                         filter_params.set(sl.MESH_FILTER.MEDIUM) 
                         # Filter the extracted mesh

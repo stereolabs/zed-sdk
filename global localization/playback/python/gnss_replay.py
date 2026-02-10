@@ -247,8 +247,8 @@ class GNSSReplay:
             elif gpsd_status == 9:  # STATUS_PPS_FIX
                 sl_status = sl.GNSS_STATUS.SINGLE
 
-            current_gnss_data.gnss_mode = sl_mode.value
-            current_gnss_data.gnss_status = sl_status.value
+            current_gnss_data.gnss_mode = sl_mode
+            current_gnss_data.gnss_status = sl_status
 
         return current_gnss_data
 

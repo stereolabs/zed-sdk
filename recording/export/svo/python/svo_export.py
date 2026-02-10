@@ -58,8 +58,7 @@ def main(opt):
         output_as_video = False
 
     if not output_as_video and not os.path.isdir(output_dir):
-        sys.stdout.write("Input directory doesn't exist. Check permissions or create it.\n",
-                         output_dir, "\n")
+        sys.stdout.write(f"Input directory doesn't exist. Check permissions or create it: {output_dir}\n")
         exit()
 
     # Specify SVO path parameter
@@ -96,7 +95,7 @@ def main(opt):
     if output_as_video:
         # Create video writer with MPEG-4 part 2 codec
         video_writer = cv2.VideoWriter(avi_output_path,
-                                       cv2.VideoWriter_fourcc('M', '4', 'S', '2'),
+                                       cv2.VideoWriter.fourcc('M', '4', 'S', '2'),
                                        max(zed.get_camera_information().camera_configuration.fps, 25),
                                        (width_sbs, height))
         if not video_writer.isOpened():
@@ -138,6 +137,7 @@ def main(opt):
                 ocv_image_sbs_rgb = cv2.cvtColor(svo_image_sbs_rgba, cv2.COLOR_RGBA2RGB)
 
                 # Write the RGB image in the video
+                assert video_writer is not None
                 video_writer.write(ocv_image_sbs_rgb)
             else:
                 # Generate file names
@@ -162,6 +162,7 @@ def main(opt):
             break
     if output_as_video:
         # Close the video writer
+        assert video_writer is not None
         video_writer.release()
 
     zed.close()

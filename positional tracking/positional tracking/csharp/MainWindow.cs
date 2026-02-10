@@ -65,7 +65,7 @@ class MainWindow {
         // Enable tracking
         PositionalTrackingParameters trackingParams = new PositionalTrackingParameters();
         trackingParams.enableAreaMemory = true;
-        trackingParams.mode = POSITIONAL_TRACKING_MODE.GEN_1;
+        trackingParams.mode = POSITIONAL_TRACKING_MODE.GEN_3;
         zedCamera.EnablePositionalTracking(ref trackingParams);
 
         runtimeParameters = new RuntimeParameters();

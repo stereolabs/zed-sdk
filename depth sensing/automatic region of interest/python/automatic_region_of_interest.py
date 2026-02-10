@@ -104,7 +104,7 @@ def main(opt):
 
     roi_running = False
     roi_param = sl.RegionOfInterestParameters()
-    roi_param.auto_apply_module = [sl.MODULE.ALL]
+    roi_param.auto_apply_module = {sl.MODULE.ALL}
     roi_param.depth_far_threshold_meters = 2.5
     roi_param.image_height_ratio_cutoff = 0.5
     zed.start_region_of_interest_auto_detection(roi_param)
@@ -150,8 +150,9 @@ def main(opt):
         elif key == ord('l'):
             # Load the mask from a previously saved file
             tmp = cv2.imread(mask_name, cv2.IMREAD_GRAYSCALE)
-            if tmp is not None and not tmp.empty():
-                slROI = sl.Mat(sl.Resolution(tmp.cols, tmp.rows), sl.MAT_TYPE.U8_C1, tmp.data, tmp.step)
+            if tmp is not None and tmp.size > 0:
+                rows, cols = tmp.shape[:2]
+                slROI = sl.Mat(sl.Resolution(cols, rows), sl.MAT_TYPE.U8_C1, tmp.data, tmp.strides[0])
                 zed.set_region_of_interest(slROI)
             print(mask_name, "could not be found")
 

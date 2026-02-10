@@ -56,6 +56,7 @@ Options:
   --roi <roi_filepath>        Optional. Region of interest image mask to ignore a static area
   --custom-initial-pose       Optional. Use custom initial pose (see code comments for more detail)
   --2d-ground-mode            Optional. Enable 2D ground mode
+  --export-tum                Optional. Export camera trajectory to out.tum file in TUM format
 
 Examples:
   {program_name} --map -o new_map.area
@@ -109,6 +110,9 @@ def print_args(args):
 
     if args.enable_2d_ground_mode:
         sample_print("Enabled 2D ground mode")
+
+    if args.export_tum_file:
+        sample_print("Enabled TUM trajectory export to out.tum")
 
     print()
 
@@ -214,6 +218,9 @@ def parse_args(argv, args) -> bool:
         
         elif arg == "--2d-ground-mode":
             args.enable_2d_ground_mode = True
+
+        elif arg == "--export-tum":
+            args.export_tum_file = True
 
         else:
             sample_print(f"Unrecognized or incomplete argument: {arg}", sl.ERROR_CODE.FAILURE, False)

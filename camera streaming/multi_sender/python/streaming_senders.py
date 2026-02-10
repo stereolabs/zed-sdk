@@ -67,17 +67,21 @@ def open_camera(zed, sn, port, camera_fps=30):
     if isinstance(zed, sl.Camera):
         init_params = sl.InitParameters()
         init_params.depth_mode = sl.DEPTH_MODE.NONE  # No depth mode for this example
+        init_params.camera_resolution = sl.RESOLUTION.AUTO
+        init_params.set_from_serial_number(sn)
+        init_params.camera_fps = camera_fps
+        open_err = zed.open(init_params)
     elif isinstance(zed, sl.CameraOne):
-        init_params = sl.InitParametersOne()
+        init_params_one = sl.InitParametersOne()
+        init_params_one.camera_resolution = sl.RESOLUTION.AUTO
+        init_params_one.set_from_serial_number(sn)
+        init_params_one.camera_fps = camera_fps
+        open_err = zed.open(init_params_one)
     else:
         print(f"Unsupported camera type: {type(zed)}")
         return False
-    init_params.camera_resolution = sl.RESOLUTION.AUTO
-    init_params.set_from_serial_number(sn)
-    init_params.camera_fps = camera_fps
 
     # Open the camera
-    open_err = zed.open(init_params)
     if open_err <= sl.ERROR_CODE.SUCCESS:
         print(f"{zed.get_camera_information().camera_model}_SN{sn} Opened")
     else:

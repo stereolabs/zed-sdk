@@ -90,16 +90,17 @@ def __main(opt: argparse.Namespace):
     detection_parameters_rt = sl.CustomObjectDetectionRuntimeParameters()
     # Default properties, apply to all object class
     detection_parameters_rt.object_detection_properties.detection_confidence_threshold = 30
+    detection_parameters_rt.object_detection_properties.velocity_smoothing_factor = 0.89
     # Specific properties, override the default properties
     props_dict = {
         1: sl.CustomObjectDetectionProperties(),
         2: sl.CustomObjectDetectionProperties()
     }
     props_dict[1].native_mapped_class = sl.OBJECT_SUBCLASS.PERSON
-    props_dict[1].object_acceleration_preset = sl.OBJECT_ACCELERATION_PRESET.MEDIUM
+    props_dict[1].object_tracking_parameters.object_acceleration_preset = sl.OBJECT_ACCELERATION_PRESET.MEDIUM
     props_dict[1].detection_confidence_threshold = 40
     props_dict[2].detection_confidence_threshold = 50
-    props_dict[2].max_allowed_acceleration = 10 * 10
+    props_dict[2].object_tracking_parameters.velocity_smoothing_factor = 0.65
     detection_parameters_rt.object_class_detection_properties = props_dict
 
     quit_bool = False

@@ -42,7 +42,6 @@ int main(int argc, char** argv) {
     init_parameters.depth_mode = DEPTH_MODE::NEURAL;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
     init_parameters.sdk_verbose = 1;
-    init_parameters.maximum_working_resolution = sl::Resolution(0, 0);
     auto mask_path = parseArgs(argc, argv, init_parameters);
 
     // Open the camera
@@ -64,12 +63,9 @@ int main(int argc, char** argv) {
 
     auto camera_config = zed.getCameraInformation().camera_configuration;
     // Automatically set to the optimal resolution
-    sl::Resolution res(-1, -1);
+    sl::Resolution res = zed.getRetrieveMeasureResolution();
 
     Mat point_cloud;
-    zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, res);
-    res = point_cloud.getResolution();
-
     auto stream = zed.getCUDAStream();
 
     // Point cloud viewer

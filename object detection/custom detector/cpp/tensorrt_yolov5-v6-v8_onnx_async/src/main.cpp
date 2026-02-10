@@ -80,10 +80,10 @@ std::vector<sl::uint2> cvt(const BBox& bbox_in) {
     return bbox_out;
 }
 
-std::mutex detector_mtx, img_mtx;
+std::mutex detector_mtx, tensor_mtx;
 bool exit_detector = false;
 std::vector<sl::CustomBoxObjectData> objects_in;
-sl::Mat left_sl;
+sl::Tensor input_tensor;
 sl::Timestamp prev_ts = 0, custom_data_ts = 0;
 sl::Resolution display_resolution;
 Yolo detector;
@@ -91,10 +91,10 @@ Yolo detector;
 void run_detector() {
     while (!exit_detector) {
 
-        if (prev_ts != left_sl.timestamp) {
+        if (prev_ts != input_tensor.timestamp) {
 
-            // Running inference
-            auto detections = detector.run(left_sl, display_resolution.height, display_resolution.width, CONF_THRESH);
+            // Running inference - tensor is already preprocessed by retrieveTensor
+            auto detections = detector.run(input_tensor, display_resolution.height, display_resolution.width, CONF_THRESH);
 
             // Preparing for ZED SDK ingesting
             std::vector<sl::CustomBoxObjectData> objects_tmp;
@@ -105,6 +105,7 @@ void run_detector() {
                 tmp.probability = it.prob;
                 tmp.label = (int)it.label;
                 tmp.bounding_box_2d = cvt(it.box);
+                tmp.velocity_smoothing_factor = 0.5f;
                 tmp.is_grounded = ((int)it.label == 0); // Only the first class (person) is grounded, that is moving on the floor plane
                 // others are tracked in full 3D space
                 objects_tmp.push_back(tmp);
@@ -112,10 +113,10 @@ void run_detector() {
 
             detector_mtx.lock();
             objects_tmp.swap(objects_in);
-            custom_data_ts = left_sl.timestamp;
+            custom_data_ts = input_tensor.timestamp;
             detector_mtx.unlock();
 
-            prev_ts = left_sl.timestamp;
+            prev_ts = input_tensor.timestamp;
         }
 
         sl::sleep_ms(1);
@@ -203,6 +204,7 @@ int main(int argc, char** argv) {
 
     display_resolution = zed.getCameraInformation().camera_configuration.resolution;
     sl::Mat point_cloud;
+    sl::Mat left_sl; // For display
     cv::Mat left_cv;
     sl::CustomObjectDetectionRuntimeParameters customObjectTracker_rt;
     sl::Objects objects;
@@ -210,16 +212,19 @@ int main(int argc, char** argv) {
     cam_w_pose.pose_data.setIdentity();
     auto zed_cuda_stream = zed.getCUDAStream();
 
+    // Get tensor parameters from detector (configured based on engine input size)
+    sl::TensorParameters tensor_params = detector.getTensorParameters();
+
     std::thread detection_thread(run_detector);
 
     while (viewer.isAvailable()) {
-        if (zed.read() == sl::ERROR_CODE::SUCCESS) {
-            // Get image for inference
-            zed.retrieveImage(left_sl, sl::VIEW::LEFT, sl::MEM::GPU, sl::Resolution(0, 0), detector.stream);
-            // Get the CPU image for display
-            left_sl.updateCPUfromGPU(zed_cuda_stream);
+        if (zed.grab() == sl::ERROR_CODE::SUCCESS) {
+            // Retrieve pre-processed tensor for inference (replaces blobFromImage)
+            zed.retrieveTensor(input_tensor, tensor_params, detector.stream);
 
-            zed.grab();
+            // Get image for display
+            zed.retrieveImage(left_sl, sl::VIEW::LEFT, sl::MEM::CPU);
+
             zed.retrieveMeasure(point_cloud, sl::MEASURE::XYZRGBA, sl::MEM::GPU, pc_resolution);
             zed.getPosition(cam_w_pose, sl::REFERENCE_FRAME::WORLD);
 
@@ -227,7 +232,7 @@ int main(int argc, char** argv) {
             left_cv = slMat2cvMat(left_sl);
 
             // wait for the detections
-            while (left_sl.timestamp != custom_data_ts)
+            while (input_tensor.timestamp != custom_data_ts)
                 sl::sleep_ms(1);
 
             detector_mtx.lock();

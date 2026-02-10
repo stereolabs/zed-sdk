@@ -44,6 +44,7 @@ class Arguments:
         self.roi_file: Optional[str] = None
         self.custom_initial_pose: bool = False
         self.enable_2d_ground_mode: bool = False
+        self.export_tum_file: bool = False
 
 #
 # Main
@@ -58,6 +59,7 @@ def main(args: Arguments) -> int:
     init_params.depth_mode = sl.DEPTH_MODE.NEURAL
     init_params.coordinate_units = sl.UNIT.METER
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
+    init_params.camera_disable_self_calib = True
 
     if args.resolution:
         init_params.camera_resolution = args.resolution
@@ -96,7 +98,7 @@ def main(args: Arguments) -> int:
     tracking_parameters.depth_min_range = -1
     tracking_parameters.enable_2d_ground_mode = args.enable_2d_ground_mode
     tracking_parameters.enable_localization_only = False
-    tracking_parameters.mode = sl.POSITIONAL_TRACKING_MODE.GEN_1
+    tracking_parameters.mode = sl.POSITIONAL_TRACKING_MODE.GEN_3
 
     if args.roi_file is not None:
         roi = sl.Mat()
@@ -116,7 +118,7 @@ def main(args: Arguments) -> int:
                         0.0,     0.0,    1.0, 1.0,
                         0.0,     0.0,    0.0, 1.0]
         
-        tracking_parameters.initial_world_transform = sl.Transform(initial_pose)
+        tracking_parameters.set_initial_world_transform(sl.Transform(initial_pose))
 
     #
     # Enable positional tracking
@@ -126,8 +128,8 @@ def main(args: Arguments) -> int:
     if status > sl.ERROR_CODE.SUCCESS:
         print(f"Failed to enable positional tracking: {status}")
         zed.close()
-        return
-    
+        return 1
+
     print_tracking_parameters(tracking_parameters)
 
     #
@@ -144,6 +146,15 @@ def main(args: Arguments) -> int:
 
     last_landmark_update = sl.get_current_timestamp().get_seconds()
     display_resolution = zed.get_retrieve_measure_resolution()
+
+    #
+    # Prepare out file for TUM trajectory.
+    # TUM format useful for benchmarking SLAM trajectories.
+    # Tools like evo (https://github.com/sbesson/evo) used it for evaluation and visualization.
+    #
+    out_tum = None
+    if args.export_tum_file:
+        out_tum = open("out.tum", mode="w", encoding="utf-8", buffering=1)
 
     #
     # Main loop
@@ -171,7 +182,10 @@ def main(args: Arguments) -> int:
             return
        
         # Retrieve the left image
-        zed.retrieve_image(left_image, sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
+        if(tracking_parameters.mode == sl.POSITIONAL_TRACKING_MODE.GEN_3):
+            zed.retrieve_image(left_image, sl.VIEW.LEFT_UNRECTIFIED, sl.MEM.CPU, display_resolution)
+        else:
+            zed.retrieve_image(left_image, sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
 
         # Retrieve the calculated point cloud
         zed.retrieve_measure(point_cloud, sl.MEASURE.XYZBGRA, sl.MEM.CPU, display_resolution)
@@ -179,16 +193,28 @@ def main(args: Arguments) -> int:
         # Retrieve the calculated camera pose
         zed.get_position(pose)
 
+        # Export the pose in TUM format
+        if out_tum is not None:
+            out_tum.write(f"{pose.timestamp.get_milliseconds()} ")
+            out_tum.write(f"{pose.get_translation().get()[0]:.9f} ")
+            out_tum.write(f"{pose.get_translation().get()[1]:.9f} ")
+            out_tum.write(f"{pose.get_translation().get()[2]:.9f} ")
+            out_tum.write(f"{pose.get_orientation().get()[0]:.9f} ")
+            out_tum.write(f"{pose.get_orientation().get()[1]:.9f} ")
+            out_tum.write(f"{pose.get_orientation().get()[2]:.9f} ")
+            out_tum.write(f"{pose.get_orientation().get()[3]:.9f}\n")
+            out_tum.flush()
+
         #
         # Update display
         #
         view.update_pose_transform(pose.pose_data())
         view.update_positional_tracking_status(zed.get_positional_tracking_status())
 
-        if sl.get_current_timestamp().get_seconds() - last_landmark_update > 1:
+        if zed.get_timestamp(sl.TIME_REFERENCE.IMAGE).get_seconds() - last_landmark_update > 1:
             zed.get_positional_tracking_landmarks(landmark_map)
             view.update_landmarks(landmark_map)
-            last_landmark_update = sl.get_current_timestamp().get_seconds()
+            last_landmark_update = zed.get_timestamp(sl.TIME_REFERENCE.IMAGE).get_seconds()
 
         if view.is_landmark_mode_enabled and len(landmark_map) > 0:
             zed.get_positional_tracking_landmarks2d(landmarks_2d)
@@ -212,11 +238,15 @@ def main(args: Arguments) -> int:
 
     view.run(render_loop)
 
+    if out_tum is not None:
+        out_tum.close()
+
     #
     # Saving area map
     #
     if args.map:
         sample_print(f"Saving area map to {args.output_area_file} ...")
+        assert args.output_area_file is not None
 
         status = zed.save_area_map(args.output_area_file)
 

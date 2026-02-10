@@ -56,7 +56,7 @@ class Program {
 
         string pathOutput = args[0];
 
-        RecordingParameters recordingParams = new RecordingParameters(pathOutput, SVO_COMPRESSION_MODE.H264_BASED, 8000, 15, false);
+        RecordingParameters recordingParams = new RecordingParameters(pathOutput, SVO_COMPRESSION_MODE.H265_BASED, 8000, 15, false);
         state = zed.EnableRecording(recordingParams);
         if (state != ERROR_CODE.SUCCESS) {
             zed.Close();

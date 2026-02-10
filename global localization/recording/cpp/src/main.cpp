@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
     // Enable SVO recording:
     std::string svo_path = "ZED_SN" + std::to_string(zed.getCameraInformation().serial_number) + "_" + getCurrentDatetime() + ".svo";
     sl::String path_output(svo_path.c_str());
-    auto returned_state = zed.enableRecording(sl::RecordingParameters(path_output, sl::SVO_COMPRESSION_MODE::H264_LOSSLESS));
+    auto returned_state = zed.enableRecording(sl::RecordingParameters(path_output, sl::SVO_COMPRESSION_MODE::H265_LOSSLESS));
     if (returned_state != sl::ERROR_CODE::SUCCESS) {
         std::cerr << "Recording ZED : " << returned_state << std::endl;
         zed.close();

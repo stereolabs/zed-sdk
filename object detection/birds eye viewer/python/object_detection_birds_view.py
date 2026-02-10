@@ -90,12 +90,18 @@ def main(opt):
     # default detection threshold, apply to all object class
     detection_confidence = 60
     detection_parameters_rt = sl.ObjectDetectionRuntimeParameters(detection_confidence)
+    detection_parameters_rt.object_tracking_parameters.velocity_smoothing_factor = 0.5 # Object tracking global setting
     # To select a set of specific object classes:
     detection_parameters_rt.object_class_filter = [sl.OBJECT_CLASS.VEHICLE, sl.OBJECT_CLASS.PERSON]
     # To set a specific threshold
-    detection_parameters_rt.object_class_detection_confidence_threshold[sl.OBJECT_CLASS.PERSON] = detection_confidence
-    detection_parameters_rt.object_class_detection_confidence_threshold[sl.OBJECT_CLASS.VEHICLE] = detection_confidence
-
+    detection_parameters_rt.object_class_detection_confidence_threshold = {
+        sl.OBJECT_CLASS.PERSON: detection_confidence,
+        sl.OBJECT_CLASS.VEHICLE: detection_confidence
+    }
+    params_vehicle = sl.ObjectTrackingParameters()
+    params_vehicle.velocity_smoothing_factor = 0.73
+    params_vehicle.min_velocity_threshold = 0.3
+    detection_parameters_rt.object_class_tracking_parameters = {sl.OBJECT_CLASS.VEHICLE: params_vehicle}
 
     quit_bool = False
     if not opt.disable_gui:

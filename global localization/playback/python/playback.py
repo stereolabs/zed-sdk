@@ -119,6 +119,7 @@ def main(opt):
             exit()
         status, input_gnss = gnss_replay.grab(zed_pose.timestamp.get_nanoseconds())
         if status == sl.FUSION_ERROR_CODE.SUCCESS:
+            assert input_gnss is not None
             ingest_error = fusion.ingest_gnss_data(input_gnss)
             latitude, longitude, altitude = input_gnss.get_coordinates(False)
             coordinates = {

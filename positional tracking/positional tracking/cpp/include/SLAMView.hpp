@@ -50,6 +50,7 @@ public:
     void updatePoseTransform(sl::Transform transform);
     void updatePositionalTrackingStatus(sl::PositionalTrackingStatus positionalTrackingStatus);
     void updateLandmarks(std::map<uint64_t, sl::Landmark>& landmarks);
+    void updateKeyframes(const std::map<uint64_t, sl::KeyFrame>& keyframes);
 
 private:
     int _width;
@@ -88,6 +89,8 @@ private:
     Simple3DPath _cameraPath;
     PointCloud _pointCloud;
     Simple3DObject _landmarks;
+    Simple3DObject _keyframes;
+
     CUstream _cudaStream;
 
     GLuint _frameTextureID;
