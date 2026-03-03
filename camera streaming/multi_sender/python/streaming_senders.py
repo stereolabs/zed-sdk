@@ -93,7 +93,7 @@ def open_camera(zed, sn, port, camera_fps=30):
     stream_params = sl.StreamingParameters()
     stream_params.port = port
     stream_err = zed.enable_streaming(stream_params)
-    if stream_err == sl.ERROR_CODE.SUCCESS:
+    if stream_err <= sl.ERROR_CODE.SUCCESS:
         print(f"{zed.get_camera_information().camera_model}_SN{sn} Enabled streaming")
     else:
         print(f"ZED SN{sn} Streaming initialization error: {stream_err}")

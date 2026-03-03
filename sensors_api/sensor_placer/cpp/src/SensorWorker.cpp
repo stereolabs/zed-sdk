@@ -3,6 +3,7 @@
 
 SensorWorker::SensorWorker() {
     zedInit_.depth_mode = sl::DEPTH_MODE::NEURAL;
+    zedInit_.depth_maximum_distance = 5.0f;
     zedInit_.camera_fps = 15;
     zedInit_.coordinate_system = COORD_SYS;
     zedInit_.coordinate_units = UNIT_REF;
@@ -52,7 +53,7 @@ bool SensorWorker::openZedInput(sl::InputType input) {
 
 bool SensorWorker::initZed() {
     auto err = zed_.open(zedInit_);
-    if (err != sl::ERROR_CODE::SUCCESS) {
+    if (err > sl::ERROR_CODE::SUCCESS) {
         std::cerr << "ZED open error: " << err << std::endl;
         return false;
     }
@@ -88,7 +89,7 @@ bool SensorWorker::initLidar() {
     lidarInit_.coordinate_system = COORD_SYS;
 
     auto err = lidar_.open(lidarInit_);
-    if (err != sl::ERROR_CODE::SUCCESS) {
+    if (err > sl::ERROR_CODE::SUCCESS) {
         std::cerr << "LiDAR open error: " << err << std::endl;
         return false;
     }
@@ -127,10 +128,10 @@ void SensorWorker::runZed() {
             zed_.setSVOPosition(0);
             continue;
         }
-        if (err == sl::ERROR_CODE::SUCCESS) {
+        if (err <= sl::ERROR_CODE::SUCCESS) {
             if (askFloor_) {
                 sl::Plane floor;
-                foundFloor_ = (zed_.findFloorPlane(floor, floorReset_) == sl::ERROR_CODE::SUCCESS);
+                foundFloor_ = (zed_.findFloorPlane(floor, floorReset_) <= sl::ERROR_CODE::SUCCESS);
                 askFloor_ = false;
             }
             if (waitIMU_) {
@@ -152,7 +153,7 @@ void SensorWorker::runLidar() {
             lidar_.setSVOPosition(0);
             continue;
         }
-        if (err == sl::ERROR_CODE::SUCCESS) {
+        if (err <= sl::ERROR_CODE::SUCCESS) {
             std::lock_guard<std::mutex> lk(lidarMtx_);
             lidar_.retrieveMeasure(lidarPC_, sl::LIDAR_MEASURE::XYZ_REFLECTIVITY_VIEW, sl::Resolution(0, 0), sl::MEM::GPU);
             updated_ = true;

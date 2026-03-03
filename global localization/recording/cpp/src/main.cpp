@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
     }
     // Enable positional tracking:
     auto positional_init = zed.enablePositionalTracking();
-    if (positional_init != sl::ERROR_CODE::SUCCESS) {
+    if (positional_init > sl::ERROR_CODE::SUCCESS) {
         std::cerr << "[ZED][ERROR] Can't start tracking of camera" << std::endl;
         return EXIT_FAILURE;
     }
@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
     std::string svo_path = "ZED_SN" + std::to_string(zed.getCameraInformation().serial_number) + "_" + getCurrentDatetime() + ".svo";
     sl::String path_output(svo_path.c_str());
     auto returned_state = zed.enableRecording(sl::RecordingParameters(path_output, sl::SVO_COMPRESSION_MODE::H265_LOSSLESS));
-    if (returned_state != sl::ERROR_CODE::SUCCESS) {
+    if (returned_state > sl::ERROR_CODE::SUCCESS) {
         std::cerr << "Recording ZED : " << returned_state << std::endl;
         zed.close();
         return EXIT_FAILURE;

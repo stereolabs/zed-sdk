@@ -62,7 +62,7 @@ To simplify the retrieve process we have a global class, `SensorsData`, that enc
     while (elapse_time < 5000)
     {
 
-        if (zed.getSensorsData(sensors_data, TIME_REFERENCE::CURRENT) == ERROR_CODE::SUCCESS) 
+        if (zed.getSensorsData(sensors_data, TIME_REFERENCE::CURRENT) <= ERROR_CODE::SUCCESS) 
         {
 
         [...]
@@ -116,7 +116,7 @@ To access it you can iterate over sensors and check if the data is available:
     float temperature;
     for (int s = 0; s < SensorsData::TemperatureData::SENSOR_LOCATION::LAST; s++) {
         auto sensor_loc = static_cast<SensorsData::TemperatureData::SENSOR_LOCATION>(s);
-        if (sensors_data.temperature.get(sensor_loc, temperature) == ERROR_CODE::SUCCESS)
+        if (sensors_data.temperature.get(sensor_loc, temperature) <= ERROR_CODE::SUCCESS)
             cout << " \t " << sensor_loc << ": " << temperature << "C\n";
 }
 ```

@@ -57,7 +57,7 @@ def main():
     print("Body tracking: Loading Module...")
 
     err = zed.enable_body_tracking(body_params)
-    if err != sl.ERROR_CODE.SUCCESS:
+    if err > sl.ERROR_CODE.SUCCESS:
         print("Enable Body Tracking : "+repr(err)+". Exit program.")
         zed.close()
         exit()

@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
     body_tracking_parameters.instance_module_id = 0; // select instance ID
 
     returned_state = zed.enableBodyTracking(body_tracking_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("enableBodyTracking", returned_state, "\nExit program.");
         zed.close();
         return EXIT_FAILURE;
@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
 
     print("Object Detection: Loading Module...");
     returned_state = zed.enableObjectDetection(object_detection_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("enableObjectDetection", returned_state, "\nExit program.");
         zed.close();
         return EXIT_FAILURE;
@@ -242,7 +242,7 @@ void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     else if (err_code < ERROR_CODE::SUCCESS)
         cout << "[Warning] ";
     cout << msg_prefix << " ";
-    if (err_code != ERROR_CODE::SUCCESS) {
+    if (err_code > ERROR_CODE::SUCCESS) {
         cout << " | " << toString(err_code) << " : ";
         cout << toVerbose(err_code);
     }
@@ -284,6 +284,9 @@ void parseArgs(int argc, char** argv, InitParameters& param) {
         } else if (arg.find("SVGA") != string::npos) {
             param.camera_resolution = RESOLUTION::SVGA;
             cout << "[Sample] Using Camera in resolution SVGA" << endl;
+        } else if (arg.find("XVGA") != string::npos) {
+            param.camera_resolution = static_cast<sl::RESOLUTION>((int)RESOLUTION::HD1536 + 100);
+            cout << "[Sample] Using Camera in resolution XVGA" << endl;
         } else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;

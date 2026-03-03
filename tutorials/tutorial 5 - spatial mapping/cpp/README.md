@@ -58,7 +58,7 @@ The spatial mapping needs the positional tracking to be activated. Therefore, as
 ```
 sl::PositionalTrackingParameters tracking_parameters;
 err = zed.enablePositionalTracking(tracking_parameters);
-if (err != ERROR_CODE::SUCCESS)
+if (err > ERROR_CODE::SUCCESS)
     exit(-1);
 ```
 
@@ -69,7 +69,7 @@ Now that tracking is enabled, we need to enable the spatial mapping module. You 
 ```
 sl::SpatialMappingParameters mapping_parameters;
 err = zed.enableSpatialMapping(mapping_parameters);
-if (err != ERROR_CODE::SUCCESS)
+if (err > ERROR_CODE::SUCCESS)
     exit(-1);
 ```
 

@@ -67,7 +67,7 @@ if __name__ == "__main__":
     tracking_params.enable_imu_fusion = True
     tracking_params.set_gravity_as_origin = True
     err = zed.enable_positional_tracking(tracking_params)
-    if (err != sl.ERROR_CODE.SUCCESS):
+    if (err > sl.ERROR_CODE.SUCCESS):
         print("Camera positional tracking: " + repr(status) + ". Exit program.")
         exit()
     camera_info = zed.get_camera_information()

@@ -22,7 +22,7 @@ inline void print(std::string msg_prefix, sl::ERROR_CODE err_code = sl::ERROR_CO
     else
         std::cout << " ";
     std::cout << msg_prefix << " ";
-    if (err_code != sl::ERROR_CODE::SUCCESS) {
+    if (err_code > sl::ERROR_CODE::SUCCESS) {
         std::cout << " | " << sl::toString(err_code) << " : ";
         std::cout << sl::toVerbose(err_code);
     }

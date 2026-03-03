@@ -31,7 +31,7 @@ bool ClientPublisher::open(const sl::InputType& input, Trigger* ref) {
     sl::PositionalTrackingParameters positional_tracking_parameters;
     positional_tracking_parameters.set_as_static = true;
     state = zed.enablePositionalTracking(positional_tracking_parameters);
-    if (state != sl::ERROR_CODE::SUCCESS) {
+    if (state > sl::ERROR_CODE::SUCCESS) {
         std::cout << "Error: " << state << std::endl;
         return false;
     }
@@ -41,7 +41,7 @@ bool ClientPublisher::open(const sl::InputType& input, Trigger* ref) {
     object_detection_parameters.enable_tracking = true;
     object_detection_parameters.fused_objects_group_name = "MULTI_CLASS_BOX";
     state = zed.enableObjectDetection(object_detection_parameters);
-    if (state != sl::ERROR_CODE::SUCCESS) {
+    if (state > sl::ERROR_CODE::SUCCESS) {
         std::cout << "Error: " << state << std::endl;
         return false;
     }

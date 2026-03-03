@@ -157,7 +157,7 @@ void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     else
         cout << " ";
     cout << msg_prefix << " ";
-    if (err_code != ERROR_CODE::SUCCESS) {
+    if (err_code > ERROR_CODE::SUCCESS) {
         cout << " | " << toString(err_code) << " : ";
         cout << toVerbose(err_code);
     }

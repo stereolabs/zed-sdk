@@ -109,7 +109,7 @@ def main(opt):
                 point_cloud_to_save = sl.Mat()
                 zed.retrieve_measure(point_cloud_to_save, sl.MEASURE.XYZRGBA, sl.MEM.CPU)
                 err = point_cloud_to_save.write('Pointcloud.ply')
-                if(err == sl.ERROR_CODE.SUCCESS):
+                if(err <= sl.ERROR_CODE.SUCCESS):
                     print("Current .ply file saving succeed")
                 else:
                     print("Current .ply file failed")

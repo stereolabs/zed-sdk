@@ -44,7 +44,7 @@ def main():
     py_transform = sl.Transform()
     tracking_parameters = sl.PositionalTrackingParameters(_init_pos=py_transform)
     err = zed.enable_positional_tracking(tracking_parameters)
-    if err != sl.ERROR_CODE.SUCCESS:
+    if err > sl.ERROR_CODE.SUCCESS:
         print("Enable positional tracking : "+repr(err)+". Exit program.")
         zed.close()
         exit()
@@ -52,7 +52,7 @@ def main():
     # Enable spatial mapping
     mapping_parameters = sl.SpatialMappingParameters(map_type=sl.SPATIAL_MAP_TYPE.MESH)
     err = zed.enable_spatial_mapping(mapping_parameters)
-    if err != sl.ERROR_CODE.SUCCESS:
+    if err > sl.ERROR_CODE.SUCCESS:
         print("Enable spatial mapping : "+repr(err)+". Exit program.")
         zed.close()
         exit(1)
@@ -64,7 +64,7 @@ def main():
 
     while i < 500:
         # For each new grab, mesh data is updated
-        if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
+        if zed.grab(runtime_parameters) <= sl.ERROR_CODE.SUCCESS:
             # In the background, spatial mapping will use newly retrieved images, depth and pose to update the mesh
             mapping_state = zed.get_spatial_mapping_state()
             sys.stdout.write("Images captured: {0} / 500 || {1} \033[K\r".format(i, mapping_state))

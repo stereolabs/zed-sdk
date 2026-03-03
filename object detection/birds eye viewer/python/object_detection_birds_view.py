@@ -82,7 +82,7 @@ def main(opt):
     camera_configuration = zed.get_camera_information().camera_configuration
 
     
-    if returned_state != sl.ERROR_CODE.SUCCESS:
+    if returned_state > sl.ERROR_CODE.SUCCESS:
         print("enable_object_detection", returned_state, "\nExit program.")
         zed.close()
         exit() 
@@ -158,7 +158,7 @@ def main(opt):
                         
                 #check if batched trajectories are available 
                 objects_batch = [] 
-                if zed.get_objects_batch(objects_batch) == sl.ERROR_CODE.SUCCESS:
+                if zed.get_objects_batch(objects_batch) <= sl.ERROR_CODE.SUCCESS:
                     if len(objects_batch)>0:
                         print("During last batch processing: ",len(id_counter)," Objets were detected: ", end=" ")
                         for it in id_counter:

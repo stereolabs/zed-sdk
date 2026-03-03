@@ -1,6 +1,6 @@
 # PyTorch YOLO Detector with CupY
 
-This sample demonstrates object detection using the official PyTorch implementation of YOLO (YOLOv8, v9, v10, v11, v12) with a ZED camera. The preprocessing is done on the GPU using CuPy and PyTorch (and with zero-copy) to improve performance compared to classical NumPy handling.
+This sample demonstrates object detection using the official PyTorch implementation of YOLO (YOLOv8, v9, v10, v11, v12, v26) with a ZED camera. The preprocessing is done on the GPU using CuPy and PyTorch (and with zero-copy) to improve performance compared to classical NumPy handling.
 
 ## Features
 
@@ -38,7 +38,7 @@ python detector.py --weights yolov8m.pt [--img_size 512 --conf_thres 0.1 --svo p
 
 ## Training Custom Models
 
-This sample supports any model trained with YOLO (YOLOv8, v9, v10, v11, v12), including custom trained models. For training on custom datasets, see the [Ultralytics Training Guide](https://docs.ultralytics.com/tutorials/train-custom-datasets/).
+This sample supports any model trained with YOLO (YOLOv8, v9, v10, v11, v12, v26), including custom trained models. For training on custom datasets, see the [Ultralytics Training Guide](https://docs.ultralytics.com/tutorials/train-custom-datasets/).
 
 ## Additional Resources
 

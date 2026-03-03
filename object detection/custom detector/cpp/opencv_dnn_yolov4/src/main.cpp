@@ -38,7 +38,7 @@ void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suff
     else if (err_code < sl::ERROR_CODE::SUCCESS)
         std::cout << "[Warning] ";
     std::cout << msg_prefix << " ";
-    if (err_code != sl::ERROR_CODE::SUCCESS) {
+    if (err_code > sl::ERROR_CODE::SUCCESS) {
         std::cout << " | " << toString(err_code) << " : ";
         std::cout << toVerbose(err_code);
     }
@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
     // Let's define the model as custom box object to specify that the inference is done externally
     detection_parameters.detection_model = sl::OBJECT_DETECTION_MODEL::CUSTOM_BOX_OBJECTS;
     returned_state = zed.enableObjectDetection(detection_parameters);
-    if (returned_state != sl::ERROR_CODE::SUCCESS) {
+    if (returned_state > sl::ERROR_CODE::SUCCESS) {
         print("enableObjectDetection", returned_state, "\nExit program.");
         zed.close();
         return EXIT_FAILURE;

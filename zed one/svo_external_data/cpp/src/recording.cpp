@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
     recording_parameters.compression_mode = SVO_COMPRESSION_MODE::H265;
 
     returned_state = zed.enableRecording(recording_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("Enable Recording", returned_state);
         zed.close();
         return EXIT_FAILURE;
@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
 
                 // Ingest data into SVO
                 auto err = zed.ingestDataIntoSVO(data);
-                if (err != ERROR_CODE::SUCCESS) {
+                if (err > ERROR_CODE::SUCCESS) {
                     std::cout << "Ingest error: " << err << std::endl;
                 }
 

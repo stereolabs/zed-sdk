@@ -53,7 +53,7 @@ def main(opt):
         exit()
     # Enable positional tracking:
     positional_init = zed.enable_positional_tracking()
-    if positional_init != sl.ERROR_CODE.SUCCESS:
+    if positional_init > sl.ERROR_CODE.SUCCESS:
         print("[ZED][ERROR] Can't start tracking of camera : " + repr(status) + ". Exit program.")
         exit()
 

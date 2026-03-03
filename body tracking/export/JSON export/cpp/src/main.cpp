@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
 
     // enable positional tracking (with default parameters)
     state = zed.enablePositionalTracking();
-    if (state != sl::ERROR_CODE::SUCCESS) {
+    if (state > sl::ERROR_CODE::SUCCESS) {
         std::cout << "Error enable Positional Tracking" << state << std::endl;
         return -1;
     }
@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
     body_tracking_parameters.enable_tracking = true;
     body_tracking_parameters.enable_body_fitting = false;
     state = zed.enableBodyTracking(body_tracking_parameters);
-    if (state != sl::ERROR_CODE::SUCCESS) {
+    if (state > sl::ERROR_CODE::SUCCESS) {
         std::cout << "Error enable Body Tracking" << state << std::endl;
         return -1;
     }

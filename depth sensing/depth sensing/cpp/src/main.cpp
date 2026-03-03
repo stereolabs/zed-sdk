@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
     if (!mask_path.empty()) {
         sl::Mat mask_roi;
         auto err = mask_roi.read(mask_path.c_str());
-        if (err == sl::ERROR_CODE::SUCCESS)
+        if (err <= sl::ERROR_CODE::SUCCESS)
             zed.setRegionOfInterest(mask_roi, {MODULE::ALL});
         else
             std::cout << "Error loading Region of Interest file: " << err << std::endl;
@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
                 sl::Mat point_cloud_to_save;
                 zed.retrieveMeasure(point_cloud_to_save, MEASURE::XYZRGBA);
                 auto write_suceed = point_cloud_to_save.write("Pointcloud.ply");
-                if (write_suceed == sl::ERROR_CODE::SUCCESS)
+                if (write_suceed <= sl::ERROR_CODE::SUCCESS)
                     std::cout << "Current .ply file saving succeed" << std::endl;
                 else
                     std::cout << "Current .ply file saving failed" << std::endl;
@@ -160,6 +160,9 @@ std::string parseArgs(int argc, char** argv, sl::InitParameters& param) {
         } else if (arg.find("SVGA") != string::npos) {
             param.camera_resolution = RESOLUTION::SVGA;
             cout << "[Sample] Using Camera in resolution SVGA" << endl;
+        } else if (arg.find("XVGA") != string::npos) {
+            param.camera_resolution = static_cast<sl::RESOLUTION>((int)RESOLUTION::HD1536 + 100);
+            cout << "[Sample] Using Camera in resolution XVGA" << endl;
         } else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;

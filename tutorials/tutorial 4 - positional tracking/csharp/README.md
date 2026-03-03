@@ -27,7 +27,7 @@ Quaternion quat = Quaternion.Identity;
 Vector3 vec = Vector3.Zero;
 
 err = zedCamera.EnablePositionalTracking(ref quat, ref vec);
-if (err != ERROR_CODE.SUCCESS)
+if (err > ERROR_CODE.SUCCESS)
     Environment.Exit(-1);
 ```
 

@@ -9,6 +9,7 @@
 
 #include <map>
 #include <vector>
+#include <deque>
 #include <random>
 
 QT_BEGIN_NAMESPACE
@@ -20,6 +21,7 @@ QT_END_NAMESPACE
 struct SensorData {
     SensorWorker worker;
     sl::Transform pose;
+    sl::Transform initialPose; // pose at open / load time, for Reset
     QColor color;
     SensorType type = SensorType::ZED;
     bool poseLoaded = false; // true when pose was read from config JSON
@@ -87,12 +89,22 @@ private slots:
     void on_check_edges_stateChanged(int state);
     void on_check_clr_stateChanged(int state);
     void on_slider_ptsize_valueChanged(int value);
+    void on_slider_density_valueChanged(int value);
+
+    // Undo / Reset
+    void on_button_undo_clicked();
+    void on_button_reset_clicked();
 
     // Actions
     void on_button_findPlane_clicked();
     void on_button_imuPose_clicked();
     void on_button_export_clicked();
     void on_button_load_clicked();
+
+    // Point Matching
+    void on_button_clearPicks_clicked();
+    void on_button_icpAlign_clicked();
+    void onPointPicked(int sensorId, float x, float y, float z);
 
 private:
     Ui::MainWindow* ui;
@@ -113,12 +125,29 @@ private:
     std::mt19937 rng_;
     std::uniform_int_distribution<uint32_t> dist100_;
 
+    // Undo stack
+    struct UndoEntry {
+        int sensorId;
+        sl::Transform pose;
+    };
+    std::deque<UndoEntry> undoStack_;
+    static const int kMaxUndo = 200;
+    void pushUndo(); // save current sensor pose before modification
+
     // Config paths
     std::string configPath_;
     std::string outputPath_;
 
     // JSON I/O
     void saveConfig(const std::string& path);
+
+    // Point Matching
+    struct PickEntry {
+        sl::float3 pos;
+        int sensorId;
+    };
+    std::vector<PickEntry> allPicks_;
+    void updatePickLabel();
 };
 
 #endif // MAINWINDOW_H

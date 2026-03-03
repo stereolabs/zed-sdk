@@ -58,7 +58,7 @@ void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suff
     else
         std::cout << " ";
     std::cout << msg_prefix << " ";
-    if (err_code != sl::ERROR_CODE::SUCCESS) {
+    if (err_code > sl::ERROR_CODE::SUCCESS) {
         std::cout << " | " << toString(err_code) << " : ";
         std::cout << toVerbose(err_code);
     }
@@ -132,7 +132,7 @@ int main(int argc, char** argv) {
     detection_parameters.enable_segmentation = false; // designed to give person pixel mask with internal OD
     detection_parameters.detection_model = sl::OBJECT_DETECTION_MODEL::CUSTOM_BOX_OBJECTS;
     returned_state = zed.enableObjectDetection(detection_parameters);
-    if (returned_state != sl::ERROR_CODE::SUCCESS) {
+    if (returned_state > sl::ERROR_CODE::SUCCESS) {
         print("enableObjectDetection", returned_state, "\nExit program.");
         zed.close();
         return EXIT_FAILURE;
@@ -163,6 +163,12 @@ int main(int argc, char** argv) {
     sl::Mat left_sl, point_cloud;
     cv::Mat left_cv;
     sl::CustomObjectDetectionRuntimeParameters customObjectTracker_rt;
+    // Set a global confidence threshold for all custom classes
+    customObjectTracker_rt.object_detection_properties.detection_confidence_threshold = 50;
+    // Example: set per-class properties (e.g., class 0 = "person")
+    customObjectTracker_rt.object_class_detection_properties[0].detection_confidence_threshold = 40;
+    customObjectTracker_rt.object_class_detection_properties[0].is_grounded = true; // person moves on the ground plane
+
     sl::Objects objects;
     sl::Pose cam_w_pose;
     cam_w_pose.pose_data.setIdentity();

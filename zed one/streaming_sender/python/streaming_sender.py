@@ -68,7 +68,7 @@ def main(opt):
 
     # Enable streaming
     status_streaming = cam.enable_streaming(stream_params)
-    if status_streaming != sl.ERROR_CODE.SUCCESS:
+    if status_streaming > sl.ERROR_CODE.SUCCESS:
         print(f"Streaming initialization error: {status_streaming}")
         cam.close()
         exit(1)

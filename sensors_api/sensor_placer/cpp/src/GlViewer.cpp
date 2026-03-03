@@ -1,5 +1,7 @@
 #include "GlViewer.h"
 #include <iostream>
+#include <cmath>
+#include <algorithm>
 #include <cuda_gl_interop.h>
 
 #ifndef M_PI
@@ -176,10 +178,18 @@ void PointCloud::ensureGLInit() {
     glBufferData(GL_ARRAY_BUFFER, width_ * height_ * 4 * sizeof(float), 0, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    cudaGraphicsGLRegisterBuffer(&bufferCuda_, bufferGL_, cudaGraphicsRegisterFlagsNone);
+    cudaError_t regErr = cudaGraphicsGLRegisterBuffer(&bufferCuda_, bufferGL_, cudaGraphicsRegisterFlagsWriteDiscard);
+    if (regErr != cudaSuccess) {
+        std::cerr << "PointCloud::ensureGLInit GL register failed: " << cudaGetErrorString(regErr) << std::endl;
+        cudaGetLastError();
+        glDeleteBuffers(1, &bufferGL_);
+        bufferGL_ = 0;
+        return; // leave glReady_ = false, will retry next frame
+    }
     cudaGraphicsMapResources(1, &bufferCuda_, 0);
     cudaGraphicsResourceGetMappedPointer((void**)&mappedBuf_, &numBytes_, bufferCuda_);
     glReady_ = true;
+    isMapped_ = true;
 }
 
 void PointCloud::initFromRef(sl::Mat& ref, CUstream stream) {
@@ -190,7 +200,7 @@ void PointCloud::initFromRef(sl::Mat& ref, CUstream stream) {
     width_ = ref.getWidth();
     height_ = ref.getHeight();
     initialized_ = true;
-    // GL resources created lazily in ensureGLInit()
+    isMapped_ = false; // GL resources created lazily in ensureGLInit()
 }
 
 void PointCloud::initSized(int width, int height) {
@@ -200,6 +210,7 @@ void PointCloud::initSized(int width, int height) {
     width_ = width;
     height_ = height;
     initialized_ = true;
+    isMapped_ = false;
     // GL resources created lazily in ensureGLInit()
 }
 
@@ -207,54 +218,174 @@ void PointCloud::upload(sl::Mat& gpuMat) {
     if (!initialized_)
         return;
     std::lock_guard<std::mutex> lk(mtx_);
-    ensureGLInit();
-    if (!glReady_)
+
+    if (!glReady_) {
+        ensureGLInit();
+        if (!glReady_)
+            return;
+    }
+
+    gpuMat.copyTo(matLidar, sl::COPY_TYPE::GPU_GPU);
+
+    /*if (strm_ && cudaStreamQuery(strm_) == cudaErrorNotReady) {
+        cudaGetLastError();  // clear the not-ready status
         return;
-    int w = gpuMat.getWidth();
-    int h = gpuMat.getHeight();
-    // Resize if needed
+    }*/
+
+    const int w = matLidar.getWidth();
+    const int h = matLidar.getHeight();
+    const size_t bytes = size_t(w) * size_t(h) * 4u * sizeof(float);
+
+    // Resize if needed (but DO NOT keep it mapped after)
     if (w * h != width_ * height_) {
-        cudaGraphicsUnmapResources(1, &bufferCuda_, 0);
-        cudaGraphicsUnregisterResource(bufferCuda_);
-        glDeleteBuffers(1, &bufferGL_);
+        // If registered, unregister first (no unmap needed if we don't keep mapped)
+        if (bufferCuda_) {
+            if (isMapped_) {
+                cudaGraphicsUnmapResources(1, &bufferCuda_, 0);
+                isMapped_ = false;
+            }
+            cudaGraphicsUnregisterResource(bufferCuda_);
+            bufferCuda_ = nullptr;
+        }
+        if (bufferGL_) {
+            glDeleteBuffers(1, &bufferGL_);
+            bufferGL_ = 0;
+        }
 
         width_ = w;
         height_ = h;
+
         glGenBuffers(1, &bufferGL_);
         glBindBuffer(GL_ARRAY_BUFFER, bufferGL_);
-        glBufferData(GL_ARRAY_BUFFER, width_ * height_ * 4 * sizeof(float), 0, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, bytes, nullptr, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
-        cudaGraphicsGLRegisterBuffer(&bufferCuda_, bufferGL_, cudaGraphicsRegisterFlagsNone);
-        cudaGraphicsMapResources(1, &bufferCuda_, 0);
-        cudaGraphicsResourceGetMappedPointer((void**)&mappedBuf_, &numBytes_, bufferCuda_);
+
+        cudaError_t regErr = cudaGraphicsGLRegisterBuffer(&bufferCuda_, bufferGL_, cudaGraphicsRegisterFlagsWriteDiscard);
+        if (regErr != cudaSuccess) {
+            std::cerr << "upload register failed: " << cudaGetErrorString(regErr) << "\n";
+            cudaGetLastError();
+            glReady_ = false;
+            return;
+        }
     }
-    size_t bytes = w * h * 4 * sizeof(float);
-    if (bytes <= numBytes_)
-        cudaMemcpy(mappedBuf_, gpuMat.getPtr<sl::float4>(sl::MEM::GPU), bytes, cudaMemcpyDeviceToDevice);
+
+    // Map/unmap every frame to avoid GL/CUDA contention stalls
+    if (!isMapped_) {
+        cudaError_t e = cudaGraphicsMapResources(1, &bufferCuda_, 0);
+        if (e != cudaSuccess) {
+            cudaGetLastError();
+            return;
+        }
+        isMapped_ = true;
+    }
+
+    void* ptr = nullptr;
+    size_t mappedBytes = 0;
+    cudaError_t e = cudaGraphicsResourceGetMappedPointer(&ptr, &mappedBytes, bufferCuda_);
+    if (e != cudaSuccess) {
+        cudaGraphicsUnmapResources(1, &bufferCuda_, 0);
+        isMapped_ = false;
+        cudaGetLastError();
+        return;
+    }
+
+    if (bytes <= mappedBytes) {
+        const sl::float4* src = matLidar.getPtr<sl::float4>(sl::MEM::GPU);
+        e = cudaMemcpy(ptr, src, bytes, cudaMemcpyDeviceToDevice);
+        if (e != cudaSuccess)
+            cudaGetLastError();
+    }
+
+    e = cudaGraphicsUnmapResources(1, &bufferCuda_, 0);
+    isMapped_ = false;
+    if (e != cudaSuccess)
+        cudaGetLastError();
 }
 
 void PointCloud::ingest() {
     if (!initialized_)
         return;
     std::lock_guard<std::mutex> lk(mtx_);
-    ensureGLInit();
-    if (!glReady_)
+    if (!glReady_) // GL resources created by draw() in paintGL
         return;
-    cudaMemcpyAsync(mappedBuf_, matGPU_.getPtr<sl::float4>(sl::MEM::GPU), numBytes_, cudaMemcpyDeviceToDevice, strm_);
+    // Non-blocking: if the stream is still busy (e.g. ZED depth-inference
+    // running), skip this frame rather than blocking the UI thread with
+    // cudaStreamSynchronize.  The mapped GL buffer keeps the previous
+    // frame's data — visually identical at 40 fps.
+    if (strm_ && cudaStreamQuery(strm_) == cudaErrorNotReady) {
+        cudaGetLastError(); // clear the not-ready status
+        return;
+    }
+    if (isMapped_ && mappedBuf_)
+        cudaMemcpyAsync(mappedBuf_, matGPU_.getPtr<sl::float4>(sl::MEM::GPU), numBytes_, cudaMemcpyDeviceToDevice, strm_);
+    // No cudaStreamSynchronize — the copy is serialised on strm_ and will
+    // complete before the next retrieveMeasure on the same stream.
+    // Blocking here would stall the UI thread for the full inference time.
 }
 
-void PointCloud::draw() {
+bool PointCloud::readBack(std::vector<sl::float4>& out) {
+    std::lock_guard<std::mutex> lk(mtx_);
+    if (!initialized_ || !glReady_ || width_ * height_ == 0)
+        return false;
+
+    bool needUnmap = false;
+    void* srcPtr = mappedBuf_;
+
+    if (!isMapped_) {
+        if (!bufferCuda_)
+            return false;
+        cudaError_t e = cudaGraphicsMapResources(1, &bufferCuda_, 0);
+        if (e != cudaSuccess)
+            return false;
+        size_t bytes = 0;
+        e = cudaGraphicsResourceGetMappedPointer(&srcPtr, &bytes, bufferCuda_);
+        if (e != cudaSuccess) {
+            cudaGraphicsUnmapResources(1, &bufferCuda_, 0);
+            return false;
+        }
+        needUnmap = true;
+    } else {
+        // If already mapped, use existing pointer (mappedBuf_)
+        // But update srcPtr just in case mappedBuf_ is stale (though it shouldn't be if isMapped_ is true)
+        if (!srcPtr) {
+            size_t bytes = 0;
+            cudaGraphicsResourceGetMappedPointer(&srcPtr, &bytes, bufferCuda_);
+        }
+    }
+
+    out.resize(width_ * height_);
+    cudaError_t err = cudaMemcpy(out.data(), srcPtr, width_ * height_ * 4 * sizeof(float), cudaMemcpyDeviceToHost);
+
+    if (needUnmap) {
+        cudaGraphicsUnmapResources(1, &bufferCuda_, 0);
+    }
+
+    return (err == cudaSuccess);
+}
+
+void PointCloud::draw(int step) {
     if (!initialized_)
         return;
     std::lock_guard<std::mutex> lk(mtx_);
     ensureGLInit();
     if (!glReady_)
         return;
-    QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
+    auto* ctx = QOpenGLContext::currentContext();
+    if (!ctx)
+        return;
+    QOpenGLFunctions* f = ctx->functions();
     glBindBuffer(GL_ARRAY_BUFFER, bufferGL_);
     f->glEnableVertexAttribArray(0);
-    f->glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
-    glDrawArrays(GL_POINTS, 0, width_ * height_);
+    int total = width_ * height_;
+    if (step <= 1) {
+        f->glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
+        glDrawArrays(GL_POINTS, 0, total);
+    } else {
+        // Stride = step * sizeof(float4) skips (step-1) points between each drawn vertex
+        GLsizei stride = step * 4 * sizeof(float);
+        f->glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, stride, 0);
+        glDrawArrays(GL_POINTS, 0, total / step);
+    }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
@@ -373,6 +504,7 @@ GlViewer::~GlViewer() {
     delete shaderPC_;
     delete camera_;
     delete grid_;
+    delete pickMarkers_;
 }
 
 void GlViewer::createShader(const char* vs, const char* fs, QOpenGLShaderProgram** out) {
@@ -417,6 +549,10 @@ void GlViewer::initializeGL() {
     createShader(VERTEX_SHADER, FRAGMENT_SHADER, &shaderSimple_);
     createShader(PC_VERTEX_SHADER, PC_FRAGMENT_SHADER, &shaderPC_);
     buildGrid();
+
+    pickMarkers_ = new Simple3DObject();
+    pickMarkers_->setStatic(false);
+    pickMarkers_->setDrawingType(GL_TRIANGLES);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -468,9 +604,19 @@ void GlViewer::paintGL() {
         QVector3D clr(s.color.x, s.color.y, s.color.z);
         shaderPC_->setUniformValue("u_color", clr);
         shaderPC_->setUniformValue("u_isLidar", s.isLidar);
-        s.pointCloud.draw();
+        s.pointCloud.draw(densityStep_);
     }
     shaderPC_->release();
+
+    // Draw pick markers
+    if (pickMarkers_) {
+        pickMarkers_->pushToGPU();
+        shaderSimple_->bind();
+        shaderSimple_->setUniformValue("u_mvpMatrix", vp);
+        shaderSimple_->setUniformValue("pointsize", 8.0f);
+        pickMarkers_->draw();
+        shaderSimple_->release();
+    }
 }
 
 void GlViewer::resizeGL(int w, int h) {
@@ -555,10 +701,19 @@ void GlViewer::updateLidarCloud(int id, sl::Mat& gpuPC) {
     auto it = sensors_.find(id);
     if (it == sensors_.end())
         return;
+    // upload() may do GL calls (resize buffer) — ensure context is current
+    if (context())
+        makeCurrent();
+    else
+        return;
+
     it->second.pointCloud.upload(gpuPC);
 }
 
 void GlViewer::removeSensor(int id) {
+    // PointCloud destructor does GL/CUDA cleanup — need a current context
+    if (context())
+        makeCurrent();
     sensors_.erase(id);
 }
 void GlViewer::hideSensor(int id, bool hide) {
@@ -570,6 +725,17 @@ void GlViewer::hideSensor(int id, bool hide) {
 // ─── Mouse / Keyboard ───────────────────────────────────────────────────────
 
 void GlViewer::mousePressEvent(QMouseEvent* e) {
+    // Shift+Click picks a point on any sensor cloud
+    if ((e->button() == Qt::LeftButton) && (e->modifiers() & Qt::ShiftModifier)) {
+        sl::float3 worldPt;
+        int sensorId = pickPoint(e->pos().x(), e->pos().y(), worldPt);
+        if (sensorId >= 0) {
+            emit pointPicked(sensorId, worldPt.x, worldPt.y, worldPt.z);
+        } else {
+            std::cout << "Pick: no point found near click" << std::endl;
+        }
+        return;
+    }
     if (e->buttons() & (Qt::LeftButton | Qt::RightButton)) {
         capturedMouse_ = true;
         lastMouse_ = sl::float2(e->pos().x(), e->pos().y());
@@ -637,4 +803,131 @@ void GlViewer::rotateCamera() {
 void GlViewer::translateCamera() {
     camera_->translate(camera_->getRight() * tracking_.x * MOUSE_T_SENSITIVITY);
     camera_->translate(camera_->getUp() * tracking_.y * MOUSE_T_SENSITIVITY);
+}
+
+// ─── Pick markers ─────────────────────────────────────────────────────────
+
+void GlViewer::clearPickMarkers() {
+    if (pickMarkers_)
+        pickMarkers_->clear();
+}
+
+void GlViewer::addPickMarker(sl::float3 pos, sl::float3 color, int /*label*/) {
+    if (!pickMarkers_)
+        return;
+    // Draw a large octahedron at 'pos' with bright color
+    float sz = 0.15f;
+    sl::float3 t(pos.x, pos.y + sz, pos.z);
+    sl::float3 b(pos.x, pos.y - sz, pos.z);
+    sl::float3 f(pos.x, pos.y, pos.z - sz);
+    sl::float3 k(pos.x, pos.y, pos.z + sz);
+    sl::float3 l(pos.x - sz, pos.y, pos.z);
+    sl::float3 r(pos.x + sz, pos.y, pos.z);
+    sl::float3 clr0 = color; // full brightness on all faces
+    pickMarkers_->addFace(t, f, r, clr0, color);
+    pickMarkers_->addFace(t, r, k, clr0, color);
+    pickMarkers_->addFace(t, k, l, clr0, color);
+    pickMarkers_->addFace(t, l, f, clr0, color);
+    pickMarkers_->addFace(b, r, f, clr0, color);
+    pickMarkers_->addFace(b, k, r, clr0, color);
+    pickMarkers_->addFace(b, l, k, clr0, color);
+    pickMarkers_->addFace(b, f, l, clr0, color);
+}
+
+// ─── Download GPU point cloud to CPU ─────────────────────────────────────
+
+bool GlViewer::downloadPointCloud(int id, std::vector<sl::float4>& out) {
+    auto it = sensors_.find(id);
+    if (it == sensors_.end() || !it->second.pointCloud.initialized())
+        return false;
+    // Read back via CUDA — the GL buffer is permanently CUDA-mapped,
+    // so glGetBufferSubData would return garbage.
+    return it->second.pointCloud.readBack(out);
+}
+
+// ─── 3D point picking via screen-space projection ───────────────────────
+
+int GlViewer::pickPoint(int screenX, int screenY, sl::float3& outWorld) {
+    makeCurrent();
+
+    // View-projection matrix
+    sl::Transform vp = camera_->getViewProjectionMatrix();
+    float vpW = (float)width();
+    float vpH = (float)height();
+
+    // We'll search all visible sensors' point clouds for the *frontmost*
+    // point whose screen-space projection falls within a pixel radius.
+    int bestId = -1;
+    const float pickRadiusSq = 10.0f * 10.0f; // max 10px radius squared
+    float bestDepth = 1e9f;                   // NDC depth — smaller = closer
+    sl::float3 bestWorld;
+
+    for (auto& [id, s] : sensors_) {
+        if (!s.canDraw || !s.pointCloud.initialized())
+            continue;
+
+        // Download point cloud from GPU
+        std::vector<sl::float4> pts;
+        if (!downloadPointCloud(id, pts))
+            continue;
+
+        // Combined model-view-projection: VP * sensorPose
+        // sl::Transform stores row-major in m[16]
+        sl::Transform mvp;
+        // Multiply vp * s.pose
+        for (int r = 0; r < 4; r++)
+            for (int c = 0; c < 4; c++) {
+                float sum = 0;
+                for (int k = 0; k < 4; k++)
+                    sum += vp(r, k) * s.pose(k, c);
+                mvp(r, c) = sum;
+            }
+
+        // Subsample for speed: check every Nth point
+        int total = (int)pts.size();
+        int step = std::max(1, total / 200000);
+
+        for (int i = 0; i < total; i += step) {
+            float px = pts[i].x, py = pts[i].y, pz = pts[i].z;
+            // Skip invalid points
+            if (!std::isfinite(px) || !std::isfinite(py) || !std::isfinite(pz))
+                continue;
+            if (fabs(px) < 1e-6f && fabs(py) < 1e-6f && fabs(pz) < 1e-6f)
+                continue;
+
+            // Project: clip = MVP * [px,py,pz,1]
+            float cx = mvp(0, 0) * px + mvp(0, 1) * py + mvp(0, 2) * pz + mvp(0, 3);
+            float cy = mvp(1, 0) * px + mvp(1, 1) * py + mvp(1, 2) * pz + mvp(1, 3);
+            float cz = mvp(2, 0) * px + mvp(2, 1) * py + mvp(2, 2) * pz + mvp(2, 3);
+            float cw = mvp(3, 0) * px + mvp(3, 1) * py + mvp(3, 2) * pz + mvp(3, 3);
+
+            if (cw <= 0.001f)
+                continue; // behind camera
+
+            float ndcX = cx / cw;
+            float ndcY = cy / cw;
+            float depth = cz / cw;
+
+            // NDC to screen
+            float sx = (ndcX * 0.5f + 0.5f) * vpW;
+            float sy = (1.0f - (ndcY * 0.5f + 0.5f)) * vpH;
+
+            float dx = sx - (float)screenX;
+            float dy = sy - (float)screenY;
+            float distSq = dx * dx + dy * dy;
+
+            if (distSq < pickRadiusSq && depth < bestDepth) {
+                bestDepth = depth;
+                bestId = id;
+                // World position = pose * local position
+                bestWorld.x = s.pose(0, 0) * px + s.pose(0, 1) * py + s.pose(0, 2) * pz + s.pose(0, 3);
+                bestWorld.y = s.pose(1, 0) * px + s.pose(1, 1) * py + s.pose(1, 2) * pz + s.pose(1, 3);
+                bestWorld.z = s.pose(2, 0) * px + s.pose(2, 1) * py + s.pose(2, 2) * pz + s.pose(2, 3);
+            }
+        }
+    }
+
+    if (bestId >= 0)
+        outWorld = bestWorld;
+    return bestId;
 }

@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
 
     cout << "Object Detection: Loading Module..." << endl;
     returned_state = zed.enableObjectDetection(detection_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         cout << "Error " << returned_state << ", exit program.\n";
         zed.close();
         return EXIT_FAILURE;

@@ -27,7 +27,7 @@ bool ClientPublisher::open(sl::InputType input) {
 
     sl::PositionalTrackingParameters positional_tracking_parameters;
     state = zed.enablePositionalTracking(positional_tracking_parameters);
-    if (state != sl::ERROR_CODE::SUCCESS) {
+    if (state > sl::ERROR_CODE::SUCCESS) {
         std::cout << "Error: " << state << std::endl;
         return false;
     }

@@ -75,7 +75,7 @@ def sample_print(message: str, error_code = None, show_error_detail: bool = True
 
     line = f"{prefix}{err_tag}{message}"
 
-    if error_code is not None and error_code != sl.ERROR_CODE.SUCCESS and show_error_detail:
+    if error_code is not None and error_code > sl.ERROR_CODE.SUCCESS and show_error_detail:
         line += f" | {error_code.name}: {str(error_code)}"
 
     print(line)

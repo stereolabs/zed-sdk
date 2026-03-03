@@ -1,6 +1,6 @@
-# Yolov12 / v11 / v10 / v9 / v8 / v5 custom ONNX ran in the ZED SDK
+# YOLO26 / v12 / v11 / v10 / v9 / v8 / v5 custom ONNX ran in the ZED SDK
 
-This sample demonstrates how to use custom YOLO models (YOLOv5, YOLOv8, YOLOv9, YOLOv10, YOLOv11, YOLOv12) in ONNX format with the ZED SDK's internal preprocessing, inference engine (using the highly optimized TensorRT framework) and postprocessing for optimal performance.
+This sample demonstrates how to use custom YOLO models (YOLOv5, YOLOv8, YOLOv9, YOLOv10, YOLOv11, YOLOv12, YOLO26) in ONNX format with the ZED SDK's internal preprocessing, inference engine (using the highly optimized TensorRT framework) and postprocessing for optimal performance.
 
 The ZED SDK optimizes your model using TensorRT and provides 3D object detection capabilities including localization, 3D bounding boxes, and tracking.
 
@@ -34,11 +34,11 @@ This sample is expecting an ONNX exported using the original YOLO code. Please r
 ```sh
 ./yolo_onnx_zed [.onnx] [zed camera id / optional svo filepath]
 
-# For example yolo11m
-./yolo_onnx_zed yolo11m.onnx 0      # 0  for zed camera id 0
+# For example yolo26m
+./yolo_onnx_zed yolo26m.onnx 0      # 0  for zed camera id 0
 
 # With an SVO file
-./yolo_onnx_zed yolo11m.onnx ./foo.svo
+./yolo_onnx_zed yolo26m.onnx ./foo.svo
 ```
 
 ## Additional Resources

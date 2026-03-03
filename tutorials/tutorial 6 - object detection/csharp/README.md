@@ -40,7 +40,7 @@ Vector3 vec = Vector3.Zero;
 
 // Enable Tracking
 err = zedCamera.EnablePositionalTracking(ref quat, ref vec);
-if (err != ERROR_CODE.SUCCESS)
+if (err > ERROR_CODE.SUCCESS)
     Environment.Exit(-1);
 
 
@@ -49,7 +49,7 @@ ObjectDetectionParameters object_detection_parameters = new ObjectDetectionParam
 object_detection_parameters.detectionModel = sl.DETECTION_MODEL.MULTI_CLASS_BOX;
 object_detection_parameters.enableObjectTracking = true;
 err = zedCamera.EnableObjectDetection(ref object_detection_parameters);
-if (err != ERROR_CODE.SUCCESS)
+if (err > ERROR_CODE.SUCCESS)
     Environment.Exit(-1);
 ```
 

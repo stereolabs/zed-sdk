@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
     ptp.enable_imu_fusion = true;     // Enable IMU (for having the gravity direction)
     ptp.set_gravity_as_origin = true; // Set gravity as origin for allowing GNSS to Camera initialization
     auto positional_init = zed.enablePositionalTracking(ptp);
-    if (positional_init != sl::ERROR_CODE::SUCCESS) {
+    if (positional_init > sl::ERROR_CODE::SUCCESS) {
         std::cerr << "[ZED][ERROR] Can't start tracking of camera" << std::endl;
         return EXIT_FAILURE;
     }
@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
     communication_parameters.setForSharedMemory();
     zed.startPublishing(communication_parameters);
     /// Run a first grab for starting sending data:
-    while (zed.grab() != sl::ERROR_CODE::SUCCESS)
+    while (zed.grab() > sl::ERROR_CODE::SUCCESS)
         ;
 
     //////////////////////////////

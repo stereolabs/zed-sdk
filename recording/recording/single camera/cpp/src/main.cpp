@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
     recording_parameters.video_filename.set(argv[1]);
     recording_parameters.compression_mode = SVO_COMPRESSION_MODE::H265;
     returned_state = zed.enableRecording(recording_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("Recording ZED : ", returned_state);
         zed.close();
         return EXIT_FAILURE;
@@ -99,7 +99,7 @@ void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     else
         cout << " ";
     cout << msg_prefix << " ";
-    if (err_code != ERROR_CODE::SUCCESS) {
+    if (err_code > ERROR_CODE::SUCCESS) {
         cout << " | " << toString(err_code) << " : ";
         cout << toVerbose(err_code);
     }
@@ -128,6 +128,9 @@ void parseArgs(int argc, char** argv, sl::InitParameters& param) {
         } else if (arg.find("HD2K") != string::npos) {
             param.camera_resolution = RESOLUTION::HD2K;
             cout << "[Sample] Using Camera in resolution HD2K" << endl;
+        } else if (arg.find("HD1536") != string::npos) {
+            param.camera_resolution = RESOLUTION::HD1536;
+            cout << "[Sample] Using Camera in resolution HD1536" << endl;
         } else if (arg.find("HD1200") != string::npos) {
             param.camera_resolution = RESOLUTION::HD1200;
             cout << "[Sample] Using Camera in resolution HD1200" << endl;
@@ -140,6 +143,9 @@ void parseArgs(int argc, char** argv, sl::InitParameters& param) {
         } else if (arg.find("SVGA") != string::npos) {
             param.camera_resolution = RESOLUTION::SVGA;
             cout << "[Sample] Using Camera in resolution SVGA" << endl;
+        } else if (arg.find("XVGA") != string::npos) {
+            param.camera_resolution = static_cast<sl::RESOLUTION>((int)RESOLUTION::HD1536 + 100);
+            cout << "[Sample] Using Camera in resolution XVGA" << endl;
         } else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;

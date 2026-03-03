@@ -22,7 +22,7 @@ namespace sl {
             // Enable positional tracking
             PositionalTrackingParameters trackingParams = new PositionalTrackingParameters();
             err = zedCamera.EnablePositionalTracking(ref trackingParams);
-            if (err != ERROR_CODE.SUCCESS) {
+            if (err > ERROR_CODE.SUCCESS) {
                 Console.WriteLine("ERROR in Enable Tracking. Exiting...");
                 Environment.Exit(-1);
             }
@@ -37,7 +37,7 @@ namespace sl {
             object_detection_parameters.enableObjectTracking = true;
 
             err = zedCamera.EnableObjectDetection(ref object_detection_parameters);
-            if (err != ERROR_CODE.SUCCESS) {
+            if (err > ERROR_CODE.SUCCESS) {
                 Console.WriteLine("ERROR in Enable OD. Exiting...");
                 Environment.Exit(-1);
             }

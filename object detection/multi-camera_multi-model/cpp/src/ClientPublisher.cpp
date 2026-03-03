@@ -31,7 +31,7 @@ bool ClientPublisher::open(const sl::InputType& input, Trigger* ref) {
     sl::PositionalTrackingParameters positional_tracking_parameters;
     positional_tracking_parameters.set_as_static = true;
     state = zed.enablePositionalTracking(positional_tracking_parameters);
-    if (state != sl::ERROR_CODE::SUCCESS) {
+    if (state > sl::ERROR_CODE::SUCCESS) {
         std::cout << "Error: " << state << std::endl;
         return false;
     }
@@ -85,7 +85,7 @@ bool ClientPublisher::open(const sl::InputType& input, Trigger* ref) {
     for (auto const& params : object_detection_parameters) {
         state = zed.enableObjectDetection(params.second);
         std::cout << "Enabling " << params.second.detection_model << " " << state << std::endl;
-        if (state != sl::ERROR_CODE::SUCCESS) {
+        if (state > sl::ERROR_CODE::SUCCESS) {
             std::cout << "Error: " << state << std::endl;
             return false;
         }

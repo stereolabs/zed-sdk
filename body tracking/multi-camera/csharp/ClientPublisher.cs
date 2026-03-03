@@ -72,7 +72,7 @@ class ClientPublisher {
         PositionalTrackingParameters positionalTrackingParameters = new PositionalTrackingParameters();
         err = zedCamera.EnablePositionalTracking(ref positionalTrackingParameters);
 
-        if (err != ERROR_CODE.SUCCESS) {
+        if (err > ERROR_CODE.SUCCESS) {
             Console.WriteLine("ERROR while enable the positional tracking module. Exiting...");
             Environment.Exit(-1);
         }
@@ -88,7 +88,7 @@ class ClientPublisher {
         bodyTrackingParameters.allowReducedPrecisionInference = true;
         err = zedCamera.EnableBodyTracking(ref bodyTrackingParameters);
 
-        if (err != ERROR_CODE.SUCCESS) {
+        if (err > ERROR_CODE.SUCCESS) {
             Console.WriteLine("ERROR while enable the body tracking module. Exiting...");
             Environment.Exit(-1);
         }
@@ -105,7 +105,7 @@ class ClientPublisher {
             sl.CommunicationParameters communicationParameters = new sl.CommunicationParameters();
             communicationParameters.communicationType = sl.COMM_TYPE.INTRA_PROCESS;
             ERROR_CODE err = zedCamera.StartPublishing(ref communicationParameters);
-            if (err != ERROR_CODE.SUCCESS) {
+            if (err > ERROR_CODE.SUCCESS) {
                 Console.WriteLine("ERROR while startPublishing" + err + " . Exiting...");
                 Environment.Exit(-1);
             }

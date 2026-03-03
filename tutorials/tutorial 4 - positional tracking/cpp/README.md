@@ -60,7 +60,7 @@ Once the camera is opened, we must enable the positional tracking module in orde
 // Enable positional tracking with default parameters
 sl::PositionalTrackingParameters tracking_parameters;
 err = zed.enablePositionalTracking(tracking_parameters);
-if (err != ERROR_CODE::SUCCESS)
+if (err > ERROR_CODE::SUCCESS)
     exit(-1);
 ```
 

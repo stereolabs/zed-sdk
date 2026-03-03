@@ -181,7 +181,7 @@ int main(int argc, char** argv) {
             if (health.low_motion_sensors_reliability)
                 std::cout << "Low motion sensors reliability - ";
             std::cout << std::endl;
-        } else if (returned_state != ERROR_CODE::SUCCESS)
+        } else if (returned_state > ERROR_CODE::SUCCESS)
             std::cout << "returned_state " << returned_state << std::endl;
         int current_value = 10;
         zed.getCameraSettings(VIDEO_SETTINGS::EXPOSURE, current_value);
@@ -333,7 +333,7 @@ void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     else
         cout << " ";
     cout << msg_prefix << " ";
-    if (err_code != ERROR_CODE::SUCCESS) {
+    if (err_code > ERROR_CODE::SUCCESS) {
         cout << " | " << toString(err_code) << " : ";
         cout << toVerbose(err_code);
     }

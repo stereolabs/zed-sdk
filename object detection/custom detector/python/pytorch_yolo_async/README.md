@@ -1,6 +1,6 @@
 # PyTorch YOLO Async Detector
 
-This sample demonstrates asynchronous object detection using the official PyTorch implementation of YOLO (YOLOv8, v9, v10, v11, v12) with a ZED camera. The asynchronous processing improves performance by running inference in parallel with camera capture.
+This sample demonstrates asynchronous object detection using the official PyTorch implementation of YOLO (YOLOv8, v9, v10, v11, v12, v26) with a ZED camera. The asynchronous processing improves performance by running inference in parallel with camera capture.
 
 ## Features
 
@@ -38,7 +38,7 @@ python detector.py --weights yolov8m.pt [--img_size 512 --conf_thres 0.1 --svo p
 
 ## Training Custom Models
 
-This sample supports any model trained with YOLO (YOLOv8, v9, v10, v11, v12), including custom trained models. For training on custom datasets, see the [Ultralytics Training Guide](https://docs.ultralytics.com/tutorials/train-custom-datasets/).
+This sample supports any model trained with YOLO (YOLOv8, v9, v10, v11, v12, v26), including custom trained models. For training on custom datasets, see the [Ultralytics Training Guide](https://docs.ultralytics.com/tutorials/train-custom-datasets/).
 
 ## Additional Resources
 

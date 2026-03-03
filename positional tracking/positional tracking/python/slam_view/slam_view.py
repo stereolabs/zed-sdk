@@ -256,10 +256,10 @@ class SLAMView:
         self._camera_path.draw()
 
         if self._landmark_mode:
-            glPointSize(3.0)
+            glPointSize(1.5)
             self._landmarks.draw()
 
-        glPointSize(2.0)
+        glPointSize(1.0)
 
         transformed_pose = vp_matrix @ self._pose_transform.m
         glUniformMatrix4fv(self._mvp_matrix, 1, GL_TRUE, transformed_pose)

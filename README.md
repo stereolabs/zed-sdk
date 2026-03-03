@@ -32,9 +32,13 @@
 
 ---
 
-:tada: The **ZED SDK 5.1** is released!
+:tada: The **ZED SDK 5.2** is released!
 
-**ZED SDK 5.1** introduces a fully reworked **image capture** and **recording** pipeline delivering **stability**, **maximum performance**, and **reliability**. It adds **Jetson Thor support**, delivering up to **2.5× higher performance**. An **extra-close depth range** is now supported. **Streaming latency** is significantly reduced, ensuring smoother real-time operation. A redesigned **Virtual Stereo workflow for ZED X One** now achieves up to **60% lower CPU usage**. **OpenCV fisheye calibration** is now supported natively, and the new **ZED Studio** app unifies camera, stream, and SVO management. Improved **Positional Tracking** boosts **robustness**, introduces a **2D mode**, and refines **statuses**. Expanded support for **CUDA 13**, **JetPack 7**, **Python 3.14**, and **C++17/20** makes **ZED SDK 5.1** faster, more stable, and ready for the next generation of robotics and spatial AI.
+**ZED SDK 5.2** delivers major performance gains on Jetson with up to 85% lower CPU load, improved GMSL driver reliability at 200 Hz IMU rate, and sharper images in low-resolution modes. It adds support for an advanced zero-copy NV12 interface on Jetson.
+
+This release also introduces the new beta Sensors API (sl::Sensors), a unified interface for managing ZED cameras and Ouster LiDAR devices in a single pipeline — replacing the need for separate APIs and custom fusion code.
+
+This release adds support for JetPack 7.1 / L4T 38.4, unlocking hardware video encoding and decoding on Jetson Thor. Alongside these platform updates, version 5.2 brings important improvements to positional tracking robustness and the Python API, as well as numerous other bug fixes and feature enhancements across the SDK.
 
 Please check the [Release Notes](https://www.stereolabs.com/developers/release/) of the latest version for more details.
 

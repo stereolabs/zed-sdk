@@ -296,7 +296,7 @@ int main(int argc, char** argv) {
 
         ERROR_CODE status = zed.saveAreaMap(args.outputAreaFile.value().c_str());
 
-        if (status == ERROR_CODE::SUCCESS) {
+        if (status <= ERROR_CODE::SUCCESS) {
             AREA_EXPORTING_STATE exportState = zed.getAreaExportState();
 
             while (exportState == sl::AREA_EXPORTING_STATE::RUNNING) {
@@ -453,6 +453,9 @@ void printArgs(const Arguments& args) {
             case RESOLUTION::HD2K:
                 message += "HD2K";
                 break;
+            case RESOLUTION::HD1536:
+                message += "HD1536";
+                break;
             case RESOLUTION::HD1200:
                 message += "HD1200";
                 break;
@@ -554,7 +557,7 @@ void print(std::string message, std::optional<ERROR_CODE> errorCode, bool showEr
 
     std::cout << message;
 
-    if (errorCode && errorCode != ERROR_CODE::SUCCESS && showErrorDetail) {
+    if (errorCode && errorCode > ERROR_CODE::SUCCESS && showErrorDetail) {
         std::cout << " | " << toString(errorCode.value()) << ": " << toVerbose(errorCode.value());
     }
 

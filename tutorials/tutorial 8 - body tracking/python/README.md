@@ -60,7 +60,7 @@ Then we can start the module, it will load the model. This operation can take a 
 
 ```python
 err = zed.enable_body_tracking(body_params)
-if err != sl.ERROR_CODE.SUCCESS:
+if err > sl.ERROR_CODE.SUCCESS:
     print("Enable Body Tracking : "+repr(err)+". Exit program.")
     zed.close()
     exit()

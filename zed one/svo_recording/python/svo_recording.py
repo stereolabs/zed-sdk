@@ -59,7 +59,7 @@ def main(opt):
     # Enable recording
     recording_param = sl.RecordingParameters(opt.output_svo_file, sl.SVO_COMPRESSION_MODE.H265)
     err = cam.enable_recording(recording_param)
-    if err != sl.ERROR_CODE.SUCCESS:
+    if err > sl.ERROR_CODE.SUCCESS:
         print(f"Recording initialization error: {err}")
         cam.close()
         exit(1)

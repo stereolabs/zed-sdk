@@ -93,7 +93,7 @@ if __name__ == "__main__":
 
     positional_tracking_parameters = sl.PositionalTrackingParameters()
     error_code = zed.enable_positional_tracking(positional_tracking_parameters)
-    if(error_code != sl.ERROR_CODE.SUCCESS):
+    if(error_code > sl.ERROR_CODE.SUCCESS):
         print("Can't enable positionnal tracking: ", error_code)
 
     body_tracking_parameters = sl.BodyTrackingParameters()
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     body_tracking_parameters.enable_tracking = True
 
     error_code = zed.enable_body_tracking(body_tracking_parameters)
-    if(error_code != sl.ERROR_CODE.SUCCESS):
+    if(error_code > sl.ERROR_CODE.SUCCESS):
         print("Can't enable positionnal tracking: ", error_code)
 
 

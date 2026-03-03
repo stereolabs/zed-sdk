@@ -259,7 +259,7 @@ class MainWindow {
             // Retrieve Objects
             err = zedCamera.RetrieveObjects(ref objects, ref obj_runtime_parameters);
 
-            if (err == ERROR_CODE.SUCCESS && objects.isNew != 0) {
+            if (err <= ERROR_CODE.SUCCESS && objects.isNew != 0) {
                 // Retrieve left image
                 zedCamera.RetrieveMeasure(pointCloud, MEASURE.XYZRGBA, MEM.CPU, pcRes);
                 zedCamera.GetPosition(ref camWorldPose, REFERENCE_FRAME.WORLD);

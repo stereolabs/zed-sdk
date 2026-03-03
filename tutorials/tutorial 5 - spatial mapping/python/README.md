@@ -38,7 +38,7 @@ The spatial mapping needs the positional tracking to be activated. Therefore, as
 # Enable positional tracking with default parameters
 tracking_parameters = sl.PositionalTrackingParameters()
 err = zed.enable_positional_tracking(tracking_parameters)
-if (err != sl.ERROR_CODE.SUCCESS):
+if (err > sl.ERROR_CODE.SUCCESS):
     exit(-1)
 ```
 
@@ -49,7 +49,7 @@ Now that tracking is enabled, we need to enable the spatial mapping module. You 
 ```python
 mapping_parameters sl.SpatialMappingParameters()
 err = zed.enable_spatial_mapping(mapping_parameters)
-if (err != sl.ERROR_CODE.SUCCESS):
+if (err > sl.ERROR_CODE.SUCCESS):
     exit(-1)
 ```
 

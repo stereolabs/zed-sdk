@@ -41,7 +41,7 @@ def main():
     py_transform = sl.Transform()  # First create a Transform object for TrackingParameters object
     tracking_parameters = sl.PositionalTrackingParameters(_init_pos=py_transform)
     err = zed.enable_positional_tracking(tracking_parameters)
-    if err != sl.ERROR_CODE.SUCCESS:
+    if err > sl.ERROR_CODE.SUCCESS:
         print("Enable positional tracking : "+repr(err)+". Exit program.")
         zed.close()
         exit()

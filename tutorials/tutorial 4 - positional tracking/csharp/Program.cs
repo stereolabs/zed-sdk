@@ -22,7 +22,7 @@ namespace sl {
 
             PositionalTrackingParameters positionalTrackingParameters = new PositionalTrackingParameters();
             err = zedCamera.EnablePositionalTracking(ref positionalTrackingParameters);
-            if (err != ERROR_CODE.SUCCESS)
+            if (err > ERROR_CODE.SUCCESS)
                 Environment.Exit(-1);
 
             int i = 0;

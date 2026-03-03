@@ -182,7 +182,7 @@ namespace sl {
                 if (zedMat.IsInit()) {
                     // Retrieve left image
                     err = zedCamera.RetrieveImage(zedMat, sl.VIEW.LEFT, sl.MEM.CPU);
-                    if (err == ERROR_CODE.SUCCESS) {
+                    if (err <= ERROR_CODE.SUCCESS) {
                         // Retrieve Objects
                         zedCamera.RetrieveObjects(ref object_frame, ref obj_runtime_parameters);
 

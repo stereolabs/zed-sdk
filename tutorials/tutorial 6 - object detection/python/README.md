@@ -53,7 +53,7 @@ Then we can start the module, it will load the model. This operation can take a 
 
 ```python
 err = zed.enable_object_detection(obj_param)
-if err != sl.ERROR_CODE.SUCCESS :
+if err > sl.ERROR_CODE.SUCCESS :
     print (repr(err))
     zed.close()
     exit(1)

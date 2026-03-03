@@ -9,7 +9,7 @@ void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suff
     else
         cout << " ";
     cout << msg_prefix << " ";
-    if (err_code != sl::ERROR_CODE::SUCCESS) {
+    if (err_code > sl::ERROR_CODE::SUCCESS) {
         cout << " | " << toString(err_code) << " : ";
         cout << toVerbose(err_code);
     }

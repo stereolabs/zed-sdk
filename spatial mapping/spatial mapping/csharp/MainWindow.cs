@@ -75,10 +75,10 @@ namespace sl {
 
             // Enable tracking
             PositionalTrackingParameters positionalTrackingParameters = new PositionalTrackingParameters();
-            positionalTrackingParameters.mode = POSITIONAL_TRACKING_MODE.GEN_1;
+            positionalTrackingParameters.mode = POSITIONAL_TRACKING_MODE.GEN_3;
             err = zedCamera.EnablePositionalTracking(ref positionalTrackingParameters);
 
-            if (err != ERROR_CODE.SUCCESS) {
+            if (err > ERROR_CODE.SUCCESS) {
                 Console.WriteLine("Error while enabling tracking " + err.ToString() + " exitin...");
                 Environment.Exit(-1);
             }
@@ -203,13 +203,13 @@ namespace sl {
                         if (timer % 60 == 0 && viewer.chunksUpdated() == true) {
                             zedCamera.RequestSpatialMap();
                         }
-                        if (zedCamera.GetMeshRequestStatus() == ERROR_CODE.SUCCESS && timer > 0) {
+                        if (zedCamera.GetMeshRequestStatus() <= ERROR_CODE.SUCCESS && timer > 0) {
                             /// MAP_TYPE == MESH
                             if (CREATE_MESH) {
                                 // Retrieves data for mesh visualization only (vertices + triangles);
                                 err = zedCamera.RetrieveChunks(ref mesh);
 
-                                if (err == ERROR_CODE.SUCCESS) {
+                                if (err <= ERROR_CODE.SUCCESS) {
                                     var chunks = new List<Chunk>(mesh.chunks.Values);
                                     viewer.updateData(chunks);
                                 }
@@ -233,7 +233,7 @@ namespace sl {
 
                             err = zedCamera.EnableSpatialMapping(ref spatialMappingParameters);
 
-                            if (err != ERROR_CODE.SUCCESS) {
+                            if (err > ERROR_CODE.SUCCESS) {
                                 Console.WriteLine("Error while enabling mapping" + err.ToString() + " exitin...");
                                 Environment.Exit(-1);
                             }

@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
     }
     // Enable positional tracking:
     auto positional_init = zed.enablePositionalTracking();
-    if (positional_init != sl::ERROR_CODE::SUCCESS) {
+    if (positional_init > sl::ERROR_CODE::SUCCESS) {
         std::cerr << "[ZED][ERROR] Can't start tracking of camera" << std::endl;
         return EXIT_FAILURE;
     }

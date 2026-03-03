@@ -66,7 +66,7 @@ def __main(opt: argparse.Namespace):
     # If the camera is static in space, enabling this setting below provides better depth quality and faster computation
     # positional_tracking_parameters.set_as_static = True
     status = zed.enable_positional_tracking(positional_tracking_parameters)
-    if status != sl.ERROR_CODE.SUCCESS:
+    if status > sl.ERROR_CODE.SUCCESS:
         print(f"Positional Tracking enable : {repr(status)}. Exit program.")
         zed.close()
         exit()
@@ -80,7 +80,7 @@ def __main(opt: argparse.Namespace):
     obj_param.enable_tracking = True
     obj_param.enable_segmentation = False  # designed to give person pixel mask using Stereolabs internal models
     status = zed.enable_object_detection(obj_param)
-    if status != sl.ERROR_CODE.SUCCESS:
+    if status > sl.ERROR_CODE.SUCCESS:
         print(f"Object Detection enable : {repr(status)}. Exit program.")
         zed.close()
         exit()
@@ -145,7 +145,7 @@ def __main(opt: argparse.Namespace):
             break
 
         status = zed.retrieve_custom_objects(objects, detection_parameters_rt)
-        if status == sl.ERROR_CODE.SUCCESS:
+        if status <= sl.ERROR_CODE.SUCCESS:
             if not opt.disable_gui:
                 zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA, mem_type, pc_resolution)
                 zed.get_position(cam_w_pose, sl.REFERENCE_FRAME.WORLD)

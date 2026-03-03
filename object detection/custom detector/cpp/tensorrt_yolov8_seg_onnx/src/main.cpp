@@ -21,7 +21,7 @@ void print(std::string const& msg_prefix, sl::ERROR_CODE const err_code, std::st
     else
         std::cout << " ";
     std::cout << msg_prefix << " ";
-    if (err_code != sl::ERROR_CODE::SUCCESS) {
+    if (err_code > sl::ERROR_CODE::SUCCESS) {
         std::cout << " | " << err_code << ": ";
         std::cout << toVerbose(err_code);
     }
@@ -141,7 +141,7 @@ int main(int argc, char** argv) {
     detection_parameters.enable_segmentation = true;
     detection_parameters.detection_model = sl::OBJECT_DETECTION_MODEL::CUSTOM_BOX_OBJECTS;
     state = zed.enableObjectDetection(detection_parameters);
-    if (state != sl::ERROR_CODE::SUCCESS) {
+    if (state > sl::ERROR_CODE::SUCCESS) {
         std::cerr << "[ERROR] Enabling Object Detection: " << state << std::endl;
         zed.close();
         return EXIT_FAILURE;
@@ -178,6 +178,12 @@ int main(int argc, char** argv) {
     auto zed_cuda_stream = zed.getCUDAStream();
 
     sl::CustomObjectDetectionRuntimeParameters customObjectTracker_rt;
+    // Set a global confidence threshold for all custom classes
+    customObjectTracker_rt.object_detection_properties.detection_confidence_threshold = 50;
+    // Example: set per-class properties (e.g., class 0 = "person")
+    customObjectTracker_rt.object_class_detection_properties[0].detection_confidence_threshold = 40;
+    customObjectTracker_rt.object_class_detection_properties[0].is_grounded = true; // person moves on the ground plane
+
     while (key != 'q' && key != 27) {
         if (zed.grab() <= sl::ERROR_CODE::SUCCESS) {
             std::vector<seg::Object> objs;

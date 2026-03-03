@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
             viewer.updateImage(image);
 #if !AUTO_SEARCH
             if (tracking_state == POSITIONAL_TRACKING_STATE::SEARCHING_FLOOR_PLANE) {
-                if (zed.findFloorPlane(floor_plane, reset_tracking) == ERROR_CODE::SUCCESS) {
+                if (zed.findFloorPlane(floor_plane, reset_tracking) <= ERROR_CODE::SUCCESS) {
                     PositionalTrackingParameters tracking_parameters;
                     tracking_parameters.initial_world_transform = reset_tracking;
                     tracking_parameters.set_gravity_as_origin = false;

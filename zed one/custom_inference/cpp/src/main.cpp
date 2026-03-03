@@ -54,7 +54,7 @@ void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suff
     else
         std::cout << " ";
     std::cout << msg_prefix << " ";
-    if (err_code != sl::ERROR_CODE::SUCCESS) {
+    if (err_code > sl::ERROR_CODE::SUCCESS) {
         std::cout << " | " << toString(err_code) << " : ";
         std::cout << toVerbose(err_code);
     }
@@ -183,7 +183,7 @@ int main(int argc, char** argv) {
     std::thread detection_thread(run_detector);
 
     while (1) {
-        if (zed.grab() == sl::ERROR_CODE::SUCCESS) {
+        if (zed.grab() <= sl::ERROR_CODE::SUCCESS) {
             // Retrieve pre-processed tensor for inference (replaces blobFromImage)
             zed.retrieveTensor(input_tensor, tensor_params, detector.stream);
 

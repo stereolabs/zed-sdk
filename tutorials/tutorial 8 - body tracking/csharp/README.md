@@ -64,7 +64,7 @@ Then we can start the module, it will load the model. This operation can take a 
 ```C#
 Console.WriteLine("Object Detection: Loading Module...");
 err = zedCamera.EnableObjectDetection(ref object_detection_parameters);
-if (err != ERROR_CODE.SUCCESS)
+if (err > ERROR_CODE.SUCCESS)
     Environment.Exit(-1);
 ```
 

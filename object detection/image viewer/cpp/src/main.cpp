@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
     // If the camera is static, uncomment the following line to have better performances.
     // positional_tracking_parameters.set_as_static = true;
     returned_state = zed.enablePositionalTracking(positional_tracking_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("enable Positional Tracking", returned_state, "\nExit program.");
         zed.close();
         return EXIT_FAILURE;
@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
         = isJetson ? OBJECT_DETECTION_MODEL::MULTI_CLASS_BOX_FAST : OBJECT_DETECTION_MODEL::MULTI_CLASS_BOX_ACCURATE;
 
     returned_state = zed.enableObjectDetection(obj_det_params);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("enable Object Detection", returned_state, "\nExit program.");
         zed.close();
         return EXIT_FAILURE;
@@ -162,6 +162,9 @@ void parseArgs(int argc, char** argv, InitParameters& param) {
         } else if (arg.find("SVGA") != string::npos) {
             param.camera_resolution = RESOLUTION::SVGA;
             cout << "[Sample] Using Camera in resolution SVGA" << endl;
+        } else if (arg.find("XVGA") != string::npos) {
+            param.camera_resolution = static_cast<sl::RESOLUTION>((int)RESOLUTION::HD1536 + 100);
+            cout << "[Sample] Using Camera in resolution XVGA" << endl;
         } else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;
@@ -176,7 +179,7 @@ void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     else if (err_code < ERROR_CODE::SUCCESS)
         cout << "[Warning] ";
     cout << " " << msg_prefix << " ";
-    if (err_code != ERROR_CODE::SUCCESS) {
+    if (err_code > ERROR_CODE::SUCCESS) {
         cout << " | " << toString(err_code) << " : ";
         cout << toVerbose(err_code);
     }

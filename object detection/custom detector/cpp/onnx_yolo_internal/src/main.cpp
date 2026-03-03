@@ -56,7 +56,7 @@ void print(const std::string& msg_prefix, const sl::ERROR_CODE err_code, const s
     else if (err_code < sl::ERROR_CODE::SUCCESS)
         std::cout << "[Warning] ";
     std::cout << msg_prefix << " ";
-    if (err_code != sl::ERROR_CODE::SUCCESS) {
+    if (err_code > sl::ERROR_CODE::SUCCESS) {
         std::cout << " | " << toString(err_code) << " : ";
         std::cout << toVerbose(err_code);
     }
@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
     detection_parameters.custom_onnx_file.set(argv[1U]);
     detection_parameters.custom_onnx_dynamic_input_shape = sl::Resolution(320, 320); // Provide resolution for dynamic shape model
     const sl::ERROR_CODE od_ret = zed.enableObjectDetection(detection_parameters);
-    if (od_ret != sl::ERROR_CODE::SUCCESS) {
+    if (od_ret > sl::ERROR_CODE::SUCCESS) {
         print("enableObjectDetection", od_ret, "\nExit program.");
         zed.close();
         return EXIT_FAILURE;

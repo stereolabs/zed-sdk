@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
 
     while (frame_count < 150) {
         // A new image is available if read() returns ERROR_CODE::SUCCESS
-        if (zed.read() == ERROR_CODE::SUCCESS) {
+        if (zed.read() <= ERROR_CODE::SUCCESS) {
             // Retrieve left image
             zed.retrieveImage(image, VIEW::LEFT);
             frame_count++;

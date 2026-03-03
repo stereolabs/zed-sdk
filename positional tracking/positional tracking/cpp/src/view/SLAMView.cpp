@@ -302,13 +302,13 @@ void SLAMView::display() {
     _cameraPath.draw();
 
     if (_landmarkMode) {
-        glPointSize(3.f);
+        glPointSize(1.5f);
         _landmarks.draw();
         glLineWidth(2.f);
         _keyframes.draw();
     }
 
-    glPointSize(2.f);
+    glPointSize(1.f);
 
     sl::Transform transformedPose = vpMatrix * _poseTransform;
     glUniformMatrix4fv(_shader.MVPM, 1, GL_TRUE, transformedPose.m);

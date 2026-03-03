@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
     detection_parameters.batch_parameters.latency = 3.f;
 #endif
     returned_state = zed.enableObjectDetection(detection_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("enableObjectDetection", returned_state, "\nExit program.");
         zed.close();
         return EXIT_FAILURE;
@@ -189,7 +189,7 @@ int main(int argc, char** argv) {
 
             // check if bacthed trajectories are available
             std::vector<sl::ObjectsBatch> objectsBatch;
-            if (zed.getObjectsBatch(objectsBatch) == sl::ERROR_CODE::SUCCESS) {
+            if (zed.getObjectsBatch(objectsBatch) <= sl::ERROR_CODE::SUCCESS) {
                 if (objectsBatch.size()) {
                     std::cout << "During last batch processing: " << id_counter.size() << " Object were detected: ";
                     for (auto it : id_counter)
@@ -270,7 +270,7 @@ void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     else if (err_code < ERROR_CODE::SUCCESS)
         cout << "[Warning] ";
     cout << msg_prefix << " ";
-    if (err_code != ERROR_CODE::SUCCESS) {
+    if (err_code > ERROR_CODE::SUCCESS) {
         cout << " | " << toString(err_code) << " : ";
         cout << toVerbose(err_code);
     }
@@ -312,6 +312,9 @@ void parseArgs(int argc, char** argv, InitParameters& param) {
         } else if (arg.find("SVGA") != string::npos) {
             param.camera_resolution = RESOLUTION::SVGA;
             cout << "[Sample] Using Camera in resolution SVGA" << endl;
+        } else if (arg.find("XVGA") != string::npos) {
+            param.camera_resolution = static_cast<sl::RESOLUTION>((int)RESOLUTION::HD1536 + 100);
+            cout << "[Sample] Using Camera in resolution XVGA" << endl;
         } else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;

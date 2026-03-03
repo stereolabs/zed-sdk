@@ -81,7 +81,7 @@ def main(opt):
                 cam.retrieve_image(mat)
                 filepath = "capture_" + str(svo_position) + ".png"
                 img = mat.write(filepath)
-                if img == sl.ERROR_CODE.SUCCESS:
+                if img <= sl.ERROR_CODE.SUCCESS:
                     print("Saved image : ",filepath)
                 else:
                     print("Something wrong happened in image saving... ")

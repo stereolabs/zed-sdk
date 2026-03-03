@@ -79,7 +79,7 @@ Then we can start the module, it will load the model. This operation can take a 
 ```cpp
 cout << "Body Tracking: Loading Module..." << endl;
 returned_state = zed.enableBodyTracking(detection_parameters);
-if (returned_state != ERROR_CODE::SUCCESS) {
+if (returned_state > ERROR_CODE::SUCCESS) {
 	cout << "Error " << returned_state << ", exit program.\n";
 	zed.close();
 	return EXIT_FAILURE;

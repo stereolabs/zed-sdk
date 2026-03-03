@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
     // Enable positional tracking with default parameters. Positional tracking needs to be enabled before using spatial mapping
     sl::PositionalTrackingParameters tracking_parameters;
     returned_state = zed.enablePositionalTracking(tracking_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         cout << "Error " << returned_state << ", exit program.\n";
         return EXIT_FAILURE;
     }
@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
     // Enable spatial mapping
     sl::SpatialMappingParameters mapping_parameters;
     returned_state = zed.enableSpatialMapping(mapping_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         cout << "Error " << returned_state << ", exit program.\n";
         return EXIT_FAILURE;
     }

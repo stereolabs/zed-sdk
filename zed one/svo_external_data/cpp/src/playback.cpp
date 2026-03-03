@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
     std::cout << "Reading all external data..." << std::endl;
     auto err = zed.retrieveSVOData("TEST", data_map);
 
-    if (err == ERROR_CODE::SUCCESS && !data_map.empty()) {
+    if (err <= ERROR_CODE::SUCCESS && !data_map.empty()) {
         std::cout << "Found " << data_map.size() << " data entries:\n" << std::endl;
 
         int count = 0;

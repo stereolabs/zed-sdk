@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
         stream_params.port = atoi(argv[2]);
 
     returned_state = zed.enableStreaming(stream_params);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("Streaming initialization error: ", returned_state);
         return EXIT_FAILURE;
     }
@@ -94,7 +94,7 @@ void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     else
         cout << " ";
     cout << msg_prefix << " ";
-    if (err_code != ERROR_CODE::SUCCESS) {
+    if (err_code > ERROR_CODE::SUCCESS) {
         cout << " | " << toString(err_code) << " : ";
         cout << toVerbose(err_code);
     }
@@ -135,6 +135,9 @@ int parseArgs(int argc, char** argv, sl::InitParameters& param) {
         } else if (arg.find("SVGA") != string::npos) {
             param.camera_resolution = RESOLUTION::SVGA;
             cout << "[Sample] Using Camera in resolution SVGA" << endl;
+        } else if (arg.find("XVGA") != string::npos) {
+            param.camera_resolution = static_cast<sl::RESOLUTION>((int)RESOLUTION::HD1536 + 100);
+            cout << "[Sample] Using Camera in resolution XVGA" << endl;
         } else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;

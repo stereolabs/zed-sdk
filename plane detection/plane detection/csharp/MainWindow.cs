@@ -196,7 +196,7 @@ namespace sl {
                                 (float)userAction.hitCoord.Y * (float)zedCamera.ImageHeight
                             );
                             findPlaneStatus = zedCamera.FindPlaneAtHit(ref plane, imageClick, ref planeDetectionParameters);
-                            if (findPlaneStatus == ERROR_CODE.SUCCESS) {
+                            if (findPlaneStatus <= ERROR_CODE.SUCCESS) {
                                 zedCamera.convertHitPlaneToMesh(planeMeshVertices, planeMeshTriangles, out nbVertices, out nbTriangles);
                             }
                             userAction.clear();
@@ -208,13 +208,13 @@ namespace sl {
                             Vector3 priorTrans = Vector3.Zero;
                             findPlaneStatus = zedCamera.findFloorPlane(ref plane, out float playerHeight, priorQuat, priorTrans);
 
-                            if (findPlaneStatus == ERROR_CODE.SUCCESS) {
+                            if (findPlaneStatus <= ERROR_CODE.SUCCESS) {
                                 zedCamera.convertFloorPlaneToMesh(planeMeshVertices, planeMeshTriangles, out nbVertices, out nbTriangles);
                             }
                             userAction.clear();
                         }
                     }
-                    if (findPlaneStatus == ERROR_CODE.SUCCESS) {
+                    if (findPlaneStatus <= ERROR_CODE.SUCCESS) {
                         viewer.updateMesh(
                             planeMeshVertices,
                             planeMeshTriangles,

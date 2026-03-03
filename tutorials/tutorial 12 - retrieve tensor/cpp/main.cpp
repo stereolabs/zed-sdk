@@ -29,7 +29,7 @@
 void saveNCHWBGRTensorAsPNG(sl::Tensor& tensor, const std::string& filename, const sl::TensorParameters& params) {
     // 1. Download data from GPU to CPU
     sl::ERROR_CODE err = tensor.updateCPUfromGPU();
-    if (err != sl::ERROR_CODE::SUCCESS) {
+    if (err > sl::ERROR_CODE::SUCCESS) {
         std::cerr << "Failed to download tensor from GPU: " << err << std::endl;
         return;
     }
@@ -87,7 +87,7 @@ void saveNCHWBGRTensorAsPNG(sl::Tensor& tensor, const std::string& filename, con
 
     // Save as PNG
     err = output.write(filename.c_str());
-    if (err == sl::ERROR_CODE::SUCCESS) {
+    if (err <= sl::ERROR_CODE::SUCCESS) {
         std::cout << "  Saved: " << filename << std::endl;
     } else {
         std::cerr << "  Failed to save " << filename << ": " << err << std::endl;
@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
 
     // Open the camera
     sl::ERROR_CODE err = zed.open(init_parameters);
-    if (err != sl::ERROR_CODE::SUCCESS) {
+    if (err > sl::ERROR_CODE::SUCCESS) {
         std::cout << "Error " << err << ", exit program." << std::endl;
         return EXIT_FAILURE;
     }
@@ -138,7 +138,7 @@ int main(int argc, char** argv) {
             // Retrieve pre-processed tensor for inference
             sl::ERROR_CODE res = zed.retrieveTensor(tensor, tensor_params);
 
-            if (res == sl::ERROR_CODE::SUCCESS) {
+            if (res <= sl::ERROR_CODE::SUCCESS) {
                 if (frame_count % 10 == 0) {
                     std::cout << "Frame " << frame_count << ":" << std::endl;
 

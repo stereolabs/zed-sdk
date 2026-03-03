@@ -14,6 +14,7 @@
 
 #include <unordered_map>
 #include <mutex>
+#include <vector>
 
 // ─── Utility ─────────────────────────────────────────────────────────────────
 
@@ -77,11 +78,23 @@ public:
     // Copy from shared ref mat  (ZED)
     void ingest();
 
-    void draw();
+    void draw(int step = 1);
 
     bool initialized() const {
         return initialized_;
     }
+    GLuint glBuffer() const {
+        return bufferGL_;
+    }
+    int pcWidth() const {
+        return width_;
+    }
+    int pcHeight() const {
+        return height_;
+    }
+
+    // Read point cloud data back from GPU to host via CUDA
+    bool readBack(std::vector<sl::float4>& out);
 
 private:
     void ensureGLInit(); // lazily creates GL/CUDA resources
@@ -91,12 +104,15 @@ private:
     std::mutex mtx_;
     sl::Mat matGPU_; // shared ref for ZED
     bool initialized_ = false;
-    bool glReady_ = false; // true once GL resources are created
-    bool ownsRef_ = false; // true for LiDAR (initSized)
+    bool glReady_ = false;  // true once GL resources are created
+    bool ownsRef_ = false;  // true for LiDAR (initSized)
+    bool isMapped_ = false; // true if CUDA resource is mapped
     size_t numBytes_ = 0;
     float* mappedBuf_ = nullptr;
     GLuint bufferGL_ = 0;
     cudaGraphicsResource* bufferCuda_ = nullptr;
+
+    sl::Mat matLidar;
 };
 
 // ─── CameraGL (3D viewport camera) ──────────────────────────────────────────
@@ -197,8 +213,21 @@ public:
     void drawColors(bool s) {
         drawColors_ = s;
     }
+    void setDensity(int step) {
+        densityStep_ = std::max(1, step);
+    }
+
+    // Point picking
+    void clearPickMarkers();
+    void addPickMarker(sl::float3 pos, sl::float3 color, int label);
+
+    // Get CPU-side point cloud for a sensor (downloads from GPU)
+    bool downloadPointCloud(int id, std::vector<sl::float4>& out);
 
     void resetView();
+
+signals:
+    void pointPicked(int sensorId, float x, float y, float z);
 
 protected:
     void initializeGL() override;
@@ -220,6 +249,7 @@ private:
     bool canDraw_ = false;
     float ptSize_ = 2.5f;
     bool drawColors_ = true;
+    int densityStep_ = 1; // draw every Nth point (1 = full density)
 
     sl::float2 tracking_, lastMouse_, currMouse_;
     bool capturedMouse_ = false;
@@ -228,8 +258,12 @@ private:
     QOpenGLShaderProgram* shaderSimple_ = nullptr;
     QOpenGLShaderProgram* shaderPC_ = nullptr;
     Simple3DObject* grid_ = nullptr;
+    Simple3DObject* pickMarkers_ = nullptr; // 3D spheres at picked points
 
     std::unordered_map<int, SensorRenderData> sensors_;
+
+    // Pick helpers
+    int pickPoint(int screenX, int screenY, sl::float3& outWorld);
 };
 
 #endif // GL_VIEWER_H

@@ -71,7 +71,7 @@ Then we can start the module, it will load the model. This operation can take a 
 ```cpp
 std::cout << "Object Detection: Loading Module..." << std::endl;
 zed_error = zed.enableObjectDetection(detection_parameters);
-if (zed_error != ERROR_CODE::SUCCESS) {
+if (zed_error > ERROR_CODE::SUCCESS) {
 	std::cout << "Error " << zed_error << ", exit program.\n";
 	zed.close();
 	return 1;

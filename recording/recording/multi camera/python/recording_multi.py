@@ -90,7 +90,7 @@ def open_camera(zed, sn, camera_fps=30):
     output_svo_file = f"{zed.get_camera_information().camera_model}_SN{sn}.svo2"
     recording_param = sl.RecordingParameters(output_svo_file.replace(' ', ''), sl.SVO_COMPRESSION_MODE.H265)
     record_err = zed.enable_recording(recording_param)
-    if record_err == sl.ERROR_CODE.SUCCESS:
+    if record_err <= sl.ERROR_CODE.SUCCESS:
         print(f"{zed.get_camera_information().camera_model}_SN{sn} Enabled recording")
     else:
         print(f"ZED SN{sn} Recording initialization error: {record_err}")

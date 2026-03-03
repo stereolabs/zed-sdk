@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
     tracking_parameters.set_floor_as_origin = true;
     returned_state = zed.enablePositionalTracking(tracking_parameters);
 
-    if (returned_state != sl::ERROR_CODE::SUCCESS) {
+    if (returned_state > sl::ERROR_CODE::SUCCESS) {
         std::cout << "Error " << returned_state << ", exit program.\n";
         return EXIT_FAILURE;
     }
@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
     // Only HUMAN_BODY_X models are compatible.
     body_tracking_parameters.detection_model = sl::BODY_TRACKING_MODEL::HUMAN_BODY_ACCURATE;
     returned_state = zed.enableBodyTracking(body_tracking_parameters);
-    if (returned_state != sl::ERROR_CODE::SUCCESS) {
+    if (returned_state > sl::ERROR_CODE::SUCCESS) {
         std::cout << "Error enable OD" << returned_state << ", exit program.\n";
         zed.close();
         return EXIT_FAILURE;

@@ -26,7 +26,7 @@ namespace sl {
             PositionalTrackingParameters trackingParams = new PositionalTrackingParameters();
             // If you want to have body tracking you need to enable positional tracking first
             err = zedCamera.EnablePositionalTracking(ref trackingParams);
-            if (err != ERROR_CODE.SUCCESS) {
+            if (err > ERROR_CODE.SUCCESS) {
                 Console.WriteLine("ERROR in Enable Tracking. Exiting...");
                 Environment.Exit(-1);
             }
@@ -41,7 +41,7 @@ namespace sl {
             // track detects object across time and space
             body_tracking_parameters.enableObjectTracking = true;
             err = zedCamera.EnableBodyTracking(ref body_tracking_parameters);
-            if (err != ERROR_CODE.SUCCESS) {
+            if (err > ERROR_CODE.SUCCESS) {
                 Console.WriteLine("ERROR in EnableBodyTracking. Exiting...");
                 Environment.Exit(-1);
             }

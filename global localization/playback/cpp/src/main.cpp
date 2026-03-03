@@ -108,7 +108,7 @@ int main(int argc, char** argv) {
         std::cout << "Loading Region of interest file" << std::endl;
         sl::Mat mask_roi;
         auto err = mask_roi.read(mask_file.c_str());
-        if (err == sl::ERROR_CODE::SUCCESS)
+        if (err <= sl::ERROR_CODE::SUCCESS)
             zed.setRegionOfInterest(mask_roi, {sl::MODULE::ALL});
         else
             std::cout << "Error loading Region of Interest file: " << err << std::endl;
@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
     sl::PositionalTrackingParameters pose_tracking_params;
     pose_tracking_params.enable_area_memory = false;
     auto positional_init = zed.enablePositionalTracking(pose_tracking_params);
-    if (positional_init != sl::ERROR_CODE::SUCCESS) {
+    if (positional_init > sl::ERROR_CODE::SUCCESS) {
         std::cerr << "[ZED][ERROR] Can't start tracking of camera" << std::endl;
         return EXIT_FAILURE;
     }

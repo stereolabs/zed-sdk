@@ -250,7 +250,7 @@ def main(args: Arguments) -> int:
 
         status = zed.save_area_map(args.output_area_file)
 
-        if status == sl.ERROR_CODE.SUCCESS:
+        if status <= sl.ERROR_CODE.SUCCESS:
             export_state = zed.get_area_export_state()
 
             while export_state == sl.AREA_EXPORTING_STATE.RUNNING:

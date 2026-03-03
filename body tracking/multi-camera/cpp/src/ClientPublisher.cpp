@@ -31,7 +31,7 @@ bool ClientPublisher::open(sl::InputType input, Trigger* ref, int sdk_gpu_id) {
     positional_tracking_parameters.set_as_static = true;
 
     state = zed.enablePositionalTracking(positional_tracking_parameters);
-    if (state != sl::ERROR_CODE::SUCCESS) {
+    if (state > sl::ERROR_CODE::SUCCESS) {
         std::cout << "Error: " << state << std::endl;
         return false;
     }
@@ -44,7 +44,7 @@ bool ClientPublisher::open(sl::InputType input, Trigger* ref, int sdk_gpu_id) {
     body_tracking_parameters.enable_body_fitting = false;
     body_tracking_parameters.enable_tracking = false;
     state = zed.enableBodyTracking(body_tracking_parameters);
-    if (state != sl::ERROR_CODE::SUCCESS) {
+    if (state > sl::ERROR_CODE::SUCCESS) {
         std::cout << "Error: " << state << std::endl;
         return false;
     }

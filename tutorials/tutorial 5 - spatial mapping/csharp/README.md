@@ -45,7 +45,7 @@ The spatial mapping needs the positional tracking to be activated. Therefore, as
 ```csharp
 sl.PositionalTrackingParameters tracking_parameters = new sl.PositionalTrackingParameters();
 err = zed.EnablePositionalTracking(ref tracking_parameters);
-if (err != ERROR_CODE.SUCCESS)
+if (err > ERROR_CODE.SUCCESS)
     exit(-1);
 ```
 
@@ -56,7 +56,7 @@ Now that tracking is enabled, we need to enable the spatial mapping module. You 
 ```csharp
 sl.SpatialMappingParameters mapping_parameters = new sl.SpatialMappingParameters();
 err = zed.EnableSpatialMapping(ref mapping_parameters);
-if (err != ERROR_CODE.SUCCESS)
+if (err > ERROR_CODE.SUCCESS)
     exit(-1);
 ```
 

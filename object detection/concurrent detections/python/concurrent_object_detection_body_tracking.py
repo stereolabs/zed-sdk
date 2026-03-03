@@ -152,7 +152,7 @@ def main(opt):
             image_render_left = image_left.get_data()            
             np.copyto(image_left_ocv,image_render_left)
             
-            if (returned_state == sl.ERROR_CODE.SUCCESS and objects.is_new):
+            if (returned_state <= sl.ERROR_CODE.SUCCESS and objects.is_new):
                 # Retrieve point cloud
                 zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA, mem_type, point_cloud_res)
                 # Retrieve image
@@ -167,7 +167,7 @@ def main(opt):
                 # 2D rendering
                 cv_viewer.render_2D(image_left_ocv, image_scale, objects, obj_param.enable_tracking)
 
-            if (returned_state2 == sl.ERROR_CODE.SUCCESS and bodies.is_new):
+            if (returned_state2 <= sl.ERROR_CODE.SUCCESS and bodies.is_new):
                 cv_viewer.render_2D_SK(image_left_ocv, image_scale, bodies.body_list, obj_param.enable_tracking, sl.BODY_FORMAT.BODY_18)
 
             cv2.imshow("ZED | Body tracking and Object detection", image_left_ocv)

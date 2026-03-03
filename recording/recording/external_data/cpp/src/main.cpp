@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
     recording_parameters.video_filename.set(argv[1]);
     recording_parameters.compression_mode = SVO_COMPRESSION_MODE::H265;
     returned_state = zed.enableRecording(recording_parameters);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("Recording ZED : ", returned_state);
         zed.close();
         return EXIT_FAILURE;
@@ -112,7 +112,7 @@ void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {
     else
         cout << " ";
     cout << msg_prefix << " ";
-    if (err_code != ERROR_CODE::SUCCESS) {
+    if (err_code > ERROR_CODE::SUCCESS) {
         cout << " | " << toString(err_code) << " : ";
         cout << toVerbose(err_code);
     }

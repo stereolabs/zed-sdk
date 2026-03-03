@@ -1,6 +1,6 @@
 # ONNX YOLO Internal Detector
 
-This sample demonstrates how to use custom YOLO models (YOLOv5, YOLOv8, YOLOv9, YOLOv10, YOLOv11, YOLOv12) in ONNX format with the ZED SDK's internal preprocessing, inference engine (using the highly optimized TensorRT framework) and postprocessing for optimal performance.
+This sample demonstrates how to use custom YOLO models (YOLOv5, YOLOv8, YOLOv9, YOLOv10, YOLOv11, YOLOv12, YOLO26) in ONNX format with the ZED SDK's internal preprocessing, inference engine (using the highly optimized TensorRT framework) and postprocessing for optimal performance.
 
 The ZED SDK optimizes your model using TensorRT and provides 3D object detection capabilities including localization, 3D bounding boxes, and tracking.
 
@@ -15,7 +15,7 @@ The ZED SDK optimizes your model using TensorRT and provides 3D object detection
 ## Prerequisites
 
 - [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://www.stereolabs.com/docs/development/python/install)
-- ONNX model file (YOLOv5, YOLOv8, YOLOv9, YOLOv10, YOLOv11 or YOLOv12)
+- ONNX model file (YOLOv5, YOLOv8, YOLOv9, YOLOv10, YOLOv11, YOLOv12 or YOLO26)
 
 ## Training Custom Models
 

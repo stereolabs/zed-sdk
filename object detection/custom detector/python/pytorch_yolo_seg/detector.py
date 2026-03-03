@@ -69,8 +69,8 @@ def detections_to_custom_masks_(dets: Results) -> List[sl.CustomMaskObjectData]:
         abcd = xywh2abcd_(xywh)
 
         obj.bounding_box_2d = abcd
-        obj.label = box.cls
-        obj.probability = box.conf
+        obj.label = int(box.cls.item())
+        obj.probability = box.conf.item()
         obj.is_grounded = False
 
         # Mask
@@ -205,6 +205,13 @@ def main_(args: argparse.Namespace):
     # Prepare runtime retrieval
     runtime_params = sl.RuntimeParameters()
     obj_runtime_param = sl.CustomObjectDetectionRuntimeParameters()
+    # Set a global confidence threshold for all custom classes
+    obj_runtime_param.object_detection_properties.detection_confidence_threshold = 50
+    # Example: set per-class properties (e.g., class 0 = "person")
+    person_props = sl.CustomObjectDetectionProperties()
+    person_props.detection_confidence_threshold = 40
+    person_props.is_grounded = True  # person moves on the ground plane
+    obj_runtime_param.object_class_detection_properties = {0: person_props}
     cam_w_pose = sl.Pose()
     image_left_tmp = sl.Mat(0, 0, sl.MAT_TYPE.U8_C4, mem_type)
     objects = sl.Objects()

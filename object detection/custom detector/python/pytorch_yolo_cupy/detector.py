@@ -89,8 +89,8 @@ def detections_to_custom_box(detections, original_shape, img_size):
         # Creating ingestable objects for the ZED SDK
         obj = sl.CustomBoxObjectData()
         obj.bounding_box_2d = xywh2abcd(transformed_xywh)
-        obj.label = det.cls
-        obj.probability = det.conf
+        obj.label = int(det.cls.item())
+        obj.probability = det.conf.item()
         obj.is_grounded = False
         output.append(obj)
     return output

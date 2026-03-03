@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
 
     // Enable streaming
     returned_state = zed.enableStreaming(stream_params);
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         print("Streaming initialization error", returned_state);
         zed.close();
         return EXIT_FAILURE;

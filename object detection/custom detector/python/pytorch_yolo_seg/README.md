@@ -1,6 +1,6 @@
 # PyTorch YOLO Segmentation Detector
 
-This sample demonstrates instance segmentation using the official PyTorch implementation of YOLO segmentation models (YOLOv8-seg, YOLOv9-seg, YOLO11-seg) with a ZED camera. The detected instances are ingested into the ZED SDK to extract 3D information and tracking.
+This sample demonstrates instance segmentation using the official PyTorch implementation of YOLO segmentation models (YOLOv8-seg, YOLOv9-seg, YOLO11-seg, YOLO26-seg) with a ZED camera. The detected instances are ingested into the ZED SDK to extract 3D information and tracking.
 
 ## Features
 
@@ -38,7 +38,7 @@ python detector.py --weights yolov8s-seg.pt [--img_size 640 --conf_thres 0.4 --s
 
 ## Training Custom Models
 
-This sample supports any model trained with YOLO segmentation (YOLOv8-seg, YOLOv9-seg, YOLO11-seg), including custom trained models. For training on custom datasets, see the [Ultralytics Training Guide](https://docs.ultralytics.com/tutorials/train-custom-datasets/).
+This sample supports any model trained with YOLO segmentation (YOLOv8-seg, YOLOv9-seg, YOLO11-seg, YOLO26-seg), including custom trained models. For training on custom datasets, see the [Ultralytics Training Guide](https://docs.ultralytics.com/tutorials/train-custom-datasets/).
 
 ## Additional Resources
 

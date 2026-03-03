@@ -57,8 +57,8 @@ def detections_to_custom_box(detections):
         # Creating ingestable objects for the ZED SDK
         obj = sl.CustomBoxObjectData()
         obj.bounding_box_2d = xywh2abcd(xywh)
-        obj.label = det.cls
-        obj.probability = det.conf
+        obj.label = int(det.cls.item())
+        obj.probability = det.conf.item()
         obj.is_grounded = False
         output.append(obj)
     return output
@@ -146,6 +146,13 @@ def main(opt):
 
     objects = sl.Objects()
     obj_runtime_param = sl.CustomObjectDetectionRuntimeParameters()
+    # Set a global confidence threshold for all custom classes
+    obj_runtime_param.object_detection_properties.detection_confidence_threshold = 50
+    # Example: set per-class properties (e.g., class 0 = "person")
+    person_props = sl.CustomObjectDetectionProperties()
+    person_props.detection_confidence_threshold = 40
+    person_props.is_grounded = True  # person moves on the ground plane
+    obj_runtime_param.object_class_detection_properties = {0: person_props}
 
     # Display
     camera_infos = zed.get_camera_information()

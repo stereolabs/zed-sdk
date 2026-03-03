@@ -63,7 +63,7 @@ In this tutorial, we grab 100 not synchronized data
         # Depending on your Camera model or its firmware, differents sensors are presents.
         # They do not run at the same rate: Therefore, to do not miss samples we iterate as fast as we can and compare timestamp to know when a sensors_data is a new one
         # NOTE: There is no need to acquire images with grab() function. Sensors sensors_data are running in a separated internal capture thread.
-        if zed.get_sensors_data(sensors_data, sl.TIME_REFERENCE.CURRENT) == sl.ERROR_CODE.SUCCESS :
+        if zed.get_sensors_data(sensors_data, sl.TIME_REFERENCE.CURRENT) <= sl.ERROR_CODE.SUCCESS :
 
             [...]
 ```

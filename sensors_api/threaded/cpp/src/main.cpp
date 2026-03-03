@@ -485,7 +485,7 @@ void zedWorkerThread(
         std::lock_guard<std::mutex> lock(g_deviceOpenMutex);
         err = camera.open(initParams);
     }
-    if (err != sl::ERROR_CODE::SUCCESS) {
+    if (err > sl::ERROR_CODE::SUCCESS) {
         std::cerr << "[ZED " << state.id << "] Failed to open: " << err << std::endl;
         state.running = false;
         return;
@@ -509,7 +509,7 @@ void zedWorkerThread(
         trackingParams.set_as_static = true;
         trackingParams.set_gravity_as_origin = true;
         auto trackErr = camera.enablePositionalTracking(trackingParams);
-        if (trackErr != sl::ERROR_CODE::SUCCESS) {
+        if (trackErr > sl::ERROR_CODE::SUCCESS) {
             std::cerr << "[ZED " << state.id << "] Warning: Failed to enable tracking: " << trackErr << std::endl;
         }
     }
@@ -521,7 +521,7 @@ void zedWorkerThread(
         odParams.enable_tracking = true;
         odParams.enable_segmentation = false;
         auto odErr = camera.enableObjectDetection(odParams);
-        if (odErr != sl::ERROR_CODE::SUCCESS) {
+        if (odErr > sl::ERROR_CODE::SUCCESS) {
             std::cerr << "[ZED " << state.id << "] Failed to enable OD: " << odErr << std::endl;
             enableOD = false;
         } else {
@@ -538,7 +538,7 @@ void zedWorkerThread(
         btParams.enable_body_fitting = true;
         btParams.enable_segmentation = false;
         auto btErr = camera.enableBodyTracking(btParams);
-        if (btErr != sl::ERROR_CODE::SUCCESS) {
+        if (btErr > sl::ERROR_CODE::SUCCESS) {
             std::cerr << "[ZED " << state.id << "] Failed to enable BT: " << btErr << std::endl;
             enableBT = false;
         } else {
@@ -575,7 +575,7 @@ void zedWorkerThread(
                 recParams.video_filename = sl::String(recordingPath.c_str());
                 recParams.compression_mode = sl::SVO_COMPRESSION_MODE::H265;
                 auto recErr = camera.enableRecording(recParams);
-                if (recErr == sl::ERROR_CODE::SUCCESS) {
+                if (recErr <= sl::ERROR_CODE::SUCCESS) {
                     isRecording = true;
                     std::cout << "[ZED " << state.id << "] Recording to: " << recordingPath << std::endl;
                 } else {
@@ -596,7 +596,7 @@ void zedWorkerThread(
             state.endOfFile = true;
             break;
         }
-        if (grabErr != sl::ERROR_CODE::SUCCESS) {
+        if (grabErr > sl::ERROR_CODE::SUCCESS) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             continue;
         }
@@ -688,7 +688,7 @@ void lidarWorkerThread(
         std::lock_guard<std::mutex> lock(g_deviceOpenMutex);
         err = lidar.open(initParams);
     }
-    if (err != sl::ERROR_CODE::SUCCESS) {
+    if (err > sl::ERROR_CODE::SUCCESS) {
         std::cerr << "[LiDAR " << state.id << "] Failed to open: " << err << std::endl;
         state.running = false;
         return;
@@ -719,7 +719,7 @@ void lidarWorkerThread(
                 sl::RecordingLidarParameters recParams;
                 recParams.output_filename = recordingPath;
                 auto recErr = lidar.enableRecording(recParams);
-                if (recErr == sl::ERROR_CODE::SUCCESS) {
+                if (recErr <= sl::ERROR_CODE::SUCCESS) {
                     isRecording = true;
                     std::cout << "[LiDAR " << state.id << "] Recording to: " << recordingPath << std::endl;
                 } else {
@@ -740,7 +740,7 @@ void lidarWorkerThread(
             state.endOfFile = true;
             break;
         }
-        if (grabErr != sl::ERROR_CODE::SUCCESS) {
+        if (grabErr > sl::ERROR_CODE::SUCCESS) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             continue;
         }

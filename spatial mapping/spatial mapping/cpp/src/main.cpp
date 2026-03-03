@@ -159,7 +159,7 @@ int main(int argc, char** argv) {
                     }
 
                     // If the point cloud is ready to be retrieved
-                    if (zed.getSpatialMapRequestStatusAsync() == ERROR_CODE::SUCCESS && !request_new_mesh) {
+                    if (zed.getSpatialMapRequestStatusAsync() <= ERROR_CODE::SUCCESS && !request_new_mesh) {
                         zed.retrieveSpatialMapAsync(map);
                         viewer.updateMap(map);
                         request_new_mesh = true;
@@ -218,6 +218,9 @@ void parse_args(int argc, char** argv, InitParameters& param, sl::Mat& roi) {
         } else if (arg.find("SVGA") != string::npos) {
             param.camera_resolution = RESOLUTION::SVGA;
             cout << "[Sample] Using Camera in resolution SVGA" << endl;
+        } else if (arg.find("XVGA") != string::npos) {
+            param.camera_resolution = static_cast<sl::RESOLUTION>((int)RESOLUTION::HD1536 + 100);
+            cout << "[Sample] Using Camera in resolution XVGA" << endl;
         } else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;
@@ -237,7 +240,7 @@ void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suff
     else
         cout << " ";
     cout << msg_prefix << " ";
-    if (err_code != sl::ERROR_CODE::SUCCESS) {
+    if (err_code > sl::ERROR_CODE::SUCCESS) {
         cout << " | " << toString(err_code) << " : ";
         cout << toVerbose(err_code);
     }

@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
     tracking_parameters.set_floor_as_origin = true;
     returned_state = zed.enablePositionalTracking(tracking_parameters);
 
-    if (returned_state != ERROR_CODE::SUCCESS) {
+    if (returned_state > ERROR_CODE::SUCCESS) {
         cout << "Error " << returned_state << ", exit program.\n";
         return EXIT_FAILURE;
     }

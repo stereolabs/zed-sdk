@@ -111,12 +111,12 @@ int main(int argc, char** argv) {
                     // Update pose data (used for projection of the mesh over the current image)
                     Transform resetTrackingFloorFrame;
                     find_plane_status = zed.findFloorPlane(plane, resetTrackingFloorFrame);
-                    if (find_plane_status != ERROR_CODE::SUCCESS)
+                    if (find_plane_status > ERROR_CODE::SUCCESS)
                         std::cout << "No plane found" << std::endl;
                     ts_last = chrono::high_resolution_clock::now();
                 }
 
-                if (find_plane_status == ERROR_CODE::SUCCESS) {
+                if (find_plane_status <= ERROR_CODE::SUCCESS) {
                     mesh = plane.extractMesh();
                     viewer.updateMesh(mesh, plane.type);
                 }

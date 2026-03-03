@@ -120,7 +120,7 @@ int main(int argc, char** argv) {
         // and compare timestamps to determine when a given sensor's data has been updated.
         // NOTE: There is no need to acquire images with grab(). getSensorsData runs in a separate internal capture thread.
         sl::ERROR_CODE r = zed.getSensorsData(sensors_data, TIME_REFERENCE::CURRENT);
-        if (r == ERROR_CODE::SUCCESS) {
+        if (r <= ERROR_CODE::SUCCESS) {
             // Check if a new IMU sample is available. IMU is the sensor with the highest update frequency.
             if (ts.isNew(sensors_data.imu)) {
                 cout << "Sample " << count++ << "\n";

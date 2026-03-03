@@ -17,7 +17,7 @@ cpp/
 ## Implementation Variants
 
 ### 1. **(RECOMMENDED) onnx_yolo_internal**
-- **Models Supported**: YOLOv5, v8, v9, v10, v11, v12 (ONNX format)
+- **Models Supported**: YOLOv5, v8, v9, v10, v11, v12, v26 (ONNX format)
 - **Features**: Uses ZED SDK's internal inference engine, preprocessing and postprocessing with a custom onnx yolo-like model
 
 ### 2. **opencv_dnn_yolov4**

@@ -58,7 +58,7 @@ void print(std::string msg_prefix, sl::ERROR_CODE err_code, std::string msg_suff
     else
         std::cout << " ";
     std::cout << msg_prefix << " ";
-    if (err_code != sl::ERROR_CODE::SUCCESS) {
+    if (err_code > sl::ERROR_CODE::SUCCESS) {
         std::cout << " | " << toString(err_code) << " : ";
         std::cout << toVerbose(err_code);
     }
@@ -176,7 +176,7 @@ int main(int argc, char** argv) {
     detection_parameters.enable_segmentation = false; // designed to give person pixel mask with internal OD
     detection_parameters.detection_model = sl::OBJECT_DETECTION_MODEL::CUSTOM_BOX_OBJECTS;
     returned_state = zed.enableObjectDetection(detection_parameters);
-    if (returned_state != sl::ERROR_CODE::SUCCESS) {
+    if (returned_state > sl::ERROR_CODE::SUCCESS) {
         print("enableObjectDetection", returned_state, "\nExit program.");
         zed.close();
         return EXIT_FAILURE;
@@ -218,7 +218,7 @@ int main(int argc, char** argv) {
     std::thread detection_thread(run_detector);
 
     while (viewer.isAvailable()) {
-        if (zed.grab() == sl::ERROR_CODE::SUCCESS) {
+        if (zed.grab() <= sl::ERROR_CODE::SUCCESS) {
             // Retrieve pre-processed tensor for inference (replaces blobFromImage)
             zed.retrieveTensor(input_tensor, tensor_params, detector.stream);
 

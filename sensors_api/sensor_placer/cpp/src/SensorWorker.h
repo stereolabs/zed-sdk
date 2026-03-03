@@ -95,7 +95,7 @@ private:
     std::string ip_;
     sl::Mat pointCloud_; // GPU, F32_C4
     sl::Mat lidarPC_;    // GPU, for LiDAR grab results
-    sl::Resolution pcRes_ {720, 404};
+    sl::Resolution pcRes_ {512, 288};
 
     std::thread worker_;
     std::atomic<bool> running_ {false};
