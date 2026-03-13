@@ -80,6 +80,7 @@ SLAMView::SLAMView(int argc, char** argv, sl::Mat* frame, sl::Mat* pointCloud, C
     , _pointCloudMode(true)
     , _landmarkMode(false)
     , _followMode(false)
+    , _startTime(std::chrono::steady_clock::now())
     , _cudaStream(cudaStream)
     , _frameTextureID(0) {
 
@@ -467,12 +468,28 @@ void SLAMView::renderPositionalTrackingStatus() {
 
     renderText(statusValueX, startY - 2 * verticalSpacing, font, statusColor, odometryStatusText);
 
-    // Pose transform
-    renderText(startX, startY - 4 * verticalSpacing, font, textColor, "Translation (m):");
-    renderText(statusValueX, startY - 4 * verticalSpacing, font, textColor, formatNumericText(_poseTransform.getTranslation()));
+    // Up time
+    {
+        auto elapsed = std::chrono::steady_clock::now() - _startTime;
+        auto totalSeconds = std::chrono::duration_cast<std::chrono::seconds>(elapsed).count();
+        int hours = totalSeconds / 3600;
+        int minutes = (totalSeconds % 3600) / 60;
+        int seconds = totalSeconds % 60;
 
-    renderText(startX, startY - 5 * verticalSpacing, font, textColor, "Rotation   (rad):");
-    renderText(statusValueX, startY - 5 * verticalSpacing, font, textColor, formatNumericText(_poseTransform.getRotationVector()));
+        std::stringstream uptimeStream;
+        uptimeStream << std::setfill('0') << std::setw(2) << hours << ":" << std::setfill('0') << std::setw(2) << minutes << ":"
+                     << std::setfill('0') << std::setw(2) << seconds;
+
+        renderText(startX, startY - 4 * verticalSpacing, font, textColor, "Up Time:");
+        renderText(statusValueX, startY - 4 * verticalSpacing, font, textColor, uptimeStream.str());
+    }
+
+    // Pose transform
+    renderText(startX, startY - 6 * verticalSpacing, font, textColor, "Translation (m):");
+    renderText(statusValueX, startY - 6 * verticalSpacing, font, textColor, formatNumericText(_poseTransform.getTranslation()));
+
+    renderText(startX, startY - 7 * verticalSpacing, font, textColor, "Rotation   (rad):");
+    renderText(statusValueX, startY - 7 * verticalSpacing, font, textColor, formatNumericText(_poseTransform.getRotationVector()));
 
     // Restore matrices
     glMatrixMode(GL_PROJECTION);

@@ -55,7 +55,6 @@ int main(int argc, char** argv) {
         // Create ZED objects
         auto zed = std::make_shared<Camera>();
         InitParameters init_parameters;
-        init_parameters.svo_real_time_mode = true;
         init_parameters.input.setFromSVOFile(argv[i]);
         init_parameters.depth_mode = sl::DEPTH_MODE::NONE;
 

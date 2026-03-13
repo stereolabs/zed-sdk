@@ -150,7 +150,7 @@ def main_(args: argparse.Namespace):
     input_type = sl.InputType()
     if args.svo is not None:
         input_type.set_from_svo_file(args.svo)
-    init_params = sl.InitParameters(input_t=input_type, svo_real_time_mode=True)
+    init_params = sl.InitParameters(input_t=input_type)
     init_params.coordinate_units = sl.UNIT.METER
     init_params.depth_mode = sl.DEPTH_MODE.NEURAL  # QUALITY
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP

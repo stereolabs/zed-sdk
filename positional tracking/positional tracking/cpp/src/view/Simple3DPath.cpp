@@ -30,7 +30,18 @@ Simple3DPath::~Simple3DPath() {
 
 void Simple3DPath::addPoint(const sl::float3& pt) {
     _points.push_back(pt);
+
+    // Prevent unbounded memory growth by trimming old points
+    if (_maxPoints > 0 && _points.size() > _maxPoints) {
+        size_t excess = _points.size() - _maxPoints;
+        _points.erase(_points.begin(), _points.begin() + excess);
+    }
+
     _needsUpdate = true;
+}
+
+void Simple3DPath::setMaxPoints(size_t maxPoints) {
+    _maxPoints = maxPoints;
 }
 
 void Simple3DPath::setColor(const sl::float4& color) {

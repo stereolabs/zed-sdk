@@ -33,7 +33,6 @@ init_param.camera_device_id = camera_id;
 init_param.camera_image_flip = SL_FLIP_MODE_AUTO;
 init_param.camera_disable_self_calib = false;
 init_param.enable_image_enhancement = true;
-init_param.svo_real_time_mode = true;
 init_param.depth_mode = SL_DEPTH_MODE_NEURAL;
 init_param.depth_stabilization = 30;
 init_param.depth_maximum_distance = 40;

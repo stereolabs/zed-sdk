@@ -89,6 +89,11 @@ void Simple3DObject::clear() {
     vertices_.clear();
     colors_.clear();
     indices_.clear();
+
+    // Release allocated memory since this object will be rebuilt from scratch
+    vertices_.shrink_to_fit();
+    colors_.shrink_to_fit();
+    indices_.shrink_to_fit();
 }
 
 void Simple3DObject::setDrawingType(GLenum type) {

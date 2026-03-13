@@ -39,7 +39,7 @@ def main(opt):
     filepath = opt.input_svo_file # Path to the .svo file to be playbacked
     input_type = sl.InputType()
     input_type.set_from_svo_file(filepath)  #Set init parameter to run from the .svo 
-    init = sl.InitParameters(input_t=input_type, svo_real_time_mode=False)
+    init = sl.InitParameters(input_t=input_type)
     init.depth_mode = sl.DEPTH_MODE.NEURAL 
     cam = sl.Camera()
     status = cam.open(init)

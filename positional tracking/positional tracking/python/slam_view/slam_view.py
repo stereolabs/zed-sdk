@@ -19,6 +19,7 @@
 ###########################################################################
 
 from enum import Enum
+import time
 import numpy as np
 import pyzed.sl as sl
 
@@ -99,6 +100,8 @@ class SLAMView:
         self._frame_texture_id = 0
         self._pose_transform = sl.Transform()
         self._positional_tracking_status = sl.PositionalTrackingStatus()
+
+        self._start_time = time.monotonic()
 
         self._mouse_button_pressed = False
         self._ctrl_pressed = False
@@ -396,12 +399,23 @@ class SLAMView:
 
         self._render_text(status_value_x, start_y - 2 * vertical_spacing, FONT, status_color, odometry_status_text)
 
-        # Pose transform
-        self._render_text(start_x, start_y - 4 * vertical_spacing, FONT, text_color, "Translation (m):")
-        self._render_text(status_value_x, start_y - 4 * vertical_spacing, FONT, text_color, self._format_numeric_text(self._pose_transform.get_translation().get()))
+        # Up time
+        elapsed = time.monotonic() - self._start_time
+        total_seconds = int(elapsed)
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+        uptime_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
-        self._render_text(start_x, start_y - 5 * vertical_spacing, FONT, text_color, "Rotation   (rad):")
-        self._render_text(status_value_x, start_y - 5 * vertical_spacing, FONT, text_color, self._format_numeric_text(self._pose_transform.get_rotation_vector()))
+        self._render_text(start_x, start_y - 4 * vertical_spacing, FONT, text_color, "Up Time:")
+        self._render_text(status_value_x, start_y - 4 * vertical_spacing, FONT, text_color, uptime_str)
+
+        # Pose transform
+        self._render_text(start_x, start_y - 6 * vertical_spacing, FONT, text_color, "Translation (m):")
+        self._render_text(status_value_x, start_y - 6 * vertical_spacing, FONT, text_color, self._format_numeric_text(self._pose_transform.get_translation().get()))
+
+        self._render_text(start_x, start_y - 7 * vertical_spacing, FONT, text_color, "Rotation   (rad):")
+        self._render_text(status_value_x, start_y - 7 * vertical_spacing, FONT, text_color, self._format_numeric_text(self._pose_transform.get_rotation_vector()))
 
         # Restore matrices
         glMatrixMode(GL_PROJECTION)

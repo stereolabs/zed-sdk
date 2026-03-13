@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <functional>
 #include "sl/Camera.hpp"
 #include "GLCamera.hpp"
@@ -67,6 +68,8 @@ private:
     bool _pointCloudMode;
     bool _landmarkMode;
     bool _followMode;
+
+    std::chrono::steady_clock::time_point _startTime;
 
     void idle();
     void display();

@@ -45,6 +45,7 @@ target_link_libraries(${PROJECT_NAME}
     ${CUDA_LIBRARIES}
     ${CUDA_npps_LIBRARY}
     ${CUDA_nppig_LIBRARY}
+pthread
 )
 
 if(BUILD_WITH_SANITIZER_ADDRESS)

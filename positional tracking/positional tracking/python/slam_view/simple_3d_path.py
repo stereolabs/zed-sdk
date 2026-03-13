@@ -27,9 +27,12 @@ from .gl_shader import GLShader
 # Simple3DPath
 #
 class Simple3DPath:
+
+    DEFAULT_MAX_POINTS = 100000
     
-    def __init__(self):
+    def __init__(self, max_points=DEFAULT_MAX_POINTS):
         self._points = []
+        self._max_points = max_points
         self._color = (1.0, 1.0, 1.0, 1.0)
         self._mvp = np.identity(4, dtype=np.float32)
         self._vao = 0
@@ -40,6 +43,12 @@ class Simple3DPath:
 
     def add_point(self, point):
         self._points.append(point)
+
+        # Prevent unbounded memory growth by trimming old points
+        if self._max_points > 0 and len(self._points) > self._max_points:
+            excess = len(self._points) - self._max_points
+            del self._points[:excess]
+
         self._is_dirty = True
 
     def set_color(self, color):

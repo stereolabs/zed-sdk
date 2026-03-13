@@ -223,7 +223,12 @@ int main(int argc, char** argv) {
 
         // Retrieve the left image
         if (trackingParameters.mode == POSITIONAL_TRACKING_MODE::GEN_3)
-            zed.retrieveImage(leftImage, VIEW::LEFT_UNRECTIFIED, MEM::CPU, displayResolution);
+            zed.retrieveImage(
+                leftImage,
+                VIEW::LEFT /*Set it to VIEW::LEFT_UNRECTIFIED if you are using fisheye lens*/,
+                MEM::CPU,
+                displayResolution
+            );
         else
             zed.retrieveImage(leftImage, VIEW::LEFT, MEM::CPU, displayResolution);
 

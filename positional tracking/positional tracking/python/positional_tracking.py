@@ -66,7 +66,6 @@ def main(args: Arguments) -> int:
 
     if args.svo_file:
         init_params.set_from_svo_file(args.svo_file)
-        init_params.svo_real_time_mode = True
     elif args.stream_ip and args.stream_port:
         init_params.set_from_stream(args.stream_ip, args.stream_port)
     elif args.stream_ip:
@@ -183,7 +182,8 @@ def main(args: Arguments) -> int:
        
         # Retrieve the left image
         if(tracking_parameters.mode == sl.POSITIONAL_TRACKING_MODE.GEN_3):
-            zed.retrieve_image(left_image, sl.VIEW.LEFT_UNRECTIFIED, sl.MEM.CPU, display_resolution)
+            # Set retrieve_image to sl.VIEW.LEFT_UNRECTIFIED if you are using fisheye lens
+            zed.retrieve_image(left_image, sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
         else:
             zed.retrieve_image(left_image, sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
 
