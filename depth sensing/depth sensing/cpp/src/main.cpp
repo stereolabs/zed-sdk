@@ -79,16 +79,22 @@ int main(int argc, char** argv) {
 
     RuntimeParameters runParameters;
     // Setting the depth confidence parameters
-    // runParameters.confidence_threshold = 98;
-    // runParameters.texture_confidence_threshold = 100;
+    // runParameters.confidence_threshold = 50;
 
+    std::cout << "Press on 'v' for toggling voxel display" << std::endl;
     std::cout << "Press on 's' for saving current .ply file" << std::endl;
+    VoxelMeasureParameters voxel_params;
+    voxel_params.voxel_size = 25.f; // in mm, only used if voxel display is enabled
     // Main Loop
     while (viewer.isAvailable()) {
         // Check that a new image is successfully acquired
         if (zed.grab(runParameters) <= ERROR_CODE::SUCCESS) {
             // retrieve the current 3D coloread point cloud in GPU
-            zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, res);
+            if (viewer.useVoxels()) {
+                zed.retrieveVoxelMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, voxel_params, stream);
+            } else {
+                zed.retrieveMeasure(point_cloud, MEASURE::XYZRGBA, MEM::GPU, res, stream);
+            }
             viewer.updatePointCloud(point_cloud);
             std::cout << "FPS: " << zed.getCurrentFPS() << "\r" << std::flush;
             if (viewer.shouldSaveData()) {
@@ -161,8 +167,11 @@ std::string parseArgs(int argc, char** argv, sl::InitParameters& param) {
             param.camera_resolution = RESOLUTION::SVGA;
             cout << "[Sample] Using Camera in resolution SVGA" << endl;
         } else if (arg.find("XVGA") != string::npos) {
-            param.camera_resolution = static_cast<sl::RESOLUTION>((int)RESOLUTION::HD1536 + 100);
+            param.camera_resolution = RESOLUTION::XVGA;
             cout << "[Sample] Using Camera in resolution XVGA" << endl;
+        } else if (arg.find("TXGA") != string::npos) {
+            param.camera_resolution = RESOLUTION::TXGA;
+            cout << "[Sample] Using Camera in resolution TXGA" << endl;
         } else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;

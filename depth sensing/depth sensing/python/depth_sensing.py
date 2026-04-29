@@ -68,7 +68,7 @@ def parse_args(init, opt):
 
 
 def main(opt):
-    print("Running Depth Sensing sample ... Press 'Esc' to quit\nPress 's' to save the point cloud")
+    print("Running Depth Sensing sample ... Press 'Esc' to quit\nPress 's' to save the point cloud\nPress 'v' to toggle voxel display")
 
     # Determine memory type based on CuPy availability and user preference
     use_gpu = gl.GPU_ACCELERATION_AVAILABLE and not opt.disable_gpu_data_transfer
@@ -101,8 +101,13 @@ def main(opt):
 
     while viewer.is_available():
         if zed.grab() <= sl.ERROR_CODE.SUCCESS:
-            # Retrieve point cloud data using the optimal memory type (GPU if CuPy available)
-            zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA, mem_type, res)
+            # Retrieve point cloud data — voxel-decimated or full resolution
+            if viewer.use_voxels:
+                voxel_params = sl.VoxelMeasureParameters()
+                voxel_params.voxel_size = 0.025  # 25 mm expressed in meters (coordinate_units = METER)
+                zed.retrieve_voxel_measure(point_cloud, sl.MEASURE.XYZRGBA, mem_type, voxel_params)
+            else:
+                zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA, mem_type, res)
             viewer.updateData(point_cloud)
             if viewer.save_data:
                 # For saving, we take CPU memory regardless of processing type

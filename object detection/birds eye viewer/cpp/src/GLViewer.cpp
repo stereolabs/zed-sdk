@@ -333,6 +333,8 @@ void GLViewer::draw() {
     vpMatrix = vpMatrix * cam_pose;
     pointCloud_.draw(vpMatrix);
 
+    // Bounding boxes are already in user-world frame
+    // so they must NOT have cam_pose applied — use base vpMatrix
     glUseProgram(shader.it.getProgramId());
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glUniformMatrix4fv(shader.MVP_Mat, 1, GL_TRUE, vpMatrix.m);
@@ -356,7 +358,8 @@ sl::float2 compute3Dprojection(sl::float3& pt, const sl::Transform& cam, sl::Res
 }
 
 void GLViewer::printText() {
-    const sl::Transform vpMatrix = camera_.getViewProjectionMatrix() * cam_pose;
+    // Object names/IDs are in user-world frame (same as bboxes), no cam_pose needed
+    const sl::Transform vpMatrix = camera_.getViewProjectionMatrix();
     sl::Resolution wnd_size(glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT));
     for (auto it : objectsName) {
         auto pt2d = compute3Dprojection(it.position, vpMatrix, wnd_size);

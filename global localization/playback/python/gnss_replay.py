@@ -289,7 +289,9 @@ class GNSSReplay:
         current_data.ts.data_ns = 0
 
         if current_timestamp > 0 and current_timestamp > self.last_cam_ts:
-            current_data = self.getNextGNSSValue(current_timestamp)
+            next_data = self.getNextGNSSValue(current_timestamp)
+            if next_data is not None:
+                current_data = next_data
         if current_data.ts.data_ns == self.previous_ts:
             current_data.ts.data_ns = 0
 

@@ -384,7 +384,7 @@ class SLAMView:
         # Spatial memory status
         self._render_text(start_x, start_y - vertical_spacing, FONT, text_color, "Spatial Memory:");
 
-        status_color = COLOR_GREEN if self._positional_tracking_status.spatial_memory_status != sl.SPATIAL_MEMORY_STATUS.OFF else COLOR_RED
+        status_color = COLOR_GREEN if self._positional_tracking_status.spatial_memory_status != sl.SPATIAL_MEMORY_STATUS.OFF and self._positional_tracking_status.spatial_memory_status != sl.SPATIAL_MEMORY_STATUS.NOT_ENOUGH_MEMORY_FOR_TRACKING else COLOR_RED
 
         spatial_memory_status_text = str(self._positional_tracking_status.spatial_memory_status)
 

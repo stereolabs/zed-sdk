@@ -38,6 +38,8 @@ if err > sl.ERROR_CODE.SUCCESS:
 
 We will define the object detection parameters. Notice that the object tracking needs the positional tracking to be able to track the objects in the world reference frame.
 
+From SDK 5.3, if `enable_tracking=True` and positional tracking was not explicitly enabled by the user, the SDK can auto-enable an internal hidden `GEN_1` positional tracking fallback so the module still works. For higher-accuracy localization/mapping workflows (for example `GEN_3` with area memory), explicitly enable positional tracking with your desired parameters. To keep strict legacy behavior (fail instead of auto-fallback), set `ZED_SDK_DISABLE_AUTO_POSITIONAL_TRACKING=1`.
+
 ```python
 # Define the Objects detection module parameters
 body_params = sl.BodyTrackingParameters()

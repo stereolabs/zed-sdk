@@ -444,7 +444,8 @@ void SLAMView::renderPositionalTrackingStatus() {
     renderText(startX, startY - verticalSpacing, font, textColor, "Area Memory:");
 
     if (_positionalTrackingStatus.spatial_memory_status == sl::SPATIAL_MEMORY_STATUS::OFF
-        || _positionalTrackingStatus.spatial_memory_status == sl::SPATIAL_MEMORY_STATUS::LOST) {
+        || _positionalTrackingStatus.spatial_memory_status == sl::SPATIAL_MEMORY_STATUS::LOST
+        || _positionalTrackingStatus.spatial_memory_status == sl::SPATIAL_MEMORY_STATUS::NOT_ENOUGH_MEMORY_FOR_TRACKING) {
         statusColor = colorRed;
     } else if (_positionalTrackingStatus.spatial_memory_status == sl::SPATIAL_MEMORY_STATUS::INITIALIZING
                || _positionalTrackingStatus.spatial_memory_status == sl::SPATIAL_MEMORY_STATUS::SEARCHING) {

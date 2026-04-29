@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 PROJECT(Tutos)
 
 OPTION(BUILD_CPP "Build c++ samples else c#" ON)

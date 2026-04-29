@@ -112,7 +112,8 @@ void CloseFunc(void) {
         currentInstance_->exit();
 }
 
-GLenum GLViewer::init(int argc, char** argv, sl::CameraParameters param, CUstream strm_, sl::Resolution image_size) {
+GLenum
+GLViewer::init(int argc, char** argv, sl::CameraParameters param, CUstream strm_, sl::Resolution image_size, sl::Resolution preview_size) {
 
     glutInit(&argc, argv);
     int wnd_w = glutGet(GLUT_SCREEN_WIDTH);
@@ -120,13 +121,17 @@ GLenum GLViewer::init(int argc, char** argv, sl::CameraParameters param, CUstrea
     glutInitWindowSize(wnd_w * 0.9, wnd_h * 0.9);
     glutInitWindowPosition(wnd_w * 0.05, wnd_h * 0.05);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
-    glutCreateWindow("ZED Depth Sensing");
+    glutCreateWindow("ZED Voxel Point Cloud");
 
     GLenum err = glewInit();
     if (GLEW_OK != err)
         return err;
 
+    windowW_ = wnd_w * 0.9;
+    windowH_ = wnd_h * 0.9;
+
     pointCloud_.initialize(image_size, strm_);
+    imageHandler_.initialize(preview_size);
 
     // Compile and create the shader
     shader_.set(VERTEX_SHADER, FRAGMENT_SHADER);
@@ -142,7 +147,7 @@ GLenum GLViewer::init(int argc, char** argv, sl::CameraParameters param, CUstrea
     frustum = createFrustum(param);
     frustum.pushToGPU();
 
-    bckgrnd_clr = sl::float3(59, 63, 69);
+    bckgrnd_clr = sl::float3(25, 25, 25); // sl_soil
     bckgrnd_clr /= 255.f;
 
     // Map glut function on this class methods
@@ -152,6 +157,7 @@ GLenum GLViewer::init(int argc, char** argv, sl::CameraParameters param, CUstrea
     glutReshapeFunc(GLViewer::reshapeCallback);
     glutKeyboardFunc(GLViewer::keyPressedCallback);
     glutKeyboardUpFunc(GLViewer::keyReleasedCallback);
+    glutSpecialFunc(GLViewer::specialKeyCallback);
     glutCloseFunc(CloseFunc);
 
     glEnable(GL_DEPTH_TEST);
@@ -168,7 +174,7 @@ void GLViewer::render() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glClearColor(bckgrnd_clr.r, bckgrnd_clr.g, bckgrnd_clr.b, 1.f);
         glLineWidth(2.f);
-        glPointSize(useVoxels_ ? 3.f : 2.f);
+        glPointSize(useVoxels_ ? pointSize_ : std::min(pointSize_, 2.f));
         update();
         draw();
         glutSwapBuffers();
@@ -180,6 +186,10 @@ void GLViewer::updatePointCloud(sl::Mat& matXYZRGBA) {
     pointCloud_.mutexData.lock();
     pointCloud_.pushNewPC(matXYZRGBA);
     pointCloud_.mutexData.unlock();
+}
+
+void GLViewer::updateImage(sl::Mat& image) {
+    imageHandler_.pushNewImage(image);
 }
 
 bool GLViewer::shouldSaveData() {
@@ -200,6 +210,53 @@ void GLViewer::update() {
 
     if (keyStates_['v'] == KEY_STATE::UP || keyStates_['V'] == KEY_STATE::UP)
         currentInstance_->useVoxels_ = !currentInstance_->useVoxels_;
+
+    if (keyStates_[' '] == KEY_STATE::UP)
+        currentInstance_->paused_ = !currentInstance_->paused_;
+
+    // Voxel parameter controls
+    if (keyStates_['+'] == KEY_STATE::UP || keyStates_['='] == KEY_STATE::UP)
+        currentInstance_->voxelParams_.voxel_size *= 1.25f;
+
+    if (keyStates_['-'] == KEY_STATE::UP)
+        currentInstance_->voxelParams_.voxel_size = std::max(5.f, currentInstance_->voxelParams_.voxel_size * 0.8f);
+
+    // Point size
+    if (keyStates_['p'] == KEY_STATE::UP)
+        currentInstance_->pointSize_ = std::max(0.5f, currentInstance_->pointSize_ - 0.2f);
+    if (keyStates_['P'] == KEY_STATE::UP)
+        currentInstance_->pointSize_ = std::min(20.f, currentInstance_->pointSize_ + 0.2f);
+
+    if (keyStates_['1'] == KEY_STATE::UP)
+        currentInstance_->voxelParams_.resolution_mode = sl::VOXELIZATION_MODE::FIXED;
+    if (keyStates_['2'] == KEY_STATE::UP)
+        currentInstance_->voxelParams_.resolution_mode = sl::VOXELIZATION_MODE::STEREO_UNCERTAINTY;
+    if (keyStates_['3'] == KEY_STATE::UP)
+        currentInstance_->voxelParams_.resolution_mode = sl::VOXELIZATION_MODE::LINEAR;
+
+    if (keyStates_['.'] == KEY_STATE::UP || keyStates_['>'] == KEY_STATE::UP)
+        currentInstance_->voxelParams_.resolution_scale = std::min(3.f, currentInstance_->voxelParams_.resolution_scale * 1.25f);
+
+    if (keyStates_[','] == KEY_STATE::UP || keyStates_['<'] == KEY_STATE::UP)
+        currentInstance_->voxelParams_.resolution_scale = std::max(0.01f, currentInstance_->voxelParams_.resolution_scale * 0.8f);
+
+    if (keyStates_['c'] == KEY_STATE::UP || keyStates_['C'] == KEY_STATE::UP)
+        currentInstance_->voxelParams_.centroid = !currentInstance_->voxelParams_.centroid;
+
+    // Depth confidence
+    if (keyStates_['d'] == KEY_STATE::UP)
+        currentInstance_->confidenceThreshold_ = std::max(1, currentInstance_->confidenceThreshold_ - 5);
+    if (keyStates_['D'] == KEY_STATE::UP)
+        currentInstance_->confidenceThreshold_ = std::min(100, currentInstance_->confidenceThreshold_ + 5);
+
+    if (keyStates_['r'] == KEY_STATE::UP || keyStates_['R'] == KEY_STATE::UP) {
+        currentInstance_->voxelParams_.voxel_size = 50.f;
+        currentInstance_->voxelParams_.centroid = true;
+        currentInstance_->voxelParams_.resolution_mode = sl::VOXELIZATION_MODE::STEREO_UNCERTAINTY;
+        currentInstance_->voxelParams_.resolution_scale = 0.2f;
+        currentInstance_->pointSize_ = 3.f;
+        currentInstance_->confidenceThreshold_ = 50;
+    }
 
     // Rotate camera with mouse
     if (mouseButton_[MOUSE_BUTTON::LEFT]) {
@@ -235,6 +292,9 @@ void GLViewer::update() {
 void GLViewer::draw() {
     const sl::Transform vpMatrix = camera_.getViewProjectionMatrix();
 
+    // Full-window 3D viewport
+    glViewport(0, 0, windowW_, windowH_);
+
     // Simple 3D shader for simple 3D objects
     glUseProgram(shader_.getProgramId());
 
@@ -243,10 +303,380 @@ void GLViewer::draw() {
     // Axis
     glUniformMatrix4fv(shMVPMatrixLoc_, 1, GL_FALSE, sl::Transform::transpose(vpMatrix * frustum.getModelMatrix()).m);
     frustum.draw();
+    glBindVertexArray(0);
     glUseProgram(0);
 
     // Draw point cloud with its own shader
     pointCloud_.draw(vpMatrix);
+
+    // Picture-in-picture: left camera image in bottom-left corner (25% of window)
+    int pipW = windowW_ / 4;
+    int pipH = windowH_ / 4;
+    glViewport(10, 10, pipW, pipH);
+    glDisable(GL_DEPTH_TEST);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    imageHandler_.draw();
+    glEnable(GL_DEPTH_TEST);
+
+    // Restore full viewport
+    glViewport(0, 0, windowW_, windowH_);
+
+    // HUD overlay
+    drawHUD();
+}
+
+static void drawString(float x, float y, const char* str, void* font = GLUT_BITMAP_HELVETICA_12) {
+    glWindowPos2f(x, y);
+    while (*str)
+        glutBitmapCharacter(font, *str++);
+}
+
+static void drawRect(float x, float y, float w, float h) {
+    glBegin(GL_QUADS);
+    glVertex2f(x, y);
+    glVertex2f(x + w, y);
+    glVertex2f(x + w, y + h);
+    glVertex2f(x, y + h);
+    glEnd();
+}
+
+// ── HUD layout constants ──
+static const float HUD_LEFT = 10.f;
+static const float HUD_BTN_H = 22.f;
+static const float HUD_GAP = 5.f;
+static const float HUD_SM_W = 28.f;   // small button (- / +)
+static const float HUD_MODE_W = 70.f; // mode button
+static const float HUD_TOG_W = 100.f; // toggle button
+
+static void drawButton(float x, float y, float w, float h, const char* label, bool active, bool highlight = false) {
+    // Background — Stereolabs brand: sl_lime active, sl_charcoal normal, sl_steel highlight
+    if (active)
+        glColor4f(217 / 255.f, 255 / 255.f, 66 / 255.f, 0.9f); // sl_lime
+    else if (highlight)
+        glColor4f(60 / 255.f, 60 / 255.f, 60 / 255.f, 0.85f); // sl_charcoal
+    else
+        glColor4f(45 / 255.f, 45 / 255.f, 45 / 255.f, 0.8f); // sl_steel
+    drawRect(x, y, w, h);
+
+    // Border
+    glColor4f(137 / 255.f, 137 / 255.f, 137 / 255.f, 0.6f); // sl_ash
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(x, y);
+    glVertex2f(x + w, y);
+    glVertex2f(x + w, y + h);
+    glVertex2f(x, y + h);
+    glEnd();
+
+    // Label — dark text on lime, light on dark buttons
+    if (active)
+        glColor4f(25 / 255.f, 25 / 255.f, 25 / 255.f, 1.f); // sl_soil
+    else
+        glColor4f(242 / 255.f, 242 / 255.f, 242 / 255.f, 1.f); // sl_pearl
+    float tx = x + 4.f;
+    if (strlen(label) <= 2)
+        tx = x + w * 0.5f - 4.f; // center short labels like "-" "+"
+    drawString(tx, y + 6.f, label, GLUT_BITMAP_HELVETICA_10);
+}
+
+// Row positions (from top), computed relative to window height
+struct HUDRow {
+    float y;      // GL y (bottom-up)
+    float labelX; // label x position
+};
+
+void GLViewer::drawHUD() {
+    glDisable(GL_DEPTH_TEST);
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    glOrtho(0, windowW_, 0, windowH_, -1, 1);
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    auto& vp = voxelParams_;
+    const char* modeNames[] = {"FIXED", "STEREO", "LINEAR"};
+    int modeIdx = static_cast<int>(vp.resolution_mode);
+    if (modeIdx < 0 || modeIdx > 2)
+        modeIdx = 0;
+
+    float rowH = HUD_BTN_H + HUD_GAP;
+    float topY = windowH_ - 15.f;
+
+    // ── Row 0: Title ──
+    glColor4f(217 / 255.f, 255 / 255.f, 66 / 255.f, 1.f); // sl_lime
+    drawString(HUD_LEFT, topY, "Voxel Point Cloud", GLUT_BITMAP_HELVETICA_12);
+    topY -= rowH;
+
+    // ── Row 0b: Voxel / Full PC toggle ──
+    {
+        drawButton(HUD_LEFT, topY, 80.f, HUD_BTN_H, "Voxel", useVoxels_);
+        drawButton(HUD_LEFT + 80.f + HUD_GAP, topY, 80.f, HUD_BTN_H, "Full PC", !useVoxels_);
+    }
+    topY -= rowH;
+
+    // Grey out voxel-specific controls when in Full PC mode
+    bool voxelControlsEnabled = useVoxels_;
+
+    // ── Row 1: Voxel Size ── [ - ] value [ + ]
+    {
+        float a = voxelControlsEnabled ? 1.f : 0.5f;
+        char buf[64];
+        snprintf(buf, sizeof(buf), "Size: %.1f mm", vp.voxel_size);
+        glColor4f(194 / 255.f * a, 194 / 255.f * a, 194 / 255.f * a, a); // sl_iron
+        drawString(HUD_LEFT, topY + 6.f, buf, GLUT_BITMAP_HELVETICA_10);
+        float bx = HUD_LEFT + 110.f;
+        if (voxelControlsEnabled) {
+            drawButton(bx, topY, HUD_SM_W, HUD_BTN_H, "-", false);
+            drawButton(bx + HUD_SM_W + HUD_GAP, topY, HUD_SM_W, HUD_BTN_H, "+", false);
+        } else {
+            glColor4f(45 / 255.f, 45 / 255.f, 45 / 255.f, 0.5f); // sl_steel disabled
+            drawRect(bx, topY, HUD_SM_W, HUD_BTN_H);
+            drawRect(bx + HUD_SM_W + HUD_GAP, topY, HUD_SM_W, HUD_BTN_H);
+        }
+    }
+    topY -= rowH;
+
+    // ── Row 2: Resolution Scale ── [ - ] value [ + ] (disabled when FIXED or Full PC)
+    {
+        bool scaleEnabled = voxelControlsEnabled && (vp.resolution_mode != sl::VOXELIZATION_MODE::FIXED);
+        char buf[64];
+        snprintf(buf, sizeof(buf), "Scale: %.2f", vp.resolution_scale);
+        float sa = scaleEnabled ? 1.f : 0.5f;
+        glColor4f(194 / 255.f * sa, 194 / 255.f * sa, 194 / 255.f * sa, sa); // sl_iron
+        drawString(HUD_LEFT, topY + 6.f, buf, GLUT_BITMAP_HELVETICA_10);
+        float bx = HUD_LEFT + 110.f;
+        if (scaleEnabled) {
+            drawButton(bx, topY, HUD_SM_W, HUD_BTN_H, "-", false);
+            drawButton(bx + HUD_SM_W + HUD_GAP, topY, HUD_SM_W, HUD_BTN_H, "+", false);
+        } else {
+            // Greyed out buttons
+            glColor4f(45 / 255.f, 45 / 255.f, 45 / 255.f, 0.5f); // sl_steel disabled
+            drawRect(bx, topY, HUD_SM_W, HUD_BTN_H);
+            drawRect(bx + HUD_SM_W + HUD_GAP, topY, HUD_SM_W, HUD_BTN_H);
+            glColor4f(137 / 255.f, 137 / 255.f, 137 / 255.f, 0.4f); // sl_ash
+            drawString(bx + HUD_SM_W * 0.5f - 4.f, topY + 6.f, "-", GLUT_BITMAP_HELVETICA_10);
+            drawString(bx + HUD_SM_W + HUD_GAP + HUD_SM_W * 0.5f - 4.f, topY + 6.f, "+", GLUT_BITMAP_HELVETICA_10);
+        }
+    }
+    topY -= rowH;
+
+    // ── Row 3: Mode buttons ── [FIXED] [STEREO] [LINEAR]
+    {
+        float a = voxelControlsEnabled ? 1.f : 0.5f;
+        glColor4f(194 / 255.f * a, 194 / 255.f * a, 194 / 255.f * a, a); // sl_iron
+        drawString(HUD_LEFT, topY + 6.f, "Mode:", GLUT_BITMAP_HELVETICA_10);
+        float bx = HUD_LEFT + 50.f;
+        if (voxelControlsEnabled) {
+            for (int i = 0; i < 3; i++)
+                drawButton(bx + i * (HUD_MODE_W + HUD_GAP), topY, HUD_MODE_W, HUD_BTN_H, modeNames[i], i == modeIdx);
+        } else {
+            for (int i = 0; i < 3; i++) {
+                glColor4f(45 / 255.f, 45 / 255.f, 45 / 255.f, 0.5f); // sl_steel disabled
+                drawRect(bx + i * (HUD_MODE_W + HUD_GAP), topY, HUD_MODE_W, HUD_BTN_H);
+            }
+        }
+    }
+    topY -= rowH;
+
+    // ── Row 4: Centroid toggle ── [Centroid / Grid Center]
+    {
+        float a = voxelControlsEnabled ? 1.f : 0.5f;
+        glColor4f(194 / 255.f * a, 194 / 255.f * a, 194 / 255.f * a, a); // sl_iron
+        drawString(HUD_LEFT, topY + 6.f, "Pos:", GLUT_BITMAP_HELVETICA_10);
+        float bx = HUD_LEFT + 50.f;
+        if (voxelControlsEnabled) {
+            drawButton(bx, topY, HUD_TOG_W, HUD_BTN_H, "Centroid", vp.centroid);
+            drawButton(bx + HUD_TOG_W + HUD_GAP, topY, HUD_TOG_W, HUD_BTN_H, "Grid Center", !vp.centroid);
+        } else {
+            glColor4f(45 / 255.f, 45 / 255.f, 45 / 255.f, 0.5f); // sl_steel disabled
+            drawRect(bx, topY, HUD_TOG_W, HUD_BTN_H);
+            drawRect(bx + HUD_TOG_W + HUD_GAP, topY, HUD_TOG_W, HUD_BTN_H);
+        }
+    }
+    topY -= rowH;
+
+    // ── Row 5: Point Size ── [ - ] value [ + ]
+    {
+        char buf[64];
+        snprintf(buf, sizeof(buf), "Pt size: %.1f px", currentInstance_->pointSize_);
+        glColor4f(194 / 255.f, 194 / 255.f, 194 / 255.f, 1.f); // sl_iron
+        drawString(HUD_LEFT, topY + 6.f, buf, GLUT_BITMAP_HELVETICA_10);
+        float bx = HUD_LEFT + 110.f;
+        drawButton(bx, topY, HUD_SM_W, HUD_BTN_H, "-", false);
+        drawButton(bx + HUD_SM_W + HUD_GAP, topY, HUD_SM_W, HUD_BTN_H, "+", false);
+    }
+    topY -= rowH;
+
+    // ── Row 6: Depth Confidence ── [ - ] value [ + ]
+    {
+        char buf[64];
+        snprintf(buf, sizeof(buf), "Depth Conf: %d", currentInstance_->confidenceThreshold_);
+        glColor4f(194 / 255.f, 194 / 255.f, 194 / 255.f, 1.f); // sl_iron
+        drawString(HUD_LEFT, topY + 6.f, buf, GLUT_BITMAP_HELVETICA_10);
+        float bx = HUD_LEFT + 110.f;
+        drawButton(bx, topY, HUD_SM_W, HUD_BTN_H, "-", false);
+        drawButton(bx + HUD_SM_W + HUD_GAP, topY, HUD_SM_W, HUD_BTN_H, "+", false);
+    }
+    topY -= rowH;
+
+    // ── Row 7: Save + Reset ──
+    {
+        drawButton(HUD_LEFT, topY, 80.f, HUD_BTN_H, "Save PLY", false, true);
+        drawButton(HUD_LEFT + 85.f + HUD_GAP, topY, 65.f, HUD_BTN_H, "Reset", false);
+    }
+
+    // ── Keyboard shortcuts (top-right) ──
+    float tx = windowW_ - 270.f;
+    float ty = windowH_ - 25.f;
+    glColor4f(194 / 255.f, 194 / 255.f, 194 / 255.f, 0.6f); // sl_iron
+    drawString(tx, ty, "+/-  Size    ,/.  Scale", GLUT_BITMAP_HELVETICA_10);
+    drawString(tx, ty - 14, "1/2/3 Mode   c Centroid", GLUT_BITMAP_HELVETICA_10);
+    drawString(tx, ty - 28, "d/D Depth Conf  p/P Pt size", GLUT_BITMAP_HELVETICA_10);
+    drawString(tx, ty - 42, "v Toggle  Space Pause  </>/< Seek", GLUT_BITMAP_HELVETICA_10);
+    drawString(tx, ty - 56, "s Save  r Reset  q Quit", GLUT_BITMAP_HELVETICA_10);
+
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+    glEnable(GL_DEPTH_TEST);
+}
+
+bool GLViewer::handleButtonClick(int x, int y) {
+    int gy = windowH_ - y; // GLUT y → GL y
+
+    float rowH = HUD_BTN_H + HUD_GAP;
+    float topY = windowH_ - 15.f - rowH; // skip title row
+
+    auto hitTest = [&](float bx, float by, float bw) -> bool {
+        return x >= bx && x <= bx + bw && gy >= by && gy <= by + HUD_BTN_H;
+    };
+
+    // Row 0b: Voxel / Full PC toggle
+    {
+        if (hitTest(HUD_LEFT, topY, 80.f)) {
+            useVoxels_ = true;
+            return true;
+        }
+        if (hitTest(HUD_LEFT + 80.f + HUD_GAP, topY, 80.f)) {
+            useVoxels_ = false;
+            return true;
+        }
+    }
+    topY -= rowH;
+
+    // Voxel-specific rows only clickable when voxel mode is on
+    if (useVoxels_) {
+
+        // Row 1: Voxel Size  [ - ] [ + ]
+        {
+            float bx = HUD_LEFT + 110.f;
+            if (hitTest(bx, topY, HUD_SM_W)) {
+                voxelParams_.voxel_size = std::max(5.f, voxelParams_.voxel_size * 0.8f);
+                return true;
+            }
+            if (hitTest(bx + HUD_SM_W + HUD_GAP, topY, HUD_SM_W)) {
+                voxelParams_.voxel_size *= 1.25f;
+                return true;
+            }
+        }
+        topY -= rowH;
+
+        // Row 2: Resolution Scale  [ - ] [ + ] (disabled when FIXED)
+        {
+            bool scaleEnabled = (voxelParams_.resolution_mode != sl::VOXELIZATION_MODE::FIXED);
+            if (scaleEnabled) {
+                float bx = HUD_LEFT + 110.f;
+                if (hitTest(bx, topY, HUD_SM_W)) {
+                    voxelParams_.resolution_scale = std::max(0.01f, voxelParams_.resolution_scale * 0.8f);
+                    return true;
+                }
+                if (hitTest(bx + HUD_SM_W + HUD_GAP, topY, HUD_SM_W)) {
+                    voxelParams_.resolution_scale = std::min(3.f, voxelParams_.resolution_scale * 1.25f);
+                    return true;
+                }
+            }
+        }
+        topY -= rowH;
+
+        // Row 3: Mode buttons [FIXED] [STEREO] [LINEAR]
+        {
+            float bx = HUD_LEFT + 50.f;
+            for (int i = 0; i < 3; i++) {
+                if (hitTest(bx + i * (HUD_MODE_W + HUD_GAP), topY, HUD_MODE_W)) {
+                    voxelParams_.resolution_mode = static_cast<sl::VOXELIZATION_MODE>(i);
+                    return true;
+                }
+            }
+        }
+        topY -= rowH;
+
+        // Row 4: Centroid toggle [Centroid] [Grid Center]
+        {
+            float bx = HUD_LEFT + 50.f;
+            if (hitTest(bx, topY, HUD_TOG_W)) {
+                voxelParams_.centroid = true;
+                return true;
+            }
+            if (hitTest(bx + HUD_TOG_W + HUD_GAP, topY, HUD_TOG_W)) {
+                voxelParams_.centroid = false;
+                return true;
+            }
+        }
+        topY -= rowH;
+
+    } else {
+        // Skip 4 rows when in Full PC mode
+        topY -= rowH * 4;
+    }
+
+    // Row 5: Point Size  [ - ] [ + ]
+    {
+        float bx = HUD_LEFT + 110.f;
+        if (hitTest(bx, topY, HUD_SM_W)) {
+            pointSize_ = std::max(0.5f, pointSize_ - 0.2f);
+            return true;
+        }
+        if (hitTest(bx + HUD_SM_W + HUD_GAP, topY, HUD_SM_W)) {
+            pointSize_ = std::min(20.f, pointSize_ + 0.2f);
+            return true;
+        }
+    }
+    topY -= rowH;
+
+    // Row 6: Depth Confidence  [ - ] [ + ]
+    {
+        float bx = HUD_LEFT + 110.f;
+        if (hitTest(bx, topY, HUD_SM_W)) {
+            confidenceThreshold_ = std::max(1, confidenceThreshold_ - 5);
+            return true;
+        }
+        if (hitTest(bx + HUD_SM_W + HUD_GAP, topY, HUD_SM_W)) {
+            confidenceThreshold_ = std::min(100, confidenceThreshold_ + 5);
+            return true;
+        }
+    }
+    topY -= rowH;
+
+    // Row 7: Save + Reset
+    {
+        if (hitTest(HUD_LEFT, topY, 80.f)) {
+            shouldSaveData_ = true;
+            return true;
+        }
+        if (hitTest(HUD_LEFT + 85.f + HUD_GAP, topY, 65.f)) {
+            voxelParams_.voxel_size = 50.f;
+            voxelParams_.centroid = true;
+            voxelParams_.resolution_mode = sl::VOXELIZATION_MODE::STEREO_UNCERTAINTY;
+            voxelParams_.resolution_scale = 0.2f;
+            pointSize_ = 3.f;
+            confidenceThreshold_ = 50;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void GLViewer::clearInputs() {
@@ -262,6 +692,11 @@ void GLViewer::drawCallback() {
 }
 
 void GLViewer::mouseButtonCallback(int button, int state, int x, int y) {
+    // Check HUD button clicks first
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        if (currentInstance_->handleButtonClick(x, y))
+            return;
+    }
     if (button < 5) {
         if (button < 3) {
             currentInstance_->mouseButton_[button] = state == GLUT_DOWN;
@@ -284,6 +719,8 @@ void GLViewer::mouseMotionCallback(int x, int y) {
 }
 
 void GLViewer::reshapeCallback(int width, int height) {
+    currentInstance_->windowW_ = width;
+    currentInstance_->windowH_ = height;
     glViewport(0, 0, width, height);
     float hfov = (180.0f / M_PI) * (2.0f * atan(width / (2.0f * 500)));
     float vfov = (180.0f / M_PI) * (2.0f * atan(height / (2.0f * 500)));
@@ -297,6 +734,13 @@ void GLViewer::keyPressedCallback(unsigned char c, int x, int y) {
 
 void GLViewer::keyReleasedCallback(unsigned char c, int x, int y) {
     currentInstance_->keyStates_[c] = KEY_STATE::UP;
+}
+
+void GLViewer::specialKeyCallback(int key, int x, int y) {
+    if (key == GLUT_KEY_RIGHT)
+        currentInstance_->seekOffset_ += 200;
+    else if (key == GLUT_KEY_LEFT)
+        currentInstance_->seekOffset_ -= 200;
 }
 
 void GLViewer::idle() {
@@ -833,4 +1277,114 @@ void CameraGL::updateView() {
 
 void CameraGL::updateVPMatrix() {
     vpMatrix_ = projection_ * view_;
+}
+
+// ─── ImageHandler ──────────────────────────────────────────────────────────
+
+const GLchar* IMAGE_VERTEX_SHADER = "#version 330\n"
+                                    "layout(location = 0) in vec3 vert;\n"
+                                    "out vec2 UV;"
+                                    "void main() {\n"
+                                    "   UV = (vert.xy+vec2(1,1))/2;\n"
+                                    "   gl_Position = vec4(vert, 1);\n"
+                                    "}\n";
+
+const GLchar* IMAGE_FRAGMENT_SHADER = "#version 330 core\n"
+                                      "in vec2 UV;\n"
+                                      "out vec4 color;\n"
+                                      "uniform sampler2D texImage;\n"
+                                      "void main() {\n"
+                                      "   vec2 scaler = vec2(UV.x, 1.0 - UV.y);\n"
+                                      "   vec3 rgb = texture(texImage, scaler).zyx;\n" // BGR → RGB
+                                      "   float gamma = 1.0/1.65;\n"
+                                      "   color = vec4(pow(rgb, vec3(1.0/gamma)), 1);\n"
+                                      "}\n";
+
+ImageHandler::ImageHandler()
+    : imageTex(0)
+    , cuda_gl_ressource(nullptr)
+    , quad_vao(0)
+    , quad_vb(0) { }
+ImageHandler::~ImageHandler() {
+    close();
+}
+
+void ImageHandler::close() {
+    if (imageTex != 0) {
+        glDeleteTextures(1, &imageTex);
+        imageTex = 0;
+    }
+    if (quad_vao != 0) {
+        glDeleteVertexArrays(1, &quad_vao);
+        quad_vao = 0;
+    }
+}
+
+bool ImageHandler::initialize(sl::Resolution res) {
+    shaderImage.set(IMAGE_VERTEX_SHADER, IMAGE_FRAGMENT_SHADER);
+    texID = glGetUniformLocation(shaderImage.getProgramId(), "texImage");
+
+    static const GLfloat quad[] = {-1.f, -1.f, 0.f, 1.f, -1.f, 0.f, -1.f, 1.f, 0.f, -1.f, 1.f, 0.f, 1.f, -1.f, 0.f, 1.f, 1.f, 0.f};
+
+    glGenVertexArrays(1, &quad_vao);
+    glBindVertexArray(quad_vao);
+
+    glGenBuffers(1, &quad_vb);
+    glBindBuffer(GL_ARRAY_BUFFER, quad_vb);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glEnable(GL_TEXTURE_2D);
+    glGenTextures(1, &imageTex);
+    glBindTexture(GL_TEXTURE_2D, imageTex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, res.width, res.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    cudaError_t err = cudaGraphicsGLRegisterImage(&cuda_gl_ressource, imageTex, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
+    return (err == cudaSuccess);
+}
+
+void ImageHandler::pushNewImage(sl::Mat& image) {
+    if (!cuda_gl_ressource)
+        return;
+    cudaArray_t ArrIm;
+    cudaGraphicsMapResources(1, &cuda_gl_ressource, 0);
+    cudaGraphicsSubResourceGetMappedArray(&ArrIm, cuda_gl_ressource, 0, 0);
+    cudaMemcpy2DToArray(
+        ArrIm,
+        0,
+        0,
+        image.getPtr<sl::uchar1>(sl::MEM::GPU),
+        image.getStepBytes(sl::MEM::GPU),
+        image.getPixelBytes() * image.getWidth(),
+        image.getHeight(),
+        cudaMemcpyDeviceToDevice
+    );
+    cudaGraphicsUnmapResources(1, &cuda_gl_ressource, 0);
+}
+
+void ImageHandler::draw() {
+    if (imageTex == 0)
+        return;
+    // Unbind any active VAO to avoid state leaks from prior draws
+    glBindVertexArray(0);
+    glUseProgram(shaderImage.getProgramId());
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, imageTex);
+    glUniform1i(texID, 0);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, quad_vb);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDisableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glUseProgram(0);
 }

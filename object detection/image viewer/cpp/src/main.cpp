@@ -60,17 +60,6 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    // Enable Positional tracking (mandatory for object detection)
-    PositionalTrackingParameters positional_tracking_parameters;
-    // If the camera is static, uncomment the following line to have better performances.
-    // positional_tracking_parameters.set_as_static = true;
-    returned_state = zed.enablePositionalTracking(positional_tracking_parameters);
-    if (returned_state > ERROR_CODE::SUCCESS) {
-        print("enable Positional Tracking", returned_state, "\nExit program.");
-        zed.close();
-        return EXIT_FAILURE;
-    }
-
     // Enable the Objects detection module
     ObjectDetectionParameters obj_det_params;
     obj_det_params.enable_tracking = true;
@@ -163,8 +152,11 @@ void parseArgs(int argc, char** argv, InitParameters& param) {
             param.camera_resolution = RESOLUTION::SVGA;
             cout << "[Sample] Using Camera in resolution SVGA" << endl;
         } else if (arg.find("XVGA") != string::npos) {
-            param.camera_resolution = static_cast<sl::RESOLUTION>((int)RESOLUTION::HD1536 + 100);
+            param.camera_resolution = RESOLUTION::XVGA;
             cout << "[Sample] Using Camera in resolution XVGA" << endl;
+        } else if (arg.find("TXGA") != string::npos) {
+            param.camera_resolution = RESOLUTION::TXGA;
+            cout << "[Sample] Using Camera in resolution TXGA" << endl;
         } else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;

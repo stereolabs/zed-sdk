@@ -229,6 +229,24 @@ private:
     size_t pendingCount_;          // number of float4 elements in the pending data
 };
 
+class ImageHandler {
+public:
+    ImageHandler();
+    ~ImageHandler();
+    bool initialize(sl::Resolution res);
+    void pushNewImage(sl::Mat& image);
+    void draw();
+    void close();
+
+private:
+    GLuint texID;
+    GLuint imageTex;
+    cudaGraphicsResource* cuda_gl_ressource;
+    Shader shaderImage;
+    GLuint quad_vao;
+    GLuint quad_vb;
+};
+
 // This class manages input events, window and Opengl rendering pipeline
 class GLViewer {
 public:
@@ -236,13 +254,24 @@ public:
     ~GLViewer();
     bool isAvailable();
 
-    GLenum init(int argc, char** argv, sl::CameraParameters param, CUstream strm, sl::Resolution image_size);
+    GLenum init(
+        int argc,
+        char** argv,
+        sl::CameraParameters param,
+        CUstream strm,
+        sl::Resolution image_size,
+        sl::Resolution preview_size = sl::Resolution(640, 360)
+    );
     void updatePointCloud(sl::Mat& matXYZRGBA);
+    void updateImage(sl::Mat& image);
 
     void exit();
     bool shouldSaveData();
     bool useVoxels() const {
         return useVoxels_;
+    }
+    bool isPaused() const {
+        return paused_;
     }
 
 private:
@@ -252,6 +281,10 @@ private:
     void update();
     // Once everything is updated, every renderable objects must be drawn in this method
     void draw();
+    // Draw 2D HUD overlay (text + buttons)
+    void drawHUD();
+    // Check if a click hit a HUD button, returns true if consumed
+    bool handleButtonClick(int x, int y);
     // Clear and refresh inputs' data
     void clearInputs();
 
@@ -262,6 +295,7 @@ private:
     static void reshapeCallback(int width, int height);
     static void keyPressedCallback(unsigned char c, int x, int y);
     static void keyReleasedCallback(unsigned char c, int x, int y);
+    static void specialKeyCallback(int key, int x, int y);
     static void idle();
 
     bool available;
@@ -290,11 +324,21 @@ private:
 
     Simple3DObject frustum;
     PointCloud pointCloud_;
+    ImageHandler imageHandler_;
     CameraGL camera_;
     Shader shader_;
     GLuint shMVPMatrixLoc_;
+    int windowW_ = 0, windowH_ = 0;
     bool shouldSaveData_ = false;
-    bool useVoxels_ = false;
+    bool useVoxels_ = true;
+    bool paused_ = false;
+
+public:
+    // Voxel parameter state — accessible from main loop
+    sl::VoxelMeasureParameters voxelParams_;
+    float pointSize_ = 3.f;
+    int confidenceThreshold_ = 50;
+    int seekOffset_ = 0; // consumed by main loop for SVO seek
 };
 
 #endif /* __VIEWER_INCLUDE__ */

@@ -171,7 +171,6 @@ int main(int argc, char** argv) {
 #endif
         !quit && zed.grab(runtime_parameters) <= ERROR_CODE::SUCCESS
     ) {
-
         // update confidence threshold based on TrackBar
         if (detection_parameters_rt.object_class_filter.empty())
             detection_parameters_rt.detection_confidence_threshold = detection_confidence;
@@ -313,8 +312,11 @@ void parseArgs(int argc, char** argv, InitParameters& param) {
             param.camera_resolution = RESOLUTION::SVGA;
             cout << "[Sample] Using Camera in resolution SVGA" << endl;
         } else if (arg.find("XVGA") != string::npos) {
-            param.camera_resolution = static_cast<sl::RESOLUTION>((int)RESOLUTION::HD1536 + 100);
+            param.camera_resolution = RESOLUTION::XVGA;
             cout << "[Sample] Using Camera in resolution XVGA" << endl;
+        } else if (arg.find("TXGA") != string::npos) {
+            param.camera_resolution = RESOLUTION::TXGA;
+            cout << "[Sample] Using Camera in resolution TXGA" << endl;
         } else if (arg.find("VGA") != string::npos) {
             param.camera_resolution = RESOLUTION::VGA;
             cout << "[Sample] Using Camera in resolution VGA" << endl;

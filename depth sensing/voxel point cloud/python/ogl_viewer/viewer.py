@@ -487,7 +487,26 @@ class GLViewer:
         self.zedModel = Simple3DObject(True)
         self.point_cloud = Simple3DObject(False, 4)
         self.save_data = False
-        self.use_voxels = False
+        self.use_voxels = True
+        self.key_pressed = 0
+        self.paused = False
+        self.seekOffset = 0
+        self.pointSize = 3.0
+        self.confidenceThreshold = 50
+        self.windowW = 0
+        self.windowH = 0
+        # Voxel params (mirrors C++ GLViewer::voxelParams_)
+        self.voxel_size = 50.0  # in mm (coordinate units)
+        self.resolution_scale = 0.2
+        self.resolution_mode = 1  # 0=FIXED, 1=STEREO, 2=LINEAR
+        self.centroid = True
+        self.mode_names = ["FIXED", "STEREO", "LINEAR"]
+        # Image preview texture
+        self._preview_tex = 0
+        self._preview_quad_vao = 0
+        self._preview_quad_vbo = 0
+        self._preview_shader = None
+        self._preview_res = None
 
     def init(self, _argc, _argv, res): # _params = sl.CameraParameters
         glutInit(_argc, _argv)
@@ -497,7 +516,9 @@ class GLViewer:
         glutInitWindowPosition(int(wnd_w*0.05), int(wnd_h*0.05))
 
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH)
-        glutCreateWindow(b"ZED Depth Sensing")
+        glutCreateWindow(b"ZED Voxel Point Cloud")
+        self.windowW = wnd_w
+        self.windowH = wnd_h
         glViewport(0, 0, wnd_w, wnd_h)
 
         glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE,
@@ -518,10 +539,10 @@ class GLViewer:
         self.shader_pc = Shader(POINTCLOUD_VERTEX_SHADER, POINTCLOUD_FRAGMENT_SHADER)
         self.shader_pc_MVP = glGetUniformLocation(self.shader_pc.get_program_id(), "u_mvpMatrix")
 
-        self.bckgrnd_clr = np.array([223/255., 230/255., 233/255.])
+        self.bckgrnd_clr = np.array([25/255., 25/255., 25/255.])  # sl_soil
 
         # Create the camera model
-        Z_ = -0.15
+        Z_ = -150
         Y_ = Z_ * math.tan(95. * M_PI / 180. / 2.)
         X_ = Y_ * 16./9.
 
@@ -553,6 +574,7 @@ class GLViewer:
         glutDisplayFunc(self.draw_callback)
         glutIdleFunc(self.idle)
         glutKeyboardFunc(self.keyPressedCallback)
+        glutSpecialFunc(self.specialKeyCallback)
         glutCloseFunc(self.close_func)
         glutMouseFunc(self.on_mouse)
         glutMotionFunc(self.on_mousemove)
@@ -585,23 +607,37 @@ class GLViewer:
             self.available = False
 
     def keyPressedCallback(self, key, x, y):
-        if ord(key) == 27:
+        if ord(key) == 27 or ord(key) == ord('q') or ord(key) == ord('Q'):
             self.close_func()
+            return
+        if ord(key) == 32:  # Space
+            self.paused = not self.paused
         if (ord(key) == 83 or ord(key) == 115):  # 's' or 'S'
             self.save_data = True
         if (ord(key) == 86 or ord(key) == 118):  # 'v' or 'V'
             self.use_voxels = not self.use_voxels
+        # Forward key to main loop for voxel parameter controls
+        self.key_pressed = ord(key)
 
+    def specialKeyCallback(self, key, x, y):
+        if key == GLUT_KEY_LEFT:
+            self.seekOffset = -200
+        elif key == GLUT_KEY_RIGHT:
+            self.seekOffset = 200
 
-    def on_mouse(self,*args,**kwargs):
-        (key,Up,x,y) = args
-        if key==0:
+    def on_mouse(self, *args, **kwargs):
+        (key, Up, x, y) = args
+        # Check HUD button clicks first
+        if key == 0 and Up == 0:
+            if self._handle_button_click(x, y):
+                return
+        if key == 0:
             self.mouse_button[0] = (Up == 0)
-        elif key==2 :
+        elif key == 2:
             self.mouse_button[1] = (Up == 0)
-        elif(key == 3):
+        elif key == 3:
             self.wheelPosition = self.wheelPosition + 1
-        elif(key == 4):
+        elif key == 4:
             self.wheelPosition = self.wheelPosition - 1
 
         self.mouseCurrentPosition = [x, y]
@@ -614,7 +650,9 @@ class GLViewer:
         self.previousMouseMotion = [x, y]
         glutPostRedisplay()
 
-    def on_resize(self,Width,Height):
+    def on_resize(self, Width, Height):
+        self.windowW = Width
+        self.windowH = Height
         glViewport(0, 0, Width, Height)
         self.camera.setProjection(Height / Width)
 
@@ -646,19 +684,19 @@ class GLViewer:
         if(self.mouse_button[1]):
             t = sl.Translation()
             tmp = self.camera.right_.get()
-            scale = self.mouseMotion[0] * 0.05
+            scale = self.mouseMotion[0] * 50
             t.init_vector(tmp[0] * scale, tmp[1] * scale, tmp[2] * scale)
             self.camera.translate(t)
 
             tmp = self.camera.up_.get()
-            scale = self.mouseMotion[1] * 0.05
+            scale = self.mouseMotion[1] * 50
             t.init_vector(tmp[0] * scale, tmp[1] * scale, tmp[2] * scale)
             self.camera.translate(t)
 
         if (self.wheelPosition != 0):
             t = sl.Translation()
             tmp = self.camera.forward_.get()
-            scale = self.wheelPosition * -0.5
+            scale = self.wheelPosition * -500
             t.init_vector(tmp[0] * scale, tmp[1] * scale, tmp[2] * scale)
             self.camera.translate(t)
 
@@ -669,18 +707,342 @@ class GLViewer:
 
     def draw(self):
         vpMatrix = self.camera.getViewProjectionMatrix()
+        glViewport(0, 0, self.windowW, self.windowH)
+
         glUseProgram(self.shader_image.get_program_id())
-        glUniformMatrix4fv(self.shader_image_MVP, 1, GL_TRUE,  (GLfloat * len(vpMatrix))(*vpMatrix))
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+        glUniformMatrix4fv(self.shader_image_MVP, 1, GL_TRUE, (GLfloat * len(vpMatrix))(*vpMatrix))
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
         self.zedModel.draw()
         glUseProgram(0)
 
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
         glUseProgram(self.shader_pc.get_program_id())
-        glUniformMatrix4fv(self.shader_pc_MVP, 1, GL_TRUE,  (GLfloat * len(vpMatrix))(*vpMatrix))
-        glPointSize(2. if self.use_voxels else 1.)
+        glUniformMatrix4fv(self.shader_pc_MVP, 1, GL_TRUE, (GLfloat * len(vpMatrix))(*vpMatrix))
+        glPointSize(self.pointSize)
         self.point_cloud.draw()
         glUseProgram(0)
-        
+
+        # Image PIP (bottom-left, 25% of window)
+        if self._preview_tex:
+            pipW = self.windowW // 4
+            pipH = self.windowH // 4
+            glViewport(10, 10, pipW, pipH)
+            glDisable(GL_DEPTH_TEST)
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+            self._draw_preview_tex()
+            glEnable(GL_DEPTH_TEST)
+            glViewport(0, 0, self.windowW, self.windowH)
+
+        # HUD overlay
+        self._draw_hud()
+
+    def updateImage(self, image):
+        """Upload a CPU sl.Mat (BGRA) as the PIP preview texture."""
+        if not image.is_init():
+            return
+        w = image.get_width()
+        h = image.get_height()
+        # Init texture on first call or resolution change
+        if self._preview_tex == 0 or self._preview_res != (w, h):
+            if self._preview_tex:
+                glDeleteTextures(1, [self._preview_tex])
+            self._preview_tex = glGenTextures(1)
+            glBindTexture(GL_TEXTURE_2D, self._preview_tex)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_BGRA, GL_UNSIGNED_BYTE, None)
+            glBindTexture(GL_TEXTURE_2D, 0)
+            self._preview_res = (w, h)
+        # Upload pixel data
+        data = image.get_data()
+        if data is not None:
+            glBindTexture(GL_TEXTURE_2D, self._preview_tex)
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_BGRA, GL_UNSIGNED_BYTE, data)
+            glBindTexture(GL_TEXTURE_2D, 0)
+
+    def _draw_preview_tex(self):
+        """Draw the preview texture as a fullscreen quad in the current viewport."""
+        glBindVertexArray(0)
+        glUseProgram(0)
+        glEnable(GL_TEXTURE_2D)
+        glBindTexture(GL_TEXTURE_2D, self._preview_tex)
+        glColor4f(1, 1, 1, 1)
+        glBegin(GL_QUADS)
+        glTexCoord2f(0, 1); glVertex2f(-1, -1)
+        glTexCoord2f(1, 1); glVertex2f(1, -1)
+        glTexCoord2f(1, 0); glVertex2f(1, 1)
+        glTexCoord2f(0, 0); glVertex2f(-1, 1)
+        glEnd()
+        glBindTexture(GL_TEXTURE_2D, 0)
+        glDisable(GL_TEXTURE_2D)
+
+    def _draw_hud(self):
+        """Draw 2D HUD overlay with current params, shortcuts, and clickable buttons."""
+        glDisable(GL_DEPTH_TEST)
+        glMatrixMode(GL_PROJECTION)
+        glPushMatrix()
+        glLoadIdentity()
+        glOrtho(0, self.windowW, 0, self.windowH, -1, 1)
+        glMatrixMode(GL_MODELVIEW)
+        glPushMatrix()
+        glLoadIdentity()
+
+        W, H = self.windowW, self.windowH
+        btn_h = 22
+        gap = 5
+        sm_w = 28
+        mode_w = 70
+        tog_w = 100
+        left = 10
+        row_h = btn_h + gap
+        top_y = H - 15
+
+        mode_idx = self.resolution_mode
+        is_fixed = (mode_idx == 0)
+
+        # Title
+        glColor4f(217/255., 255/255., 66/255., 1)  # sl_lime
+        self._draw_str(left, top_y, "Voxel Point Cloud")
+        top_y -= row_h
+
+        # Row 0b: Voxel / Full PC toggle
+        self._draw_btn(left, top_y, 80, btn_h, "Voxel", self.use_voxels)
+        self._draw_btn(left + 80 + gap, top_y, 80, btn_h, "Full PC", not self.use_voxels)
+        top_y -= row_h
+
+        # Grey out voxel-specific controls when in Full PC mode
+        voxel_on = self.use_voxels
+
+        # Row 1: Voxel Size
+        a = 1.0 if voxel_on else 0.5
+        glColor4f(194/255. * a, 194/255. * a, 194/255. * a, a)  # sl_iron
+        self._draw_str(left, top_y + 6, f"Size: {self.voxel_size:.1f} mm")
+        bx = left + 110
+        if voxel_on:
+            self._draw_btn(bx, top_y, sm_w, btn_h, "-")
+            self._draw_btn(bx + sm_w + gap, top_y, sm_w, btn_h, "+")
+        else:
+            glColor4f(45/255., 45/255., 45/255., 0.5)  # sl_steel disabled
+            self._draw_rect(bx, top_y, sm_w, btn_h)
+            self._draw_rect(bx + sm_w + gap, top_y, sm_w, btn_h)
+        top_y -= row_h
+
+        # Row 2: Scale (greyed when FIXED or Full PC)
+        scale_on = voxel_on and not is_fixed
+        a = 1.0 if scale_on else 0.5
+        glColor4f(194/255. * a, 194/255. * a, 194/255. * a, a)  # sl_iron
+        self._draw_str(left, top_y + 6, f"Scale: {self.resolution_scale:.2f}")
+        bx = left + 110
+        if scale_on:
+            self._draw_btn(bx, top_y, sm_w, btn_h, "-")
+            self._draw_btn(bx + sm_w + gap, top_y, sm_w, btn_h, "+")
+        else:
+            glColor4f(45/255., 45/255., 45/255., 0.5)  # sl_steel disabled
+            self._draw_rect(bx, top_y, sm_w, btn_h)
+            self._draw_rect(bx + sm_w + gap, top_y, sm_w, btn_h)
+        top_y -= row_h
+
+        # Row 3: Mode buttons
+        a = 1.0 if voxel_on else 0.5
+        glColor4f(194/255. * a, 194/255. * a, 194/255. * a, a)  # sl_iron
+        self._draw_str(left, top_y + 6, "Mode:")
+        bx = left + 50
+        if voxel_on:
+            for i in range(3):
+                self._draw_btn(bx + i * (mode_w + gap), top_y, mode_w, btn_h, self.mode_names[i], i == mode_idx)
+        else:
+            for i in range(3):
+                glColor4f(45/255., 45/255., 45/255., 0.5)  # sl_steel disabled
+                self._draw_rect(bx + i * (mode_w + gap), top_y, mode_w, btn_h)
+        top_y -= row_h
+
+        # Row 4: Centroid toggle
+        a = 1.0 if voxel_on else 0.5
+        glColor4f(194/255. * a, 194/255. * a, 194/255. * a, a)  # sl_iron
+        self._draw_str(left, top_y + 6, "Pos:")
+        bx = left + 50
+        if voxel_on:
+            self._draw_btn(bx, top_y, tog_w, btn_h, "Centroid", self.centroid)
+            self._draw_btn(bx + tog_w + gap, top_y, tog_w, btn_h, "Grid Center", not self.centroid)
+        else:
+            glColor4f(45/255., 45/255., 45/255., 0.5)  # sl_steel disabled
+            self._draw_rect(bx, top_y, tog_w, btn_h)
+            self._draw_rect(bx + tog_w + gap, top_y, tog_w, btn_h)
+        top_y -= row_h
+
+        # Row 5: Point size
+        glColor4f(194/255., 194/255., 194/255., 1)  # sl_iron
+        self._draw_str(left, top_y + 6, f"Pt size: {self.pointSize:.1f} px")
+        bx = left + 110
+        self._draw_btn(bx, top_y, sm_w, btn_h, "-")
+        self._draw_btn(bx + sm_w + gap, top_y, sm_w, btn_h, "+")
+        top_y -= row_h
+
+        # Row 6: Confidence
+        glColor4f(194/255., 194/255., 194/255., 1)  # sl_iron
+        self._draw_str(left, top_y + 6, f"Depth Conf: {self.confidenceThreshold}")
+        bx = left + 110
+        self._draw_btn(bx, top_y, sm_w, btn_h, "-")
+        self._draw_btn(bx + sm_w + gap, top_y, sm_w, btn_h, "+")
+        top_y -= row_h
+
+        # Row 7: Save + Reset
+        self._draw_btn(left, top_y, 80, btn_h, "Save PLY", False, True)
+        self._draw_btn(left + 85 + gap, top_y, 65, btn_h, "Reset")
+
+        # Keyboard shortcuts (top-right)
+        tx = W - 270
+        ty = H - 25
+        glColor4f(194/255., 194/255., 194/255., 0.6)  # sl_iron
+        self._draw_str(tx, ty,      "+/-  Size    ,/.  Scale", GLUT_BITMAP_HELVETICA_10)
+        self._draw_str(tx, ty - 14, "1/2/3 Mode   c Centroid", GLUT_BITMAP_HELVETICA_10)
+        self._draw_str(tx, ty - 28, "d/D Depth Conf  p/P Pt size", GLUT_BITMAP_HELVETICA_10)
+        self._draw_str(tx, ty - 42, "v Toggle  Space Pause  </>/< Seek", GLUT_BITMAP_HELVETICA_10)
+        self._draw_str(tx, ty - 56, "s Save  r Reset  q Quit", GLUT_BITMAP_HELVETICA_10)
+
+        glMatrixMode(GL_PROJECTION)
+        glPopMatrix()
+        glMatrixMode(GL_MODELVIEW)
+        glPopMatrix()
+        glEnable(GL_DEPTH_TEST)
+
+    @staticmethod
+    def _draw_str(x, y, text, font=GLUT_BITMAP_HELVETICA_12):
+        glWindowPos2f(x, y)
+        for ch in text:
+            glutBitmapCharacter(font, ord(ch))
+
+    @staticmethod
+    def _draw_rect(x, y, w, h):
+        glBegin(GL_QUADS)
+        glVertex2f(x, y); glVertex2f(x + w, y)
+        glVertex2f(x + w, y + h); glVertex2f(x, y + h)
+        glEnd()
+
+    @staticmethod
+    def _draw_btn(x, y, w, h, label, active=False, highlight=False):
+        # Stereolabs brand: sl_lime active, sl_charcoal normal, sl_steel border
+        if active:
+            glColor4f(217/255., 255/255., 66/255., 0.9)   # sl_lime
+        elif highlight:
+            glColor4f(60/255., 60/255., 60/255., 0.85)    # sl_charcoal
+        else:
+            glColor4f(45/255., 45/255., 45/255., 0.8)     # sl_steel
+        glBegin(GL_QUADS)
+        glVertex2f(x, y); glVertex2f(x + w, y)
+        glVertex2f(x + w, y + h); glVertex2f(x, y + h)
+        glEnd()
+        glColor4f(137/255., 137/255., 137/255., 0.6)      # sl_ash border
+        glBegin(GL_LINE_LOOP)
+        glVertex2f(x, y); glVertex2f(x + w, y)
+        glVertex2f(x + w, y + h); glVertex2f(x, y + h)
+        glEnd()
+        # Text: dark on lime, light on dark buttons
+        if active:
+            glColor4f(25/255., 25/255., 25/255., 1)       # sl_soil text
+        else:
+            glColor4f(242/255., 242/255., 242/255., 1)    # sl_pearl text
+        tx = x + w * 0.5 - 4 if len(label) <= 2 else x + 4
+        glWindowPos2f(tx, y + 6)
+        for ch in label:
+            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_10, ord(ch))
+
+    def _handle_button_click(self, x, y):
+        """Check if click hits a HUD button, return True if consumed."""
+        gy = self.windowH - y  # GLUT y → GL y
+        btn_h, gap, sm_w, mode_w, tog_w, left = 22, 5, 28, 70, 100, 10
+        row_h = btn_h + gap
+        top_y = self.windowH - 15 - row_h  # skip title
+
+        def hit(bx, by, bw):
+            return bx <= x <= bx + bw and by <= gy <= by + btn_h
+
+        # Row 0b: Voxel / Full PC toggle
+        if hit(left, top_y, 80):
+            self.use_voxels = True
+            return True
+        if hit(left + 80 + gap, top_y, 80):
+            self.use_voxels = False
+            return True
+        top_y -= row_h
+
+        # Row 1: Size [-] [+] (only when voxel mode)
+        if self.use_voxels:
+            bx = left + 110
+            if hit(bx, top_y, sm_w):
+                self.voxel_size = max(5.0, self.voxel_size * 0.8)
+                return True
+            if hit(bx + sm_w + gap, top_y, sm_w):
+                self.voxel_size *= 1.25
+                return True
+        top_y -= row_h
+
+        # Row 2: Scale [-] [+] (only when voxel mode and not FIXED)
+        if self.use_voxels and self.resolution_mode != 0:
+            bx = left + 110
+            if hit(bx, top_y, sm_w):
+                self.resolution_scale = max(0.01, self.resolution_scale * 0.8)
+                return True
+            if hit(bx + sm_w + gap, top_y, sm_w):
+                self.resolution_scale = min(3.0, self.resolution_scale * 1.25)
+                return True
+        top_y -= row_h
+
+        # Row 3: Mode [FIXED] [STEREO] [LINEAR] (only when voxel mode)
+        if self.use_voxels:
+            bx = left + 50
+            for i in range(3):
+                if hit(bx + i * (mode_w + gap), top_y, mode_w):
+                    self.resolution_mode = i
+                    return True
+        top_y -= row_h
+
+        # Row 4: [Centroid] [Grid Center] (only when voxel mode)
+        if self.use_voxels:
+            bx = left + 50
+            if hit(bx, top_y, tog_w):
+                self.centroid = True
+                return True
+            if hit(bx + tog_w + gap, top_y, tog_w):
+                self.centroid = False
+                return True
+        top_y -= row_h
+
+        # Row 5: Pt size [-] [+]
+        bx = left + 110
+        if hit(bx, top_y, sm_w):
+            self.pointSize = max(0.5, self.pointSize - 0.2)
+            return True
+        if hit(bx + sm_w + gap, top_y, sm_w):
+            self.pointSize = min(20.0, self.pointSize + 0.2)
+            return True
+        top_y -= row_h
+
+        # Row 6: Confidence [-] [+]
+        bx = left + 110
+        if hit(bx, top_y, sm_w):
+            self.confidenceThreshold = max(1, self.confidenceThreshold - 5)
+            return True
+        if hit(bx + sm_w + gap, top_y, sm_w):
+            self.confidenceThreshold = min(100, self.confidenceThreshold + 5)
+            return True
+        top_y -= row_h
+
+        # Row 7: Save / Reset
+        if hit(left, top_y, 80):
+            self.save_data = True
+            return True
+        if hit(left + 85 + gap, top_y, 65):
+            self.voxel_size = 50.0
+            self.resolution_scale = 0.2
+            self.resolution_mode = 1
+            self.centroid = True
+            self.pointSize = 3.0
+            self.confidenceThreshold = 50
+            return True
+
+        return False
+
 class CameraGL:
     def __init__(self):
         self.ORIGINAL_FORWARD = sl.Translation()
@@ -689,9 +1051,9 @@ class CameraGL:
         self.ORIGINAL_UP.init_vector(0,1,0)
         self.ORIGINAL_RIGHT = sl.Translation()
         self.ORIGINAL_RIGHT.init_vector(1,0,0)
-        self.znear = 0.5
-        self.zfar = 100.
-        self.horizontalFOV = 70.
+        self.znear = 200.
+        self.zfar = 50000.
+        self.horizontalFOV = 90.
         self.orientation_ = sl.Orientation()
         self.position_ = sl.Translation()
         self.forward_ = sl.Translation()
@@ -700,17 +1062,21 @@ class CameraGL:
         self.vertical_ = sl.Translation()
         self.vpMatrix_ = sl.Matrix4f()
         self.offset_ = sl.Translation()
-        self.offset_.init_vector(0,0,5)
+        self.offset_.init_vector(0,0,0)
         self.projection_ = sl.Matrix4f()
         self.projection_.set_identity()
         self.setProjection(1.78)
 
-        self.position_.init_vector(0., 0., 0.)
+        self.position_.init_vector(0., 2000., 3000.)
         tmp = sl.Translation()
-        tmp.init_vector(0, 0, -.1)
+        tmp.init_vector(0, 0, -100)
         tmp2 = sl.Translation()
         tmp2.init_vector(0, 1, 0)
-        self.setDirection(tmp, tmp2)        
+        self.setDirection(tmp, tmp2)
+        # Set absolute camera orientation to match C++ viewer
+        r = sl.Rotation()
+        r.set_euler_angles(-25., 0., 0., False)
+        self.setRotation(r)
 
     def update(self): 
         dot_ = sl.Translation.dot_translation(self.vertical_, self.up_)

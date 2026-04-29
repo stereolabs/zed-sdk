@@ -566,21 +566,22 @@ class GLViewer:
             vert=self.camera.vertical_
             tmp = vert.get()
             vert.init_vector(tmp[0] * 1.,tmp[1] * 1., tmp[2] * 1.)
-            r.init_angle_translation(self.mouseMotion[0] * 0.002, vert)
+            r.init_angle_translation(-self.mouseMotion[0] * 0.05, vert)
             self.camera.rotate(r)
 
-            r.init_angle_translation(self.mouseMotion[1] * 0.002, self.camera.right_)
+            r.init_angle_translation(
+                -self.mouseMotion[1] * 0.05, self.camera.right_)
             self.camera.rotate(r)
         
         if(self.mouse_button[1]):
             t = sl.Translation()
             tmp = self.camera.right_.get()
-            scale = self.mouseMotion[0] *-0.01
+            scale = self.mouseMotion[0] * 0.2
             t.init_vector(tmp[0] * scale, tmp[1] * scale, tmp[2] * scale)
             self.camera.translate(t)
             
             tmp = self.camera.up_.get()
-            scale = self.mouseMotion[1] * 0.01
+            scale = self.mouseMotion[1] * 0.2
             t.init_vector(tmp[0] * scale, tmp[1] * scale, tmp[2] * scale)
             self.camera.translate(t)
 
