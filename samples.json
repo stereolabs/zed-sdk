@@ -1,0 +1,850 @@
+{
+  "sdk_version": "5.3",
+  "repository": "https://github.com/stereolabs/zed-sdk",
+  "count": 64,
+  "samples": [
+    {
+      "id": "body-tracking-body-tracking",
+      "module": "Body Tracking",
+      "name": "body tracking",
+      "path": "body tracking/body tracking",
+      "languages": [
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "Camera images are displayed with human bodies as skeletons; Bodies are tracked across time and space; Display bodies bounding boxes by pressing the b key",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/body-tracking.md",
+      "readme": "body tracking/body tracking/README.md"
+    },
+    {
+      "id": "body-tracking-export-json-export",
+      "module": "Body Tracking",
+      "name": "export/JSON export",
+      "path": "body tracking/export/JSON export",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "This sample shows how to export bodies detected with the SDK in a JSON format.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/body-tracking.md",
+      "readme": "body tracking/export/JSON export/cpp/README.md"
+    },
+    {
+      "id": "body-tracking-export-fbx-export",
+      "module": "Body Tracking",
+      "name": "export/fbx export",
+      "path": "body tracking/export/fbx export",
+      "languages": [
+        "cpp"
+      ],
+      "description": "This sample shows how to export ZED Camera skeleton detection data as FBX file compatible with 3D software like Blender or Maya. It is using the FBX SDK, make sure it is installed on your computer.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/body-tracking.md",
+      "readme": "body tracking/export/fbx export/cpp/README.md"
+    },
+    {
+      "id": "body-tracking-multi-camera",
+      "module": "Body Tracking",
+      "name": "multi-camera",
+      "path": "body tracking/multi-camera",
+      "languages": [
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "This sample shows how to detect and track human bodies in space.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/body-tracking.md",
+      "readme": "body tracking/multi-camera/csharp/README.md"
+    },
+    {
+      "id": "camera-control",
+      "module": "Camera Control",
+      "name": "Camera Control",
+      "path": "camera control",
+      "languages": [
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "This sample shows how to capture images with the ZED SDK video module and adjust camera settings. You can find additional information on the Video module in our Documentation and API Reference.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/camera/camera-controls.md",
+      "readme": "camera control/README.md"
+    },
+    {
+      "id": "camera-streaming-multi-sender",
+      "module": "Camera Streaming",
+      "name": "multi_sender",
+      "path": "camera streaming/multi_sender",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "This sample shows how to enable streaming module of the ZED SDK as image sender, using multiple ZED Camera in parallel.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/camera/local-network-streaming.md",
+      "readme": "camera streaming/multi_sender/README.md"
+    },
+    {
+      "id": "camera-streaming-receiver",
+      "module": "Camera Streaming",
+      "name": "receiver",
+      "path": "camera streaming/receiver",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "Connects to a network ZED device.; Uses SDK to compute point cloud and displays it with OpenGL.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/camera/local-network-streaming.md",
+      "readme": "camera streaming/receiver/README.md"
+    },
+    {
+      "id": "camera-streaming-single-sender",
+      "module": "Camera Streaming",
+      "name": "single_sender",
+      "path": "camera streaming/single_sender",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "This sample shows how to enable streaming module of the ZED SDK as image sender, using one ZED Camera.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/camera/local-network-streaming.md",
+      "readme": "camera streaming/single_sender/README.md"
+    },
+    {
+      "id": "depth-sensing-automatic-region-of-interest",
+      "module": "Depth Sensing",
+      "name": "automatic region of interest",
+      "path": "depth sensing/automatic region of interest",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "This repository contains samples demonstrating how to use the ZED camera's Depth Sensing features using the ZED SDK. You can find additional information on the Depth Sensing module in our Documentation and API Reference.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/depth-sensing.md",
+      "readme": ""
+    },
+    {
+      "id": "depth-sensing-depth-sensing",
+      "module": "Depth Sensing",
+      "name": "depth sensing",
+      "path": "depth sensing/depth sensing",
+      "languages": [
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "Camera live point cloud is retreived; An OpenGL windows displays it in 3D",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/depth-sensing.md",
+      "readme": "depth sensing/depth sensing/README.md"
+    },
+    {
+      "id": "depth-sensing-export",
+      "module": "Depth Sensing",
+      "name": "export",
+      "path": "depth sensing/export",
+      "languages": [
+        "cpp"
+      ],
+      "description": "This repository contains samples demonstrating how to use the ZED camera's Depth Sensing features using the ZED SDK. You can find additional information on the Depth Sensing module in our Documentation and API Reference.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/depth-sensing.md",
+      "readme": ""
+    },
+    {
+      "id": "depth-sensing-fusion",
+      "module": "Depth Sensing",
+      "name": "fusion",
+      "path": "depth sensing/fusion",
+      "languages": [
+        "cpp"
+      ],
+      "description": "This repository contains samples demonstrating how to use the ZED camera's Depth Sensing features using the ZED SDK. You can find additional information on the Depth Sensing module in our Documentation and API Reference.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/depth-sensing.md",
+      "readme": ""
+    },
+    {
+      "id": "depth-sensing-image-refocus",
+      "module": "Depth Sensing",
+      "name": "image refocus",
+      "path": "depth sensing/image refocus",
+      "languages": [
+        "cpp"
+      ],
+      "description": "This sample demonstrates how to grab and process images/depth on a CUDA kernel for a depth-based focusing application. It creates a simple layered depth-of-filed rendering based on a gaussian blur effect where the kernel size depends on the actual depth.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/depth-sensing.md",
+      "readme": "depth sensing/image refocus/cpp/README.md"
+    },
+    {
+      "id": "depth-sensing-manual-region-of-interest",
+      "module": "Depth Sensing",
+      "name": "manual region of interest",
+      "path": "depth sensing/manual region of interest",
+      "languages": [
+        "cpp"
+      ],
+      "description": "Camera images are displayed on an OpenCV windows; The ROI can be constructed from multiple rectangles, selected using OpenCV mouse callback; The ROI can be saved and reloaded from an image, the result is shown for the depth map image, but it's also applied for the positional...",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/depth-sensing.md",
+      "readme": "depth sensing/manual region of interest/README.md"
+    },
+    {
+      "id": "depth-sensing-multi-camera",
+      "module": "Depth Sensing",
+      "name": "multi camera",
+      "path": "depth sensing/multi camera",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "This sample shows how to use multiple ZED cameras in a single application.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/depth-sensing.md",
+      "readme": "depth sensing/multi camera/README.md"
+    },
+    {
+      "id": "depth-sensing-voxel-point-cloud",
+      "module": "Depth Sensing",
+      "name": "voxel point cloud",
+      "path": "depth sensing/voxel point cloud",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "This sample demonstrates voxel-decimated 3D point cloud capture with the ZED SDK. It displays an interactive OpenGL viewer where you can adjust voxel parameters in real time.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/depth-sensing.md",
+      "readme": "depth sensing/voxel point cloud/cpp/README.md"
+    },
+    {
+      "id": "global-localization-live",
+      "module": "Global Localization",
+      "name": "live",
+      "path": "global localization/live",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "This sample demonstrates how to use the ZED SDK Global Localization module to achieve global scale localization on a real-world map using the ZED camera. The ZED SDK Live Global Localization sample fuses visual odometry from the ZED SDK with external GNSS data in real-time,...",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/global-localization.md",
+      "readme": "global localization/live/README.md"
+    },
+    {
+      "id": "global-localization-playback",
+      "module": "Global Localization",
+      "name": "playback",
+      "path": "global localization/playback",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "The ZED SDK Global Localization Playback sample demonstrates how to fuse pre-recorded GNSS data (saved in a JSON file) and pre-recorded camera data (saved into an SVO file) for achieving global scale localization on a real-world map. This sample is useful for applications...",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/global-localization.md",
+      "readme": "global localization/playback/README.md"
+    },
+    {
+      "id": "global-localization-recording",
+      "module": "Global Localization",
+      "name": "recording",
+      "path": "global localization/recording",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "The Global Localization Data Recording sample demonstrates how to record data for global localization on real-world maps using the ZED camera. The sample generates data in the form of an SVO file, which contains camera data, and a JSON file, which contains pre-recorded GNSS...",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/global-localization.md",
+      "readme": "global localization/recording/README.md"
+    },
+    {
+      "id": "object-detection-birds-eye-viewer",
+      "module": "Object Detection",
+      "name": "birds eye viewer",
+      "path": "object detection/birds eye viewer",
+      "languages": [
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "The camera point cloud is displayed in a 3D OpenGL view; 3D bounding boxes around detected objects are drawn; Objects classes and confidences can be changed",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/object-detection.md",
+      "readme": "object detection/birds eye viewer/README.md"
+    },
+    {
+      "id": "object-detection-concurrent-detections",
+      "module": "Object Detection",
+      "name": "concurrent detections",
+      "path": "object detection/concurrent detections",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "The camera point cloud is displayed in a 3D OpenGL view; 3D bounding boxes and human skeletons around detected objects are drawn; Objects classes and confidences can be changed",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/object-detection.md",
+      "readme": "object detection/concurrent detections/README.md"
+    },
+    {
+      "id": "object-detection-custom-detector",
+      "module": "Object Detection",
+      "name": "custom detector",
+      "path": "object detection/custom detector",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "This directory contains comprehensive examples demonstrating how to use custom models with the ZED SDK for real-time custom object detection and 3D capabilities including localization, 3D bounding boxes, and tracking.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/object-detection.md",
+      "readme": "object detection/custom detector/cpp/README.md"
+    },
+    {
+      "id": "object-detection-image-viewer",
+      "module": "Object Detection",
+      "name": "image viewer",
+      "path": "object detection/image viewer",
+      "languages": [
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "The camera image is displayed on a 2D OpenGL view; 3D bounding boxes around detected objects are drawn; Objects classes and confidences can be changed",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/object-detection.md",
+      "readme": "object detection/image viewer/README.md"
+    },
+    {
+      "id": "object-detection-multi-camera",
+      "module": "Object Detection",
+      "name": "multi-camera",
+      "path": "object detection/multi-camera",
+      "languages": [
+        "cpp"
+      ],
+      "description": "These samples show how to use ZED SDK for performing object detection. You can find additional information on the Object Detection module in our Documentation and API Reference.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/object-detection.md",
+      "readme": ""
+    },
+    {
+      "id": "object-detection-multi-camera-multi-model",
+      "module": "Object Detection",
+      "name": "multi-camera_multi-model",
+      "path": "object detection/multi-camera_multi-model",
+      "languages": [
+        "cpp"
+      ],
+      "description": "These samples show how to use ZED SDK for performing object detection. You can find additional information on the Object Detection module in our Documentation and API Reference.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/object-detection.md",
+      "readme": ""
+    },
+    {
+      "id": "plane-detection-floor-plane",
+      "module": "Plane Detection",
+      "name": "floor plane",
+      "path": "plane detection/floor plane",
+      "languages": [
+        "cpp"
+      ],
+      "description": "These samples show how to use ZED SDK for plane detection. You can find additional information on the Plane Detection features in our Documentation.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/spatial-mapping/plane-detection.md",
+      "readme": ""
+    },
+    {
+      "id": "plane-detection-plane-detection",
+      "module": "Plane Detection",
+      "name": "plane detection",
+      "path": "plane detection/plane detection",
+      "languages": [
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "Live image is displayed in an OpenGL window; click on the image to estimate the plane of the pointed surface; press 'Spacebar' to estimate the floor plane",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/spatial-mapping/plane-detection.md",
+      "readme": "plane detection/plane detection/README.md"
+    },
+    {
+      "id": "positional-tracking-export-fbx",
+      "module": "Positional Tracking",
+      "name": "export/fbx",
+      "path": "positional tracking/export/fbx",
+      "languages": [
+        "cpp"
+      ],
+      "description": "This sample shows how to export ZED Camera Path data as FBX file compatible with 3D software like Blender or Maya. It is using the FBX SDK, make sure it is installed on your computer.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/positional-tracking.md",
+      "readme": "positional tracking/export/fbx/cpp/README.md"
+    },
+    {
+      "id": "positional-tracking-positional-tracking",
+      "module": "Positional Tracking",
+      "name": "positional tracking",
+      "path": "positional tracking/positional tracking",
+      "languages": [
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "An OpenGL window displays the camera path in a 3D window; path data, translation and rotation, are displayed",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/positional-tracking.md",
+      "readme": "positional tracking/positional tracking/README.md"
+    },
+    {
+      "id": "recording-encrypted",
+      "module": "Recording",
+      "name": "encrypted",
+      "path": "recording/encrypted",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "These samples show how to use ZED SDK for recording and playback SVO files. SVO files are a proprietary format developed by Stereolabs, designed to facilitate the storage and replay of data captured by the ZED camera. You can find additional information on the video recording...",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/camera/recording.md",
+      "readme": ""
+    },
+    {
+      "id": "recording-export-sensors",
+      "module": "Recording",
+      "name": "export/sensors",
+      "path": "recording/export/sensors",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "These samples show how to use ZED SDK for recording and playback SVO files. SVO files are a proprietary format developed by Stereolabs, designed to facilitate the storage and replay of data captured by the ZED camera. You can find additional information on the video recording...",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/camera/recording.md",
+      "readme": ""
+    },
+    {
+      "id": "recording-export-svo",
+      "module": "Recording",
+      "name": "export/svo",
+      "path": "recording/export/svo",
+      "languages": [
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "This sample demonstrates how to read a SVO file and convert it into an AVI file (LEFT + RIGHT) or (LEFT + DEPTHVIEW).",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/camera/recording.md",
+      "readme": "recording/export/svo/README.md"
+    },
+    {
+      "id": "recording-playback-external-data",
+      "module": "Recording",
+      "name": "playback/external_data",
+      "path": "recording/playback/external_data",
+      "languages": [
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "These samples show how to use ZED SDK for recording and playback SVO files. SVO files are a proprietary format developed by Stereolabs, designed to facilitate the storage and replay of data captured by the ZED camera. You can find additional information on the video recording...",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/camera/recording.md",
+      "readme": ""
+    },
+    {
+      "id": "recording-playback-multi-camera",
+      "module": "Recording",
+      "name": "playback/multi camera",
+      "path": "recording/playback/multi camera",
+      "languages": [
+        "cpp"
+      ],
+      "description": "This sample demonstrates how to read a SVO video file.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/camera/recording.md",
+      "readme": "recording/playback/multi camera/cpp/README.md"
+    },
+    {
+      "id": "recording-playback-single-camera",
+      "module": "Recording",
+      "name": "playback/single camera",
+      "path": "recording/playback/single camera",
+      "languages": [
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "This sample demonstrates how to read a SVO video file.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/camera/recording.md",
+      "readme": "recording/playback/single camera/cpp/README.md"
+    },
+    {
+      "id": "recording-recording-external-data",
+      "module": "Recording",
+      "name": "recording/external_data",
+      "path": "recording/recording/external_data",
+      "languages": [
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "These samples show how to use ZED SDK for recording and playback SVO files. SVO files are a proprietary format developed by Stereolabs, designed to facilitate the storage and replay of data captured by the ZED camera. You can find additional information on the video recording...",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/camera/recording.md",
+      "readme": ""
+    },
+    {
+      "id": "recording-recording-multi-camera",
+      "module": "Recording",
+      "name": "recording/multi camera",
+      "path": "recording/recording/multi camera",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "This sample shows how to record multiple video in parallel in SVO format",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/camera/recording.md",
+      "readme": "recording/recording/multi camera/python/README.md"
+    },
+    {
+      "id": "recording-recording-single-camera",
+      "module": "Recording",
+      "name": "recording/single camera",
+      "path": "recording/recording/single camera",
+      "languages": [
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "give a name to the file to be created; press 'ctrl+c' to stop the file creation",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/camera/recording.md",
+      "readme": "recording/recording/single camera/README.md"
+    },
+    {
+      "id": "sensors-api-managed",
+      "module": "Sensors API",
+      "name": "managed",
+      "path": "sensors_api/managed",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "This sample demonstrates how to use the Sensors API (sl::Sensors) to manage multiple ZED cameras, ZED One cameras, and LiDARs with a unified interface. It features 3D visualization with OpenGL or Rerun, and supports live streaming, file playback/recording, object detection,...",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/sensors.md",
+      "readme": "sensors_api/managed/cpp/README.md"
+    },
+    {
+      "id": "sensors-api-sensor-placer",
+      "module": "Sensors API",
+      "name": "sensor_placer",
+      "path": "sensors_api/sensor_placer",
+      "languages": [
+        "cpp"
+      ],
+      "description": "A GUI tool for positioning and orienting multiple ZED cameras and LiDARs relative to each other. It displays live point clouds from all connected sensors in a shared 3D view, letting you interactively adjust each sensor's pose. Once aligned, export the result as a JSON...",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/sensors.md",
+      "readme": "sensors_api/sensor_placer/cpp/README.md"
+    },
+    {
+      "id": "sensors-api-threaded",
+      "module": "Sensors API",
+      "name": "threaded",
+      "path": "sensors_api/threaded",
+      "languages": [
+        "cpp"
+      ],
+      "description": "This sample demonstrates how to use the individual sl::Camera and sl::Lidar APIs to manage multiple sensors with dedicated threads for each device. Unlike the managed sample that uses the unified sl::Sensors wrapper, this sample gives you direct, per-device control over grab...",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/sensors.md",
+      "readme": "sensors_api/threaded/cpp/README.md"
+    },
+    {
+      "id": "spatial-mapping-multi-camera",
+      "module": "Spatial Mapping",
+      "name": "multi camera",
+      "path": "spatial mapping/multi camera",
+      "languages": [
+        "cpp"
+      ],
+      "description": "multi camera — Spatial Mapping sample.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/spatial-mapping.md",
+      "readme": ""
+    },
+    {
+      "id": "spatial-mapping-spatial-mapping",
+      "module": "Spatial Mapping",
+      "name": "spatial mapping",
+      "path": "spatial mapping/spatial mapping",
+      "languages": [
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "These samples provide a comprehensive overview of how to leverage the ZED SDK for effective spatial mapping using a single ZED camera. With these samples, users can gain a solid understanding of how to utilize the ZED stereo camera to create detailed 3D maps of indoor and...",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules/spatial-mapping.md",
+      "readme": "spatial mapping/spatial mapping/README.md"
+    },
+    {
+      "id": "tutorials-tutorial-1-hello-zed",
+      "module": "Tutorials",
+      "name": "tutorial 1 - hello ZED",
+      "path": "tutorials/tutorial 1 - hello ZED",
+      "languages": [
+        "c",
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "This tutorial simply shows how to configure and open the ZED, then print its serial number and then close the camera. This is the most basic step and a good start for using the ZED SDK.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules.md",
+      "readme": "tutorials/tutorial 1 - hello ZED/README.md"
+    },
+    {
+      "id": "tutorials-tutorial-10-split-process",
+      "module": "Tutorials",
+      "name": "tutorial 10 - split process",
+      "path": "tutorials/tutorial 10 - split process",
+      "languages": [
+        "cpp"
+      ],
+      "description": "This tutorial shows how to get an image then the depth from the ZED SDK. The program will loop until 50 frames are grabbed. We assume that you have followed previous tutorials (opening the ZED and image capture).",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules.md",
+      "readme": "tutorials/tutorial 10 - split process/README.md"
+    },
+    {
+      "id": "tutorials-tutorial-11-health-status",
+      "module": "Tutorials",
+      "name": "tutorial 11 - health status",
+      "path": "tutorials/tutorial 11 - health status",
+      "languages": [
+        "cpp"
+      ],
+      "description": "tutorial 11 - health status — Tutorials sample.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules.md",
+      "readme": ""
+    },
+    {
+      "id": "tutorials-tutorial-12-retrieve-tensor",
+      "module": "Tutorials",
+      "name": "tutorial 12 - retrieve tensor",
+      "path": "tutorials/tutorial 12 - retrieve tensor",
+      "languages": [
+        "cpp"
+      ],
+      "description": "This tutorial shows how to use the Camera::retrieveTensor function to get a pre-processed tensor from the ZED camera, suitable for deep learning inference.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules.md",
+      "readme": "tutorials/tutorial 12 - retrieve tensor/README.md"
+    },
+    {
+      "id": "tutorials-tutorial-2-image-capture",
+      "module": "Tutorials",
+      "name": "tutorial 2 - image capture",
+      "path": "tutorials/tutorial 2 - image capture",
+      "languages": [
+        "c",
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "This tutorial shows how to capture left images of the ZED camera. The program will loop until we have successfully grabbed 50 images. We assume that you have read the tutorial 1 and successfully opened your ZED.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules.md",
+      "readme": "tutorials/tutorial 2 - image capture/README.md"
+    },
+    {
+      "id": "tutorials-tutorial-3-depth-sensing",
+      "module": "Tutorials",
+      "name": "tutorial 3 - depth sensing",
+      "path": "tutorials/tutorial 3 - depth sensing",
+      "languages": [
+        "c",
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "This tutorial shows how to get the depth from the ZED SDK. The program will loop until 50 frames are grabbed. We assume that you have followed previous tutorials (opening the ZED and image capture).",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules.md",
+      "readme": "tutorials/tutorial 3 - depth sensing/README.md"
+    },
+    {
+      "id": "tutorials-tutorial-4-positional-tracking",
+      "module": "Tutorials",
+      "name": "tutorial 4 - positional tracking",
+      "path": "tutorials/tutorial 4 - positional tracking",
+      "languages": [
+        "c",
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "This tutorial shows how to use the ZED as a positional tracker. The program will loop until 1000 position are grabbed. We assume that you have followed previous tutorials.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules.md",
+      "readme": "tutorials/tutorial 4 - positional tracking/README.md"
+    },
+    {
+      "id": "tutorials-tutorial-5-spatial-mapping",
+      "module": "Tutorials",
+      "name": "tutorial 5 - spatial mapping",
+      "path": "tutorials/tutorial 5 - spatial mapping",
+      "languages": [
+        "c",
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "This tutorial shows how to use the spatial mapping module with the ZED. It will loop until 500 frames are grabbed, extract a mesh, filter it and save it as a obj file. We assume that you have followed previous tutorials.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules.md",
+      "readme": "tutorials/tutorial 5 - spatial mapping/README.md"
+    },
+    {
+      "id": "tutorials-tutorial-6-object-detection",
+      "module": "Tutorials",
+      "name": "tutorial 6 - object detection",
+      "path": "tutorials/tutorial 6 - object detection",
+      "languages": [
+        "c",
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "This tutorial shows how to use the object detection module with the ZED 2. We assume that you have followed previous tutorials.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules.md",
+      "readme": "tutorials/tutorial 6 - object detection/README.md"
+    },
+    {
+      "id": "tutorials-tutorial-7-sensor-data",
+      "module": "Tutorials",
+      "name": "tutorial 7 - sensor data",
+      "path": "tutorials/tutorial 7 - sensor data",
+      "languages": [
+        "c",
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "This tutorial shows how to use retrieve sensor data from ZED Mini and ZED2. It will loop until 800 data samples are grabbed, printing the updated values on console. We assume that you have followed previous tutorials.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules.md",
+      "readme": "tutorials/tutorial 7 - sensor data/README.md"
+    },
+    {
+      "id": "tutorials-tutorial-8-body-tracking",
+      "module": "Tutorials",
+      "name": "tutorial 8 - body tracking",
+      "path": "tutorials/tutorial 8 - body tracking",
+      "languages": [
+        "c",
+        "cpp",
+        "csharp",
+        "python"
+      ],
+      "description": "This tutorial shows how to use the human body module with the ZED 2. We assume that you have followed previous tutorials.",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules.md",
+      "readme": "tutorials/tutorial 8 - body tracking/README.md"
+    },
+    {
+      "id": "tutorials-tutorial-9-global-localization",
+      "module": "Tutorials",
+      "name": "tutorial 9 - global localization",
+      "path": "tutorials/tutorial 9 - global localization",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "Ingest fake GNSS data to the fusion; Log resulting global position",
+      "docs": "https://docs.stereolabs.com/docs/development/zed-sdk/modules.md",
+      "readme": "tutorials/tutorial 9 - global localization/cpp/README.md"
+    },
+    {
+      "id": "virtual-stereo",
+      "module": "Virtual Stereo",
+      "name": "Virtual Stereo",
+      "path": "virtual stereo",
+      "languages": [
+        "cpp"
+      ],
+      "description": "Virtual Stereo sample.",
+      "docs": "https://docs.stereolabs.com/docs/products/cameras/zedxone/dual-camera-stereo-vision.md",
+      "readme": ""
+    },
+    {
+      "id": "zed-one",
+      "module": "ZED One",
+      "name": "ZED One",
+      "path": "zed one",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "These samples demonstrate how to use the ZED SDK with the ZED One mono camera. The ZED One is a compact monocular camera that provides high-quality video capture, streaming, and recording capabilities. You can find additional information in our Documentation.",
+      "docs": "https://docs.stereolabs.com/docs/products/cameras/zedxone.md",
+      "readme": "zed one/README.md"
+    },
+    {
+      "id": "zed-one-custom-inference",
+      "module": "ZED One",
+      "name": "custom_inference",
+      "path": "zed one/custom_inference",
+      "languages": [
+        "cpp"
+      ],
+      "description": "This sample demonstrates asynchronous object detection using custom YOLO models (YOLOv5, YOLOv6, YOLOv8) in ONNX format with TensorRT optimization. The asynchronous processing improves performance by running inference in parallel with camera capture.",
+      "docs": "https://docs.stereolabs.com/docs/products/cameras/zedxone.md",
+      "readme": "zed one/custom_inference/cpp/README.md"
+    },
+    {
+      "id": "zed-one-live",
+      "module": "ZED One",
+      "name": "live",
+      "path": "zed one/live",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "This sample shows how to capture and display live video from a ZED One camera.",
+      "docs": "https://docs.stereolabs.com/docs/products/cameras/zedxone.md",
+      "readme": "zed one/live/README.md"
+    },
+    {
+      "id": "zed-one-streaming-receiver",
+      "module": "ZED One",
+      "name": "streaming_receiver",
+      "path": "zed one/streaming_receiver",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "This sample shows how to receive and display a video stream from a remote ZED One camera.",
+      "docs": "https://docs.stereolabs.com/docs/products/cameras/zedxone.md",
+      "readme": "zed one/streaming_receiver/README.md"
+    },
+    {
+      "id": "zed-one-streaming-sender",
+      "module": "ZED One",
+      "name": "streaming_sender",
+      "path": "zed one/streaming_sender",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "This sample shows how to stream live video from a ZED One camera over the network.",
+      "docs": "https://docs.stereolabs.com/docs/products/cameras/zedxone.md",
+      "readme": "zed one/streaming_sender/README.md"
+    },
+    {
+      "id": "zed-one-svo-external-data",
+      "module": "ZED One",
+      "name": "svo_external_data",
+      "path": "zed one/svo_external_data",
+      "languages": [
+        "cpp"
+      ],
+      "description": "This sample shows how to embed and retrieve custom data within SVO files recorded with a ZED One camera.",
+      "docs": "https://docs.stereolabs.com/docs/products/cameras/zedxone.md",
+      "readme": "zed one/svo_external_data/README.md"
+    },
+    {
+      "id": "zed-one-svo-playback",
+      "module": "ZED One",
+      "name": "svo_playback",
+      "path": "zed one/svo_playback",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "This sample shows how to read and play back SVO files recorded with a ZED One camera.",
+      "docs": "https://docs.stereolabs.com/docs/products/cameras/zedxone.md",
+      "readme": "zed one/svo_playback/README.md"
+    },
+    {
+      "id": "zed-one-svo-recording",
+      "module": "ZED One",
+      "name": "svo_recording",
+      "path": "zed one/svo_recording",
+      "languages": [
+        "cpp",
+        "python"
+      ],
+      "description": "This sample shows how to record video from a ZED One camera to SVO format.",
+      "docs": "https://docs.stereolabs.com/docs/products/cameras/zedxone.md",
+      "readme": "zed one/svo_recording/README.md"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+name: 'Check samples index'
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '**/README.md'
+      - '**/cpp/**'
+      - '**/python/**'
+      - '**/csharp/**'
+      - '**/c/**'
+      - 'samples.json'
+      - 'tools/generate_index.py'
+      - '.github/workflows/check-index.yml'
+  push:
+    branches: [master]
+
+jobs:
+  check-index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Verify samples.json is up to date
+        run: python tools/generate_index.py --check

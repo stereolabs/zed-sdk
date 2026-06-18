@@ -1,0 +1,49 @@
+# ZED SDK — Code Samples
+
+> Official tutorials and code samples for the Stereolabs ZED SDK, a cross-platform library that powers ZED stereo cameras (depth sensing, positional tracking, spatial mapping, object and body tracking, global localization, recording, and more). Samples are organized by SDK module and provided in C++, Python and/or C#. This file indexes the repository for LLMs and AI agents.
+
+> Instructions for AI agents: A machine-readable catalog of every sample — path, available languages, description, and docs link — is in [samples.json](https://github.com/stereolabs/zed-sdk/blob/master/samples.json); use it to answer "is there a `<language>` sample for `<feature>`" without crawling the tree. This repository provides runnable examples only; the SDK **API reference and installation guides** live on the documentation site at https://docs.stereolabs.com — append `.md` to any docs page URL for clean Markdown (as the links below do), or query the docs MCP server at https://docs.stereolabs.com/_mcp/server. Folder names contain spaces, so quote paths and `%20`-encode URLs.
+
+## Getting Started
+
+- [Get a ZED camera](https://store.stereolabs.com/): supported models include ZED, ZED Mini, ZED 2/2i, ZED X / X One / X Nano, and the ZED One mono camera.
+- [Getting Started with the ZED SDK](https://docs.stereolabs.com/docs/development/zed-sdk.md): download and install — the current release is ZED SDK 5.3.
+- Install on [Windows](https://docs.stereolabs.com/docs/development/zed-sdk/windows.md), [Linux](https://docs.stereolabs.com/docs/development/zed-sdk/linux.md) or [NVIDIA Jetson](https://docs.stereolabs.com/docs/development/zed-sdk/linux/work-with-nvidia-jetson.md).
+- [Recommended specifications](https://docs.stereolabs.com/docs/development/zed-sdk/specifications.md): requires an NVIDIA GPU with Compute Capability > 5 and CUDA.
+- [Run in a Docker container](https://docs.stereolabs.com/docs/development/zed-sdk/use-with-docker.md)
+- [Tutorials](https://github.com/stereolabs/zed-sdk/tree/master/tutorials): start here — a progressive set of minimal examples (hello ZED → image capture → depth → tracking → mapping → detection → sensors → body tracking → localization).
+- [AGENTS.md](https://github.com/stereolabs/zed-sdk/blob/master/AGENTS.md): how to build and run the samples (per language) and repository conventions, for coding agents working in a local clone.
+
+## Samples
+
+- [Tutorials](https://github.com/stereolabs/zed-sdk/tree/master/tutorials): progressive tutorials covering each ZED SDK API module, in C++, Python, C# and C.
+- [Camera Control](https://github.com/stereolabs/zed-sdk/tree/master/camera%20control): capture images and adjust camera video settings (resolution, exposure, white balance, ...). Docs: https://docs.stereolabs.com/docs/development/zed-sdk/modules/camera/camera-controls.md
+- [Camera Streaming](https://github.com/stereolabs/zed-sdk/tree/master/camera%20streaming): stream the ZED video feed over the local network and receive it remotely (single and multi-sender). Docs: https://docs.stereolabs.com/docs/development/zed-sdk/modules/camera/local-network-streaming.md
+- [Depth Sensing](https://github.com/stereolabs/zed-sdk/tree/master/depth%20sensing): capture 3D point clouds and depth maps; includes multi-camera fusion, automatic/manual region of interest, voxel point cloud, image refocus and export. Docs: https://docs.stereolabs.com/docs/development/zed-sdk/modules/depth-sensing.md
+- [Positional Tracking](https://github.com/stereolabs/zed-sdk/tree/master/positional%20tracking): track the camera's 6-DoF pose; includes FBX path export. Docs: https://docs.stereolabs.com/docs/development/zed-sdk/modules/positional-tracking.md
+- [Global Localization](https://github.com/stereolabs/zed-sdk/tree/master/global%20localization): fuse positional tracking with GNSS/GPS data for global, geo-referenced positioning (live, recording, playback, map server). Docs: https://docs.stereolabs.com/docs/development/zed-sdk/modules/global-localization.md
+- [Spatial Mapping](https://github.com/stereolabs/zed-sdk/tree/master/spatial%20mapping): build 3D meshes and fused point clouds of the environment, single and multi-camera. Docs: https://docs.stereolabs.com/docs/development/zed-sdk/modules/spatial-mapping.md
+- [Object Detection](https://github.com/stereolabs/zed-sdk/tree/master/object%20detection): detect and track objects in 3D; includes image and birds-eye viewers, concurrent detection, custom YOLO detectors and multi-camera / multi-model setups. Docs: https://docs.stereolabs.com/docs/development/zed-sdk/modules/object-detection.md
+- [Body Tracking](https://github.com/stereolabs/zed-sdk/tree/master/body%20tracking): detect and track human bodies and skeletons in 3D; includes FBX/JSON export, multi-camera and engine integrations. Docs: https://docs.stereolabs.com/docs/development/zed-sdk/modules/body-tracking.md
+- [Plane Detection](https://github.com/stereolabs/zed-sdk/tree/master/plane%20detection): detect planes and the floor plane in the scene. Docs: https://docs.stereolabs.com/docs/development/zed-sdk/modules/spatial-mapping/plane-detection.md
+- [Recording](https://github.com/stereolabs/zed-sdk/tree/master/recording): record and play back SVO/SVO2 files (single and multi-camera, encrypted, with embedded external data and export to AVI/sensor data). SVO files let you use all SDK features without a camera connected. Docs: https://docs.stereolabs.com/docs/development/zed-sdk/modules/camera/recording.md
+- [Sensors API](https://github.com/stereolabs/zed-sdk/tree/master/sensors_api): access IMU/sensor data and manage multi-sensor setups (multiple cameras and LiDARs). Docs: https://docs.stereolabs.com/docs/development/zed-sdk/modules/sensors.md
+- [Virtual Stereo](https://github.com/stereolabs/zed-sdk/tree/master/virtual%20stereo): build a virtual stereo pair from ZED X One mono cameras (C++ only). Docs: https://docs.stereolabs.com/docs/products/cameras/zedxone/dual-camera-stereo-vision.md
+- [ZED One](https://github.com/stereolabs/zed-sdk/tree/master/zed%20one): samples for the ZED One monocular camera — live capture, network streaming, SVO recording/playback, external data and custom inference. Docs: https://docs.stereolabs.com/docs/products/cameras/zedxone.md
+
+## API Reference & Documentation
+
+- [ZED SDK Modules](https://docs.stereolabs.com/docs/development/zed-sdk/modules.md): overview of every SDK module.
+- [API Reference](https://docs.stereolabs.com/docs/development/api-languages/api-reference.md)
+- [Building a C++ application](https://docs.stereolabs.com/docs/development/api-languages/cpp.md)
+- [Installing the Python API](https://docs.stereolabs.com/docs/development/api-languages/python.md)
+- [Using the C# API](https://docs.stereolabs.com/docs/development/api-languages/csharp.md)
+- [Installing the C API](https://docs.stereolabs.com/docs/development/api-languages/c.md)
+- [Docs MCP server](https://docs.stereolabs.com/_mcp/server): connect AI clients (Claude Code, Cursor, ...) directly to the documentation.
+
+## Optional
+
+- [Documentation home](https://docs.stereolabs.com/docs.md)
+- [Community forum](https://community.stereolabs.com/): the best place to ask questions and share projects.
+- [Blog](https://www.stereolabs.com/blog/)
+- Third-party integrations: Unity, Unreal Engine 5, OpenCV, ROS, ROS 2, PyTorch, YOLO, MATLAB, Isaac SIM, TouchDesigner.
