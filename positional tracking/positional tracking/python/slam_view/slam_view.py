@@ -92,6 +92,7 @@ class SLAMView:
     #
     def __init__(self, frame: sl.Mat, point_cloud: sl.Mat, title="ZED Positional Tracking"):
         self._frame = frame
+        self._is_open = True
         self._dark_mode = True
         self._side_by_side_mode = True
         self._point_cloud_mode = True
@@ -119,15 +120,13 @@ class SLAMView:
 
         glutInitWindowSize(int(self._width), int(self._height))
         glutInitWindowPosition(int(0.2 * screen_width), int(0.2 * screen_height))
-        glutCreateWindow(title)
+        self._window_id = glutCreateWindow(title)
 
-        glutIdleFunc(self._on_idle)
         glutDisplayFunc(self._on_display)
         glutReshapeFunc(self._on_reshape)
         glutKeyboardFunc(self._on_key)
         glutMouseFunc(self._on_mouse_button_pressed)
         glutMotionFunc(self._on_mouse_motion)
-        glutCloseFunc(self._on_close)
 
         self._shader = GLShader()
         self._shader.load(MESH_VERTEX_SHADER, MESH_FRAGMENT_SHADER)
@@ -212,20 +211,30 @@ class SLAMView:
         for landmark in landmarks.values():
             self._landmarks.add_point(landmark.position, COLOR_LIME)
 
-    def run(self, callback):
-        self._callback = callback
-        glutMainLoop()
+    @property
+    def is_open(self) -> bool:
+        return self._is_open
 
-    def stop(self):
-        glutLeaveMainLoop()
+    def render(self):
+        if not self._is_open:
+            return
+
+        glutPostRedisplay()
+        glutMainLoopEvent()
+
+        # No glutCloseFunc (its callback would fire during atexit, after the Python interpreter is finalized), so poll for window destruction by the WM.
+        if glutGetWindow() == 0:
+            self._is_open = False
+            self._window_id = None
+
+    def close(self):
+        if self._window_id is not None:
+            glutDestroyWindow(self._window_id)
+            self._window_id = None
 
     #
     # GLUT Callbacks
     #
-    def _on_idle(self):
-        self._callback()
-        glutPostRedisplay()
-
     def _on_display(self):
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -307,7 +316,7 @@ class SLAMView:
         elif key == b'z':
             self._camera.reset()
         elif key == b'\x1b':
-            self.stop()
+            self._is_open = False
 
     def _on_mouse_button_pressed(self, button, state, x, y):
         zoomSensitivity = 0.75
@@ -341,17 +350,6 @@ class SLAMView:
 
         self._mouse_position[0] = x
         self._mouse_position[1] = y
-
-    def _on_close(self):
-        self._origin_axes.release()
-        self._camera_frustum.release()
-        self._camera_path.release()
-        self._point_cloud.release()
-
-        if glIsTexture(self._frame_texture_id):
-            glDeleteTextures(1, self._frame_texture_id)
-
-        self._shader.release()
 
     #
     # Drawing Specifics
