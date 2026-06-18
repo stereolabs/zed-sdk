@@ -34,11 +34,8 @@
 ## API Reference & Documentation
 
 - [ZED SDK Modules](https://docs.stereolabs.com/docs/development/zed-sdk/modules.md): overview of every SDK module.
-- [API Reference](https://docs.stereolabs.com/docs/development/api-languages/api-reference.md)
-- [Building a C++ application](https://docs.stereolabs.com/docs/development/api-languages/cpp.md)
-- [Installing the Python API](https://docs.stereolabs.com/docs/development/api-languages/python.md)
-- [Using the C# API](https://docs.stereolabs.com/docs/development/api-languages/csharp.md)
-- [Installing the C API](https://docs.stereolabs.com/docs/development/api-languages/c.md)
+- API reference (class/method docs): [C++](https://www.stereolabs.com/docs/api/), [Python](https://www.stereolabs.com/docs/api/python/), [C#](https://www.stereolabs.com/docs/api/csharp), [C](https://www.stereolabs.com/docs/api/c/).
+- [Building & installing per language](https://docs.stereolabs.com/docs/development/api-languages/api-reference.md): app-development setup guides for C++, Python, C# and C.
 - [Docs MCP server](https://docs.stereolabs.com/_mcp/server): connect AI clients (Claude Code, Cursor, ...) directly to the documentation.
 
 ## Optional

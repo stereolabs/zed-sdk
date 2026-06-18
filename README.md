@@ -16,7 +16,7 @@
   ·
   <a href="https://store.stereolabs.com/">Store</a>
   ·
-  <a href="https://docs.stereolabs.com/docs/development/api-languages/api-reference">API Reference</a>
+  <a href="https://www.stereolabs.com/docs/api/">API Reference</a>
   ·
   <a href="https://community.stereolabs.com/">Community</a>
   ·
@@ -75,7 +75,7 @@ To get started:
 - [Install the ZED SDK](https://docs.stereolabs.com/docs/development/zed-sdk) on [Windows](https://docs.stereolabs.com/docs/development/zed-sdk/windows), [Linux](https://docs.stereolabs.com/docs/development/zed-sdk/linux) or [Jetson](https://docs.stereolabs.com/docs/development/zed-sdk/linux/work-with-nvidia-jetson)
 - [Start experimenting with the ZED SDK's tutorials](/tutorials)
 
-The [documentation](https://docs.stereolabs.com/docs) and [API reference](https://docs.stereolabs.com/docs/development/api-languages/api-reference) are great starting points to learn more about the ZED SDK and its many modules.
+The [documentation](https://docs.stereolabs.com/docs) and [API reference](https://www.stereolabs.com/docs/api/) are great starting points to learn more about the ZED SDK and its many modules.
 
 ## Samples
 
@@ -120,7 +120,7 @@ The ZED SDK can be easily integrated into projects using the following programmi
 
 | C++ | Python | C# | C |
 | -------- | ------------------------- | ----------------- | -------- | 
-| <div align="center"><a href="https://docs.stereolabs.com/docs/development/api-languages/cpp"><img src="https://user-images.githubusercontent.com/32394882/229499695-c71857a2-eded-4171-8185-4e522d5b6c71.png" width="50%" alt="" /></a></div>  | <div align="center"><a href="https://docs.stereolabs.com/docs/development/api-languages/python"><img src="https://user-images.githubusercontent.com/32394882/229499718-c66c3649-d139-48e5-8523-65b23a120440.png" width="50%" alt="" /></a></div> | <div align="center"><a href="https://docs.stereolabs.com/docs/development/api-languages/csharp"><img src="https://user-images.githubusercontent.com/32394882/229499667-5e4c4d72-1140-4eda-b206-d9f95c93c15c.png" width="50%" alt="" /></a></div> | <div align="center"><a href="https://docs.stereolabs.com/docs/development/api-languages/c"><img src="https://user-images.githubusercontent.com/32394882/229499672-9b5308a2-3294-4818-84c5-07f84834a6d9.png" width="50%" alt="" /></a></div>
+| <div align="center"><a href="https://www.stereolabs.com/docs/api"><img src="https://user-images.githubusercontent.com/32394882/229499695-c71857a2-eded-4171-8185-4e522d5b6c71.png" width="50%" alt="" /></a></div>  | <div align="center"><a href="https://www.stereolabs.com/docs/api/python/"><img src="https://user-images.githubusercontent.com/32394882/229499718-c66c3649-d139-48e5-8523-65b23a120440.png" width="50%" alt="" /></a></div> | <div align="center"><a href="https://www.stereolabs.com/docs/api/csharp"><img src="https://user-images.githubusercontent.com/32394882/229499667-5e4c4d72-1140-4eda-b206-d9f95c93c15c.png" width="50%" alt="" /></a></div> | <div align="center"><a href="https://www.stereolabs.com/docs/api/c/"><img src="https://user-images.githubusercontent.com/32394882/229499672-9b5308a2-3294-4818-84c5-07f84834a6d9.png" width="50%" alt="" /></a></div>
 
 <br />
 
