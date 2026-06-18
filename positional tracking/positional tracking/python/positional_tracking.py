@@ -164,22 +164,43 @@ def main(args: Arguments) -> int:
     pose = sl.Pose()
     view = SLAMView(left_image, point_cloud)
 
-    def render_loop():
-        nonlocal last_landmark_update
+    # In SVO mode we ensure that the time between two computes
+    # correspond to real time between the corresponding images
+    last_image_timestamp_clock = zed.get_timestamp(sl.TIME_REFERENCE.CURRENT)
+    last_image_timestamp_svo = None
+
+    while view.is_open:
+        #
+        # Read current image
+        #
+        read_status = zed.read()
+        if read_status == sl.ERROR_CODE.END_OF_SVOFILE_REACHED:
+            break
+        elif read_status > sl.ERROR_CODE.SUCCESS:
+            print("Failed to grab image frame", read_status)
+            break
+
+        # Get current image timestamp
+        current_image_timestamp_svo = zed.get_timestamp(sl.TIME_REFERENCE.IMAGE)
+        if args.svo_file and last_image_timestamp_svo is not None:
+            expected_diff_ns = current_image_timestamp_svo.get_nanoseconds() - last_image_timestamp_svo.get_nanoseconds()
+            actual_diff_ns = zed.get_timestamp(sl.TIME_REFERENCE.CURRENT).get_nanoseconds() - last_image_timestamp_clock.get_nanoseconds()
+            if expected_diff_ns > actual_diff_ns:
+                time.sleep((expected_diff_ns - actual_diff_ns) / 1e9)
 
         #
         # Grab the next image frame
         #
         status = zed.grab(runtime_parameters)
+        last_image_timestamp_svo = current_image_timestamp_svo
+        last_image_timestamp_clock = zed.get_timestamp(sl.TIME_REFERENCE.CURRENT)
 
         if status == sl.ERROR_CODE.END_OF_SVOFILE_REACHED:
-            view.stop()
-            return
+            break
         elif status > sl.ERROR_CODE.SUCCESS:
             print("Failed to grab image frame", status)
-            view.stop()
-            return
-       
+            break
+
         # Retrieve the left image
         if(tracking_parameters.mode == sl.POSITIONAL_TRACKING_MODE.GEN_3):
             # Set retrieve_image to sl.VIEW.LEFT_UNRECTIFIED if you are using fisheye lens
@@ -195,7 +216,7 @@ def main(args: Arguments) -> int:
 
         # Export the pose in TUM format
         if out_tum is not None:
-            out_tum.write(f"{pose.timestamp.get_milliseconds()} ")
+            out_tum.write(f"{pose.timestamp.get_nanoseconds() / 1e9:.9f} ")
             out_tum.write(f"{pose.get_translation().get()[0]:.9f} ")
             out_tum.write(f"{pose.get_translation().get()[1]:.9f} ")
             out_tum.write(f"{pose.get_translation().get()[2]:.9f} ")
@@ -230,16 +251,18 @@ def main(args: Arguments) -> int:
 
             for landmark_2d in landmarks_2d:
                 color = interpolate_color(inlier_color, outlier_color, 1 - landmark_2d.dynamic_confidence)
-                
+
                 cv2.circle(left_image_cv_mat, (
                     int(landmark_2d.position[0] * width_ratio),
                     int(landmark_2d.position[1] * height_ratio)
                 ), 2, color, -1)
 
-    view.run(render_loop)
+        view.render()
 
     if out_tum is not None:
         out_tum.close()
+
+    view.close()
 
     #
     # Saving area map

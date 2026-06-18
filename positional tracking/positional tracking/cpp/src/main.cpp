@@ -23,7 +23,9 @@
 
 // Sample includes
 #include <opencv2/opencv.hpp>
+#include <chrono>
 #include <optional>
+#include <thread>
 #include "SLAMView.hpp"
 
 // Using the sl namespace
@@ -206,19 +208,47 @@ int main(int argc, char** argv) {
 
     Pose pose;
     SLAMView view = SLAMView(argc, argv, &leftImage, &pointCloud, zed.getCUDAStream());
-    view.run([&]() {
+
+    // In SVO mode we ensure that the time between two computes
+    // correspond to real time between the corresponding images
+    sl::Timestamp last_image_timestamp_clock = zed.getTimestamp(sl::TIME_REFERENCE::CURRENT);
+    sl::Timestamp last_image_timestamp_svo = sl::Timestamp(0);
+
+    while (view.isOpen()) {
+        //
+        // Read current image
+        //
+        ERROR_CODE read_status = zed.read();
+        if (read_status == ERROR_CODE::END_OF_SVOFILE_REACHED) {
+            break;
+        } else if (read_status > ERROR_CODE::SUCCESS) {
+            print("Failed to grab image frame", status);
+            break;
+        }
+
+        // Get current image timestamp
+        sl::Timestamp current_image_timestamp_svo = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE);
+        if (args.svoFile && last_image_timestamp_svo.getNanoseconds() > 0) {
+            sl::Timestamp expected_diff = current_image_timestamp_svo - last_image_timestamp_svo;
+            sl::Timestamp actual_diff = zed.getTimestamp(sl::TIME_REFERENCE::CURRENT) - last_image_timestamp_clock;
+            if (expected_diff > actual_diff) {
+                sl::Timestamp sleep_time = expected_diff - actual_diff;
+                std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time.getMilliseconds()));
+            }
+        }
+
         //
         // Grab the next image frame
         //
         ERROR_CODE status = zed.grab(runtime_parameters);
+        last_image_timestamp_svo = current_image_timestamp_svo;
+        last_image_timestamp_clock = zed.getTimestamp(sl::TIME_REFERENCE::CURRENT);
 
         if (status == ERROR_CODE::END_OF_SVOFILE_REACHED) {
-            view.stop();
-            return;
+            break;
         } else if (status > ERROR_CODE::SUCCESS) {
             print("Failed to grab image frame", status);
-            view.stop();
-            return;
+            break;
         }
 
         // Retrieve the left image
@@ -240,14 +270,14 @@ int main(int argc, char** argv) {
 
         // Export the pose in TUM format
         if (args.exportTUMFile) {
-            out_tum << std::fixed << std::setprecision(9) << pose.timestamp.getMilliseconds() << " " << pose.getTranslation().tx << " "
-                    << pose.getTranslation().ty << " " << pose.getTranslation().tz << " " << pose.getOrientation().ox << " "
-                    << pose.getOrientation().oy << " " << pose.getOrientation().oz << " " << pose.getOrientation().ow << std::endl;
+            out_tum << std::fixed << std::setprecision(9) << pose.timestamp.getNanoseconds() / double(1e9) << " "
+                    << pose.getTranslation().tx << " " << pose.getTranslation().ty << " " << pose.getTranslation().tz << " "
+                    << pose.getOrientation().ox << " " << pose.getOrientation().oy << " " << pose.getOrientation().oz << " "
+                    << pose.getOrientation().ow << std::endl;
             out_tum.flush();
         }
 
         // Update display
-        //
         view.updatePoseTransform(pose.pose_data);
         view.updatePositionalTrackingStatus(zed.getPositionalTrackingStatus());
 
@@ -283,7 +313,9 @@ int main(int argc, char** argv) {
                 );
             }
         }
-    });
+
+        view.render();
+    }
 
     if (args.exportTUMFile)
         out_tum.close();
@@ -291,6 +323,9 @@ int main(int argc, char** argv) {
     //
     // OpenGL cleanup
     //
+    // Must run before zed.close(): GLUT's atexit destroys the window after main returns,
+    // which would unmap CUDA-GL resources after the SDK CUDA context is already gone.
+    view.close();
     pointCloud.free();
 
     //

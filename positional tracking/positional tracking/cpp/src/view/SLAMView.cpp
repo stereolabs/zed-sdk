@@ -74,6 +74,7 @@ enum MOUSE_BUTTON {
 //
 SLAMView::SLAMView(int argc, char** argv, sl::Mat* frame, sl::Mat* pointCloud, CUstream cudaStream, std::string title)
     : _title(title)
+    , _isOpen(true)
     , _frame(frame)
     , _darkMode(true)
     , _sideBySideMode(true)
@@ -100,7 +101,6 @@ SLAMView::SLAMView(int argc, char** argv, sl::Mat* frame, sl::Mat* pointCloud, C
     glutInitWindowPosition(0.2 * screenWidth, 0.2 * screenHeight);
     glutCreateWindow(title.c_str());
 
-    glutIdleFunc(SLAMView::onIdle);
     glutDisplayFunc(SLAMView::onDisplay);
     glutReshapeFunc(SLAMView::onReshape);
     glutKeyboardFunc(SLAMView::onKeyboard);
@@ -184,17 +184,30 @@ SLAMView::SLAMView(int argc, char** argv, sl::Mat* frame, sl::Mat* pointCloud, C
     _keyframes.setDrawingType(GL_LINES);
 }
 
+SLAMView::~SLAMView() {
+    _instance = nullptr;
+}
+
 bool SLAMView::isLandmarkModeEnabled() const {
     return _landmarkMode;
 }
 
-void SLAMView::run(std::function<void()> callback) {
-    _callback = callback;
-    glutMainLoop();
+bool SLAMView::isOpen() const {
+    return _isOpen;
 }
 
-void SLAMView::stop() {
-    glutLeaveMainLoop();
+void SLAMView::render() {
+    if (!_isOpen) {
+        return;
+    }
+
+    if (_landmarkMode) {
+        _landmarks.pushToGPU();
+        _keyframes.pushToGPU();
+    }
+
+    glutPostRedisplay();
+    glutMainLoopEvent();
 }
 
 void SLAMView::updatePoseTransform(sl::Transform poseTransform) {
@@ -256,17 +269,6 @@ void SLAMView::updateKeyframes(const std::map<uint64_t, sl::KeyFrame>& keyframes
             }
         }
     }
-}
-
-void SLAMView::idle() {
-    _callback();
-
-    if (_landmarkMode) {
-        _landmarks.pushToGPU();
-        _keyframes.pushToGPU();
-    }
-
-    glutPostRedisplay();
 }
 
 void SLAMView::display() {
@@ -359,7 +361,7 @@ void SLAMView::keyboard(unsigned char key, int x, int y) {
     } else if (key == 'z') {
         _camera.reset();
     } else if (key == ESCAPE_KEY) {
-        stop();
+        _isOpen = false;
     }
 }
 
@@ -409,6 +411,7 @@ void SLAMView::close() {
     }
 
     _pointCloud.close();
+    _isOpen = false;
 }
 
 //
@@ -599,10 +602,6 @@ void SLAMView::renderTexture(GLuint textureID, int x, int y, int width, int heig
 //
 // Static Forwarding
 //
-void SLAMView::onIdle() {
-    _instance->idle();
-}
-
 void SLAMView::onDisplay() {
     _instance->display();
 }
@@ -624,5 +623,6 @@ void SLAMView::onMouseMotion(int x, int y) {
 }
 
 void SLAMView::onClose() {
-    _instance->close();
+    if (_instance)
+        _instance->close();
 }

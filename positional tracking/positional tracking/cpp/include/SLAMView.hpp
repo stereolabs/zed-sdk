@@ -42,11 +42,13 @@ public:
         CUstream cudaStream,
         std::string title = "ZED Positional Tracking"
     );
+    ~SLAMView();
 
     bool isLandmarkModeEnabled() const;
 
-    void run(std::function<void()> callback);
-    void stop();
+    bool isOpen() const;
+    void render();
+    void close();
 
     void updatePoseTransform(sl::Transform transform);
     void updatePositionalTrackingStatus(sl::PositionalTrackingStatus positionalTrackingStatus);
@@ -57,7 +59,7 @@ private:
     int _width;
     int _height;
     std::string _title;
-    std::function<void()> _callback;
+    bool _isOpen;
 
     sl::Mat* _frame;
     sl::Transform _poseTransform;
@@ -71,13 +73,11 @@ private:
 
     std::chrono::steady_clock::time_point _startTime;
 
-    void idle();
     void display();
     void reshape(int width, int height);
     void keyboard(unsigned char key, int x, int y);
     void mouseButtonPressed(int button, int state, int x, int y);
     void mouseMotion(int x, int y);
-    void close();
 
     // Interaction
     bool _ctrlPressed = false;
@@ -111,7 +111,6 @@ private:
     //
     static inline SLAMView* _instance = nullptr;
 
-    static void onIdle();
     static void onDisplay();
     static void onReshape(int w, int h);
     static void onKeyboard(unsigned char key, int x, int y);

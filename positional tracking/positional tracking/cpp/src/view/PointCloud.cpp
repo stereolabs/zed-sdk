@@ -64,6 +64,7 @@ void PointCloud::close() {
         if (err != cudaSuccess)
             std::cerr << "Error: CUDA UnmapResources (" << err << ")" << std::endl;
         glDeleteBuffers(1, &bufferGLID_);
+        refMat = sl::Mat();
     }
 }
 
