@@ -196,11 +196,11 @@ void GLViewer::init(int argc, char** argv, sl::Mat& image, sl::Mat& pointcloud, 
 
 void GLViewer::render() {
     if (available) {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         if (dark_background)
             glClearColor(59 / 255.f, 63 / 255.f, 69 / 255.f, 1.f);
         else
             glClearColor(211 / 255.f, 220 / 255.f, 232 / 255.f, 1.f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         update();
         draw();
@@ -461,6 +461,8 @@ void Simple3DObject::addFace(sl::float3 p1, sl::float3 p2, sl::float3 p3, sl::fl
 void Simple3DObject::pushToGPU() {
     if (!need_update)
         return;
+    if (vertices_.empty())
+        return;
 
     if (!isStatic_ || vaoID_ == 0) {
         if (vaoID_ == 0) {
@@ -538,6 +540,8 @@ void FpcObj::add(std::vector<sl::float4>& pts) {
 void FpcObj::pushToGPU() {
     if (!need_update)
         return;
+    if (vertices_.empty())
+        return;
 
     if (vaoID_ == 0) {
         glGenVertexArrays(1, &vaoID_);
@@ -581,7 +585,12 @@ MeshObject::MeshObject() {
     need_update = false;
 }
 
-MeshObject::~MeshObject() { }
+MeshObject::~MeshObject() {
+    if (vaoID_ != 0) {
+        glDeleteBuffers(3, vboID_);
+        glDeleteVertexArrays(1, &vaoID_);
+    }
+}
 
 void MeshObject::add(std::vector<sl::float3>& vertices, std::vector<sl::uint3>& triangles, std::vector<sl::uchar3>& colors) {
     vert = vertices;
@@ -593,7 +602,7 @@ void MeshObject::add(std::vector<sl::float3>& vertices, std::vector<sl::uint3>& 
 void MeshObject::pushToGPU() {
     if (!need_update)
         return;
-    if (faces.empty())
+    if (faces.empty() || vert.empty() || clr.empty())
         return;
 
     if (vaoID_ == 0) {
@@ -614,8 +623,9 @@ void MeshObject::pushToGPU() {
     glEnableVertexAttribArray(Shader::ATTRIB_COLOR_POS);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboID_[2]);
-    current_fc = faces.size() * sizeof(faces[0]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, current_fc, &faces[0], GL_DYNAMIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, faces.size() * sizeof(faces[0]), &faces[0], GL_DYNAMIC_DRAW);
+    // Number of indices to draw: 3 per triangle (NOT the byte size of the buffer)
+    current_fc = faces.size() * 3;
 
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -723,10 +733,11 @@ PointCloud::~PointCloud() {
 
 void PointCloud::close() {
     if (refMat.isInit()) {
-        auto err = cudaGraphicsUnmapResources(1, &bufferCudaID_, 0);
+        auto err = cudaGraphicsUnregisterResource(bufferCudaID_);
         if (err != cudaSuccess)
-            std::cerr << "Error: CUDA UnmapResources (" << err << ")" << std::endl;
+            std::cerr << "Error: CUDA UnregisterResource (" << err << ")" << std::endl;
         glDeleteBuffers(1, &bufferGLID_);
+        refMat = sl::Mat();
     }
 }
 
@@ -738,25 +749,36 @@ void PointCloud::initialize(sl::Mat& ref) {
     glBufferData(GL_ARRAY_BUFFER, refMat.getResolution().area() * 4 * sizeof(float), 0, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+    // Register the GL buffer with CUDA. The resource is mapped/unmapped around each
+    // copy (see pushNewPC) rather than kept mapped, so OpenGL never reads it while
+    // CUDA owns it and the map/unmap pair synchronizes the copy with the draw.
     cudaError_t err = cudaGraphicsGLRegisterBuffer(&bufferCudaID_, bufferGLID_, cudaGraphicsRegisterFlagsNone);
     if (err != cudaSuccess)
         std::cerr << "Error: CUDA - OpenGL Interop failed (" << err << ")" << std::endl;
-
-    err = cudaGraphicsMapResources(1, &bufferCudaID_, 0);
-    if (err != cudaSuccess)
-        std::cerr << "Error: CUDA MapResources (" << err << ")" << std::endl;
-
-    err = cudaGraphicsResourceGetMappedPointer((void**)&xyzrgbaMappedBuf_, &numBytes_, bufferCudaID_);
-    if (err != cudaSuccess)
-        std::cerr << "Error: CUDA GetMappedPointer (" << err << ")" << std::endl;
 
     shader_.set(POINTCLOUD_VERTEX_SHADER, POINTCLOUD_FRAGMENT_SHADER);
     shMVPMatrixLoc_ = glGetUniformLocation(shader_.getProgramId(), "u_mvpMatrix");
 }
 
 void PointCloud::pushNewPC(CUstream strm) {
-    if (refMat.isInit())
+    if (!refMat.isInit())
+        return;
+
+    // Map on the ZED stream: guarantees prior GL reads of this buffer have completed.
+    cudaError_t err = cudaGraphicsMapResources(1, &bufferCudaID_, strm);
+    if (err != cudaSuccess) {
+        std::cerr << "Error: CUDA MapResources (" << err << ")" << std::endl;
+        return;
+    }
+    // The mapped pointer is only valid while mapped and may change between maps.
+    err = cudaGraphicsResourceGetMappedPointer((void**)&xyzrgbaMappedBuf_, &numBytes_, bufferCudaID_);
+    if (err == cudaSuccess)
         cudaMemcpyAsync(xyzrgbaMappedBuf_, refMat.getPtr<sl::float4>(sl::MEM::GPU), numBytes_, cudaMemcpyDeviceToDevice, strm);
+    else
+        std::cerr << "Error: CUDA GetMappedPointer (" << err << ")" << std::endl;
+
+    // Unmap on the same stream: guarantees the copy completes before the next GL draw.
+    cudaGraphicsUnmapResources(1, &bufferCudaID_, strm);
 }
 
 void PointCloud::draw(const sl::Transform& vp) {
@@ -927,13 +949,14 @@ CameraViewer::~CameraViewer() {
 void CameraViewer::close() {
     if (ref.isInit()) {
 
-        auto err = cudaGraphicsUnmapResources(1, &cuda_gl_ressource, 0);
+        auto err = cudaGraphicsUnregisterResource(cuda_gl_ressource);
         if (err)
             std::cout << "err 3 " << err << " " << cudaGetErrorString(err) << "\n";
 
         glDeleteTextures(1, &texture);
         glDeleteBuffers(3, vboID_);
         glDeleteVertexArrays(1, &vaoID_);
+        ref = sl::Mat();
     }
 }
 
@@ -1061,17 +1084,13 @@ bool CameraViewer::initialize(sl::Mat& im) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, res.width, res.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, NULL);
     glBindTexture(GL_TEXTURE_2D, 0);
+    // Register the GL texture with CUDA. The resource is mapped/unmapped around each
+    // copy (see pushNewImage) rather than kept mapped, so OpenGL never samples it while
+    // CUDA owns it and the map/unmap pair synchronizes the copy with the draw.
     cudaError_t err = cudaGraphicsGLRegisterImage(&cuda_gl_ressource, texture, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsWriteDiscard);
     if (err)
         std::cout << "err alloc " << err << " " << cudaGetErrorString(err) << "\n";
     glDisable(GL_TEXTURE_2D);
-
-    err = cudaGraphicsMapResources(1, &cuda_gl_ressource, 0);
-    if (err)
-        std::cout << "err 0 " << err << " " << cudaGetErrorString(err) << "\n";
-    err = cudaGraphicsSubResourceGetMappedArray(&ArrIm, cuda_gl_ressource, 0, 0);
-    if (err)
-        std::cout << "err 1 " << err << " " << cudaGetErrorString(err) << "\n";
 
     return (err == cudaSuccess);
 }
@@ -1079,19 +1098,34 @@ bool CameraViewer::initialize(sl::Mat& im) {
 void CameraViewer::pushNewImage(CUstream strm) {
     if (!ref.isInit())
         return;
-    auto err = cudaMemcpy2DToArrayAsync(
-        ArrIm,
-        0,
-        0,
-        ref.getPtr<sl::uchar1>(sl::MEM::GPU),
-        ref.getStepBytes(sl::MEM::GPU),
-        ref.getPixelBytes() * ref.getWidth(),
-        ref.getHeight(),
-        cudaMemcpyDeviceToDevice,
-        strm
-    );
-    if (err)
-        std::cout << "err 2 " << err << " " << cudaGetErrorString(err) << "\n";
+
+    // Map on the ZED stream: guarantees prior GL sampling of this texture has completed.
+    auto err = cudaGraphicsMapResources(1, &cuda_gl_ressource, strm);
+    if (err) {
+        std::cout << "err 0 " << err << " " << cudaGetErrorString(err) << "\n";
+        return;
+    }
+    // The mapped array is only valid while mapped and may change between maps.
+    err = cudaGraphicsSubResourceGetMappedArray(&ArrIm, cuda_gl_ressource, 0, 0);
+    if (!err) {
+        err = cudaMemcpy2DToArrayAsync(
+            ArrIm,
+            0,
+            0,
+            ref.getPtr<sl::uchar1>(sl::MEM::GPU),
+            ref.getStepBytes(sl::MEM::GPU),
+            ref.getPixelBytes() * ref.getWidth(),
+            ref.getHeight(),
+            cudaMemcpyDeviceToDevice,
+            strm
+        );
+        if (err)
+            std::cout << "err 2 " << err << " " << cudaGetErrorString(err) << "\n";
+    } else
+        std::cout << "err 1 " << err << " " << cudaGetErrorString(err) << "\n";
+
+    // Unmap on the same stream: guarantees the copy completes before the next GL draw.
+    cudaGraphicsUnmapResources(1, &cuda_gl_ressource, strm);
 }
 
 void CameraViewer::draw2D() {

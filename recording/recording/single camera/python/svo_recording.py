@@ -38,8 +38,7 @@ def main(opt):
 
     init = sl.InitParameters()
     init.depth_mode = sl.DEPTH_MODE.NONE # Set configuration parameters for the ZED
-    init.async_image_retrieval = False; # This parameter can be used to record SVO in camera FPS even if the grab loop is running at a lower FPS (due to compute for ex.)
-
+    
     status = cam.open(init) 
     if status > sl.ERROR_CODE.SUCCESS: 
         print("Camera Open", status, "Exit program.")
@@ -51,12 +50,11 @@ def main(opt):
         print("Recording ZED : ", err)
         exit(1)
 
-    runtime = sl.RuntimeParameters()
     print("SVO is Recording, use Ctrl-C to stop.") # Start recording SVO, stop with Ctrl-C command
     frames_recorded = 0
 
     while True:
-        if cam.grab(runtime) <= sl.ERROR_CODE.SUCCESS : # Check that a new image is successfully acquired
+        if cam.read() <= sl.ERROR_CODE.SUCCESS : # Check that a new image is successfully acquired
             frames_recorded += 1
             print("Frame count: " + str(frames_recorded), end="\r")
     

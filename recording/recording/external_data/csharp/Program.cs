@@ -70,11 +70,9 @@ class Program {
         Console.WriteLine("SVO is recording, press Q to stop");
         int framesRecorded = 0;
 
-        RuntimeParameters rtParams = new RuntimeParameters();
-
         sl.RecordingStatus recordingStatus = new sl.RecordingStatus();
         while (framesRecorded < 100) {
-            if (zed.Grab(ref rtParams) <= ERROR_CODE.SUCCESS) {
+            if (zed.Read() <= ERROR_CODE.SUCCESS) {
 
                 ulong timestamp = zed.GetCameraTimeStamp();
 

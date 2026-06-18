@@ -67,10 +67,8 @@ class Program {
         Console.WriteLine("SVO is recording, press Q to stop");
         int framesRecorded = 0;
 
-        RuntimeParameters rtParams = new RuntimeParameters();
-
         while (true) {
-            if (zed.Grab(ref rtParams) <= ERROR_CODE.SUCCESS) {
+            if (zed.Read() <= ERROR_CODE.SUCCESS) {
                 // Each new frame is added to the SVO file
                 framesRecorded++;
                 Console.WriteLine("Frame count: " + framesRecorded);

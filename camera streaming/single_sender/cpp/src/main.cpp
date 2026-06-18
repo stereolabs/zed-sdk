@@ -72,9 +72,8 @@ int main(int argc, char** argv) {
     int fcount = 0;
 
     while (!exit_app) {
-        if (zed.grab() <= ERROR_CODE::SUCCESS)
+        if (zed.read() <= ERROR_CODE::SUCCESS)
             fcount++;
-
         sleep_ms(1);
     }
 
