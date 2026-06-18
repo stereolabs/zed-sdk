@@ -62,7 +62,6 @@ def main(opt):
     if status > sl.ERROR_CODE.SUCCESS: #Ensure the camera has opened succesfully
         print("Camera Open : "+repr(status)+". Exit program.")
         exit()
-    runtime = sl.RuntimeParameters()
     stream_params = sl.StreamingParameters()
     print("Streaming on port ",stream_params.port) #Get the port used to stream
     stream_params.codec = sl.STREAMING_CODEC.H265
@@ -75,7 +74,7 @@ def main(opt):
     exit_app = False 
     try : 
         while not exit_app:
-            err = cam.grab(runtime)
+            err = cam.read()
             if err <= sl.ERROR_CODE.SUCCESS: 
                 sleep(0.001)
     except KeyboardInterrupt:

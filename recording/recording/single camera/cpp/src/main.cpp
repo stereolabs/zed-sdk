@@ -49,8 +49,6 @@ int main(int argc, char** argv) {
     // Set configuration parameters for the ZED
     InitParameters init_parameters;
     init_parameters.depth_mode = DEPTH_MODE::NONE;
-    init_parameters.async_image_retrieval = false; // This parameter can be used to record SVO in camera FPS even if the grab loop is
-                                                   // running at a lower FPS (due to compute for ex.)
     parseArgs(argc, argv, init_parameters);
 
     // Open the camera
@@ -76,7 +74,7 @@ int main(int argc, char** argv) {
     SetCtrlHandler();
     sl::RecordingStatus rec_status;
     while (!exit_app) {
-        if (zed.grab() <= ERROR_CODE::SUCCESS) {
+        if (zed.read() <= ERROR_CODE::SUCCESS) {
             // Each new frame is added to the SVO file
             rec_status = zed.getRecordingStatus();
             printf(" NFrames SVO: %d  / %d\n", rec_status.number_frames_ingested, rec_status.number_frames_encoded);

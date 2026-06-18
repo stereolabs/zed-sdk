@@ -44,7 +44,7 @@ void acquisition(CameraType& zed) {
     auto infos = zed.getCameraInformation();
 
     while (!exit_app) {
-        if (zed.grab() <= sl::ERROR_CODE::SUCCESS) {
+        if (zed.read() <= sl::ERROR_CODE::SUCCESS) {
             // If needed, add more processing here
         }
     }

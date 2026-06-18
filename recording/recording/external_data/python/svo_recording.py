@@ -50,12 +50,11 @@ def main(opt):
         print("Recording ZED : ", err)
         exit(1)
 
-    runtime = sl.RuntimeParameters()
     print("SVO is Recording, use Ctrl-C to stop.") # Start recording SVO, stop with Ctrl-C command
     frames_recorded = 0
 
     while frames_recorded < 100:
-        if cam.grab(runtime) <= sl.ERROR_CODE.SUCCESS : # Check that a new image is successfully acquired
+        if cam.read() <= sl.ERROR_CODE.SUCCESS : # Check that a new image is successfully acquired
             frames_recorded += 1
             print("Frame count: " + str(frames_recorded))
             data = sl.SVOData()
