@@ -17,17 +17,17 @@ A custom detector can be trained with the same architecture. Please refer to [Ul
 ## Getting Started
 
  - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/)
- - Check the [Documentation](https://www.stereolabs.com/docs/)
+ - Check the [Documentation](https://docs.stereolabs.com/docs/)
  - [TensorRT Documentation](https://docs.nvidia.com/deeplearning/tensorrt/developer-guide/index.html)
 
 ## Workflow
 
-This sample is expecting an ONNX exported using the original YOLO code. Please refer to [Ultralytics Export](https://www.stereolabs.com/docs/yolo/export).
+This sample is expecting an ONNX exported using the original YOLO code. Please refer to [Ultralytics Export](https://docs.stereolabs.com/docs/yolo/export).
 
 ### Build the sample
 
- - Build for [Windows](https://www.stereolabs.com/docs/app-development/cpp/windows/)
- - Build for [Linux/Jetson](https://www.stereolabs.com/docs/app-development/cpp/linux/)
+ - Build for [Windows](https://docs.stereolabs.com/docs/app-development/cpp/windows/)
+ - Build for [Linux/Jetson](https://docs.stereolabs.com/docs/app-development/cpp/linux/)
 
 ### Running the sample with the engine generated
 
@@ -43,6 +43,6 @@ This sample is expecting an ONNX exported using the original YOLO code. Please r
 
 ## Additional Resources
 
-- [ZED SDK Documentation - Custom Object Detection](https://www.stereolabs.com/docs/object-detection/custom-od/)
+- [ZED SDK Documentation - Custom Object Detection](https://docs.stereolabs.com/docs/object-detection/custom-od/)
 If you need assistance go to our Community site at https://community.stereolabs.com/
 - [Community Support](https://community.stereolabs.com/)

@@ -5,8 +5,8 @@ This sample demonstrates how to read a SVO file and convert it into an AVI file 
 It can also convert a SVO in the following png image sequences: LEFT+RIGHT, LEFT+DEPTH_VIEW, and LEFT+DEPTH_16Bit.
 
 ## Getting Started
- - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://www.stereolabs.com/docs/app-development/python/install/)
- - Check the [Documentation](https://www.stereolabs.com/docs/)
+ - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://docs.stereolabs.com/docs/app-development/python/install/)
+ - Check the [Documentation](https://docs.stereolabs.com/docs/)
  
 ## Run the program
 

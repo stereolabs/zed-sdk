@@ -1,6 +1,6 @@
 # ZED One
 
-These samples demonstrate how to use the ZED SDK with the **ZED One** mono camera. The ZED One is a compact monocular camera that provides high-quality video capture, streaming, and recording capabilities. You can find additional information in our [Documentation](https://www.stereolabs.com/docs/).
+These samples demonstrate how to use the ZED SDK with the **ZED One** mono camera. The ZED One is a compact monocular camera that provides high-quality video capture, streaming, and recording capabilities. You can find additional information in our [Documentation](https://docs.stereolabs.com/docs/).
 
 ## Overview
 

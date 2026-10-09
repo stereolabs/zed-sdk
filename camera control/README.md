@@ -1,6 +1,6 @@
 # ZED SDK - Camera Control
 
-This sample shows how to capture images with the ZED SDK video module and adjust camera settings. You can find additional information on the Video module in our [Documentation](https://www.stereolabs.com/docs/video/camera-controls/) and [API Reference](https://www.stereolabs.com/docs/api/group__Video__group.html).
+This sample shows how to capture images with the ZED SDK video module and adjust camera settings. You can find additional information on the Video module in our [Documentation](https://docs.stereolabs.com/docs/video/camera-controls/) and [API Reference](https://www.stereolabs.com/docs/api/group__Video__group.html).
 
 <p align="center">
   <img src="https://user-images.githubusercontent.com/32394882/230602616-6b57c351-09c4-4aba-bdec-842afcc3b2ea.gif" />

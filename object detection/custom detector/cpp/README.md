@@ -39,7 +39,7 @@ cpp/
 ## Additional Resources
 
 - [ZED SDK Download](https://www.stereolabs.com/developers/release/)
-- [ZED SDK Documentation - Using the Object Detection API with a Custom Detector](https://www.stereolabs.com/docs/object-detection/custom-od/)
+- [ZED SDK Documentation - Using the Object Detection API with a Custom Detector](https://docs.stereolabs.com/docs/object-detection/custom-od/)
 - [Ultralytics YOLO Documentation](https://docs.ultralytics.com/)
 - [Ultralytics model Zoo](https://github.com/ultralytics/ultralytics#models)
 

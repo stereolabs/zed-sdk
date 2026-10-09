@@ -6,7 +6,7 @@ The default model is [Yolov4 from the darknet framework](https://github.com/Alex
 
 ## Getting Started
  - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/)
- - Check the [Documentation](https://www.stereolabs.com/docs/)
+ - Check the [Documentation](https://docs.stereolabs.com/docs/)
  - Install OpenCV with the DNN module 
 
 
@@ -15,8 +15,8 @@ The default model is [Yolov4 from the darknet framework](https://github.com/Alex
 After installing OpenCV with DNN module (and preferably CUDA Backend support), this sample can be built.
 
 ### Build the program
- - Build for [Windows](https://www.stereolabs.com/docs/app-development/cpp/windows/)
- - Build for [Linux/Jetson](https://www.stereolabs.com/docs/app-development/cpp/linux/)
+ - Build for [Windows](https://docs.stereolabs.com/docs/app-development/cpp/windows/)
+ - Build for [Linux/Jetson](https://docs.stereolabs.com/docs/app-development/cpp/linux/)
 
 ### Preparing the model
 

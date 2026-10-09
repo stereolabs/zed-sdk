@@ -11,7 +11,7 @@ This sample demonstrates how to detect custom objects using the official PyTorch
 
 ## Prerequisites
 
-- [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://www.stereolabs.com/docs/development/python/install)
+- [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://docs.stereolabs.com/docs/development/python/install)
 - *Note: ZED v1 is not compatible with this module*
 
 ## Setup
@@ -41,5 +41,5 @@ This sample supports any model trained with YOLO (YOLOv8, v9, v10, v11, v12, v26
 
 ## Additional Resources
 
-- [ZED SDK Documentation - Custom Object Detection](https://www.stereolabs.com/docs/object-detection/custom-od/)
+- [ZED SDK Documentation - Custom Object Detection](https://docs.stereolabs.com/docs/object-detection/custom-od/)
 - [Community Support](https://community.stereolabs.com/)

@@ -1,6 +1,6 @@
 # Body Tracking Samples
 
-This repository contains samples demonstrating how to use the [ZED](https://www.stereolabs.com/store/) camera's **Body Tracking** features using the ZED SDK. You can find additional information on the Body Tracking module in our [Documentation](https://www.stereolabs.com/docs/body-tracking/) and [API Reference](https://www.stereolabs.com/docs/api/group__Body__group.html).
+This repository contains samples demonstrating how to use the [ZED](https://www.stereolabs.com/store/) camera's **Body Tracking** features using the ZED SDK. You can find additional information on the Body Tracking module in our [Documentation](https://docs.stereolabs.com/docs/body-tracking/) and [API Reference](https://www.stereolabs.com/docs/api/group__Body__group.html).
 
 <p align="center">
   <img src="https://user-images.githubusercontent.com/32394882/230631989-24dd2b58-2c85-451b-a4ed-558d74d1b922.gif" />
