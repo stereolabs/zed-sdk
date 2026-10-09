@@ -4,7 +4,7 @@ This sample shows how to detect and track objects in space as well as human body
 
 ## Getting Started
  - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/)
- - Check the [Documentation](https://www.stereolabs.com/docs/)
+ - Check the [Documentation](https://docs.stereolabs.com/docs/)
 
 ## Setting up (Optional)
 

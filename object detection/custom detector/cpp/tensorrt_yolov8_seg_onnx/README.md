@@ -54,8 +54,8 @@ TensorRT applies heavy optimization by processing the network structure and benc
 ## Build and Usage
 
 ### Building the Sample
-- [Build for Windows](https://www.stereolabs.com/docs/app-development/cpp/windows/)
-- [Build for Linux/Jetson](https://www.stereolabs.com/docs/app-development/cpp/linux/)
+- [Build for Windows](https://docs.stereolabs.com/docs/app-development/cpp/windows/)
+- [Build for Linux/Jetson](https://docs.stereolabs.com/docs/app-development/cpp/linux/)
 
 ### Running the Sample
 ```bash
@@ -74,6 +74,6 @@ For training custom YOLOv8 segmentation models, see:
 
 ## Additional Resources
 
-- [ZED SDK Documentation - Custom Object Detection](https://www.stereolabs.com/docs/object-detection/custom-od/)
+- [ZED SDK Documentation - Custom Object Detection](https://docs.stereolabs.com/docs/object-detection/custom-od/)
 - [TensorRT Documentation](https://docs.nvidia.com/deeplearning/tensorrt/developer-guide/index.html)
 - [Community Support](https://community.stereolabs.com/)

@@ -4,10 +4,10 @@ This sample shows how to map your environment.
 
 ## Getting Started
  - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/), NuGet packages are automatically downloaded
- - Check the [Documentation](https://www.stereolabs.com/docs/)
+ - Check the [Documentation](https://docs.stereolabs.com/docs/)
 
 ## Build the program
- - Build for [Windows](https://www.stereolabs.com/docs/app-development/cpp/windows/)
+ - Build for [Windows](https://docs.stereolabs.com/docs/app-development/cpp/windows/)
  
 ## Run the program
 - Navigate to the build directory and launch the executable

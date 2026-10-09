@@ -3,8 +3,8 @@
 This sample shows how to capture images with the ZED SDK and adjust camera settings.
 
 ## Getting Started
- - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://www.stereolabs.com/docs/app-development/python/install/)
- - Check the [Documentation](https://www.stereolabs.com/docs/)
+ - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://docs.stereolabs.com/docs/app-development/python/install/)
+ - Check the [Documentation](https://docs.stereolabs.com/docs/)
  
 ## Run the program
 To run the program, use the following command in your terminal:

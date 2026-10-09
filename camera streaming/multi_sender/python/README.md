@@ -3,8 +3,8 @@
 This sample shows how to enable streaming module of the ZED SDK as image sender, using multiple ZED Camera in parallel.
 
 ## Getting Started
- - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://www.stereolabs.com/docs/app-development/python/install/)
- - Check the [Documentation](https://www.stereolabs.com/docs/)
+ - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://docs.stereolabs.com/docs/app-development/python/install/)
+ - Check the [Documentation](https://docs.stereolabs.com/docs/)
  
 ## Run the program
 

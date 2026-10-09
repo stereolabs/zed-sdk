@@ -14,7 +14,7 @@ The ZED SDK optimizes your model using TensorRT and provides 3D object detection
 
 ## Prerequisites
 
-- [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://www.stereolabs.com/docs/development/python/install)
+- [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://docs.stereolabs.com/docs/development/python/install)
 - ONNX model file (YOLOv5, YOLOv8, YOLOv9, YOLOv10, YOLOv11, YOLOv12 or YOLO26)
 
 ## Training Custom Models
@@ -48,5 +48,5 @@ python custom_internal_detector.py --custom_onnx yolo11.onnx [--svo path/to/file
 
 ## Additional Resources
 
-- [ZED SDK Documentation - Custom Object Detection](https://www.stereolabs.com/docs/object-detection/custom-od/)
+- [ZED SDK Documentation - Custom Object Detection](https://docs.stereolabs.com/docs/object-detection/custom-od/)
 - [Community Support](https://community.stereolabs.com/)

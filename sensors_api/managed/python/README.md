@@ -145,5 +145,5 @@ The sample demonstrates the following key Sensors API concepts:
 ## See Also
 
 - [C++ Sensors API Sample](../cpp/README.md) - Full-featured version with OpenGL/Rerun visualization, body tracking, and reference frame modes
-- [ZED SDK Documentation](https://www.stereolabs.com/docs/)
+- [ZED SDK Documentation](https://docs.stereolabs.com/docs/)
 - [Sensors API Reference](https://www.stereolabs.com/docs/api/sensors/)

@@ -10,7 +10,7 @@ We assume that you have followed previous tutorials.
 
 ## Build the program
 
-Download the sample and follow the instructions below: [More](https://www.stereolabs.com/docs/getting-started/application-development/)
+Download the sample and follow the instructions below: [More](https://docs.stereolabs.com/docs/getting-started/application-development/)
 
 #### Build for Windows
 

@@ -1,6 +1,6 @@
 # Streaming
 
-This sample shows how to create a **video stream** from a ZED camera which can be read by a remote application for viewing or further processing. You can find additional information on the Video Streaming module in our [Documentation](https://www.stereolabs.com/docs/video/streaming/) and [API Reference](https://www.stereolabs.com/docs/api/structsl_1_1StreamingParameters.html).
+This sample shows how to create a **video stream** from a ZED camera which can be read by a remote application for viewing or further processing. You can find additional information on the Video Streaming module in our [Documentation](https://docs.stereolabs.com/docs/video/streaming/) and [API Reference](https://www.stereolabs.com/docs/api/structsl_1_1StreamingParameters.html).
 
 ## Overview
 

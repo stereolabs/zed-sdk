@@ -2,8 +2,8 @@
 This sample shows how to track the camera pose in a world frame of reference.
 
 ## Getting Started
- - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://www.stereolabs.com/docs/app-development/python/install/)
- - Check the [Documentation](https://www.stereolabs.com/docs/)
+ - Get the latest [ZED SDK](https://www.stereolabs.com/developers/release/) and [pyZED Package](https://docs.stereolabs.com/docs/app-development/python/install/)
+ - Check the [Documentation](https://docs.stereolabs.com/docs/)
  
 ## Usage
 Navigate to the example directory and run the python script with desired options:
