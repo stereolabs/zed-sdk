@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
 
     // Set configuration parameters
     sl::InitParameters init_parameters;
-    init_parameters.camera_resolution = sl::RESOLUTION::HD720;
+    init_parameters.camera_resolution = sl::RESOLUTION::AUTO; // Use HD720 or HD1200 video mode, depending on camera type
     init_parameters.camera_fps = 30;
     init_parameters.depth_mode = sl::DEPTH_MODE::NONE;
 
