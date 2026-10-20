@@ -7,14 +7,6 @@
 #include <fstream>
 #include <sl/Camera.hpp>
 
-#if NV_TENSORRT_MAJOR >= 10
-    #define trt_name_engine_get_binding_name getIOTensorName
-    #define trt_name_engine_get_nb_binding getNbIOTensors
-#else
-    #define trt_name_engine_get_binding_name getBindingName
-    #define trt_name_engine_get_nb_binding getNbBindings
-#endif
-
 using namespace seg;
 
 class YOLOv8_seg {
@@ -70,47 +62,25 @@ YOLOv8_seg::YOLOv8_seg(const std::string& engine_file_path) {
 
     assert(this->context != nullptr);
     cudaStreamCreate(&this->stream);
-    this->num_bindings = this->engine->trt_name_engine_get_nb_binding();
+    this->num_bindings = this->engine->getNbIOTensors();
 
     for (int i = 0; i < this->num_bindings; ++i) {
         Binding binding;
         nvinfer1::Dims dims;
-#if NV_TENSORRT_MAJOR > 8 || (NV_TENSORRT_MAJOR >= 8 && NV_TENSORRT_MINOR > 4)
-        nvinfer1::DataType dtype = this->engine->getTensorDataType(this->engine->getIOTensorName(i));
-#else
-        nvinfer1::DataType dtype = this->engine->getBindingDataType(i);
-#endif
-        std::string name = this->engine->trt_name_engine_get_binding_name(i);
+        const std::string name = this->engine->getIOTensorName(i);
         binding.name = name;
-        binding.dsize = type_to_size(dtype);
+        binding.dsize = type_to_size(this->engine->getTensorDataType(name.c_str()));
 
-#if NV_TENSORRT_MAJOR > 8 || (NV_TENSORRT_MAJOR >= 8 && NV_TENSORRT_MINOR > 4)
-        if (engine->getTensorIOMode(engine->getIOTensorName(i)) == nvinfer1::TensorIOMode::kINPUT)
-#else
-        if (engine->bindingIsInput(i))
-#endif
-        {
+        if (this->engine->getTensorIOMode(name.c_str()) == nvinfer1::TensorIOMode::kINPUT) {
             this->num_inputs += 1;
-#if NV_TENSORRT_MAJOR >= 10
             dims = this->engine->getProfileShape(name.c_str(), 0, nvinfer1::OptProfileSelector::kMAX);
-#else
-            dims = this->engine->getProfileDimensions(i, 0, nvinfer1::OptProfileSelector::kMAX);
-#endif
             binding.size = get_size_by_dims(dims);
             binding.dims = dims;
             this->input_bindings.push_back(binding);
             // set max opt shape
-#if NV_TENSORRT_MAJOR >= 10
             this->context->setInputShape(name.c_str(), dims);
-#else
-            this->context->setBindingDimensions(i, dims);
-#endif
         } else {
-#if NV_TENSORRT_MAJOR >= 10
-            dims = this->engine->getTensorShape(this->engine->getIOTensorName(i));
-#else
-            dims = this->context->getBindingDimensions(i);
-#endif
+            dims = this->engine->getTensorShape(name.c_str());
             binding.size = get_size_by_dims(dims);
             binding.dims = dims;
             this->output_bindings.push_back(binding);
@@ -120,15 +90,9 @@ YOLOv8_seg::YOLOv8_seg(const std::string& engine_file_path) {
 }
 
 YOLOv8_seg::~YOLOv8_seg() {
-#if NV_TENSORRT_MAJOR >= 10
     delete this->context;
     delete this->engine;
     delete this->runtime;
-#else
-    this->context->destroy();
-    this->engine->destroy();
-    this->runtime->destroy();
-#endif
     cudaStreamDestroy(this->stream);
     for (auto& ptr : this->device_ptrs_out) {
         CHECK(cudaFree(ptr));
@@ -181,7 +145,6 @@ void YOLOv8_seg::copy_from_Mat(sl::Mat& image) {
     auto height = in_binding.dims.d[2];
     this->setParams(image.getResolution(), sl::Resolution(width, height));
 
-#if NV_TENSORRT_MAJOR >= 10
     this->context->setInputShape(
         in_binding.name.c_str(),
         nvinfer1::Dims {
@@ -189,15 +152,6 @@ void YOLOv8_seg::copy_from_Mat(sl::Mat& image) {
             {1, 3, height, width}
     }
     );
-#else
-    this->context->setBindingDimensions(
-        0,
-        nvinfer1::Dims {
-            4,
-            {1, 3, height, width}
-    }
-    );
-#endif
 
     sl::blobFromImage(image, blob, sl::Resolution(width, height), 1 / 255.f, sl::float3(0, 0, 0), sl::float3(1, 1, 1), true, true, stream);
 
@@ -205,9 +159,6 @@ void YOLOv8_seg::copy_from_Mat(sl::Mat& image) {
 }
 
 void YOLOv8_seg::infer() {
-#if (NV_TENSORRT_MAJOR < 8) || (NV_TENSORRT_MAJOR == 8 && NV_TENSORRT_MINOR < 5)
-    this->context->enqueueV2(this->device_ptrs.data(), this->stream, nullptr);
-#else
     for (unsigned int i = 0; i < this->num_inputs; ++i) {
         this->context->setTensorAddress(this->input_bindings[i].name.c_str(), this->device_ptrs_in[i]);
     }
@@ -215,7 +166,6 @@ void YOLOv8_seg::infer() {
         this->context->setTensorAddress(this->output_bindings[i].name.c_str(), this->device_ptrs_out[i]);
     }
     this->context->enqueueV3(this->stream);
-#endif
     for (int i = 0; i < this->num_outputs; ++i) {
         size_t osize = this->output_bindings[i].size * this->output_bindings[i].dsize;
         CHECK(cudaMemcpyAsync(this->host_ptrs[i], this->device_ptrs_out[i], osize, cudaMemcpyDeviceToHost, this->stream));

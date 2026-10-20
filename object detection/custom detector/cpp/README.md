@@ -7,6 +7,7 @@ This directory contains comprehensive examples demonstrating how to use custom m
 ```
 cpp/
 ├── onnx_yolo_internal
+├── onnx_rfdetr_internal
 ├── opencv_dnn_yolov4
 ├── tensorrt_yolov5-v6-v8_onnx
 ├── tensorrt_yolov5-v6-v8_onnx_async
@@ -20,19 +21,23 @@ cpp/
 - **Models Supported**: YOLOv5, v8, v9, v10, v11, v12, v26 (ONNX format)
 - **Features**: Uses ZED SDK's internal inference engine, preprocessing and postprocessing with a custom onnx yolo-like model
 
-### 2. **opencv_dnn_yolov4**
+### 2. **(RECOMMENDED) onnx_rfdetr_internal**
+- **Models Supported**: RF-DETR / DETR-like (ONNX format, two outputs, NMS-free)
+- **Features**: Same internal-inference workflow as `onnx_yolo_internal` but for RF-DETR models. The SDK applies ImageNet-normalized preprocessing and DETR (sigmoid + top-K) decoding automatically. Use `CUSTOM_BOX_OBJECTS_AUTODETECT` to let the SDK pick the decoder automatically.
+
+### 3. **opencv_dnn_yolov4**
 - **Models Supported**: YOLOv4
 - **Features**: OpenCV with DNN module implementation 
 
-### 3. **tensorrt_yolov5-v6-v8_onnx**
+### 4. **tensorrt_yolov5-v6-v8_onnx**
 - **Models Supported**: YOLOv8 (ONNX format)
 - **Features**: Standard YOLOv8 implementation using TensorRT
 
-### 4. **tensorrt_yolov5-v6-v8_onnx_async**
+### 5. **tensorrt_yolov5-v6-v8_onnx_async**
 - **Models Supported**: YOLOv8 (ONNX format)
 - **Features**: Asynchronous processing version of the TensorRT YOLOv8 implementation
 
-### 5. **tensorrt_yolov8_seg_onnx**
+### 6. **tensorrt_yolov8_seg_onnx**
 - **Models Supported**: YOLOv8-seg (ONNX format)
 - **Features**: YOLOv8 instance segmentation implementation using TensorRT
 

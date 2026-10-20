@@ -40,19 +40,6 @@ static void on_sigint(int) {
     g_stop.store(true);
 }
 
-static const char* source_name(sl::ENCODED_STREAM_SOURCE s) {
-    switch (s) {
-        case sl::ENCODED_STREAM_SOURCE::RECEIVING:
-            return "RECEIVING";
-        case sl::ENCODED_STREAM_SOURCE::SENDING:
-            return "SENDING";
-        case sl::ENCODED_STREAM_SOURCE::RECORDING:
-            return "RECORDING";
-        default:
-            return "?";
-    }
-}
-
 struct SinkState {
     std::ofstream file;
     size_t bytes = 0;
@@ -63,7 +50,7 @@ struct SinkState {
 static void print_status(sl::Camera& zed) {
     std::cout << "Active encoded sources:\n";
     for (const auto& info : zed.getEncodedStreamsInfo()) {
-        std::cout << "  - " << source_name(info.source) << " active=" << (info.active ? "yes" : "no")
+        std::cout << "  - " << info.source << " active=" << (info.active ? "yes" : "no")
                   << " codec=" << (info.codec == sl::STREAMING_CODEC::H264 ? "H264" : "H265") << " bitrate=" << info.bitrate_kbps << " kbps"
                   << (info.is_lossless ? " (lossless)" : "") << "\n";
     }
@@ -102,8 +89,8 @@ static void
 print_results(const std::map<sl::ENCODED_STREAM_SOURCE, SinkState>& sinks, const std::map<sl::ENCODED_STREAM_SOURCE, std::string>& paths) {
     for (const auto& kv : sinks) {
         const auto& p = paths.at(kv.first);
-        std::cout << source_name(kv.first) << ": " << kv.second.frames << " frames (" << kv.second.keyframes << " keyframes), "
-                  << kv.second.bytes << " bytes → " << p << "\n";
+        std::cout << kv.first << ": " << kv.second.frames << " frames (" << kv.second.keyframes << " keyframes), " << kv.second.bytes
+                  << " bytes → " << p << "\n";
     }
 }
 

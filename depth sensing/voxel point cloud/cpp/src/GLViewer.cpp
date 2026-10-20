@@ -349,7 +349,7 @@ static const float HUD_MODE_W = 70.f; // mode button
 static const float HUD_TOG_W = 100.f; // toggle button
 
 static void drawButton(float x, float y, float w, float h, const char* label, bool active, bool highlight = false) {
-    // Background — Stereolabs brand: sl_lime active, sl_charcoal normal, sl_steel highlight
+    // Background: Stereolabs brand: sl_lime active, sl_charcoal normal, sl_steel highlight
     if (active)
         glColor4f(217 / 255.f, 255 / 255.f, 66 / 255.f, 0.9f); // sl_lime
     else if (highlight)
@@ -367,7 +367,7 @@ static void drawButton(float x, float y, float w, float h, const char* label, bo
     glVertex2f(x, y + h);
     glEnd();
 
-    // Label — dark text on lime, light on dark buttons
+    // Label: dark text on lime, light on dark buttons
     if (active)
         glColor4f(25 / 255.f, 25 / 255.f, 25 / 255.f, 1.f); // sl_soil
     else
@@ -1067,7 +1067,7 @@ void PointCloud::resize(size_t newCapacity) {
 
     cudaError_t err = cudaGraphicsGLRegisterBuffer(&bufferCudaID_, bufferGLID_, cudaGraphicsRegisterFlagsNone);
     if (err != cudaSuccess) {
-        std::cerr << "PointCloud::resize — cudaGraphicsGLRegisterBuffer failed: " << cudaGetErrorString(err) << std::endl;
+        std::cerr << "PointCloud::resize: cudaGraphicsGLRegisterBuffer failed: " << cudaGetErrorString(err) << std::endl;
         glDeleteBuffers(1, &bufferGLID_);
         bufferGLID_ = 0;
         bufferCudaID_ = nullptr;
@@ -1078,7 +1078,7 @@ void PointCloud::resize(size_t newCapacity) {
 
     err = cudaGraphicsMapResources(1, &bufferCudaID_, 0);
     if (err != cudaSuccess) {
-        std::cerr << "PointCloud::resize — cudaGraphicsMapResources failed: " << cudaGetErrorString(err) << std::endl;
+        std::cerr << "PointCloud::resize: cudaGraphicsMapResources failed: " << cudaGetErrorString(err) << std::endl;
         cudaGraphicsUnregisterResource(bufferCudaID_);
         glDeleteBuffers(1, &bufferGLID_);
         bufferGLID_ = 0;
@@ -1090,7 +1090,7 @@ void PointCloud::resize(size_t newCapacity) {
 
     err = cudaGraphicsResourceGetMappedPointer((void**)&xyzrgbaMappedBuf_, &numBytes_, bufferCudaID_);
     if (err != cudaSuccess) {
-        std::cerr << "PointCloud::resize — cudaGraphicsResourceGetMappedPointer failed: " << cudaGetErrorString(err) << std::endl;
+        std::cerr << "PointCloud::resize: cudaGraphicsResourceGetMappedPointer failed: " << cudaGetErrorString(err) << std::endl;
         cudaGraphicsUnmapResources(1, &bufferCudaID_, 0);
         cudaGraphicsUnregisterResource(bufferCudaID_);
         glDeleteBuffers(1, &bufferGLID_);

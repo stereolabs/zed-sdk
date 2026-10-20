@@ -69,7 +69,7 @@ public:
     // Init from a GPU sl::Mat + CUDA stream  (ZED cameras)
     void initFromRef(sl::Mat& ref, CUstream stream);
 
-    // Init with explicit dimensions (LiDAR — no shared ref)
+    // Init with explicit dimensions (LiDAR, no shared ref)
     void initSized(int width, int height);
 
     // Copy new data from a GPU sl::Mat (LiDAR)

@@ -981,11 +981,11 @@ void MainWindow::updatePickLabel() {
 
     QString txt = QString("Picks: %1 total").arg(allPicks_.size());
     if (nSensors == 2)
-        txt += QString(" (%1 pairs — 1st↔1st, 2nd↔2nd …)").arg(minPicks);
+        txt += QString(" (%1 pairs: 1st↔1st, 2nd↔2nd …)").arg(minPicks);
     else if (nSensors < 2)
-        txt += " — pick matching points on 2 sensors in same order";
+        txt += ": pick matching points on 2 sensors in same order";
     else
-        txt += " — too many sensors (need exactly 2)";
+        txt += ": too many sensors (need exactly 2)";
 
     bool ready = (nSensors == 2 && minPicks >= 3);
     if (ready)
@@ -1200,7 +1200,7 @@ void MainWindow::on_button_icpAlign_clicked() {
                          .arg(rad2deg(euler.x), 0, 'f', 2)
                          .arg(rad2deg(euler.y), 0, 'f', 2)
                          .arg(rad2deg(euler.z), 0, 'f', 2);
-    statusBar()->showMessage(QString("Aligned %1 pairs — residual: %2 m").arg(nPairs).arg(meanErr, 0, 'f', 4), 5000);
+    statusBar()->showMessage(QString("Aligned %1 pairs, residual: %2 m").arg(nPairs).arg(meanErr, 0, 'f', 4), 5000);
     std::cout << result.toStdString() << std::endl;
 
     // Clear pick points and markers after alignment

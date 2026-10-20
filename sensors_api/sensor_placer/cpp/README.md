@@ -37,7 +37,7 @@ Follow these steps to calibrate a multi-sensor rig:
 
 ### 1. Physical Setup
 
-Mount all cameras and LiDARs in their final positions. Ensure sufficient overlap between adjacent sensors' fields of view — at least 15% overlap is recommended for reliable alignment.
+Mount all cameras and LiDARs in their final positions. Ensure sufficient overlap between adjacent sensors' fields of view: at least 15% overlap is recommended for reliable alignment.
 
 ### 2. Gravity Alignment (Initial Orientation)
 
@@ -53,7 +53,7 @@ With the reference camera anchored, adjust each remaining sensor's pose to align
 
 - Use the **rotation dials** (RX/RY/RZ) to match orientation
 - Use the **translation scrollbars** (TX/TY/TZ) to match position
-- Focus on overlapping areas — walls, corners, and floor edges are good alignment features
+- Focus on overlapping areas: walls, corners, and floor edges are good alignment features
 - Toggle **Edges only** mode for ZED cameras to see depth discontinuities more clearly
 - Use **Real Colors** mode to visually match texture features
 
@@ -98,6 +98,6 @@ Click **Export** (or use the `-o` flag) to save the final configuration. Use the
 Two pose formats are supported:
 
 - **Rotation + Translation**: `"rotation": [rx, ry, rz]` (Rodrigues, radians) + `"translation": [tx, ty, tz]` (meters)
-- **4×4 Matrix**: `"pose": [m0..m15]` — 16-element row-major transformation matrix
+- **4×4 Matrix**: `"pose": [m0..m15]`, 16-element row-major transformation matrix
 
 Both formats are accepted for either device type on import.

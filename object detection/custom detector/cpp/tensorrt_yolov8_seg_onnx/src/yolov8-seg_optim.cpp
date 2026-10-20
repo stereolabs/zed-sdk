@@ -87,9 +87,6 @@ int build_engine(std::string const& onnx_path, std::string const& engine_path, O
         profile->setDimensions(dyn_dim_profile.tensor_name.c_str(), nvinfer1::OptProfileSelector::kMAX, dyn_dim_profile.size);
 
         config->addOptimizationProfile(profile);
-#if NV_TENSORRT_MAJOR < 10
-        builder->setMaxBatchSize(1);
-#endif
     }
 
     auto parser = nvonnxparser::createParser(*network, gLogger);
@@ -114,8 +111,6 @@ int build_engine(std::string const& onnx_path, std::string const& engine_path, O
     }
 
     //////////////// Actual engine building
-
-#if NV_TENSORRT_MAJOR >= 10
     engine = nullptr;
     if (builder->isNetworkSupported(*network, *config)) {
         std::unique_ptr<nvinfer1::IHostMemory> serializedEngine {builder->buildSerializedNetwork(*network, *config)};
@@ -124,9 +119,6 @@ int build_engine(std::string const& onnx_path, std::string const& engine_path, O
             engine = infer->deserializeCudaEngine(serializedEngine->data(), serializedEngine->size());
         }
     }
-#else
-    engine = builder->buildEngineWithConfig(*network, *config);
-#endif
 
     onnx_file_content.clear();
 
@@ -142,19 +134,11 @@ int build_engine(std::string const& onnx_path, std::string const& engine_path, O
     fwrite(reinterpret_cast<const char*>(ptr->data()), ptr->size() * sizeof(char), 1, fp);
     fclose(fp);
 
-#if NV_TENSORRT_MAJOR >= 10
     delete parser;
     delete network;
     delete config;
     delete builder;
     delete engine;
-#else
-    parser->destroy();
-    network->destroy();
-    config->destroy();
-    builder->destroy();
-    engine->destroy();
-#endif
 
     return 0;
 }

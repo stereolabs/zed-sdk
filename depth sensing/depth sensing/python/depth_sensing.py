@@ -101,7 +101,7 @@ def main(opt):
 
     while viewer.is_available():
         if zed.grab() <= sl.ERROR_CODE.SUCCESS:
-            # Retrieve point cloud data — voxel-decimated or full resolution
+            # Retrieve point cloud data: voxel-decimated or full resolution
             if viewer.use_voxels:
                 voxel_params = sl.VoxelMeasureParameters()
                 voxel_params.voxel_size = 0.025  # 25 mm expressed in meters (coordinate_units = METER)

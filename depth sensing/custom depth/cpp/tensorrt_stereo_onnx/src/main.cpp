@@ -1,11 +1,11 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Custom depth ingest sample — TensorRT stereo network (ONNX)
+// Custom depth ingest sample: TensorRT stereo network (ONNX)
 //
 // Demonstrates DEPTH_MODE::CUSTOM with a GPU source: a generic stereo
 // disparity network (two image inputs, one disparity output) runs with
 // TensorRT, and its raw GPU output buffer is ingested directly into the
-// SDK — no device-to-host copy of the disparity.
+// SDK, no device-to-host copy of the disparity.
 //
 // Usage: ./ZED_Custom_Depth_TensorRT <model.onnx|model.engine> [file.svo2]
 //
@@ -120,7 +120,7 @@ int main(int argc, char** argv) {
     }
 
     // Native GPU pre-processing: both rectified views are resized, converted and normalized
-    // into densely packed NCHW float tensors in a single fused SDK pass — no host round trip.
+    // into densely packed NCHW float tensors in a single fused SDK pass, no host round trip.
     // Defaults match Fast-FoundationStereo and most torch exports: pixel = (pixel/255 - mean) / std,
     // ImageNet mean/std. Adapt mean/std/scale here if your export embeds a different preprocessing.
     sl::TensorParameters tensor_params;
@@ -160,11 +160,11 @@ int main(int argc, char** argv) {
             continue;
         const auto image_ts = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE);
 
-        // 2. + 3. Native GPU pre-processing of both rectified views, then inference — the
+        // 2. + 3. Native GPU pre-processing of both rectified views, then inference: the
         // images never leave the GPU: SDK tensors are bound directly as network inputs.
         // Everything runs on the SDK CUDA stream: pre-processing is event-joined onto it,
         // inference enqueues after it, and the ingest below is FIFO-ordered on the same
-        // stream — no host synchronization is needed anywhere in the chain.
+        // stream, no host synchronization is needed anywhere in the chain.
         if (zed.retrieveTensor(left_tensor, right_tensor, tensor_params, cuda_stream) != sl::ERROR_CODE::SUCCESS) {
             std::cout << "retrieveTensor failed" << std::endl;
             break;

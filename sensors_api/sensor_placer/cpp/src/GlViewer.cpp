@@ -311,14 +311,14 @@ void PointCloud::ingest() {
     // Non-blocking: if the stream is still busy (e.g. ZED depth-inference
     // running), skip this frame rather than blocking the UI thread with
     // cudaStreamSynchronize.  The mapped GL buffer keeps the previous
-    // frame's data — visually identical at 40 fps.
+    // frame's data: visually identical at 40 fps.
     if (strm_ && cudaStreamQuery(strm_) == cudaErrorNotReady) {
         cudaGetLastError(); // clear the not-ready status
         return;
     }
     if (isMapped_ && mappedBuf_)
         cudaMemcpyAsync(mappedBuf_, matGPU_.getPtr<sl::float4>(sl::MEM::GPU), numBytes_, cudaMemcpyDeviceToDevice, strm_);
-    // No cudaStreamSynchronize — the copy is serialised on strm_ and will
+    // No cudaStreamSynchronize: the copy is serialised on strm_ and will
     // complete before the next retrieveMeasure on the same stream.
     // Blocking here would stall the UI thread for the full inference time.
 }
@@ -701,7 +701,7 @@ void GlViewer::updateLidarCloud(int id, sl::Mat& gpuPC) {
     auto it = sensors_.find(id);
     if (it == sensors_.end())
         return;
-    // upload() may do GL calls (resize buffer) — ensure context is current
+    // upload() may do GL calls (resize buffer): ensure context is current
     if (context())
         makeCurrent();
     else
@@ -711,7 +711,7 @@ void GlViewer::updateLidarCloud(int id, sl::Mat& gpuPC) {
 }
 
 void GlViewer::removeSensor(int id) {
-    // PointCloud destructor does GL/CUDA cleanup — need a current context
+    // PointCloud destructor does GL/CUDA cleanup: need a current context
     if (context())
         makeCurrent();
     sensors_.erase(id);
@@ -840,7 +840,7 @@ bool GlViewer::downloadPointCloud(int id, std::vector<sl::float4>& out) {
     auto it = sensors_.find(id);
     if (it == sensors_.end() || !it->second.pointCloud.initialized())
         return false;
-    // Read back via CUDA — the GL buffer is permanently CUDA-mapped,
+    // Read back via CUDA: the GL buffer is permanently CUDA-mapped,
     // so glGetBufferSubData would return garbage.
     return it->second.pointCloud.readBack(out);
 }
@@ -859,7 +859,7 @@ int GlViewer::pickPoint(int screenX, int screenY, sl::float3& outWorld) {
     // point whose screen-space projection falls within a pixel radius.
     int bestId = -1;
     const float pickRadiusSq = 10.0f * 10.0f; // max 10px radius squared
-    float bestDepth = 1e9f;                   // NDC depth — smaller = closer
+    float bestDepth = 1e9f;                   // NDC depth: smaller = closer
     sl::float3 bestWorld;
 
     for (auto& [id, s] : sensors_) {

@@ -27,6 +27,6 @@ After `grab()`, every depth-dependent feature works as usual: point cloud and me
 
 - **Map content**: `CUSTOM_DEPTH_FORMAT::DISPARITY` (pixels at the map's own resolution, positive = closer) or `CUSTOM_DEPTH_FORMAT::DEPTH` (metric, in `InitParameters::coordinate_units`).
 - **`scale`**: one multiplier applied before interpretation. Use it for fixed-point outputs (SGBM gives disparity ×16 → `scale = 1/16`), normalized outputs (`scale = max_disparity`), negative conventions (`scale = -1`) or unit mismatches.
-- **Invalid pixels**: NaN, negative disparities, 0/negative depths and ±Inf are classified at ingest — no need to clean the map first.
+- **Invalid pixels**: NaN, negative disparities, 0/negative depths and ±Inf are classified at ingest, no need to clean the map first.
 - **Confidence** is optional: without it, a validity-derived confidence is used. Provide one (`PROBABILITY` [0,1] or `ZED` [0,100] convention) to get graded filtering and better stabilization/mapping weighting.
 - **grab() without ingest fails** by design (the frame is not consumed: you can still ingest and retry). To explicitly skip depth for a frame, set `RuntimeParameters::enable_depth = false`. A `read()`-only loop (no grab) is valid for recording/streaming.

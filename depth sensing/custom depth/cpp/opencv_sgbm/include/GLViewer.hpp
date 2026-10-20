@@ -192,7 +192,7 @@ public:
     // Initialize OpenGL and CUDA buffers
     // Warning: must be called in the OpenGL thread
     void initialize(sl::Resolution res, CUstream strm);
-    // Push a new point cloud / voxel set — stores the GPU pointer directly, no copy.
+    // Push a new point cloud / voxel set: stores the GPU pointer directly, no copy.
     // The sl::Mat must remain valid until update() is called.
     // Warning: can be called from any thread but the mutex "mutexData" must be locked
     void pushNewPC(sl::Mat& matXYZRGBA);

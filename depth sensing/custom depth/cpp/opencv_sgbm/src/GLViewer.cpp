@@ -623,7 +623,7 @@ void PointCloud::resize(size_t newCapacity) {
 
     cudaError_t err = cudaGraphicsGLRegisterBuffer(&bufferCudaID_, bufferGLID_, cudaGraphicsRegisterFlagsNone);
     if (err != cudaSuccess) {
-        std::cerr << "PointCloud::resize — cudaGraphicsGLRegisterBuffer failed: " << cudaGetErrorString(err) << std::endl;
+        std::cerr << "PointCloud::resize: cudaGraphicsGLRegisterBuffer failed: " << cudaGetErrorString(err) << std::endl;
         glDeleteBuffers(1, &bufferGLID_);
         bufferGLID_ = 0;
         bufferCudaID_ = nullptr;
@@ -634,7 +634,7 @@ void PointCloud::resize(size_t newCapacity) {
 
     err = cudaGraphicsMapResources(1, &bufferCudaID_, 0);
     if (err != cudaSuccess) {
-        std::cerr << "PointCloud::resize — cudaGraphicsMapResources failed: " << cudaGetErrorString(err) << std::endl;
+        std::cerr << "PointCloud::resize: cudaGraphicsMapResources failed: " << cudaGetErrorString(err) << std::endl;
         cudaGraphicsUnregisterResource(bufferCudaID_);
         glDeleteBuffers(1, &bufferGLID_);
         bufferGLID_ = 0;
@@ -646,7 +646,7 @@ void PointCloud::resize(size_t newCapacity) {
 
     err = cudaGraphicsResourceGetMappedPointer((void**)&xyzrgbaMappedBuf_, &numBytes_, bufferCudaID_);
     if (err != cudaSuccess) {
-        std::cerr << "PointCloud::resize — cudaGraphicsResourceGetMappedPointer failed: " << cudaGetErrorString(err) << std::endl;
+        std::cerr << "PointCloud::resize: cudaGraphicsResourceGetMappedPointer failed: " << cudaGetErrorString(err) << std::endl;
         cudaGraphicsUnmapResources(1, &bufferCudaID_, 0);
         cudaGraphicsUnregisterResource(bufferCudaID_);
         glDeleteBuffers(1, &bufferGLID_);

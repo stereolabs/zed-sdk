@@ -1,4 +1,4 @@
-# Voxel Point Cloud — Python
+# Voxel Point Cloud: Python
 
 This sample demonstrates voxel-decimated 3D point cloud capture with the ZED SDK Python API. It displays an interactive OpenGL viewer where you can adjust voxel parameters in real time.
 

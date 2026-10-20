@@ -6,7 +6,7 @@
 //
 // Notes:
 //  - The SDK is still streaming over UDP as usual; this sample just taps the
-//    same encoded bitstream and writes it to disk in parallel — no second
+//    same encoded bitstream and writes it to disk in parallel, no second
 //    encoding session, no re-encoding loss.
 
 #include <atomic>
@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    // Show what the SDK exposes right now — should report SENDING active.
+    // Show what the SDK exposes right now: should report SENDING active.
     for (const auto& info : zed.getEncodedStreamsInfo()) {
         const char* src = (info.source == sl::ENCODED_STREAM_SOURCE::RECEIVING) ? "RECEIVING"
             : (info.source == sl::ENCODED_STREAM_SOURCE::SENDING)               ? "SENDING"
