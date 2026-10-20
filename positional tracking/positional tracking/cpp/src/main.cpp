@@ -214,6 +214,12 @@ int main(int argc, char** argv) {
     sl::Timestamp last_image_timestamp_clock = zed.getTimestamp(sl::TIME_REFERENCE::CURRENT);
     sl::Timestamp last_image_timestamp_svo = sl::Timestamp(0);
 
+    // On fisheye camera the tracking is performed on the raw fisheye
+    // image. So we check the lens type in order to know which image
+    // display
+    bool is_fisheye = zed.getCameraInformation().camera_configuration.calibration_parameters_raw.left_cam.lens_distortion_model
+        == sl::LENS_DISTORTION_MODEL::FISHEYE;
+
     while (view.isOpen()) {
         //
         // Read current image
@@ -250,15 +256,9 @@ int main(int argc, char** argv) {
             print("Failed to grab image frame", status);
             break;
         }
-
         // Retrieve the left image
         if (trackingParameters.mode == POSITIONAL_TRACKING_MODE::GEN_3)
-            zed.retrieveImage(
-                leftImage,
-                VIEW::LEFT /*Set it to VIEW::LEFT_UNRECTIFIED if you are using fisheye lens*/,
-                MEM::CPU,
-                displayResolution
-            );
+            zed.retrieveImage(leftImage, is_fisheye ? VIEW::LEFT_UNRECTIFIED : VIEW::LEFT, MEM::CPU, displayResolution);
         else
             zed.retrieveImage(leftImage, VIEW::LEFT, MEM::CPU, displayResolution);
 
