@@ -1,4 +1,4 @@
-# Voxel Point Cloud — C++
+# Voxel Point Cloud: C++
 
 This sample demonstrates voxel-decimated 3D point cloud capture with the ZED SDK. It displays an interactive OpenGL viewer where you can adjust voxel parameters in real time.
 

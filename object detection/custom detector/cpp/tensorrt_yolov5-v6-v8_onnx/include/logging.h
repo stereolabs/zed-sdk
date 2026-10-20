@@ -26,11 +26,7 @@
 #include <sstream>
 #include <string>
 
-#if NV_TENSORRT_MAJOR >= 8
-    #define TRT_NOEXCEPT noexcept
-#else
-    #define TRT_NOEXCEPT
-#endif
+#define TRT_NOEXCEPT noexcept
 
 using Severity = nvinfer1::ILogger::Severity;
 

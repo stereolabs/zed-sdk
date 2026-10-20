@@ -19,7 +19,7 @@
 ########################################################################
 
 """
-Voxel Point Cloud sample — demonstrates voxel-decimated 3D point cloud
+Voxel Point Cloud sample: demonstrates voxel-decimated 3D point cloud
 capture with interactive controls for voxel size, resolution mode, and
 scale factor.
 

@@ -91,7 +91,7 @@ static DetectionConfig g_detectionConfig;
 static ViewerLayout g_viewerLayout = ViewerLayout::SplitRows;
 static bool g_syncMode = false;
 
-// Mutex to serialize device open() calls — TensorRT/CUDA library loading is not thread-safe
+// Mutex to serialize device open() calls: TensorRT/CUDA library loading is not thread-safe
 static std::mutex g_deviceOpenMutex;
 
 // Helper function to generate timestamped recording filename

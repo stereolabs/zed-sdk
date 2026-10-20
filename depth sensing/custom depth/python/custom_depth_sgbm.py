@@ -19,7 +19,7 @@
 ########################################################################
 
 """
-    Custom depth ingest sample (DEPTH_MODE.CUSTOM) — OpenCV StereoSGBM.
+    Custom depth ingest sample (DEPTH_MODE.CUSTOM): OpenCV StereoSGBM.
 
     The SDK acquisition and rectification are used, the disparity is computed
     externally (cv2.StereoSGBM at half resolution), then ingested back with

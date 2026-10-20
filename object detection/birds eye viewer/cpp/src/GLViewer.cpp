@@ -334,7 +334,7 @@ void GLViewer::draw() {
     pointCloud_.draw(vpMatrix);
 
     // Bounding boxes are already in user-world frame
-    // so they must NOT have cam_pose applied — use base vpMatrix
+    // so they must NOT have cam_pose applied: use base vpMatrix
     glUseProgram(shader.it.getProgramId());
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glUniformMatrix4fv(shader.MVP_Mat, 1, GL_TRUE, vpMatrix.m);

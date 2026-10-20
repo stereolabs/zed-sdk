@@ -15,14 +15,6 @@ inline int clamp(int val, int min, int max) {
 
 #define WEIGHTED_NMS
 
-#if NV_TENSORRT_MAJOR >= 10
-    #define trt_name_engine_get_binding_name getIOTensorName
-    #define trt_name_engine_get_nb_binding getNbIOTensors
-#else
-    #define trt_name_engine_get_binding_name getBindingName
-    #define trt_name_engine_get_nb_binding getNbBindings
-#endif
-
 std::vector<BBoxInfo> nonMaximumSuppression(const float nmsThresh, std::vector<BBoxInfo> binfo) {
 
     auto overlap1D = [](float x1min, float x1max, float x2min, float x2max) -> float {
@@ -123,16 +115,9 @@ Yolo::~Yolo() {
         cudaStreamDestroy(stream);
         CUDA_CHECK(cudaFree(d_output));
         // Destroy the engine
-
-#if NV_TENSORRT_MAJOR >= 10
         delete context;
         delete engine;
         delete runtime;
-#else
-        context->destroy();
-        engine->destroy();
-        runtime->destroy();
-#endif
 
         delete[] h_output;
     }
@@ -182,9 +167,6 @@ int Yolo::build_engine(std::string onnx_path, std::string engine_path, OptimDim 
             profile->setDimensions(dyn_dim_profile.tensor_name.c_str(), OptProfileSelector::kMAX, dyn_dim_profile.size);
 
             config->addOptimizationProfile(profile);
-#if NV_TENSORRT_MAJOR < 10
-            builder->setMaxBatchSize(1);
-#endif
         }
 
         auto parser = nvonnxparser::createParser(*network, gLogger);
@@ -210,7 +192,6 @@ int Yolo::build_engine(std::string onnx_path, std::string engine_path, OptimDim 
 
         //////////////// Actual engine building
 
-#if NV_TENSORRT_MAJOR >= 10
         engine = nullptr;
         if (builder->isNetworkSupported(*network, *config)) {
             std::unique_ptr<IHostMemory> serializedEngine {builder->buildSerializedNetwork(*network, *config)};
@@ -219,9 +200,6 @@ int Yolo::build_engine(std::string onnx_path, std::string engine_path, OptimDim 
                 engine = infer->deserializeCudaEngine(serializedEngine->data(), serializedEngine->size());
             }
         }
-#else
-        engine = builder->buildEngineWithConfig(*network, *config);
-#endif
 
         onnx_file_content.clear();
 
@@ -237,19 +215,11 @@ int Yolo::build_engine(std::string onnx_path, std::string engine_path, OptimDim 
         fwrite(reinterpret_cast<const char*>(ptr->data()), ptr->size() * sizeof(char), 1, fp);
         fclose(fp);
 
-#if NV_TENSORRT_MAJOR >= 10
         delete parser;
         delete network;
         delete config;
         delete builder;
         delete engine;
-#else
-        parser->destroy();
-        network->destroy();
-        config->destroy();
-        builder->destroy();
-        engine->destroy();
-#endif
 
         return 0;
     } else
@@ -287,38 +257,22 @@ int Yolo::init(std::string engine_name) {
         return 1;
 
     delete[] trtModelStream;
-    if (engine->trt_name_engine_get_nb_binding() != 2)
+    if (engine->getNbIOTensors() != 2)
         return 1;
 
-    const int bindings = engine->trt_name_engine_get_nb_binding();
-    for (int i = 0; i < bindings; i++) {
-#if NV_TENSORRT_MAJOR > 8 || (NV_TENSORRT_MAJOR >= 8 && NV_TENSORRT_MINOR > 4)
-        if (engine->getTensorIOMode(engine->getIOTensorName(i)) == nvinfer1::TensorIOMode::kINPUT)
-#else
-        if (engine->bindingIsInput(i))
-#endif
-        {
-            input_binding_name = engine->trt_name_engine_get_binding_name(i);
-
-#if NV_TENSORRT_MAJOR >= 10
-            Dims bind_dim = engine->getTensorShape(engine->getIOTensorName(i));
-#else
-            Dims bind_dim = engine->getBindingDimensions(i);
-#endif
+    const int nb_tensors = engine->getNbIOTensors();
+    for (int i = 0; i < nb_tensors; i++) {
+        const char* tensor_name = engine->getIOTensorName(i);
+        Dims bind_dim = engine->getTensorShape(tensor_name);
+        if (engine->getTensorIOMode(tensor_name) == nvinfer1::TensorIOMode::kINPUT) {
+            input_binding_name = tensor_name;
             input_width = bind_dim.d[3];
             input_height = bind_dim.d[2];
             inputIndex = i;
             std::cout << "Inference size : " << input_height << "x" << input_width << std::endl;
-        } // if (engine->getTensorIOMode(engine->trt_name_engine_get_binding_name(i)) == TensorIOMode::kOUTPUT)
-        else {
-            output_name = engine->trt_name_engine_get_binding_name(i);
-            // fill size, allocation must be done externally
+        } else {
+            output_name = tensor_name;
             outputIndex = i;
-#if NV_TENSORRT_MAJOR >= 10
-            Dims bind_dim = engine->getTensorShape(engine->getIOTensorName(i));
-#else
-            Dims bind_dim = engine->getBindingDimensions(i);
-#endif
             size_t batch = bind_dim.d[0];
             if (batch > batch_size) {
                 std::cout << "batch > 1 not supported" << std::endl;
@@ -347,7 +301,7 @@ int Yolo::init(std::string engine_name) {
     output_size = out_dim * (out_class_number + out_box_struct_number);
     h_output = new float[batch_size * output_size];
     // In order to bind the buffers, we need to know the names of the input and output tensors.
-    // Note that indices are guaranteed to be less than IEngine::trt_name_engine_get_nb_binding()
+    // Note that indices are guaranteed to be less than IEngine::getNbIOTensors()
     assert(inputIndex == 0);
     assert(outputIndex == 1);
     // Create GPU buffers on device
@@ -372,16 +326,9 @@ std::vector<BBoxInfo> Yolo::run(sl::Tensor& input_tensor, int orig_image_h, int 
         return binfo;
     }
 
-#if (NV_TENSORRT_MAJOR < 8) || (NV_TENSORRT_MAJOR == 8 && NV_TENSORRT_MINOR < 5)
-    std::vector<void*> d_buffers_nvinfer(2);
-    d_buffers_nvinfer[inputIndex] = input_ptr;
-    d_buffers_nvinfer[outputIndex] = d_output;
-    context->enqueueV2(&d_buffers_nvinfer[0], stream, nullptr);
-#else
     context->setTensorAddress(input_binding_name.c_str(), input_ptr);
     context->setTensorAddress(output_name.c_str(), d_output);
     context->enqueueV3(stream);
-#endif
 
     CUDA_CHECK(cudaMemcpyAsync(h_output, d_output, batch_size * output_size * sizeof(float), cudaMemcpyDeviceToHost, stream));
     cudaStreamSynchronize(stream);

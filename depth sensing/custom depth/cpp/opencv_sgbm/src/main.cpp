@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////
 //
-// Custom depth ingest sample — OpenCV StereoSGBM
+// Custom depth ingest sample: OpenCV StereoSGBM
 //
 // Demonstrates DEPTH_MODE::CUSTOM: the SDK acquisition/rectification is used,
 // the disparity is computed externally (here cv::StereoSGBM on CPU, at half
@@ -105,7 +105,7 @@ int main(int argc, char** argv) {
         disp_16s.convertTo(disp_32f, CV_32F);
 
         // Graded pseudo-confidence from the local image gradient (texture): SGBM is unreliable on
-        // textureless areas. Demo of the PROBABILITY confidence path — with it, the confidence
+        // textureless areas. Demo of the PROBABILITY confidence path, with it, the confidence
         // threshold slider sweeps the density instead of acting as a binary valid/invalid switch.
         cv::Mat grad_x, grad_y, conf_32f;
         cv::Sobel(left_half, grad_x, CV_32F, 1, 0, 3);

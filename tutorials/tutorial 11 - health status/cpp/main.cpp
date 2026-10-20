@@ -52,22 +52,12 @@ int main(int argc, char** argv) {
         // Grab an image
         returned_state = zed.grab();
         // A new image is available if grab() returns ERROR_CODE::SUCCESS or a WARNING (an error_code lower than ERROR_CODE::SUCCESS)
-        if (returned_state <= ERROR_CODE::SUCCESS) {
-
-        } else if (returned_state == ERROR_CODE::CORRUPTED_FRAME) {
-            // If the health check detect a corrupted frame, the grab will return a warning error code as ERROR_CODE::CORRUPTED_FRAME
-            cout << "**** Corrupted frame detected ! *****" << endl;
-        } else {
-            cout << "Error " << returned_state << endl;
-        }
+        if (returned_state != ERROR_CODE::SUCCESS)
+            std::cout << "Grab status " << returned_state << "\n";
 
         // Get the detailed health status
         auto health = zed.getHealthStatus();
-        std::cout << "Health check enabled " << health.enabled << std::endl;
-        std::cout << "low_image_quality " << health.low_image_quality << std::endl;
-        std::cout << "low_lighting " << health.low_lighting << std::endl;
-        std::cout << "low_depth_reliability " << health.low_depth_reliability << std::endl;
-        std::cout << "low_motion_sensors_reliability " << health.low_motion_sensors_reliability << std::endl;
+        std::cout << "Health Status " << health << "\n";
     }
 
     // Close the camera

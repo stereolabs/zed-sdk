@@ -48,7 +48,7 @@ Each worker thread writes into a lock-free triple buffer. The main thread polls 
 
 ### Sync Mode (`--sync`)
 
-When `--sync` is passed, worker threads instead `ingest()` packets into an `AsyncPacketSynchronizer`. The main loop calls `syncNext()` which returns a `Bundle` — a set of packets from different devices whose timestamps fall within a tolerance window (~15 ms). ZED cameras are registered as **Required** streams and LiDARs as **Optional**, so bundles are emitted at the camera frame rate with LiDAR data attached when available.
+When `--sync` is passed, worker threads instead `ingest()` packets into an `AsyncPacketSynchronizer`. The main loop calls `syncNext()` which returns a `Bundle`: a set of packets from different devices whose timestamps fall within a tolerance window (~15 ms). ZED cameras are registered as **Required** streams and LiDARs as **Optional**, so bundles are emitted at the camera frame rate with LiDAR data attached when available.
 
 ## Building
 
@@ -111,13 +111,13 @@ make -j$(nproc)
 
 ### Reference Frame Modes
 ```bash
-# Baselink (default) — apply sensor extrinsic poses
+# Baselink (default): apply sensor extrinsic poses
 ./SensorsAPISample -b
 
-# World — enable positional tracking, transform to world frame
+# World: enable positional tracking, transform to world frame
 ./SensorsAPISample -w
 
-# Sensor — raw data, no transform applied
+# Sensor: raw data, no transform applied
 ./SensorsAPISample -s
 ```
 
@@ -181,20 +181,20 @@ The sample accepts a JSON configuration file to define multiple sensors with pos
 ### JSON Fields
 
 **Sensors:**
-- `serial` — ZED camera serial number (live)
-- `svo` — SVO/SVO2 file path (playback)
-- `ip` — LiDAR IP address (live)
-- `osf` — OSF file path (LiDAR playback)
-- `pose` — 16-element column-major 4×4 transform matrix
-- `rotation` — Rodrigues rotation vector `[rx, ry, rz]` (alternative to `pose`)
-- `translation` — Translation vector `[tx, ty, tz]` in meters (alternative to `pose`)
-- `object_detection` — Per-camera OD enable (boolean)
-- `body_tracking` — Per-camera BT enable (boolean)
+- `serial`: ZED camera serial number (live)
+- `svo`: SVO/SVO2 file path (playback)
+- `ip`: LiDAR IP address (live)
+- `osf`: OSF file path (LiDAR playback)
+- `pose`: 16-element column-major 4×4 transform matrix
+- `rotation`: Rodrigues rotation vector `[rx, ry, rz]` (alternative to `pose`)
+- `translation`: Translation vector `[tx, ty, tz]` in meters (alternative to `pose`)
+- `object_detection`: Per-camera OD enable (boolean)
+- `body_tracking`: Per-camera BT enable (boolean)
 
 **Detection settings:**
-- `model` — `"accurate"`, `"medium"`, or `"fast"`
-- `confidence` — Detection confidence threshold (0–100)
-- `format` — Body format: `"18"`, `"34"`, or `"38"`
+- `model`: `"accurate"`, `"medium"`, or `"fast"`
+- `confidence`: Detection confidence threshold (0–100)
+- `format`: Body format: `"18"`, `"34"`, or `"38"`
 
 ## Key Differences from Managed Sample
 

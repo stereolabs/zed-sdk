@@ -42,6 +42,7 @@ int main(int argc, char** argv) {
     init_parameters.depth_mode = DEPTH_MODE::NEURAL;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP; // OpenGL's coordinate system is right_handed
     init_parameters.sdk_verbose = 1;
+    init_parameters.depth_precision = sl::DEPTH_PRECISION::INT8;
     auto mask_path = parseArgs(argc, argv, init_parameters);
 
     // Open the camera

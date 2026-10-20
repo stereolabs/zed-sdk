@@ -1,4 +1,4 @@
-# Custom Depth — Python (OpenCV SGBM)
+# Custom Depth: Python (OpenCV SGBM)
 
 Python version of the `DEPTH_MODE.CUSTOM` flow: disparity computed externally with `cv2.StereoSGBM` at half resolution and ingested back with `Camera.ingest_custom_depth()`, the SDK pipeline running on it.
 

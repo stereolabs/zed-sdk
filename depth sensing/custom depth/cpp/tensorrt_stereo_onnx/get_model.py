@@ -6,7 +6,7 @@ Default (no arguments): download CREStereo (Apache-2.0), ready to run:
     python3 get_model.py
     ./build/ZED_Custom_Depth_TensorRT models/crestereo_init_iter5_480x640.onnx
 
-SOTA option: Fast-FoundationStereo (NVlabs, research-only license) — downloads the
+SOTA option: Fast-FoundationStereo (NVlabs, research-only license), downloads the
 authors' prebuilt single-file ONNX directly (no repo clone, no export, no gdown):
     python3 get_model.py --model fast-foundation-stereo            # 576x960, 8 iters
     python3 get_model.py --model fast-foundation-stereo --ffs-resolution 320x736 --iters 4
@@ -30,7 +30,7 @@ MODELS_DIR = os.path.join(SCRIPT_DIR, "models")
 
 # CREStereo ONNX exports (PINTO0309 conversion, Apache-2.0), hosted on stereodemo's GitHub
 # releases. Use the "init" variants only: 2 inputs (left, right), raw 0-255 RGB input,
-# output (1,2,H,W) with disparity in plane 0 — matching the sample contract.
+# output (1,2,H,W) with disparity in plane 0, matching the sample contract.
 CRESTEREO_BASE_URL = os.environ.get(
     "SL_CUSTOM_DEPTH_MODEL_URL",
     "https://github.com/nburrus/stereodemo/releases/download/v0.1-crestereo")
@@ -137,7 +137,7 @@ def get_fast_foundation_stereo(args):
 
     exported = [os.path.join(out_dir, f) for f in os.listdir(out_dir) if f.endswith(".onnx")]
     if not exported:
-        sys.exit(f"Export did not produce an .onnx in {out_dir} — check the script output above "
+        sys.exit(f"Export did not produce an .onnx in {out_dir}: check the script output above "
                  "(their requirements.txt must be installed: pip install -r third_party/Fast-FoundationStereo/requirements.txt)")
     exported.sort(key=os.path.getmtime)
     name = f"fast_foundation_stereo_{args.height}x{args.width}_iter{args.iters}.onnx"

@@ -26,6 +26,10 @@
 // ZED includes
 #include <sl/Camera.hpp>
 
+#include <cstdlib>
+#include <utility>
+#include <vector>
+
 // Sample includes
 #include "GLViewer.hpp"
 #include "TrackingViewer.hpp"
@@ -35,7 +39,20 @@ using namespace std;
 using namespace sl;
 
 void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
-void parseArgs(int argc, char** argv, InitParameters& param);
+
+/// Everything the command line can change, pre-filled with the sample defaults.
+struct SampleOptions {
+    BODY_TRACKING_MODEL detection_model;
+    BODY_TRACKING_MODEL_GEN model_gen = BODY_TRACKING_MODEL_GEN::GEN_2;
+    BODY_FORMAT body_format = BODY_FORMAT::BODY_34;
+    bool enable_body_fitting = false;
+    bool enable_segmentation = true;
+    float detection_confidence = 40.f;
+    float skeleton_smoothing = 0.7f;
+};
+
+bool parseArgs(int argc, char** argv, InitParameters& param, SampleOptions& opts);
+void printUsage(const char* exe);
 
 int main(int argc, char** argv) {
 
@@ -52,7 +69,11 @@ int main(int argc, char** argv) {
     init_parameters.depth_mode = isJetson ? DEPTH_MODE::NEURAL_LIGHT : DEPTH_MODE::NEURAL;
     init_parameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
 
-    parseArgs(argc, argv, init_parameters);
+    SampleOptions opts;
+    opts.detection_model = isJetson ? BODY_TRACKING_MODEL::HUMAN_BODY_FAST : BODY_TRACKING_MODEL::HUMAN_BODY_ACCURATE;
+
+    if (!parseArgs(argc, argv, init_parameters, opts))
+        return EXIT_FAILURE;
 
     // Open the camera
     auto returned_state = zed.open(init_parameters);
@@ -76,12 +97,17 @@ int main(int argc, char** argv) {
 
     // Enable the Body tracking module
     BodyTrackingParameters body_tracker_params;
-    body_tracker_params.enable_tracking = true;      // track people across images flow
-    body_tracker_params.enable_body_fitting = false; // smooth skeletons moves
-    body_tracker_params.body_format = sl::BODY_FORMAT::BODY_34;
-    body_tracker_params.enable_segmentation = true;
-    body_tracker_params.detection_model = isJetson ? BODY_TRACKING_MODEL::HUMAN_BODY_FAST : BODY_TRACKING_MODEL::HUMAN_BODY_ACCURATE;
+    body_tracker_params.enable_tracking = true;                         // track people across images flow
+    body_tracker_params.enable_body_fitting = opts.enable_body_fitting; // smooth skeletons moves
+    body_tracker_params.body_format = opts.body_format;
+    body_tracker_params.enable_segmentation = opts.enable_segmentation;
+    body_tracker_params.detection_model = opts.detection_model;
+    body_tracker_params.model_gen = opts.model_gen;
     // body_tracker_params.allow_reduced_precision_inference = true;
+
+    cout << "[Sample] Body tracking: " << toString(body_tracker_params.detection_model) << " | " << toString(body_tracker_params.model_gen)
+         << " | " << toString(body_tracker_params.body_format) << " | fitting " << (body_tracker_params.enable_body_fitting ? "on" : "off")
+         << " | segmentation " << (body_tracker_params.enable_segmentation ? "on" : "off") << endl;
 
     returned_state = zed.enableBodyTracking(body_tracker_params);
     if (returned_state > ERROR_CODE::SUCCESS) {
@@ -113,8 +139,8 @@ int main(int argc, char** argv) {
 
     // Configure object detection runtime parameters
     BodyTrackingRuntimeParameters body_tracker_parameters_rt;
-    body_tracker_parameters_rt.detection_confidence_threshold = 40;
-    body_tracker_parameters_rt.skeleton_smoothing = 0.7;
+    body_tracker_parameters_rt.detection_confidence_threshold = opts.detection_confidence;
+    body_tracker_parameters_rt.skeleton_smoothing = opts.skeleton_smoothing;
 
     // Create ZED Bodies filled in the main loop
     Bodies bodies;
@@ -173,49 +199,213 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
 }
 
-void parseArgs(int argc, char** argv, InitParameters& param) {
-    if (argc > 1 && string(argv[1]).find(".svo") != string::npos) {
-        // SVO input mode
-        param.input.setFromSVOFile(argv[1]);
-        cout << "[Sample] Using SVO File input: " << argv[1] << endl;
-    } else if (argc > 1 && string(argv[1]).find(".svo") == string::npos) {
-        string arg = string(argv[1]);
-        unsigned int a, b, c, d, port;
-        if (sscanf(arg.c_str(), "%u.%u.%u.%u:%d", &a, &b, &c, &d, &port) == 5) {
-            // Stream input mode - IP + port
-            string ip_adress = to_string(a) + "." + to_string(b) + "." + to_string(c) + "." + to_string(d);
-            param.input.setFromStream(String(ip_adress.c_str()), port);
-            cout << "[Sample] Using Stream input, IP : " << ip_adress << ", port : " << port << endl;
-        } else if (sscanf(arg.c_str(), "%u.%u.%u.%u", &a, &b, &c, &d) == 4) {
-            // Stream input mode - IP only
-            param.input.setFromStream(String(argv[1]));
-            cout << "[Sample] Using Stream input, IP : " << argv[1] << endl;
-        } else if (arg.find("HD2K") != string::npos) {
-            param.camera_resolution = RESOLUTION::HD2K;
-            cout << "[Sample] Using Camera in resolution HD2K" << endl;
-        } else if (arg.find("HD1200") != string::npos) {
-            param.camera_resolution = RESOLUTION::HD1200;
-            cout << "[Sample] Using Camera in resolution HD1200" << endl;
-        } else if (arg.find("HD1080") != string::npos) {
-            param.camera_resolution = RESOLUTION::HD1080;
-            cout << "[Sample] Using Camera in resolution HD1080" << endl;
-        } else if (arg.find("HD720") != string::npos) {
-            param.camera_resolution = RESOLUTION::HD720;
-            cout << "[Sample] Using Camera in resolution HD720" << endl;
-        } else if (arg.find("SVGA") != string::npos) {
-            param.camera_resolution = RESOLUTION::SVGA;
-            cout << "[Sample] Using Camera in resolution SVGA" << endl;
-        } else if (arg.find("XVGA") != string::npos) {
-            param.camera_resolution = RESOLUTION::XVGA;
-            cout << "[Sample] Using Camera in resolution XVGA" << endl;
-        } else if (arg.find("TXGA") != string::npos) {
-            param.camera_resolution = RESOLUTION::TXGA;
-            cout << "[Sample] Using Camera in resolution TXGA" << endl;
-        } else if (arg.find("VGA") != string::npos) {
-            param.camera_resolution = RESOLUTION::VGA;
-            cout << "[Sample] Using Camera in resolution VGA" << endl;
+void printUsage(const char* exe) {
+    cout << "\nUsage: " << exe
+         << " [input] [options]\n\n"
+            "Input (optional, positional or with --input; defaults to a live camera):\n"
+            "  <file.svo2>              Play back an SVO file\n"
+            "  <a.b.c.d[:port]>         Receive a network stream\n\n"
+            "Options:\n"
+            "  --input <src>            Same as the positional input above\n"
+            "  --resolution <res>       HD2K | HD1200 | HD1080 | HD720 | SVGA | XVGA | TXGA | VGA | AUTO\n"
+            "  --depth <mode>           neural_light | neural | neural_plus\n"
+            "  --model <m>              Body tracking model: fast | medium | accurate\n"
+            "  --generation <g>         Body tracking network generation: 1 | 2\n"
+            "  --format <f>             Keypoint format: 18 | 34 | 38\n"
+            "  --confidence <0-100>     Detection confidence threshold\n"
+            "  --smoothing <0-1>        Skeleton smoothing\n"
+            "  --fitting                Enable body fitting (required by the 34-keypoint format)\n"
+            "  --no-segmentation        Disable the body segmentation mask\n"
+            "  --help, -h               Show this message\n\n"
+            "Controls:\n"
+            "  q                        Quit\n"
+            "  m                        Pause / resume\n\n"
+            "Examples:\n"
+            "  "
+         << exe
+         << " --model fast --generation 1\n"
+            "  "
+         << exe
+         << " recording.svo2 --format 18 --confidence 50\n"
+            "  "
+         << exe << " 192.168.1.42:30000 --resolution HD1080\n"
+         << endl;
+}
+
+/// Set the input from an SVO path or an "ip[:port]" stream address.
+/// Returns false if the argument is neither.
+static bool setInput(const string& arg, InitParameters& param) {
+    if (arg.find(".svo") != string::npos) {
+        param.input.setFromSVOFile(arg.c_str());
+        cout << "[Sample] Using SVO File input: " << arg << endl;
+        return true;
+    }
+    unsigned int a, b, c, d, port;
+    if (sscanf(arg.c_str(), "%u.%u.%u.%u:%d", &a, &b, &c, &d, &port) == 5) {
+        string ip_adress = to_string(a) + "." + to_string(b) + "." + to_string(c) + "." + to_string(d);
+        param.input.setFromStream(String(ip_adress.c_str()), port);
+        cout << "[Sample] Using Stream input, IP : " << ip_adress << ", port : " << port << endl;
+        return true;
+    }
+    if (sscanf(arg.c_str(), "%u.%u.%u.%u", &a, &b, &c, &d) == 4) {
+        param.input.setFromStream(String(arg.c_str()));
+        cout << "[Sample] Using Stream input, IP : " << arg << endl;
+        return true;
+    }
+    return false;
+}
+
+/// Returns false if the resolution name is unknown.
+static bool setResolution(const string& arg, InitParameters& param) {
+    // The SDK exports this conversion and the positional tracking sample already
+    // uses it, so this sample no longer carries its own name table, which had to
+    // stay ordered longest-first or "HD1200" would never be reached through
+    // "HD120". Note it returns an ERROR flag, not success.
+    RESOLUTION resolution;
+    if (fromString(arg.c_str(), resolution))
+        return false;
+    param.camera_resolution = resolution;
+    cout << "[Sample] Using Camera in resolution " << toString(resolution) << endl;
+    return true;
+}
+
+/// Parse a float option, rejecting junk instead of silently yielding 0.
+static float parseFloatOption(const char* text, const char* name, float lo, float hi, bool& ok) {
+    try {
+        size_t used = 0;
+        const float v = std::stof(text, &used);
+        if (used == std::string(text).size() && v >= lo && v <= hi) {
+            ok = true;
+            return v;
+        }
+    } catch (...) { }
+    cout << name << " expects a number between " << lo << " and " << hi << ", got '" << text << "'" << endl;
+    ok = false;
+    return lo;
+}
+
+bool parseArgs(int argc, char** argv, InitParameters& param, SampleOptions& opts) {
+    bool ok = false;
+    // A value-taking option needs its argument; report instead of reading past the end.
+    auto needValue = [&](int i, const string& name) {
+        if (i + 1 >= argc) {
+            cout << "[Sample][Error] " << name << " expects a value." << endl;
+            return false;
+        }
+        return true;
+    };
+
+    for (int i = 1; i < argc; ++i) {
+        string arg = argv[i];
+
+        if (arg == "--help" || arg == "-h") {
+            printUsage(argv[0]);
+            return false;
+        } else if (arg == "--input") {
+            if (!needValue(i, arg))
+                return false;
+            if (!setInput(argv[++i], param)) {
+                cout << "[Sample][Error] Unrecognized input '" << argv[i] << "' (expected an .svo2 file or an ip[:port] address)." << endl;
+                return false;
+            }
+        } else if (arg == "--resolution") {
+            if (!needValue(i, arg))
+                return false;
+            if (!setResolution(argv[++i], param)) {
+                cout << "[Sample][Error] Unknown resolution '" << argv[i] << "'." << endl;
+                return false;
+            }
+        } else if (arg == "--depth") {
+            if (!needValue(i, arg))
+                return false;
+            string v = argv[++i];
+            if (v == "neural_light")
+                param.depth_mode = DEPTH_MODE::NEURAL_LIGHT;
+            else if (v == "neural")
+                param.depth_mode = DEPTH_MODE::NEURAL;
+            else if (v == "neural_plus")
+                param.depth_mode = DEPTH_MODE::NEURAL_PLUS;
+            else {
+                cout << "[Sample][Error] Unknown depth mode '" << v << "'." << endl;
+                return false;
+            }
+        } else if (arg == "--model") {
+            if (!needValue(i, arg))
+                return false;
+            string v = argv[++i];
+            if (v == "fast")
+                opts.detection_model = BODY_TRACKING_MODEL::HUMAN_BODY_FAST;
+            else if (v == "medium")
+                opts.detection_model = BODY_TRACKING_MODEL::HUMAN_BODY_MEDIUM;
+            else if (v == "accurate")
+                opts.detection_model = BODY_TRACKING_MODEL::HUMAN_BODY_ACCURATE;
+            else {
+                cout << "[Sample][Error] Unknown model '" << v << "' (fast|medium|accurate)." << endl;
+                return false;
+            }
+        } else if (arg == "--generation") {
+            if (!needValue(i, arg))
+                return false;
+            string v = argv[++i];
+            if (v == "1")
+                opts.model_gen = BODY_TRACKING_MODEL_GEN::GEN_1;
+            else if (v == "2")
+                opts.model_gen = BODY_TRACKING_MODEL_GEN::GEN_2;
+            else {
+                cout << "[Sample][Error] Unknown generation '" << v << "' (1|2)." << endl;
+                return false;
+            }
+        } else if (arg == "--format") {
+            if (!needValue(i, arg))
+                return false;
+            string v = argv[++i];
+            if (v == "18")
+                opts.body_format = BODY_FORMAT::BODY_18;
+            else if (v == "34")
+                opts.body_format = BODY_FORMAT::BODY_34;
+            else if (v == "38")
+                opts.body_format = BODY_FORMAT::BODY_38;
+            else {
+                cout << "[Sample][Error] Unknown body format '" << v << "' (18|34|38)." << endl;
+                return false;
+            }
+        } else if (arg == "--confidence") {
+            if (!needValue(i, arg))
+                return false;
+            opts.detection_confidence = parseFloatOption(argv[++i], "--confidence", 0.f, 100.f, ok);
+            if (!ok)
+                return false;
+        } else if (arg == "--smoothing") {
+            if (!needValue(i, arg))
+                return false;
+            opts.skeleton_smoothing = parseFloatOption(argv[++i], "--smoothing", 0.f, 1.f, ok);
+            if (!ok)
+                return false;
+        } else if (arg == "--fitting") {
+            opts.enable_body_fitting = true;
+        } else if (arg == "--no-segmentation") {
+            opts.enable_segmentation = false;
+        } else if (arg.rfind("--", 0) == 0 || arg.rfind("-", 0) == 0) {
+            cout << "[Sample][Error] Unknown option '" << arg << "'." << endl;
+            printUsage(argv[0]);
+            return false;
+        } else {
+            // Bare argument: an input, or a resolution name (kept for backward compatibility).
+            if (!setInput(arg, param) && !setResolution(arg, param)) {
+                cout << "[Sample][Error] Unrecognized argument '" << arg << "'." << endl;
+                printUsage(argv[0]);
+                return false;
+            }
         }
     }
+
+    // The SDK force-enables fitting for BODY_34 anyway (and warns); doing it here
+    // keeps the configuration we print below honest.
+    if (opts.body_format == BODY_FORMAT::BODY_34 && !opts.enable_body_fitting) {
+        cout << "[Sample] The 34-keypoint format requires body fitting; enabling it." << endl;
+        opts.enable_body_fitting = true;
+    }
+    return true;
 }
 
 void print(string msg_prefix, ERROR_CODE err_code, string msg_suffix) {

@@ -7,6 +7,7 @@ This directory contains comprehensive examples demonstrating how to use custom m
 ```
 python/
 ├── onnx_yolo_internal
+├── onnx_rfdetr_internal
 ├── pytorch_yolo
 ├── pytorch_yolo_async
 ├── pytorch_yolo_cupy
@@ -20,19 +21,23 @@ python/
 - **Models Supported**: YOLOv5, v8, v9, v10, v11, v12, v26 (ONNX format)
 - **Features**: Uses ZED SDK's internal inference engine, preprocessing and postprocessing with a custom onnx yolo-like model
 
-### 2. **pytorch_yolo**
+### 2. **(RECOMMENDED) onnx_rfdetr_internal**
+- **Models Supported**: RF-DETR / DETR-like (ONNX format, two outputs, NMS-free)
+- **Features**: Same internal-inference workflow as `onnx_yolo_internal` but for RF-DETR models. The SDK applies ImageNet-normalized preprocessing and DETR (sigmoid + top-K) decoding automatically. Use `CUSTOM_BOX_OBJECTS_AUTODETECT` to let the SDK pick the decoder automatically.
+
+### 3. **pytorch_yolo**
 - **Models Supported**: YOLOv8, v9, v10, v11, v12, v26
 - **Features**: Standard YOLO implementation
 
-### 3. **pytorch_yolo_async**
+### 4. **pytorch_yolo_async**
 - **Models Supported**: YOLOv8, v9, v10, v11, v12, v26
 - **Features**: Asynchronous processing version of the standard YOLO implementation
 
-### 4. **pytorch_yolo_cupy**
+### 5. **pytorch_yolo_cupy**
 - **Models Supported**: YOLOv8, v9, v10, v11, v12, v26
 - **Features**: GPU-accelerated (with CuPy) preprocessing version of the standard YOLO implementation
 
-### 5. **pytorch_yolo_seg**
+### 6. **pytorch_yolo_seg**
 - **Models Supported**: yolov8-seg, yolov9-seg, yolo11-seg, yolo26-seg
 - **Features**: Standard YOLO instance segmentation implementation
 
