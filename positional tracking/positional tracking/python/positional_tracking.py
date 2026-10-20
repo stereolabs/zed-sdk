@@ -169,6 +169,12 @@ def main(args: Arguments) -> int:
     last_image_timestamp_clock = zed.get_timestamp(sl.TIME_REFERENCE.CURRENT)
     last_image_timestamp_svo = None
 
+    # On fisheye camera the tracking is performed on the raw fisheye
+    # image. So we check the lens type in order to know which image
+    # display
+    is_fisheye = zed.get_camera_information().camera_configuration.calibration_parameters_raw.left_cam.lens_distortion_model == \
+                    sl.LENS_DISTORTION_MODEL.FISHEYE
+
     while view.is_open:
         #
         # Read current image
@@ -203,8 +209,7 @@ def main(args: Arguments) -> int:
 
         # Retrieve the left image
         if(tracking_parameters.mode == sl.POSITIONAL_TRACKING_MODE.GEN_3):
-            # Set retrieve_image to sl.VIEW.LEFT_UNRECTIFIED if you are using fisheye lens
-            zed.retrieve_image(left_image, sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
+            zed.retrieve_image(left_image, sl.VIEW.LEFT_UNRECTIFIED if is_fisheye else sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
         else:
             zed.retrieve_image(left_image, sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
 
