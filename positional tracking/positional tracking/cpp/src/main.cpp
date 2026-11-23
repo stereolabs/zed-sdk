@@ -18,56 +18,60 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
+//
+// Positional tracking: where the camera is, in a world frame, image after image.
+//
+// The whole ZED API flow lives in main() below:
+//
+//   open() -> enablePositionalTracking() -> grab() / getPosition() -> close()
+//
+// Everything else the sample does (parsing the command line, printing, drawing, saving maps and
+// trajectories) is in the helper files next to this one, so that flow stays readable:
+//
+//   SampleArguments   command line
+//   SampleConsole     console output
+//   MotionPriorFile   reading and replaying the motion measured by an external source
+//   MotionPriorChannel  the same motion, recorded in the SVO next to the images
+//   MapIO             area files, on disk
+//   TrajectoryRecorder  trajectory (TUM) and per-image tracking status (CSV) output
+//   LandmarkOverlay   drawing the tracked landmarks on the image
+//   SvoPlaybackClock  replaying an SVO at the speed it was recorded at
+//   SLAMView          the OpenGL viewer
+//
+
 // ZED includes
 #include <sl/Camera.hpp>
 
 // Sample includes
-#include <opencv2/opencv.hpp>
 #include <chrono>
-#include <optional>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <string>
 #include <thread>
+#include <vector>
+
+#include "LandmarkOverlay.hpp"
+#include "MapIO.hpp"
+#include "MotionPriorChannel.hpp"
+#include "MotionPriorFile.hpp"
 #include "SLAMView.hpp"
+#include "SampleArguments.hpp"
+#include "SampleConsole.hpp"
+#include "SvoPlaybackClock.hpp"
+#include "TrajectoryRecorder.hpp"
 
 // Using the sl namespace
 using namespace sl;
 
-//
-// Arguments
-//
-struct Arguments {
-    std::optional<RESOLUTION> resolution = std::nullopt;
-    std::optional<std::string> svoFile = std::nullopt;
-    std::optional<std::string> streamIP = std::nullopt;
-    std::optional<int> streamPort = std::nullopt;
-    bool map = false;
-    std::optional<std::string> inputAreaFile = std::nullopt;
-    std::optional<std::string> outputAreaFile = std::nullopt;
-    std::optional<std::string> roiFile = std::nullopt;
-    bool customInitialPose = false;
-    bool enable2dGroundMode = false;
-    bool exportTUMFile = false;
-};
-
-//
-// Utility function declarations
-//
-void printHeader(const std::string& text);
-void printUsage(const std::string& programName);
-bool parseArgs(int argc, char* argv[], Arguments& args);
-void printArgs(const Arguments& args);
-void printTrackingParameters(PositionalTrackingParameters trackingParameters);
-void print(std::string message, std::optional<ERROR_CODE> errorCode = std::nullopt, bool showErrorDetail = true);
-
-cv::Mat slMat2cvMat(Mat& input);
-cv::Scalar interpolate_color(const cv::Scalar& color1, const cv::Scalar& color2, float dynamic_confidence);
+// Defined right after main(): the camera and tracking configuration the options translate into.
+InitParameters buildInitParameters(const Arguments& args);
+PositionalTrackingParameters buildTrackingParameters(const Arguments& args);
 
 //
 // Main
 //
 int main(int argc, char** argv) {
-    //
-    // Parse arguments
-    //
     printHeader("ZED Positional Tracking");
 
     if (argc > 1 && std::string(argv[1]) == "--help") {
@@ -85,19 +89,300 @@ int main(int argc, char** argv) {
     printArgs(args);
 
     //
-    // Configure a camera
+    // Open the camera
     //
     Camera zed;
+    ERROR_CODE status = zed.open(buildInitParameters(args));
 
+    if (status > ERROR_CODE::SUCCESS) {
+        print("Failed to open the camera", status);
+        zed.close();
+        return 1;
+    }
+
+    // Optionally read the motion measured by an external source (wheel odometry, an external VIO,
+    // a GNSS-derived displacement), handed to the tracking image by image in the main loop. It comes
+    // from a JSON file, or from the SVO itself when it was recorded with one.
+    MotionPriorTrace motionPrior;
+    bool useMotionPrior = false;
+
+    if (args.motionPriorFile) {
+        if (!loadMotionPriorFile(args.motionPriorFile.value(), motionPrior)) {
+            print("Failed to load motion prior file: " + args.motionPriorFile.value(), ERROR_CODE::FAILURE, false);
+            zed.close();
+            return 1;
+        }
+        useMotionPrior = true;
+    } else if (args.svoFile && !args.noMotionPrior && hasMotionPriorChannel(zed)) {
+        if (!loadMotionPriorChannel(zed, motionPrior)) {
+            zed.close();
+            return 1;
+        }
+        print("Using the motion prior recorded in the SVO (--no-motion-prior ignores it)");
+        useMotionPrior = true;
+    }
+
+    // The sensor transform is read in the coordinate system the camera was opened with, so it is brought
+    // there before it reaches the tracking or the viewer.
+    if (useMotionPrior && !expressSensorTransformIn(motionPrior, zed.getInitParameters().coordinate_system)) {
+        zed.close();
+        return 1;
+    }
+
+    if (useMotionPrior) {
+        finalizeMotionPriorTrace(motionPrior, args.motionPriorDelayMs);
+    } else if (args.motionPriorDelayMs > 0.) {
+        print("No motion prior to delay: --motion-prior-delay ignored");
+    }
+
+    // Optionally ignore part of the image, for instance the vehicle the camera is mounted on:
+    // pixels that move with the camera would otherwise be trusted as static landmarks.
+    if (args.roiFile) {
+        Mat roi;
+        roi.read(args.roiFile->c_str());
+        zed.setRegionOfInterest(roi);
+    }
+
+    //
+    // Enable positional tracking
+    //
+    PositionalTrackingParameters trackingParameters = buildTrackingParameters(args);
+    status = zed.enablePositionalTracking(trackingParameters);
+
+    if (status > ERROR_CODE::SUCCESS) {
+        print("Failed to enable positional tracking", status);
+        zed.close();
+        return 1;
+    }
+
+    printTrackingParameters(trackingParameters);
+
+    // A low depth confidence keeps the noisiest measurements out of the tracking.
+    RuntimeParameters runtimeParameters;
+    runtimeParameters.confidence_threshold = 30;
+
+    //
+    // Prepare the display and the optional output files
+    //
+    Resolution displayResolution = zed.getRetrieveMeasureResolution();
+    Mat leftImage;
+
+    // The viewer maps this Mat into OpenGL: CUDA-GL interop for GPU memory, an upload for CPU memory.
+    // Voxel mode returns a cloud whose size changes every frame, so the SDK reallocates the Mat and the
+    // fixed interop mapping cannot follow it, so CPU memory there.
+    Mat pointCloud(displayResolution, MAT_TYPE::F32_C4, args.voxelMode ? MEM::CPU : MEM::GPU);
+
+    // Held by pointer so --no-gui can leave it unbuilt: the constructor is what opens the window.
+    std::unique_ptr<SLAMView> view;
+    if (!args.noGui) {
+        view = std::make_unique<SLAMView>(argc, argv, &leftImage, &pointCloud, zed.getCUDAStream());
+
+        if (useMotionPrior) {
+            view->enableMotionPrior(motionPrior.source, motionPrior.sensorTransform);
+        }
+
+        // A recording can wait: pausing it freezes the replay where it is, to look at the map at leisure.
+        if (args.svoFile) {
+            view->enablePauseButton();
+        }
+    }
+
+    TrajectoryRecorder recorder;
+    if (args.trajectoryTUMFile) {
+        recorder.openTrajectoryFile(args.trajectoryTUMFile.value());
+    }
+    if (args.statusLogFile) {
+        recorder.openStatusFile(args.statusLogFile.value());
+    }
+
+    // Fixed for the lifetime of the camera, so read once rather than on every image.
+    const CameraInformation cameraInformation = zed.getCameraInformation();
+    const Resolution cameraResolution = cameraInformation.camera_configuration.resolution;
+
+    // On a fisheye camera the tracking runs on the raw fisheye image, so that is the one to show.
+    const bool isFisheye = cameraInformation.camera_configuration.calibration_parameters_raw.left_cam.lens_distortion_model
+        == LENS_DISTORTION_MODEL::FISHEYE;
+
+    SvoPlaybackClock svoPlayback;
+    std::map<uint64_t, Landmark> landmarks;
+    std::vector<Landmark2D> landmarks2D;
+    std::map<uint64_t, KeyFrame> keyframes;
+    std::map<uint64_t, MotionPriorLink> motionPriorLinks;
+    uint64_t lastLandmarkUpdate = 0; // in the image clock, like every comparison against it below
+    Timestamp previousImageTimestamp = 0;
+
+    //
+    // Main loop
+    //
+    // Without the viewer there is no window to close, so the end of the recording is what ends the run.
+    while (!view || view->isOpen()) {
+        // Paused: no image is read, so the tracking waits too. The viewer keeps rendering, so the map can
+        // still be turned around and clicked.
+        if (view && view->isPaused()) {
+            view->render();
+            std::this_thread::sleep_for(std::chrono::milliseconds(15));
+            continue;
+        }
+
+        // Read the next image without processing it yet: the external motion samples covering it
+        // have to reach the tracking before grab() consumes it.
+        ERROR_CODE readStatus = zed.read();
+
+        if (readStatus == ERROR_CODE::END_OF_SVOFILE_REACHED) {
+            break;
+        } else if (readStatus > ERROR_CODE::SUCCESS) {
+            print("Failed to read the next image frame", readStatus);
+            break;
+        }
+
+        Timestamp imageTimestamp = zed.getTimestamp(TIME_REFERENCE::IMAGE);
+
+        if (args.svoFile) {
+            svoPlayback.waitForRealTime(imageTimestamp);
+        }
+
+        if (useMotionPrior) {
+            const size_t firstNew = motionPrior.next;
+            ingestMotionPriorUpTo(zed, motionPrior, imageTimestamp);
+
+            if (view) {
+                for (size_t i = firstNew; i < motionPrior.next; i++) {
+                    view->addMotionPriorSample(motionPrior.samples[i], motionPrior.arrivalTimestamps[i]);
+                }
+            }
+        }
+
+        // Process the image: depth, then the tracking, run here.
+        ERROR_CODE grabStatus = zed.grab(runtimeParameters);
+
+        if (args.svoFile) {
+            svoPlayback.markProcessed(imageTimestamp);
+        }
+
+        if (grabStatus == ERROR_CODE::END_OF_SVOFILE_REACHED) {
+            break;
+        } else if (grabStatus > ERROR_CODE::SUCCESS) {
+            print("Failed to grab image frame", grabStatus);
+            break;
+        }
+
+        // The image and the point cloud are only ever drawn, so nothing retrieves them without a viewer.
+        if (view) {
+            // Retrieve the left image
+            zed.retrieveImage(leftImage, isFisheye ? VIEW::LEFT_UNRECTIFIED : VIEW::LEFT, MEM::CPU, displayResolution);
+
+            // Retrieve the calculated point cloud
+            if (args.voxelMode) {
+                zed.retrieveVoxelMeasure(pointCloud, MEASURE::XYZBGRA, MEM::CPU);
+            } else {
+                zed.retrieveMeasure(pointCloud, MEASURE::XYZBGRA, MEM::GPU, displayResolution);
+            }
+        }
+
+        // Retrieve the calculated camera pose, and how much the tracking trusts it
+        Pose pose;
+        zed.getPosition(pose);
+
+        PositionalTrackingStatus trackingStatus = zed.getPositionalTrackingStatus();
+
+        recorder.record(pose, trackingStatus);
+
+        if (useMotionPrior) {
+            recordRelativePoseFusionStatus(motionPrior, trackingStatus.relative_pose_fusion_status);
+        }
+
+        if (!view) {
+            continue;
+        }
+
+        // Update the display
+        view->updatePoseTransform(pose.pose_data);
+        view->updatePositionalTrackingStatus(trackingStatus, imageTimestamp);
+
+        // The landmarks and keyframes are the map the tracking builds. They change slowly, and
+        // there are a lot of them, so refresh the display copy once per second.
+        if (imageTimestamp.getSeconds() - lastLandmarkUpdate > 1) {
+            lastLandmarkUpdate = imageTimestamp.getSeconds();
+
+            zed.getPositionalTrackingLandmarks(landmarks);
+            view->updateLandmarks(landmarks);
+
+            zed.getPositionalTrackingKeyframes(keyframes);
+            view->updateKeyframes(keyframes);
+
+            // Which keyframes the motion prior holds together, drawn as lines between them.
+            if (useMotionPrior) {
+                zed.getPositionalTrackingMotionPriorLinks(motionPriorLinks);
+                view->updateMotionPriorLinks(motionPriorLinks);
+            }
+        }
+
+        if (view->isLandmarkModeEnabled()) {
+            zed.getPositionalTrackingLandmarks2D(landmarks2D);
+            drawLandmarks2D(leftImage, landmarks2D, cameraResolution);
+        }
+
+        view->render();
+    }
+
+    //
+    // Close everything, saving what was asked for on the way out
+    //
+    recorder.close();
+
+    // The keyframes are read again here rather than reused from the display copy: their poses keep
+    // being refined by loop closures until the very last image.
+    if (args.keyframeTUMFile) {
+        const std::string& keyframeFile = args.keyframeTUMFile.value();
+        ERROR_CODE keyframeStatus = zed.getPositionalTrackingKeyframes(keyframes);
+
+        if (keyframeStatus != ERROR_CODE::SUCCESS) {
+            print("Failed to retrieve the keyframes, " + keyframeFile + " was not written", keyframeStatus);
+        } else if (!recorder.writeKeyframeFile(keyframeFile, keyframes)) {
+            print("Failed to write the keyframes to " + keyframeFile, ERROR_CODE::FAILURE, false);
+        } else {
+            print("Exported " + std::to_string(keyframes.size()) + " keyframes to " + keyframeFile);
+        }
+    }
+
+    // How much of the trace reached the tracking, and what the tracking did with it.
+    if (useMotionPrior) {
+        printMotionPriorSummary(motionPrior);
+    }
+
+    // Must run before zed.close(): GLUT's atexit destroys the window after main returns,
+    // which would unmap CUDA-GL resources after the SDK CUDA context is already gone.
+    if (view) {
+        view->close();
+    }
+    pointCloud.free();
+
+    if (args.map) {
+        saveAreaMap(zed, args.outputAreaFile.value());
+    }
+
+    zed.close();
+
+    return 0;
+}
+
+//
+// The camera configuration. The tracking runs on the depth, so the depth mode and the coordinate
+// system chosen here are also the ones the poses come back in.
+//
+InitParameters buildInitParameters(const Arguments& args) {
     InitParameters initParameters;
+
     initParameters.depth_mode = DEPTH_MODE::NEURAL;
     initParameters.coordinate_units = UNIT::METER;
     initParameters.coordinate_system = COORDINATE_SYSTEM::RIGHT_HANDED_Y_UP;
+    initParameters.sdk_verbose = 1;
 
     if (args.resolution) {
         initParameters.camera_resolution = args.resolution.value();
     }
 
+    // Where the images come from: a live camera by default, otherwise a recording or a stream.
     if (args.svoFile) {
         initParameters.input.setFromSVOFile(args.svoFile.value().c_str());
     } else if (args.streamIP && args.streamPort) {
@@ -106,22 +391,18 @@ int main(int argc, char** argv) {
         initParameters.input.setFromStream(args.streamIP.value().c_str());
     }
 
-    //
-    // Open the camera
-    //
-    ERROR_CODE status = zed.open(initParameters);
+    return initParameters;
+}
 
-    if (status > ERROR_CODE::SUCCESS) {
-        print("Failed to open the camera", status);
-        zed.close();
-        return 1;
-    }
-
-    //
-    // Configure positional tracking
-    //
+//
+// The tracking configuration. These are the knobs a positional tracking application tunes; the
+// values below are the ones this sample runs with, not necessarily the SDK defaults.
+//
+PositionalTrackingParameters buildTrackingParameters(const Arguments& args) {
     PositionalTrackingParameters trackingParameters;
 
+    // Loading an area file lets the tracking recognize a place it has already been in, and give
+    // poses in that area's frame instead of starting a new one.
     if (args.inputAreaFile) {
         trackingParameters.area_file_path = args.inputAreaFile.value().c_str();
     }
@@ -137,15 +418,9 @@ int main(int argc, char** argv) {
     trackingParameters.enable_localization_only = false;
     trackingParameters.mode = POSITIONAL_TRACKING_MODE::GEN_3;
 
-    if (args.roiFile) {
-        sl::Mat roi;
-        roi.read(args.roiFile->c_str());
-        zed.setRegionOfInterest(roi);
-    }
-
     //
-    // Optionally define an initial pose for the tracking to start from.
-    // This is useful if you know the initial pose of the camera in a previously mapped area.
+    // Start the tracking from a known pose instead of the origin. Useful when the camera starts at
+    // a known place of a previously mapped area.
     //
     if (args.customInitialPose) {
         // clang-format off
@@ -154,7 +429,7 @@ int main(int argc, char** argv) {
         // For example, we have a translation to (2.0, 4.0, 1.0) in the right-most column,
         // and a rotation of 45° about the Z-axis in the upper-left 3x3 portion of the matrix.
         float initialPose[16] = {
-            0.7071f, -0.7071f, 0.0f, 2.0f, 
+            0.7071f, -0.7071f, 0.0f, 2.0f,
             0.7071f,  0.7071f, 0.0f, 4.0f,
             0.0f,     0.0f,    1.0f, 1.0f,
             0.0f,     0.0f,    0.0f, 1.0f
@@ -164,499 +439,5 @@ int main(int argc, char** argv) {
         trackingParameters.initial_world_transform = Transform(initialPose);
     }
 
-    //
-    // Enable positional tracking
-    //
-    status = zed.enablePositionalTracking(trackingParameters);
-
-    if (status > ERROR_CODE::SUCCESS) {
-        print("Failed to enable positional tracking", status);
-        zed.close();
-        return 1;
-    }
-
-    printTrackingParameters(trackingParameters);
-
-    //
-    // Set runtime parameters: for example, a low depth confidence to avoid introducing noise
-    //
-    RuntimeParameters runtime_parameters;
-    runtime_parameters.confidence_threshold = 30;
-
-    //
-    // Configure display parameters
-    //
-    std::map<uint64_t, Landmark> landmarkMap;
-    std::vector<Landmark2D> landmarks2D;
-    std::map<uint64_t, KeyFrame> keyframes;
-
-    uint64_t lastLandmarkUpdate = getCurrentTimeStamp().getSeconds();
-    Resolution displayResolution = zed.getRetrieveMeasureResolution();
-
-    //
-    // Prepare out file for TUM trajectory
-    //
-    std::ofstream out_tum;
-    if (args.exportTUMFile)
-        out_tum.open("out.tum");
-
-    //
-    // Main loop
-    //
-    Mat leftImage = sl::Mat();
-    Mat pointCloud(displayResolution, MAT_TYPE::F32_C4, MEM::GPU);
-
-    Pose pose;
-    SLAMView view = SLAMView(argc, argv, &leftImage, &pointCloud, zed.getCUDAStream());
-
-    // In SVO mode we ensure that the time between two computes
-    // correspond to real time between the corresponding images
-    sl::Timestamp last_image_timestamp_clock = zed.getTimestamp(sl::TIME_REFERENCE::CURRENT);
-    sl::Timestamp last_image_timestamp_svo = sl::Timestamp(0);
-
-    // On fisheye camera the tracking is performed on the raw fisheye
-    // image. So we check the lens type in order to know which image
-    // display
-    bool is_fisheye = zed.getCameraInformation().camera_configuration.calibration_parameters_raw.left_cam.lens_distortion_model
-        == sl::LENS_DISTORTION_MODEL::FISHEYE;
-
-    while (view.isOpen()) {
-        //
-        // Read current image
-        //
-        ERROR_CODE read_status = zed.read();
-        if (read_status == ERROR_CODE::END_OF_SVOFILE_REACHED) {
-            break;
-        } else if (read_status > ERROR_CODE::SUCCESS) {
-            print("Failed to grab image frame", status);
-            break;
-        }
-
-        // Get current image timestamp
-        sl::Timestamp current_image_timestamp_svo = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE);
-        if (args.svoFile && last_image_timestamp_svo.getNanoseconds() > 0) {
-            sl::Timestamp expected_diff = current_image_timestamp_svo - last_image_timestamp_svo;
-            sl::Timestamp actual_diff = zed.getTimestamp(sl::TIME_REFERENCE::CURRENT) - last_image_timestamp_clock;
-            if (expected_diff > actual_diff) {
-                sl::Timestamp sleep_time = expected_diff - actual_diff;
-                std::this_thread::sleep_for(std::chrono::milliseconds(sleep_time.getMilliseconds()));
-            }
-        }
-
-        //
-        // Grab the next image frame
-        //
-        ERROR_CODE status = zed.grab(runtime_parameters);
-        last_image_timestamp_svo = current_image_timestamp_svo;
-        last_image_timestamp_clock = zed.getTimestamp(sl::TIME_REFERENCE::CURRENT);
-
-        if (status == ERROR_CODE::END_OF_SVOFILE_REACHED) {
-            break;
-        } else if (status > ERROR_CODE::SUCCESS) {
-            print("Failed to grab image frame", status);
-            break;
-        }
-        // Retrieve the left image
-        if (trackingParameters.mode == POSITIONAL_TRACKING_MODE::GEN_3)
-            zed.retrieveImage(leftImage, is_fisheye ? VIEW::LEFT_UNRECTIFIED : VIEW::LEFT, MEM::CPU, displayResolution);
-        else
-            zed.retrieveImage(leftImage, VIEW::LEFT, MEM::CPU, displayResolution);
-
-        // Retrieve the calculated point cloud
-        zed.retrieveMeasure(pointCloud, MEASURE::XYZBGRA, MEM::GPU, displayResolution);
-
-        // Retrieve the calculated camera pose
-        zed.getPosition(pose);
-
-        // Export the pose in TUM format
-        if (args.exportTUMFile) {
-            out_tum << std::fixed << std::setprecision(9) << pose.timestamp.getNanoseconds() / double(1e9) << " "
-                    << pose.getTranslation().tx << " " << pose.getTranslation().ty << " " << pose.getTranslation().tz << " "
-                    << pose.getOrientation().ox << " " << pose.getOrientation().oy << " " << pose.getOrientation().oz << " "
-                    << pose.getOrientation().ow << std::endl;
-            out_tum.flush();
-        }
-
-        // Update display
-        view.updatePoseTransform(pose.pose_data);
-        view.updatePositionalTrackingStatus(zed.getPositionalTrackingStatus());
-
-        if (zed.getTimestamp(sl::TIME_REFERENCE::IMAGE).getSeconds() - lastLandmarkUpdate > 1) {
-            zed.getPositionalTrackingLandmarks(landmarkMap);
-            view.updateLandmarks(landmarkMap);
-            lastLandmarkUpdate = zed.getTimestamp(sl::TIME_REFERENCE::IMAGE).getSeconds();
-
-            zed.getPositionalTrackingKeyframes(keyframes);
-            view.updateKeyframes(keyframes);
-        }
-
-        if (view.isLandmarkModeEnabled()) {
-            zed.getPositionalTrackingLandmarks2D(landmarks2D);
-
-            static const cv::Scalar inlierLandmarkColor(63, 255, 67, 255);
-            static const cv::Scalar outlierLandmarkColor(100, 100, 255, 255);
-
-            Resolution resolution = zed.getCameraInformation().camera_configuration.resolution;
-            float widthRatio = displayResolution.width / (float)resolution.width;
-            float heightRatio = displayResolution.height / (float)resolution.height;
-
-            cv::Mat leftImageCVMat = slMat2cvMat(leftImage);
-            for (auto& landmark2D : landmarks2D) {
-                cv::Scalar color = interpolate_color(inlierLandmarkColor, outlierLandmarkColor, landmark2D.dynamic_confidence);
-
-                cv::circle(
-                    leftImageCVMat,
-                    cv::Point2f(landmark2D.image_position[0] * widthRatio, landmark2D.image_position[1] * heightRatio),
-                    2,
-                    color,
-                    -1
-                );
-            }
-        }
-
-        view.render();
-    }
-
-    if (args.exportTUMFile)
-        out_tum.close();
-
-    //
-    // OpenGL cleanup
-    //
-    // Must run before zed.close(): GLUT's atexit destroys the window after main returns,
-    // which would unmap CUDA-GL resources after the SDK CUDA context is already gone.
-    view.close();
-    pointCloud.free();
-
-    //
-    // Saving area map
-    //
-    if (args.map) {
-        print("Saving area map to " + args.outputAreaFile.value() + " ...");
-
-        ERROR_CODE status = zed.saveAreaMap(args.outputAreaFile.value().c_str());
-
-        if (status <= ERROR_CODE::SUCCESS) {
-            AREA_EXPORTING_STATE exportState = zed.getAreaExportState();
-
-            while (exportState == sl::AREA_EXPORTING_STATE::RUNNING) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                exportState = zed.getAreaExportState();
-            }
-
-            if (exportState == AREA_EXPORTING_STATE::SUCCESS) {
-                print("Successfully saved area map to " + args.outputAreaFile.value());
-            } else {
-                print("Failed to save area map: " + std::string(toString(exportState).c_str()), ERROR_CODE::FAILURE, false);
-            }
-
-        } else {
-            print("Failed to save area map", status);
-        }
-    }
-
-    // Close the camera
-    zed.close();
-
-    return 0;
-}
-
-//
-// Utility function definitions
-//
-auto colorBool = [](bool val) -> std::string {
-    return val ? "\033[32mtrue\033[0m" : "\033[31mfalse\033[0m";
-};
-
-auto colorValue = [](const auto& val) -> std::string {
-    std::ostringstream oss;
-    oss << "\033[36m" << val << "\033[0m";
-    return oss.str();
-};
-
-void printHeader(const std::string& text) {
-    const int width = 80;
-    const std::string border(width, '=');
-    int padding = (width - text.length()) / 2;
-
-    std::cout << "\n" << border << "\n";
-    std::cout << std::string(padding, ' ') << text << "\n";
-    std::cout << border << "\n\n";
-}
-
-void printUsage(const std::string& programName) {
-    std::cout << "Usage: " << programName << " [options]\n\n"
-              << "Options:\n"
-              << "  --help                      Shows usage information.\n"
-              << "  --resolution <mode>         Optional. Resolution options: (HD2K | HD1200 | HD1080 | HD720 | SVGA | VGA)\n"
-              << "  --svo <filename.svo>        Optional. Use SVO file input. Mutually exclusive with --stream\n"
-              << "  --stream <ip[:port]>        Optional. Use network streaming input. Mutually exclusive with --svo\n"
-              << "  -i <input_area_file>        Optional. Input area file used in explore mode (default) or --map mode\n"
-              << "  --map -o <output_area_file> Optional. Map mode creates or updates an .area file.\n"
-              << "                                        Requires -o <output_area_filename> for generated map\n"
-              << "  --roi <roi_filepath>        Optional. Region of interest image mask to ignore a static area\n"
-              << "  --custom-initial-pose       Optional. Use custom initial pose (see code comments for more detail)\n"
-              << "  --2d-ground-mode            Optional. Enable 2D ground mode\n"
-              << "  --export-tum                Optional. Export camera trajectory to out.tum file in TUM format\n"
-              << "\nExamples:\n"
-              << "  " << programName << " --map -o new_map.area\n"
-              << "  " << programName << " --svo recording.svo2 -i map.area\n";
-}
-
-bool parseArgs(int argc, char* argv[], Arguments& args) {
-    for (int i = 1; i < argc; i++) {
-        std::string arg = argv[i];
-
-        if (arg == "--resolution" && i + 1 < argc) {
-            RESOLUTION resolution;
-            bool error = fromString(argv[++i], resolution);
-
-            if (error) {
-                print("Invalid resolution: " + std::string(argv[i]), ERROR_CODE::FAILURE, false);
-                return false;
-            }
-            args.resolution = resolution;
-        } else if (arg == "--svo" && i + 1 < argc) {
-            if (args.streamIP) {
-                print("Options --svo and --stream are mutually exclusive", ERROR_CODE::FAILURE, false);
-                return false;
-            }
-
-            std::string filename = argv[++i];
-            if (filename.find(".svo") == std::string::npos) {
-                print("Option --svo requires a filename that contains '.svo'", ERROR_CODE::FAILURE, false);
-                return false;
-            }
-
-            args.svoFile = filename;
-        } else if (arg == "--stream" && i + 1 < argc) {
-            if (args.svoFile) {
-                print("Options --stream and --svo are mutually exclusive", ERROR_CODE::FAILURE, false);
-                return false;
-            }
-
-            std::string ip;
-            std::optional<int> port;
-
-            const std::string& address = argv[++i];
-            auto colonPos = address.find(':');
-
-            if (colonPos != std::string::npos) {
-                ip = address.substr(0, colonPos);
-                std::string portStr = address.substr(colonPos + 1);
-
-                try {
-                    port = std::stoi(portStr);
-                } catch (const std::exception& e) {
-                    print("Invalid port in --stream: " + portStr, ERROR_CODE::FAILURE, false);
-                    return false;
-                }
-            } else {
-                ip = address;
-            }
-
-            args.streamIP = ip;
-            args.streamPort = port;
-        } else if (arg == "--map") {
-            args.map = true;
-        } else if (arg == "-i" && i + 1 < argc) {
-            args.inputAreaFile = argv[++i];
-        } else if (arg == "-o" && i + 1 < argc) {
-            args.outputAreaFile = argv[++i];
-        } else if (arg == "--roi" && i + 1 < argc) {
-            args.roiFile = argv[++i];
-        } else if (arg == "--custom-initial-pose") {
-            args.customInitialPose = true;
-        } else if (arg == "--2d-ground-mode") {
-            args.enable2dGroundMode = true;
-        } else if (arg == "--export-tum") {
-            args.exportTUMFile = true;
-        } else {
-            print("Unrecognized or incomplete argument: " + arg, ERROR_CODE::FAILURE, false);
-            return false;
-        }
-    }
-
-    if (args.map && !args.outputAreaFile) {
-        print("Option --map requires -o <output_area_file>", ERROR_CODE::FAILURE, false);
-        return false;
-    }
-
-    return true;
-}
-
-void printArgs(const Arguments& args) {
-    if (args.resolution) {
-        std::string message = "Preferred Resolution: ";
-
-        switch (args.resolution.value()) {
-            case RESOLUTION::HD2K:
-                message += "HD2K";
-                break;
-            case RESOLUTION::HD1536:
-                message += "HD1536";
-                break;
-            case RESOLUTION::HD1200:
-                message += "HD1200";
-                break;
-            case RESOLUTION::HD1080:
-                message += "HD1080";
-                break;
-            case RESOLUTION::HD720:
-                message += "HD720";
-                break;
-            case RESOLUTION::SVGA:
-                message += "SVGA";
-                break;
-            case RESOLUTION::VGA:
-                message += "VGA";
-                break;
-            default:
-                break;
-        }
-
-        print(message);
-    }
-
-    if (args.svoFile) {
-        print("Using SVO file input: " + args.svoFile.value());
-    }
-
-    if (args.streamIP) {
-        std::string suffix = args.streamPort ? ":" + std::to_string(args.streamPort.value()) : "";
-        print("Using stream input " + args.streamIP.value() + suffix);
-    }
-
-    if (args.map) {
-        print("Positional tracking mode: Map");
-    } else {
-        print("Positional tracking mode: Explore (default)");
-    }
-
-    if (args.inputAreaFile) {
-        print("Using input area file: " + args.inputAreaFile.value());
-    }
-
-    if (args.outputAreaFile) {
-        print("Output file: " + args.outputAreaFile.value());
-    }
-
-    if (args.roiFile) {
-        print("Using ROI file: " + args.roiFile.value());
-    }
-
-    if (args.customInitialPose) {
-        print("Enabled custom initial pose");
-    }
-
-    if (args.enable2dGroundMode) {
-        print("Enabled 2D ground mode");
-    }
-
-    if (args.exportTUMFile) {
-        print("Enabled TUM trajectory export to out.tum");
-    }
-
-    std::cout << "\n";
-}
-
-void printTrackingParameters(PositionalTrackingParameters trackingParameters) {
-    printHeader("Positional Tracking Parameters");
-    print("set_floor_as_origin   " + colorBool(trackingParameters.set_floor_as_origin));
-    print("set_gravity_as_origin " + colorBool(trackingParameters.set_gravity_as_origin));
-    print("enable_area_memory    " + colorBool(trackingParameters.enable_area_memory));
-    print("enable_pose_smoothing " + colorBool(trackingParameters.enable_pose_smoothing));
-    print("enable_imu_fusion     " + colorBool(trackingParameters.enable_imu_fusion));
-    print("set_as_static         " + colorBool(trackingParameters.set_as_static));
-    print("depth_min_range       " + colorValue(trackingParameters.depth_min_range));
-    print("enable_2d_ground_mode " + colorBool(trackingParameters.enable_2d_ground_mode));
-    print("mode                  " + colorValue(toString(trackingParameters.mode)));
-
-    printHeader("Interaction");
-    print("'space' to toggle camera view visibility");
-    print("'d' to switch background color from dark to light");
-    print("'p' to enable / disable current live point cloud display");
-    print("'l' to enable / disable landmark display");
-    print("'f' to follow the camera");
-    print("'z' to reset the view");
-    print("'ctrl' + drag to rotate");
-    print("'esc' to exit");
-    std::cout << "\n";
-}
-
-void print(std::string message, std::optional<ERROR_CODE> errorCode, bool showErrorDetail) {
-    std::cout << "\033[36m[Sample]\033[0m";
-
-    if (errorCode && errorCode > ERROR_CODE::SUCCESS) {
-        std::cout << " \033[31m[Error]\033[0m ";
-    } else if (errorCode && errorCode < ERROR_CODE::SUCCESS) {
-        std::cout << " \033[33m[Warning]\033[0m ";
-    } else {
-        std::cout << " ";
-    }
-
-    std::cout << message;
-
-    if (errorCode && errorCode > ERROR_CODE::SUCCESS && showErrorDetail) {
-        std::cout << " | " << toString(errorCode.value()) << ": " << toVerbose(errorCode.value());
-    }
-
-    std::cout << "\n";
-}
-
-cv::Mat slMat2cvMat(Mat& input) {
-    int cv_type = -1;
-
-    switch (input.getDataType()) {
-        case MAT_TYPE::F32_C1:
-            cv_type = CV_32FC1;
-            break;
-        case MAT_TYPE::F32_C2:
-            cv_type = CV_32FC2;
-            break;
-        case MAT_TYPE::F32_C3:
-            cv_type = CV_32FC3;
-            break;
-        case MAT_TYPE::F32_C4:
-            cv_type = CV_32FC4;
-            break;
-        case MAT_TYPE::U8_C1:
-            cv_type = CV_8UC1;
-            break;
-        case MAT_TYPE::U8_C2:
-            cv_type = CV_8UC2;
-            break;
-        case MAT_TYPE::U8_C3:
-            cv_type = CV_8UC3;
-            break;
-        case MAT_TYPE::U8_C4:
-            cv_type = CV_8UC4;
-            break;
-        default:
-            break;
-    }
-
-    return cv::Mat(input.getHeight(), input.getWidth(), cv_type, input.getPtr<sl::uchar1>(MEM::CPU));
-}
-
-cv::Scalar interpolate_color(const cv::Scalar& color1, const cv::Scalar& color2, float dynamic_confidence) {
-
-    if (dynamic_confidence == -1.f) {
-        return cv::Scalar(240, 25, 25, 255);
-    }
-
-    if (dynamic_confidence < 0.0f) {
-        dynamic_confidence = 0.0f;
-    }
-
-    if (dynamic_confidence > 1.0f) {
-        dynamic_confidence = 1.0f;
-    }
-
-    return cv::Scalar(
-        color1[0] * dynamic_confidence + color2[0] * (1 - dynamic_confidence),
-        color1[1] * dynamic_confidence + color2[1] * (1 - dynamic_confidence),
-        color1[2] * dynamic_confidence + color2[2] * (1 - dynamic_confidence),
-        color1[3] * dynamic_confidence + color2[3] * (1 - dynamic_confidence)
-    );
+    return trackingParameters;
 }

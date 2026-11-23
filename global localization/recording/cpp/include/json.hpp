@@ -1,14 +1,3 @@
-
-/*
-    /!\ DO NOT MODIFY THIS FILE
-    This file comes from sl_serializer repository(git@192.168.1.92:thardelin/sl_serializer.git). 
-    You could write your modification directly in the repository. Then automatic deploy in SDK is available. 
-
-    Predefined deploy args are defined inside README.md
-
-    If you have to modify this file, import script are avaible in the official repository. This script will update 
-    the repository code with your modification. Do not forgot to push your modification into the repository !
-*/   
 //     __ _____ _____ _____
 //  __|  |   __|     |   | |  JSON for Modern C++
 // |  |  |__   |  |  | | | |  version 3.11.2

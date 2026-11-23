@@ -108,6 +108,8 @@ def print_help():
     print("* Reset all parameters:            'r'")
     print("* Reset exposure ROI to full image 'f'")
     print("* Use mouse to select an image area to apply exposure (press 'a')")
+    print("* Apply a color correction matrix: 'c'")
+    print("* Camera color correction:         'v'")
     print("* Exit :                           'q'\n")
 
 # update camera setting on key press
@@ -144,6 +146,36 @@ def update_camera_settings(key, cam, runtime, mat):
         # Reset exposure ROI to full resolution.
         print("[Sample] reset AEC_AGC_ROI to full res")
         cam.set_camera_settings_roi(sl.VIDEO_SETTINGS.AEC_AGC_ROI,selection_rect,sl.SIDE.BOTH,True)
+    elif key == 99: # for 'c' key
+        # Apply an example color correction matrix.
+        apply_color_correction_matrix(cam)
+    elif key == 118: # for 'v' key
+        # Go back to the color correction of the camera.
+        reset_color_correction_matrix(cam)
+
+# Apply a color correction matrix.
+# The matrix converts the sensor RGB values to linear sRGB: each row gives one output channel (red, green, blue)
+# as a weighted sum of the sensor red, green and blue values. The one below is only an example: compute the matrix
+# for your camera and lighting, for example from images of a color chart.
+def apply_color_correction_matrix(cam):
+    coefficients = [1.8, -0.5, -0.3,
+                    -0.2, 1.6, -0.4,
+                    0.0, -0.6, 1.6]
+    err = cam.set_camera_settings_color_matrix(sl.VIDEO_SETTINGS.COLOR_CORRECTION_MATRIX, sl.Matrix3f(coefficients))
+    if err != sl.ERROR_CODE.SUCCESS:
+        print("[Sample] Cannot set COLOR_CORRECTION_MATRIX: " + repr(err))
+        return
+    print("[Sample] Color correction matrix applied:")
+    for row in range(3):
+        print("           " + " ".join("{:9.4f}".format(v) for v in coefficients[row * 3:row * 3 + 3]))
+
+# Go back to the color correction of the camera, using the default value of the setting.
+def reset_color_correction_matrix(cam):
+    err = cam.set_camera_settings(sl.VIDEO_SETTINGS.COLOR_CORRECTION_MATRIX)
+    if err != sl.ERROR_CODE.SUCCESS:
+        print("[Sample] COLOR_CORRECTION_MATRIX is not available on this camera: " + repr(err))
+        return
+    print("[Sample] Back to the color correction of the camera")
 
 # Function to switch between different camera settings (brightness, contrast, etc.).
 def switch_camera_settings():

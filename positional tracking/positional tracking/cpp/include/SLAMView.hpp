@@ -28,6 +28,7 @@
 #include "Simple3DPath.hpp"
 #include "Shader.hpp"
 #include "PointCloud.hpp"
+#include "MotionPriorView.hpp"
 
 //
 // SLAMView
@@ -51,9 +52,21 @@ public:
     void close();
 
     void updatePoseTransform(sl::Transform transform);
-    void updatePositionalTrackingStatus(sl::PositionalTrackingStatus positionalTrackingStatus);
+    // Call after updatePoseTransform() for the same image: the motion prior view pairs the two.
+    void updatePositionalTrackingStatus(sl::PositionalTrackingStatus positionalTrackingStatus, sl::Timestamp imageTimestamp);
     void updateLandmarks(std::map<uint64_t, sl::Landmark>& landmarks);
     void updateKeyframes(const std::map<uint64_t, sl::KeyFrame>& keyframes);
+
+    // Motion prior: the samples given to the tracking and the keyframe links it reports (see MotionPriorView).
+    void enableMotionPrior(const std::string& source, const sl::Transform& sensorTransform);
+    void clearMotionPrior();
+    void addMotionPriorSample(const sl::RelativePoseData& sample, uint64_t arrivalTimestamp);
+    void updateMotionPriorLinks(const std::map<uint64_t, sl::MotionPriorLink>& links);
+
+    // SVO input only: a Pause / Resume button next to the pose card, also toggled with the k key. While
+    // paused the application stops reading images and keeps calling render(), so the view stays live.
+    void enablePauseButton();
+    bool isPaused() const;
 
 private:
     int _width;
@@ -70,6 +83,9 @@ private:
     bool _pointCloudMode;
     bool _landmarkMode;
     bool _followMode;
+    bool _pathMode; // hidden while the motion prior is drawn, so the arrows on it stay readable
+    bool _pauseButtonEnabled = false;
+    bool _paused = false;
 
     std::chrono::steady_clock::time_point _startTime;
 
@@ -83,6 +99,7 @@ private:
     bool _ctrlPressed = false;
     bool _mouseButtonPressed = false;
     int _mousePosition[2] = {0, 0};
+    int _mouseDownPosition[2] = {0, 0}; // a release this close to it is a click, not a drag
 
     // Rendering
     GLCamera _camera;
@@ -93,16 +110,18 @@ private:
     PointCloud _pointCloud;
     Simple3DObject _landmarks;
     Simple3DObject _keyframes;
+    MotionPriorView _motionPrior;
 
     CUstream _cudaStream;
 
     GLuint _frameTextureID;
 
     void renderPositionalTrackingStatus();
+    void renderPauseButton();
+    // x, y, width, height in window pixels, origin at the bottom left. Right of the pose card.
+    sl::float4 pauseButtonRect() const;
     void renderImageFrame();
 
-    std::string formatNumericText(sl::float3 value);
-    void renderText(int x, int y, void* font, const sl::float4& color, const std::string& str);
     void uploadImageToTexture(const sl::Mat& frame, GLuint& textureID);
     void renderTexture(GLuint textureID, int x, int y, int width, int height);
 

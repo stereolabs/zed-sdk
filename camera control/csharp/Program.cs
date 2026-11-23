@@ -162,7 +162,54 @@ class Program {
                 Console.WriteLine("reset AEC_AGC_ROI to full res");
                 zed.SetCameraSettings(VIDEO_SETTINGS.AEC_AGC_ROI, sl.SIDE.BOTH, selectionRect, true);
                 break;
+
+            // Apply an example color correction matrix
+            case 'c':
+                applyColorCorrectionMatrix(ref zed);
+                break;
+
+            // Go back to the color correction of the camera
+            case 'v':
+                resetColorCorrectionMatrix(ref zed);
+                break;
         }
+    }
+
+    /**
+    This function applies a color correction matrix.
+
+    The matrix converts the sensor RGB values to linear sRGB: each row gives one output channel (red, green, blue)
+    as a weighted sum of the sensor red, green and blue values. The one below is only an example: compute the matrix
+    for your camera and lighting, for example from images of a color chart.
+    **/
+    static void applyColorCorrectionMatrix(ref Camera zed) {
+        sl.Matrix3x3 matrix = new sl.Matrix3x3();
+        matrix.m = new float[9] { 1.8f, -0.5f, -0.3f, -0.2f, 1.6f, -0.4f, 0.0f, -0.6f, 1.6f };
+
+        ERROR_CODE err = zed.SetCameraSettings(VIDEO_SETTINGS.COLOR_CORRECTION_MATRIX, matrix);
+        if (err != ERROR_CODE.SUCCESS) {
+            Console.WriteLine("[Sample] Cannot set COLOR_CORRECTION_MATRIX: " + err);
+            return;
+        }
+
+        Console.WriteLine("[Sample] Color correction matrix applied:");
+        for (int row = 0; row < 3; row++)
+            Console.WriteLine(
+                string.Format("           {0,9:F4} {1,9:F4} {2,9:F4}", matrix.m[row * 3], matrix.m[row * 3 + 1], matrix.m[row * 3 + 2])
+            );
+    }
+
+    /**
+    This function goes back to the color correction of the camera, using the default value of the setting.
+    **/
+    static void resetColorCorrectionMatrix(ref Camera zed) {
+        ERROR_CODE err = zed.SetCameraSettings(VIDEO_SETTINGS.COLOR_CORRECTION_MATRIX, -1);
+        if (err != ERROR_CODE.SUCCESS) {
+            Console.WriteLine("[Sample] COLOR_CORRECTION_MATRIX is not available on this camera: " + err);
+            return;
+        }
+
+        Console.WriteLine("[Sample] Back to the color correction of the camera");
     }
 
     static void switchCameraSettings() {
@@ -264,6 +311,8 @@ class Program {
         Console.WriteLine("* Reset all parameters:            'r'");
         Console.WriteLine("* Reset exposure ROI to full image 'f'");
         Console.WriteLine("* Use mouse to select an image area to apply exposure (press 'a')");
+        Console.WriteLine("* Apply a color correction matrix: 'c'");
+        Console.WriteLine("* Camera color correction:         'v'");
         Console.WriteLine("* Exit :                           'q'");
         Console.WriteLine("");
     }

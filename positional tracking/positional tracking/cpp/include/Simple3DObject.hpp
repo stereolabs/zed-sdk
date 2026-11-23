@@ -44,12 +44,21 @@ public:
 
     void setDrawingType(GLenum type);
 
+    /// Recolor every vertex. Idempotent: re-applying the colour already in place does nothing, so
+    /// a render loop may call this unconditionally every frame without forcing a GPU re-upload.
+    void setUniformColor(sl::float4 color);
+
     void draw();
 
 private:
     std::vector<sl::float3> vertices_;
     std::vector<sl::float4> colors_;
     std::vector<unsigned int> indices_;
+
+    /// Colour currently applied to every vertex by setUniformColor(), when one is. Lets that call
+    /// detect a no-op instead of dirtying the buffers on every frame.
+    sl::float4 uniformColor_;
+    bool hasUniformColor_ = false;
 
     bool isStatic_ = false;
     bool need_update;
