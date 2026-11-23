@@ -1,0 +1,62 @@
+# Rig description for the multi camera positional tracking sample.
+#
+#     ./ZED_Positional_Tracking_Multi_Camera rig.yaml
+#
+# The cameras of a rig are mounted on one rigid body and tracked together as that body. They are ZED
+# stereo cameras and ZED One cameras (ZED X One), with at least one ZED stereo camera to drive the
+# tracking, all running at the same resolution and frame rate, with synchronized timestamps.
+
+global:
+  # Capture settings of every live camera. Recordings replay at the resolution they were recorded in.
+  #   HD2K | HD1200 | HD1080 | HD720 | SVGA | VGA | AUTO
+  resolution: "AUTO"
+  fps: 30
+
+  # Label of the camera that drives the tracking, a ZED stereo camera: its IMU is the one used, and the
+  # rig starts aligned with gravity through it. Leave it out to use the first ZED stereo camera listed.
+  tracking_camera: "front"
+
+# One entry per camera of the rig.
+#
+# A ZED One is described like any other camera: the sample recognizes it when it opens it.
+#
+# input.type selects where the images come from:
+#   live:    a connected camera. Give serial_number, so each entry opens its own camera.
+#   svo:     an SVO / SVO2 recording. Give path, absolute or relative to this file.
+#   stream:  a camera streamed over the network. Give ip, and port if it is not the default 30000.
+#
+# T_camera_baselink is where the camera sits on the rig: a 4x4 matrix, row by row, taking a point from
+# the camera frame into the rig frame (p_rig = T_camera_baselink * p_camera). The camera frame is the
+# one of its left sensor: X right, Y down, Z forward. Translations are in meters. Leave it out for a
+# camera at the origin of the rig frame.
+#
+# Keep the closing bracket of a matrix on its last row, as below.
+cameras:
+  # At the origin of the rig, looking forward.
+  - label: "front"
+    input: { type: "live", serial_number: 40000001 }
+
+  # 40 cm behind the front camera, looking backward (turned 180 degrees around the vertical axis).
+  - label: "rear"
+    input: { type: "live", serial_number: 40000002 }
+    T_camera_baselink: [
+      -1.0, 0.0,  0.0,  0.0,
+       0.0, 1.0,  0.0,  0.0,
+       0.0, 0.0, -1.0, -0.4,
+       0.0, 0.0,  0.0,  1.0 ]
+
+  # A ZED X One 10 cm to the right of the front camera and 20 cm behind it, looking to the right
+  # (turned 90 degrees around the vertical axis).
+  #
+  # - label: "right"
+  #   input: { type: "live", serial_number: 300000001 }
+  #   T_camera_baselink: [
+  #      0.0, 0.0, 1.0,  0.1,
+  #      0.0, 1.0, 0.0,  0.0,
+  #     -1.0, 0.0, 0.0, -0.2,
+  #      0.0, 0.0, 0.0,  1.0 ]
+
+  # Replaying recordings of the same run instead:
+  #
+  # - label: "front"
+  #   input: { type: "svo", path: "front.svo2" }

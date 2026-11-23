@@ -17,6 +17,7 @@
 #ifndef TENSORRT_LOGGING_H
 #define TENSORRT_LOGGING_H
 
+#include "NvInferRuntime.h" // nvinfer1::ILogger, no longer declared by NvInferRuntimeCommon.h in TensorRT 10.16
 #include "NvInferRuntimeCommon.h"
 #include <cassert>
 #include <ctime>

@@ -227,17 +227,6 @@ void GLViewer::updateData(sl::Mat& matXYZRGBA, std::vector<sl::ObjectData>& objs
                     BBox_edges.addLine(centroid3, centroid4, sl::float4(1.f, 0.5f, 0.5f, 1.f));
                 }
 
-                // Display sekeleton if available
-                auto clr_bones = generateColorID_f(objs[i].id);
-                auto keypoints = objs[i].keypoint;
-                if (keypoints.size() > 0) {
-                    for (auto& limb : sl::BODY_BONES) {
-                        sl::float3 kp_1 = keypoints[(int)limb.first];
-                        sl::float3 kp_2 = keypoints[(int)limb.second];
-                        if (std::isfinite(kp_1.x) && std::isfinite(kp_2.x))
-                            skeletons.addLine(kp_1, kp_2, clr_bones);
-                    }
-                }
                 createBboxRendering(bb_, clr_id);
             }
         }

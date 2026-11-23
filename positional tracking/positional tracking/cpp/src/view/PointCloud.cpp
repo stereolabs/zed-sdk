@@ -22,6 +22,8 @@
 #include <cuda_gl_interop.h>
 #include "PointCloud.hpp"
 
+#include <algorithm> // std::min, used to clamp an unorganized cloud to the allocated buffer
+
 //
 // Shaders
 //
@@ -59,55 +61,110 @@ PointCloud::PointCloud() { }
 PointCloud::~PointCloud() { }
 
 void PointCloud::close() {
-    if (refMat.isInit()) {
+    // Gated on the GL buffer, not on the referenced Mat: the buffer is ours to release, and
+    // keying cleanup off someone else's data would leak it whenever that Mat is freed first.
+    if (bufferGLID_ == 0)
+        return;
+
+    if (_hasCudaInterop) {
         auto err = cudaGraphicsUnmapResources(1, &bufferCudaID_, 0);
         if (err != cudaSuccess)
             std::cerr << "Error: CUDA UnmapResources (" << err << ")" << std::endl;
-        glDeleteBuffers(1, &bufferGLID_);
-        refMat = sl::Mat();
     }
+
+    glDeleteBuffers(1, &bufferGLID_);
+    bufferGLID_ = 0;
+    refMat = nullptr;
+    _hasCudaInterop = false;
+    _pendingCpuUpload = false;
+    _lastValidCount = 0;
 }
 
 void PointCloud::initialize(sl::Mat& ref) {
-    refMat = ref;
+    refMat = &ref;
+
+    numBytes_ = refMat->getResolution().area() * 4 * sizeof(float);
 
     glGenBuffers(1, &bufferGLID_);
     glBindBuffer(GL_ARRAY_BUFFER, bufferGLID_);
-    glBufferData(GL_ARRAY_BUFFER, refMat.getResolution().area() * 4 * sizeof(float), 0, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, numBytes_, 0, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    cudaError_t err = cudaGraphicsGLRegisterBuffer(&bufferCudaID_, bufferGLID_, cudaGraphicsRegisterFlagsNone);
-    if (err != cudaSuccess)
-        std::cerr << "Error: CUDA - OpenGL Interop failed (" << err << ")" << std::endl;
+    // Register the buffer for CUDA-GL interop only when the Mat lives on GPU (organized
+    // cloud). For CPU Mats (voxel cloud) pushNewPC() uploads via glBufferSubData instead.
+    // The mapping is fixed for the lifetime of the buffer, hence the decision here; pushNewPC
+    // still re-checks the Mat's memory type each frame in case it gets reallocated.
+    _hasCudaInterop = (static_cast<int>(refMat->getMemoryType()) & static_cast<int>(sl::MEM::GPU)) != 0;
 
-    err = cudaGraphicsMapResources(1, &bufferCudaID_, 0);
-    if (err != cudaSuccess)
-        std::cerr << "Error: CUDA MapResources (" << err << ")" << std::endl;
+    if (_hasCudaInterop) {
+        cudaError_t err = cudaGraphicsGLRegisterBuffer(&bufferCudaID_, bufferGLID_, cudaGraphicsRegisterFlagsNone);
+        if (err != cudaSuccess)
+            std::cerr << "Error: CUDA - OpenGL Interop failed (" << err << ")" << std::endl;
 
-    err = cudaGraphicsResourceGetMappedPointer((void**)&xyzrgbaMappedBuf_, &numBytes_, bufferCudaID_);
-    if (err != cudaSuccess)
-        std::cerr << "Error: CUDA GetMappedPointer (" << err << ")" << std::endl;
+        err = cudaGraphicsMapResources(1, &bufferCudaID_, 0);
+        if (err != cudaSuccess)
+            std::cerr << "Error: CUDA MapResources (" << err << ")" << std::endl;
+
+        err = cudaGraphicsResourceGetMappedPointer((void**)&xyzrgbaMappedBuf_, &numBytes_, bufferCudaID_);
+        if (err != cudaSuccess)
+            std::cerr << "Error: CUDA GetMappedPointer (" << err << ")" << std::endl;
+    }
 
     shader_.set(POINTCLOUD_VERTEX_SHADER, POINTCLOUD_FRAGMENT_SHADER);
     shMVPMatrixLoc_ = glGetUniformLocation(shader_.getProgramId(), "u_mvpMatrix");
 }
 
 void PointCloud::pushNewPC(CUstream strm) {
-    if (refMat.isInit())
-        cudaMemcpyAsync(xyzrgbaMappedBuf_, refMat.getPtr<sl::float4>(sl::MEM::GPU), numBytes_, cudaMemcpyDeviceToDevice, strm);
+    if (!refMat || !refMat->isInit())
+        return;
+
+    size_t N = refMat->getResolution().area();
+    if (N == 0)
+        return;
+
+    // Clamp to the buffer allocated in initialize(): an unorganized cloud is reallocated by
+    // the SDK on every retrieve, so N is not guaranteed to stay within the initial bound.
+    size_t copyBytes = std::min(numBytes_, N * sizeof(sl::float4));
+    size_t count = copyBytes / sizeof(sl::float4);
+
+    // The Mat's memory type can change between frames (retrieveVoxelMeasure reallocates it),
+    // so read it back here rather than trusting what initialize() saw.
+    int memType = static_cast<int>(refMat->getMemoryType());
+
+    if (_hasCudaInterop && (memType & static_cast<int>(sl::MEM::GPU))) {
+        cudaMemcpyAsync(xyzrgbaMappedBuf_, refMat->getPtr<sl::float4>(sl::MEM::GPU), copyBytes, cudaMemcpyDeviceToDevice, strm);
+        _lastValidCount = count;
+    } else if (memType & static_cast<int>(sl::MEM::CPU)) {
+        // Defer the GL upload to draw() where the context is guaranteed current.
+        _pendingCpuUpload = true;
+        _pendingCount = count;
+    }
 }
 
 void PointCloud::draw(const sl::Transform& vp) {
-    if (refMat.isInit()) {
-        glUseProgram(shader_.getProgramId());
-        glUniformMatrix4fv(shMVPMatrixLoc_, 1, GL_TRUE, vp.m);
-
+    // CPU path: perform the deferred upload now that we are inside the GL callback.
+    if (_pendingCpuUpload && refMat && refMat->isInit()) {
+        size_t copyBytes = std::min(numBytes_, _pendingCount * sizeof(sl::float4));
         glBindBuffer(GL_ARRAY_BUFFER, bufferGLID_);
-        glVertexAttribPointer(Shader::ATTRIB_VERTICES_POS, 4, GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray(Shader::ATTRIB_VERTICES_POS);
-
-        glDrawArrays(GL_POINTS, 0, refMat.getResolution().area());
+        glBufferSubData(GL_ARRAY_BUFFER, 0, copyBytes, refMat->getPtr<sl::float4>(sl::MEM::CPU));
         glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glUseProgram(0);
+        // Draw only what was actually uploaded: glDrawArrays() on the unclamped count would
+        // fetch vertices past the end of the buffer allocated in initialize().
+        _lastValidCount = copyBytes / sizeof(sl::float4);
+        _pendingCpuUpload = false;
     }
+
+    if (_lastValidCount == 0)
+        return;
+
+    glUseProgram(shader_.getProgramId());
+    glUniformMatrix4fv(shMVPMatrixLoc_, 1, GL_TRUE, vp.m);
+
+    glBindBuffer(GL_ARRAY_BUFFER, bufferGLID_);
+    glVertexAttribPointer(Shader::ATTRIB_VERTICES_POS, 4, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(Shader::ATTRIB_VERTICES_POS);
+
+    glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(_lastValidCount));
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glUseProgram(0);
 }

@@ -134,7 +134,7 @@ The JSON configuration allows you to specify multiple sensors with their setting
   "lidars": [
     {
       "ip": "192.168.1.100",
-      "pose": [1,0,0,1000, 0,1,0,0, 0,0,1,500, 0,0,0,1]
+      "pose": [1,0,0,1.0, 0,1,0,0, 0,0,1,0.5, 0,0,0,1]
     },
     {
       "osf": "lidar_recording.osf"
@@ -163,7 +163,7 @@ The JSON configuration allows you to specify multiple sensors with their setting
 | `svo` | string | Path to SVO/SVO2 file (for playback) |
 | `pose` | [float x16] | 4x4 transformation matrix (row-major) |
 | `rotation` | [float x3] | Rodrigues rotation vector (alternative to `pose`) |
-| `translation` | [float x3] | Translation vector in mm (alternative to `pose`) |
+| `translation` | [float x3] | Translation vector in meters, the unit of the sample (alternative to `pose`) |
 | `object_detection` | bool | Enable object detection for this camera |
 | `body_tracking` | bool | Enable body tracking for this camera |
 
@@ -175,7 +175,7 @@ The JSON configuration allows you to specify multiple sensors with their setting
 | `svo` | string | Path to SVO file (for playback, alternative to `osf`) |
 | `pose` | [float x16] | 4x4 transformation matrix (row-major) |
 | `rotation` | [float x3] | Rodrigues rotation vector (alternative to `pose`) |
-| `translation` | [float x3] | Translation vector in mm (alternative to `pose`) |
+| `translation` | [float x3] | Translation vector in meters, the unit of the sample (alternative to `pose`) |
 
 #### Global Detection Settings
 | Field | Type | Description |

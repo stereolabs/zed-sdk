@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
     int camera_id = 0;
     sl_create_camera(camera_id);
 
-    struct SL_InitParameters init_param;
+    struct SL_InitParameters init_param = {0};
     init_param.camera_fps = 30;
     init_param.resolution = SL_RESOLUTION_HD1080;
     init_param.input_type = SL_INPUT_TYPE_USB;

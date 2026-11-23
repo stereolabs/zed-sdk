@@ -32,13 +32,13 @@
 
 ---
 
-:tada: The **ZED SDK 5.5** is released!
+:tada: The **ZED SDK 5.6** is released!
 
-**ZED SDK 5.5** introduces a new generation of body tracking. `GEN_2` is more robust in crowded scenes and to unusual body orientations, and it detects people further from the camera. It is up to 18% faster and up to 14% more accurate than `GEN_1`. Neural depth gains a precision selector: `InitParameters::depth_precision` set to `INT8` trades a small amount of accuracy for a faster depth runtime and a lower memory footprint, up to 25% faster with 3 cameras or more. The Person & Head detection models detect people about 50% further out and are far more reliable in top-down or partially occluded views, and custom object detection models can now be optimized ahead of time instead of on first use.
+**ZED SDK 5.6 delivers our most accurate depth yet, and faster depth across every mode.** The new `NEURAL_MAX` mode sets a new bar for NEURAL accuracy, built for high-end GPUs such as Jetson AGX Thor and desktop GPUs. `NEURAL_LIGHT`, `NEURAL` and `NEURAL_PLUS` models show significant improvements in runtime with better point cloud density, fewer flying pixels and a closer minimum depth range: up to a third less time on Jetson Orin, Jetson Thor and DGX Spark. The `INT8` 8-bit precision mode now covers all depth modes for faster inference at a small cost in accuracy. On Jetson, `NEURAL_LIGHT` can even move to an accelerator and free the GPU for your application (experimental: the DLA with JetPack 6, the PVA with JetPack 6 and JetPack 7.2). And `QUALITY`, `ULTRA` and `PERFORMANCE` modes compute the same depth up to 3.8 times faster.
 
-Camera support extends to the ZED X One Core, over MIPI through the ZED Link MIPI capture card or over Camera-over-Ethernet through a Holoscan sensor bridge. A new center-of-exposure frame timestamp helps align frames with sensors that timestamp when they measure, such as a LiDAR. On Jetson, the zero-copy capture API exposes its DMA-buffer pool and can return the rectified pair directly as NV12 DMA-BUF buffers, with an experimental backend that keeps rectification entirely off the GPU.
+**Tracking goes multi-camera.** Multi-camera SLAM arrives through the Sensors API: several ZED and ZED One cameras mounted on one rig now track together and build a single shared map. Positional tracking can also take a motion prior from your own source, such as wheel odometry or an external VIO, to stay accurate through fast motion, low texture and occlusion. Simulation scales to any number of cameras, each with its own calibration, and their camera settings now reach the simulator.
 
-On the platform side, TensorRT 11 is supported with its own installers, any installer now runs on the TensorRT version in its name or newer within the same major, and the Linux installers require fewer system packages. GEN_3 positional tracking is faster per frame and can be told how much GPU it may use. Numerous fixes round out the release, across white balance and video settings, IMU bias, GMSL capture stability, SVO recording, local streaming, spatial mapping and body-tracking fusion.
+**The whole pipeline gets faster.** Retrieving images and measures in CPU memory is now up to 3× faster, and SVO playback decodes straight into GPU memory. Multi-camera applications use less CPU time and GPU memory. In simulation, the acquisition stack has been further optimized to simulate even more cameras at once. Numerous fixes round out the release, across USB and GMSL camera recovery, image and IMU pairing, camera settings, lossless SVO recording on Jetson and the Sensors API.
 
 Please check the [Release Notes](https://www.stereolabs.com/developers/release/) of the latest version for more details.
 
@@ -54,7 +54,7 @@ Positional Tracking | Global Localization | Spatial Mapping |
 
 Camera Control | Plane Detection | Multi Camera Fusion |
 :------------: |  :----------: | :-------------:  |
-[![Camera Control](https://user-images.githubusercontent.com/32394882/230602616-6b57c351-09c4-4aba-bdec-842afcc3b2ea.gif)](https://docs.stereolabs.com/docs/video/camera-controls/) | [![Plane Detection](https://user-images.githubusercontent.com/32394882/229093072-d9d70e92-07d5-46cb-bde7-21f7c66fd6a1.gif)](https://docs.stereolabs.com/docs/spatial-mapping/plane-detection/)  | [![Multi Camera Fusion](https://user-images.githubusercontent.com/32394882/228791106-a5f971d8-8d6f-483b-9f87-7f0f0025b8be.gif)](/fusion) |
+[![Camera Control](https://user-images.githubusercontent.com/32394882/230602616-6b57c351-09c4-4aba-bdec-842afcc3b2ea.gif)](https://docs.stereolabs.com/docs/video/camera-controls/) | [![Plane Detection](https://user-images.githubusercontent.com/32394882/229093072-d9d70e92-07d5-46cb-bde7-21f7c66fd6a1.gif)](https://docs.stereolabs.com/docs/spatial-mapping/plane-detection/)  | [![Multi Camera Fusion](https://user-images.githubusercontent.com/32394882/228791106-a5f971d8-8d6f-483b-9f87-7f0f0025b8be.gif)](https://docs.stereolabs.com/docs/fusion/) |
 
 
 ## Why ZED?
@@ -100,6 +100,14 @@ This repository contains ready-to-use and samples to start using the ZED SDK wit
 * [**Body Tracking**](/body%20tracking) - This sample shows how to use the **Body Tracking API** with the ZED.
 
 * [**Recording**](/recording) - This sample shows how to **record** and **playback** video files in SVO format. SVO files let you use all the ZED SDK features without having a ZED connected.
+
+* [**Plane Detection**](/plane%20detection) - These samples show how to detect **planes** and the **floor plane** in the scene.
+
+* [**Sensors API**](/sensors_api) - These samples show how to use several **ZED cameras, ZED One cameras and LiDARs** together, with the `sl::Sensors` API or with one thread per device, and how to place them relative to each other.
+
+* [**ZED One**](/zed%20one) - These samples show how to capture, record, play back and stream with the **ZED One** monocular cameras.
+
+* [**Virtual Stereo**](/virtual%20stereo) - This sample shows how to combine two **ZED X One** cameras into a **virtual stereo** camera.
 
 ## Supported platforms
 

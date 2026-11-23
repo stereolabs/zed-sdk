@@ -21,6 +21,7 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include "SLAMView.hpp"
+#include "Overlay2D.hpp"
 
 //
 // Constants
@@ -38,8 +39,6 @@ const sl::float4 colorSoil(25 * to_f, 25 * to_f, 25 * to_f, 1.f);
 const sl::float4 colorGreen(67 * to_f, 255 * to_f, 63 * to_f, 1.f);
 const sl::float4 colorRed(255 * to_f, 100 * to_f, 100 * to_f, 1.f);
 const sl::float4 colorBlue(100 * to_f, 100 * to_f, 255 * to_f, 1.f);
-
-void* font = GLUT_BITMAP_HELVETICA_18;
 
 const GLchar* MESH_VERTEX_SHADER = "#version 330 core\n"
                                    "layout(location = 0) in vec3 in_Vertex;\n"
@@ -81,6 +80,7 @@ SLAMView::SLAMView(int argc, char** argv, sl::Mat* frame, sl::Mat* pointCloud, C
     , _pointCloudMode(true)
     , _landmarkMode(false)
     , _followMode(false)
+    , _pathMode(true)
     , _startTime(std::chrono::steady_clock::now())
     , _cudaStream(cudaStream)
     , _frameTextureID(0) {
@@ -220,8 +220,38 @@ void SLAMView::updatePoseTransform(sl::Transform poseTransform) {
     }
 }
 
-void SLAMView::updatePositionalTrackingStatus(sl::PositionalTrackingStatus positionalTrackingStatus) {
+void SLAMView::updatePositionalTrackingStatus(sl::PositionalTrackingStatus positionalTrackingStatus, sl::Timestamp imageTimestamp) {
     _positionalTrackingStatus = positionalTrackingStatus;
+
+    if (_motionPrior.isEnabled()) {
+        _motionPrior.addImage(imageTimestamp.getNanoseconds(), _poseTransform, positionalTrackingStatus.relative_pose_fusion_status);
+    }
+}
+
+void SLAMView::enableMotionPrior(const std::string& source, const sl::Transform& sensorTransform) {
+    _motionPrior.enable(source, sensorTransform);
+    _pathMode = !_motionPrior.isSceneVisible();
+}
+
+void SLAMView::clearMotionPrior() {
+    _motionPrior.clear();
+    _cameraPath.clear();
+}
+
+void SLAMView::addMotionPriorSample(const sl::RelativePoseData& sample, uint64_t arrivalTimestamp) {
+    _motionPrior.addSample(sample, arrivalTimestamp);
+}
+
+void SLAMView::updateMotionPriorLinks(const std::map<uint64_t, sl::MotionPriorLink>& links) {
+    _motionPrior.updateLinks(links);
+}
+
+void SLAMView::enablePauseButton() {
+    _pauseButtonEnabled = true;
+}
+
+bool SLAMView::isPaused() const {
+    return _paused;
 }
 
 void SLAMView::updateLandmarks(std::map<uint64_t, sl::Landmark>& landmarks) {
@@ -241,6 +271,7 @@ sl::float3 applyRT(const sl::float3& point, const sl::Matrix4f& rt) {
 }
 
 void SLAMView::updateKeyframes(const std::map<uint64_t, sl::KeyFrame>& keyframes) {
+    _motionPrior.updateKeyframes(keyframes);
     _keyframes.clear();
 
     const float z_ = -.05f; // ogl convention
@@ -283,11 +314,6 @@ void SLAMView::display() {
 
     sl::Transform vpMatrix = _camera.getSLProjectionMatrix() * _camera.getSLViewMatrix();
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    glLineWidth(3.f);
-
-    glUseProgram(_shader.it.getProgramId());
-
     if (_followMode) {
         sl::Transform pose_w_t = _poseTransform;
         auto ea = pose_w_t.getEulerAngles();
@@ -297,12 +323,21 @@ void SLAMView::display() {
         vpMatrix = vpMatrix * sl::Transform::inverse(pose_w_t);
     }
 
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glLineWidth(3.f);
+
+    glUseProgram(_shader.it.getProgramId());
+
     glUniformMatrix4fv(_shader.MVPM, 1, GL_TRUE, vpMatrix.m);
     _originAxes.draw();
+    _motionPrior.drawScene(vpMatrix);
+    glLineWidth(3.f);
 
-    _cameraPath.setColor(_darkMode ? colorPearl : colorSoil);
-    _cameraPath.setMVP(vpMatrix);
-    _cameraPath.draw();
+    if (_pathMode) {
+        _cameraPath.setColor(_darkMode ? colorPearl : colorSoil);
+        _cameraPath.setMVP(vpMatrix);
+        _cameraPath.draw();
+    }
 
     if (_landmarkMode) {
         glPointSize(1.5f);
@@ -311,15 +346,17 @@ void SLAMView::display() {
         _keyframes.draw();
     }
 
-    glPointSize(1.f);
-
     sl::Transform transformedPose = vpMatrix * _poseTransform;
     glUniformMatrix4fv(_shader.MVPM, 1, GL_TRUE, transformedPose.m);
+    _cameraFrustum.setUniformColor(colorLime);
+    _cameraFrustum.pushToGPU();
     _cameraFrustum.draw();
     glUseProgram(0);
 
     if (_pointCloudMode) {
+        glPointSize(2.f);
         _pointCloud.draw(transformedPose);
+        glPointSize(1.f);
     }
 
     glDisable(GL_DEPTH_TEST);
@@ -327,10 +364,14 @@ void SLAMView::display() {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     renderPositionalTrackingStatus();
+    _motionPrior.drawOverlay(_width, _height, _darkMode);
 
     if (_sideBySideMode) {
         renderImageFrame();
     }
+
+    // Last, so the camera image never covers it.
+    renderPauseButton();
 
     glutSwapBuffers();
 }
@@ -360,6 +401,17 @@ void SLAMView::keyboard(unsigned char key, int x, int y) {
         _camera.reset();
     } else if (key == 'z') {
         _camera.reset();
+    } else if (key == 'c') {
+        _pathMode = !_pathMode;
+    } else if (key == 'm') {
+        _motionPrior.toggleScene();
+        if (_motionPrior.isEnabled()) {
+            _pathMode = !_motionPrior.isSceneVisible();
+        }
+    } else if (key == 't') {
+        _motionPrior.toggleTimeline();
+    } else if (key == 'k' && _pauseButtonEnabled) {
+        _paused = !_paused;
     } else if (key == ESCAPE_KEY) {
         _isOpen = false;
     }
@@ -374,8 +426,19 @@ void SLAMView::mouseButtonPressed(int button, int state, int x, int y) {
         if (_mouseButtonPressed) {
             _mousePosition[0] = x;
             _mousePosition[1] = y;
+            _mouseDownPosition[0] = x;
+            _mouseDownPosition[1] = y;
 
             _ctrlPressed = glutGetModifiers() & GLUT_ACTIVE_CTRL;
+        } else if (std::abs(x - _mouseDownPosition[0]) <= 3 && std::abs(y - _mouseDownPosition[1]) <= 3) {
+            // A click rather than a drag: the pause button if it is under it, otherwise the keyframe link.
+            const sl::float4 button = pauseButtonRect();
+            const float py = static_cast<float>(_height - y); // GLUT counts from the top
+            if (_pauseButtonEnabled && x >= button.x && x <= button.x + button.z && py >= button.y && py <= button.y + button.w) {
+                _paused = !_paused;
+            } else {
+                _motionPrior.pick(x, y, _width, _height);
+            }
         }
     } else if (button == MOUSE_BUTTON::WHEEL_DOWN) {
         _camera.zoom(-zoomSensitivity);
@@ -418,61 +481,91 @@ void SLAMView::close() {
 // Rendering Content
 //
 void SLAMView::renderPositionalTrackingStatus() {
-    // Save current projection and modelview matrices
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
-    gluOrtho2D(0, _width, 0, _height);
+    overlay::begin(_width, _height);
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
+    const sl::float4 textColor = _darkMode ? colorPearl : colorSoil;
+    const sl::float4 mutedColor(textColor.x, textColor.y, textColor.z, 0.6f);
+    const sl::float4 panelColor = _darkMode ? sl::float4(14 * to_f, 16 * to_f, 20 * to_f, 0.85f) : sl::float4(1.f, 1.f, 1.f, 0.85f);
+    void* labelFont = GLUT_BITMAP_HELVETICA_12;
 
-    static const int startX = 50;
-    const int startY = _height - 50;
-    static const int verticalSpacing = 25;
-    static const int statusValueX = startX + 150;
+    //
+    // Status badges along the top: one per status the tracking reports, green when all is well.
+    //
+    struct Badge {
+        std::string label;
+        std::string value;
+        sl::float4 color;
+    };
+    std::vector<Badge> badges;
 
-    sl::float4 textColor = _darkMode ? colorPearl : colorSoil;
+    badges.push_back(
+        {"Fusion",
+         sl::toString(_positionalTrackingStatus.tracking_fusion_status).c_str(),
+         _positionalTrackingStatus.tracking_fusion_status != sl::POSITIONAL_TRACKING_FUSION_STATUS::UNAVAILABLE ? colorGreen : colorRed}
+    );
 
-    // Fusion status
-    renderText(startX, startY, font, textColor, "Fusion:");
-
-    sl::float4 statusColor
-        = _positionalTrackingStatus.tracking_fusion_status != sl::POSITIONAL_TRACKING_FUSION_STATUS::UNAVAILABLE ? colorGreen : colorRed;
-
-    renderText(statusValueX, startY, font, statusColor, sl::toString(_positionalTrackingStatus.tracking_fusion_status).c_str());
-
-    // Spatial memory status
-    renderText(startX, startY - verticalSpacing, font, textColor, "Area Memory:");
-
+    sl::float4 spatialMemoryColor = colorGreen;
     if (_positionalTrackingStatus.spatial_memory_status == sl::SPATIAL_MEMORY_STATUS::OFF
         || _positionalTrackingStatus.spatial_memory_status == sl::SPATIAL_MEMORY_STATUS::LOST
         || _positionalTrackingStatus.spatial_memory_status == sl::SPATIAL_MEMORY_STATUS::NOT_ENOUGH_MEMORY_FOR_TRACKING) {
-        statusColor = colorRed;
+        spatialMemoryColor = colorRed;
     } else if (_positionalTrackingStatus.spatial_memory_status == sl::SPATIAL_MEMORY_STATUS::INITIALIZING
                || _positionalTrackingStatus.spatial_memory_status == sl::SPATIAL_MEMORY_STATUS::SEARCHING) {
-        statusColor = colorLime;
+        spatialMemoryColor = colorLime;
     } else if (_positionalTrackingStatus.spatial_memory_status == sl::SPATIAL_MEMORY_STATUS::LOOP_CLOSED) {
-        statusColor = colorPearl;
-    } else {
-        statusColor = colorGreen;
+        spatialMemoryColor = colorPearl;
+    }
+    badges.push_back({"Area memory", sl::toString(_positionalTrackingStatus.spatial_memory_status).c_str(), spatialMemoryColor});
+
+    badges.push_back(
+        {"Odometry",
+         sl::toString(_positionalTrackingStatus.odometry_status).c_str(),
+         _positionalTrackingStatus.odometry_status != sl::ODOMETRY_STATUS::UNAVAILABLE ? colorGreen : colorRed}
+    );
+
+    // Shown only once an external motion has been declared, OFF being what every application that never
+    // calls ingestMotionPrior() reports. Worth its own badge because it is the only place the outcome of
+    // ingesting appears: a discarded sample changes nothing else on screen.
+    if (_positionalTrackingStatus.relative_pose_fusion_status != sl::RELATIVE_POSE_FUSION_STATUS::OFF) {
+        sl::float4 priorColor = colorRed; // OUT_OF_SYNC or REJECTED: arriving and not used, a configuration problem
+        if (_positionalTrackingStatus.relative_pose_fusion_status == sl::RELATIVE_POSE_FUSION_STATUS::OK) {
+            priorColor = colorGreen;
+        } else if (_positionalTrackingStatus.relative_pose_fusion_status == sl::RELATIVE_POSE_FUSION_STATUS::MISSING) {
+            // Nothing covered this image. Expected in normal use, since a source slower than the camera
+            // leaves images uncovered, so it is not reported as an error.
+            priorColor = colorLime;
+        }
+        badges.push_back({"Motion prior", sl::toString(_positionalTrackingStatus.relative_pose_fusion_status).c_str(), priorColor});
     }
 
-    std::string spatialMemoryStatusText = sl::toString(_positionalTrackingStatus.spatial_memory_status).c_str();
+    const float badgeHeight = 34.f;
+    const float badgeTop = static_cast<float>(_height - 30);
+    float badgeX = 30.f;
 
-    renderText(statusValueX, startY - verticalSpacing, font, statusColor, spatialMemoryStatusText);
+    for (const Badge& badge : badges) {
+        const float width
+            = static_cast<float>(std::max(overlay::textWidth(labelFont, badge.label), overlay::textWidth(labelFont, badge.value)) + 24);
+        overlay::fillRect(badgeX, badgeTop - badgeHeight, width, badgeHeight, panelColor);
+        overlay::strokeRect(
+            badgeX,
+            badgeTop - badgeHeight,
+            width,
+            badgeHeight,
+            sl::float4(badge.color.x, badge.color.y, badge.color.z, 0.5f)
+        );
+        overlay::text(badgeX + 12.f, badgeTop - 14.f, labelFont, mutedColor, badge.label);
+        overlay::text(badgeX + 12.f, badgeTop - 28.f, labelFont, badge.color, badge.value);
+        badgeX += width + 10.f;
+    }
 
-    // Odometry status
-    renderText(startX, startY - 2 * verticalSpacing, font, textColor, "Odometry:");
+    //
+    // Pose card below them: up time, then the pose split by axis.
+    //
+    const float cardTop = badgeTop - badgeHeight - 12.f;
+    const float cardHeight = 108.f;
+    const float cardWidth = 330.f;
+    overlay::fillRect(30.f, cardTop - cardHeight, cardWidth, cardHeight, panelColor);
 
-    statusColor = _positionalTrackingStatus.odometry_status != sl::ODOMETRY_STATUS::UNAVAILABLE ? colorGreen : colorRed;
-
-    std::string odometryStatusText = sl::toString(_positionalTrackingStatus.odometry_status).c_str();
-
-    renderText(statusValueX, startY - 2 * verticalSpacing, font, statusColor, odometryStatusText);
-
-    // Up time
     {
         auto elapsed = std::chrono::steady_clock::now() - _startTime;
         auto totalSeconds = std::chrono::duration_cast<std::chrono::seconds>(elapsed).count();
@@ -484,22 +577,64 @@ void SLAMView::renderPositionalTrackingStatus() {
         uptimeStream << std::setfill('0') << std::setw(2) << hours << ":" << std::setfill('0') << std::setw(2) << minutes << ":"
                      << std::setfill('0') << std::setw(2) << seconds;
 
-        renderText(startX, startY - 4 * verticalSpacing, font, textColor, "Up Time:");
-        renderText(statusValueX, startY - 4 * verticalSpacing, font, textColor, uptimeStream.str());
+        overlay::text(42.f, cardTop - 22.f, labelFont, mutedColor, "Up time");
+        overlay::text(150.f, cardTop - 22.f, labelFont, textColor, uptimeStream.str());
     }
 
-    // Pose transform
-    renderText(startX, startY - 6 * verticalSpacing, font, textColor, "Translation (m):");
-    renderText(statusValueX, startY - 6 * verticalSpacing, font, textColor, formatNumericText(_poseTransform.getTranslation()));
+    const float columns[3] = {150.f, 210.f, 270.f};
+    const char* const axes[3] = {"x", "y", "z"};
+    for (int i = 0; i < 3; i++) {
+        overlay::text(columns[i], cardTop - 48.f, labelFont, mutedColor, axes[i]);
+    }
 
-    renderText(startX, startY - 7 * verticalSpacing, font, textColor, "Rotation   (rad):");
-    renderText(statusValueX, startY - 7 * verticalSpacing, font, textColor, formatNumericText(_poseTransform.getRotationVector()));
+    const auto poseRow = [&](float y, const std::string& label, const sl::float3& value) {
+        overlay::text(42.f, y, labelFont, mutedColor, label);
+        for (int i = 0; i < 3; i++) {
+            std::stringstream stream;
+            stream << std::fixed << std::setprecision(2) << value[i];
+            overlay::text(columns[i], y, labelFont, textColor, stream.str());
+        }
+    };
+    poseRow(cardTop - 72.f, "Translation (m)", _poseTransform.getTranslation());
+    poseRow(cardTop - 94.f, "Rotation (rad)", _poseTransform.getRotationVector());
 
-    // Restore matrices
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_MODELVIEW);
-    glPopMatrix();
+    overlay::end();
+}
+
+sl::float4 SLAMView::pauseButtonRect() const {
+    // Right of the pose card of renderPositionalTrackingStatus(), level with its top: 30 px from the left
+    // plus 330 px wide, its top 76 px below the top of the window.
+    const float height = 30.f;
+    return sl::float4(30.f + 330.f + 10.f, static_cast<float>(_height) - 76.f - height, 124.f, height);
+}
+
+void SLAMView::renderPauseButton() {
+    if (!_pauseButtonEnabled) {
+        return;
+    }
+
+    const sl::float4 textColor = _darkMode ? colorPearl : colorSoil;
+    const sl::float4 panelColor = _darkMode ? sl::float4(14 * to_f, 16 * to_f, 20 * to_f, 0.85f) : sl::float4(1.f, 1.f, 1.f, 0.85f);
+    const sl::float4 r = pauseButtonRect();
+
+    overlay::begin(_width, _height);
+    overlay::fillRect(r.x, r.y, r.z, r.w, panelColor);
+    // Outlined in lime while paused, so a frozen view is not mistaken for a stalled tracking.
+    const sl::float4 outlineColor = _paused ? colorLime : sl::float4(textColor.x, textColor.y, textColor.z, 0.4f);
+    overlay::strokeRect(r.x, r.y, r.z, r.w, outlineColor, _paused ? 2.f : 1.f);
+
+    // The icon shows what a click does: play while paused, pause while playing.
+    const float iconX = r.x + 12.f;
+    const float iconY = r.y + 9.f;
+    const float iconSize = 12.f;
+    if (_paused) {
+        overlay::triangle(iconX, iconY, iconX, iconY + iconSize, iconX + iconSize, iconY + iconSize / 2.f, textColor);
+    } else {
+        overlay::fillRect(iconX, iconY, 4.f, iconSize, textColor);
+        overlay::fillRect(iconX + 8.f, iconY, 4.f, iconSize, textColor);
+    }
+    overlay::text(iconX + iconSize + 10.f, r.y + 11.f, GLUT_BITMAP_HELVETICA_12, textColor, _paused ? "Resume (k)" : "Pause (k)");
+    overlay::end();
 }
 
 void SLAMView::renderImageFrame() {
@@ -519,24 +654,13 @@ void SLAMView::renderImageFrame() {
     int scaledWidth = displayWidth;
     int scaledHeight = static_cast<int>(_frame->getHeight() * scale);
 
-    renderTexture(_frameTextureID, 50, 50, scaledWidth, scaledHeight);
+    // Above the motion prior timeline when it is shown.
+    renderTexture(_frameTextureID, 50, 50 + _motionPrior.reservedBottomHeight(), scaledWidth, scaledHeight);
 }
 
 //
 // Rendering Utilities
 //
-std::string SLAMView::formatNumericText(sl::float3 value) {
-    std::stringstream stream;
-    stream << std::fixed << std::setprecision(2) << value;
-    return stream.str();
-}
-
-void SLAMView::renderText(int x, int y, void* font, const sl::float4& color, const std::string& str) {
-    glColor3f(color[0], color[1], color[2]);
-    glRasterPos2i(x, y);
-    glutBitmapString(font, reinterpret_cast<const unsigned char*>(str.c_str()));
-}
-
 void SLAMView::uploadImageToTexture(const sl::Mat& frame, GLuint& textureID) {
     if (textureID == 0) {
         glGenTextures(1, &textureID);

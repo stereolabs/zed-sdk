@@ -22,4 +22,5 @@ This repository demonstrates how to change the **ZED camera's video settings** a
 - Automatic GAIN_EXP behavior
 - White balance
 - LED state
+- Color correction matrix (ZED X / ZED X One)
 

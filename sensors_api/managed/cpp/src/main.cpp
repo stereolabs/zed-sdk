@@ -171,7 +171,7 @@ bool parseJsonConfig(const std::string& path, std::vector<DeviceConfig>& devices
                 }
                 cfg.has_pose = true;
             }
-            // Support rotation (Euler angles) + translation
+            // Support rotation (Rodrigues vector) + translation
             else if (zed.contains("rotation") || zed.contains("translation")) {
                 std::vector<float> rotation = {0, 0, 0};
                 std::vector<float> translation = {0, 0, 0};
@@ -224,7 +224,7 @@ bool parseJsonConfig(const std::string& path, std::vector<DeviceConfig>& devices
                 }
                 cfg.has_pose = true;
             }
-            // Support rotation (Euler angles) + translation
+            // Support rotation (Rodrigues vector) + translation
             else if (lidar.contains("rotation") || lidar.contains("translation")) {
                 std::vector<float> rotation = {0, 0, 0};
                 std::vector<float> translation = {0, 0, 0};
@@ -588,15 +588,7 @@ void runSensorsImpl(int argc, char** argv, ViewerType viewerType) {
     if (g_detectionConfig.object_detection && !zed_ids.empty()) {
         std::cout << "Enabling Object Detection..." << std::endl;
 
-        // First enable positional tracking (required for object detection)
-        if (g_referenceMode != ReferenceMode::World) {
-            sl::PositionalTrackingSensorsParameters tracking_params;
-            auto tracking_err = sensors.enablePositionalTracking(tracking_params);
-            if (tracking_err != sl::SENSORS_ERROR_CODE::SUCCESS) {
-                std::cerr << "Warning: Failed to enable positional tracking for object detection: " << tracking_err << std::endl;
-            }
-        }
-
+        // The cameras start the positional tracking object tracking needs by themselves
         sl::ObjectDetectionSensorsParameters od_params;
         od_params.detection_model = g_detectionConfig.object_model;
         od_params.enable_tracking = true;
@@ -607,6 +599,9 @@ void runSensorsImpl(int argc, char** argv, ViewerType viewerType) {
             std::cerr << "Failed to enable Object Detection: " << od_err << std::endl;
             g_detectionConfig.object_detection = false;
         } else {
+            sl::ObjectDetectionRuntimeParameters od_runtime_params;
+            od_runtime_params.detection_confidence_threshold = g_detectionConfig.object_detection_confidence;
+            sensors.setObjectDetectionRuntimeParameters(od_runtime_params);
             std::cout << "Object Detection enabled successfully" << std::endl;
         }
     }
@@ -615,15 +610,7 @@ void runSensorsImpl(int argc, char** argv, ViewerType viewerType) {
     if (g_detectionConfig.body_tracking && !zed_ids.empty()) {
         std::cout << "Enabling Body Tracking..." << std::endl;
 
-        // First enable positional tracking (required for body tracking)
-        if (g_referenceMode != ReferenceMode::World && !g_detectionConfig.object_detection) {
-            sl::PositionalTrackingSensorsParameters tracking_params;
-            auto tracking_err = sensors.enablePositionalTracking(tracking_params);
-            if (tracking_err != sl::SENSORS_ERROR_CODE::SUCCESS) {
-                std::cerr << "Warning: Failed to enable positional tracking for body tracking: " << tracking_err << std::endl;
-            }
-        }
-
+        // The cameras start the positional tracking body tracking needs by themselves
         sl::BodyTrackingSensorsParameters bt_params;
         bt_params.detection_model = g_detectionConfig.body_model;
         bt_params.body_format = g_detectionConfig.body_format;
@@ -636,6 +623,10 @@ void runSensorsImpl(int argc, char** argv, ViewerType viewerType) {
             std::cerr << "Failed to enable Body Tracking: " << bt_err << std::endl;
             g_detectionConfig.body_tracking = false;
         } else {
+            sl::BodyTrackingSensorsRuntimeParameters bt_runtime_params;
+            bt_runtime_params.detection_confidence_threshold = g_detectionConfig.body_tracking_confidence;
+            bt_runtime_params.skeleton_smoothing = 0.7f;
+            sensors.setBodyTrackingRuntimeParameters(bt_runtime_params);
             std::cout << "Body Tracking enabled successfully" << std::endl;
         }
     }
@@ -673,14 +664,6 @@ void runSensorsImpl(int argc, char** argv, ViewerType viewerType) {
     // Per-camera detection results (Sensors API retrieves per-device)
     std::unordered_map<std::string, sl::Objects> camera_objects;
     std::unordered_map<std::string, sl::Bodies> camera_bodies;
-
-    // Runtime parameters for detection retrieval
-    sl::ObjectDetectionRuntimeParameters od_runtime_params;
-    od_runtime_params.detection_confidence_threshold = g_detectionConfig.object_detection_confidence;
-
-    sl::BodyTrackingRuntimeParameters bt_runtime_params;
-    bt_runtime_params.detection_confidence_threshold = g_detectionConfig.body_tracking_confidence;
-    bt_runtime_params.skeleton_smoothing = 0.7f;
 
     std::cout << "\nStarting sensor streaming..." << std::endl;
     if (!headless) {
@@ -879,7 +862,7 @@ void printUsage(const char* progName) {
   ],
   "lidars": [
     {"ip": "192.168.1.100"},
-    {"osf": "recording.osf", "pose": [1,0,0,1000, 0,1,0,0, 0,0,1,500, 0,0,0,1]}
+    {"osf": "recording.osf", "pose": [1,0,0,1.0, 0,1,0,0, 0,0,1,0.5, 0,0,0,1]}
   ],
   "object_detection": {
     "enabled": true,

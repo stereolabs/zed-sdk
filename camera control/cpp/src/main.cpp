@@ -26,6 +26,7 @@
 // Standard includes
 #include <stdio.h>
 #include <string.h>
+#include <iomanip>
 
 // ZED include
 #include <sl/Camera.hpp>
@@ -40,6 +41,9 @@ using namespace sl;
 // Sample functions
 void updateCameraSettings(char key, sl::Camera& zed, InitParameters& init_params);
 void switchCameraSettings();
+void applyColorCorrectionMatrix(sl::Camera& zed);
+void resetColorCorrectionMatrix(sl::Camera& zed);
+void printColorCorrectionMatrix(string msg_prefix, const sl::Matrix3f& matrix);
 void printHelp();
 void print(string msg_prefix, ERROR_CODE err_code = ERROR_CODE::SUCCESS, string msg_suffix = "");
 void parseArgs(int argc, char** argv, sl::InitParameters& param);
@@ -251,6 +255,16 @@ void updateCameraSettings(char key, sl::Camera& zed, sl::InitParameters& init_pa
             zed.setCameraSettings(VIDEO_SETTINGS::AEC_AGC_ROI, selection_rect, sl::SIDE::BOTH, true);
             break;
 
+        // Apply an example color correction matrix
+        case 'c':
+            applyColorCorrectionMatrix(zed);
+            break;
+
+        // Go back to the color correction of the camera
+        case 'v':
+            resetColorCorrectionMatrix(zed);
+            break;
+
         case 'b':
             must_grab = false;
             sl::sleep_ms(100);     /// Wait 100ms to make sure no grab is performed
@@ -288,6 +302,52 @@ void switchCameraSettings() {
 }
 
 /**
+    This function prints a color correction matrix, one row per line
+ **/
+void printColorCorrectionMatrix(string msg_prefix, const sl::Matrix3f& matrix) {
+    cout << "[Sample] " << msg_prefix << endl;
+    for (int row = 0; row < 3; row++) {
+        cout << "           ";
+        for (int col = 0; col < 3; col++)
+            cout << std::fixed << std::setprecision(4) << std::setw(9) << matrix.r[row * 3 + col] << " ";
+        cout << endl;
+    }
+}
+
+/**
+    This function applies a color correction matrix.
+
+    The matrix converts the sensor RGB values to linear sRGB: each row gives one output channel (red, green, blue)
+    as a weighted sum of the sensor red, green and blue values. The one below is only an example: compute the matrix
+    for your camera and lighting, for example from images of a color chart.
+ **/
+void applyColorCorrectionMatrix(sl::Camera& zed) {
+    float coefficients[9] = {1.8f, -0.5f, -0.3f, -0.2f, 1.6f, -0.4f, 0.0f, -0.6f, 1.6f};
+    sl::Matrix3f matrix(coefficients);
+
+    auto returned_state = zed.setCameraSettings(VIDEO_SETTINGS::COLOR_CORRECTION_MATRIX, matrix);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        print("Cannot set COLOR_CORRECTION_MATRIX", returned_state);
+        return;
+    }
+
+    printColorCorrectionMatrix("Color correction matrix applied:", matrix);
+}
+
+/**
+    This function goes back to the color correction of the camera, using the default value of the setting.
+ **/
+void resetColorCorrectionMatrix(sl::Camera& zed) {
+    auto returned_state = zed.setCameraSettings(VIDEO_SETTINGS::COLOR_CORRECTION_MATRIX);
+    if (returned_state != ERROR_CODE::SUCCESS) {
+        print("COLOR_CORRECTION_MATRIX is not available on this camera", returned_state);
+        return;
+    }
+
+    print("Back to the color correction of the camera");
+}
+
+/**
     This function displays help
  **/
 void printHelp() {
@@ -299,6 +359,8 @@ void printHelp() {
     cout << "* Reset all parameters:            'r'\n";
     cout << "* Reset exposure ROI to full image 'f'\n";
     cout << "* Reboot camera while in use:      'b'\n";
+    cout << "* Apply a color matrix (example):  'c' (ZED X / ZED X One)\n";
+    cout << "* Restore the camera colors:       'v' (ZED X / ZED X One)\n";
     cout << "* Use mouse to select an image area to apply exposure (press 'a')\n";
     cout << "* Exit :                           'q'\n\n";
 }

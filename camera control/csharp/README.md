@@ -30,6 +30,9 @@ The following parameters can be changed:
   - Automatic GAIN_EXP behavior
   - White Balance
   - LED state
+  - Color correction matrix (ZED X / ZED X One)
+
+Press 'c' to apply an example color correction matrix, and 'v' to go back to the color correction of the camera. In your application, use a matrix computed for your camera and lighting, for example from images of a color chart.
 
 ## Support
 If you need assistance go to our Community site at https://community.stereolabs.com/

@@ -28,8 +28,11 @@ public:
     PointCloud();
     ~PointCloud();
 
-    // Initialize Opengl and Cuda buffers
-    // Warning: must be called in the Opengl thread
+    // Initialize Opengl and Cuda buffers.
+    // Warning: must be called in the Opengl thread.
+    // The Mat is referenced, not copied: it must outlive this PointCloud, and close() must run
+    // before it is freed. Referenced rather than copied on purpose: an unorganized (voxel) cloud
+    // is reallocated by the SDK on every retrieve, so a copy would go stale after the first frame.
     void initialize(sl::Mat&);
     // Push a new point cloud
     // Warning: can be called from any thread but the mutex "mutexData" must be locked
@@ -41,12 +44,20 @@ public:
     void close();
 
 private:
-    sl::Mat refMat;
+    sl::Mat* refMat = nullptr;
+    bool _hasCudaInterop = false;
+
+    // Last count used for glDrawArrays, stable across frames, only updates when N > 0.
+    size_t _lastValidCount = 0;
+
+    // CPU upload deferred to draw() so the GL context is guaranteed current.
+    bool _pendingCpuUpload = false;
+    size_t _pendingCount = 0;
 
     Shader shader_;
     GLuint shMVPMatrixLoc_;
-    size_t numBytes_;
-    float* xyzrgbaMappedBuf_;
-    GLuint bufferGLID_;
-    cudaGraphicsResource* bufferCudaID_;
+    size_t numBytes_ = 0;
+    float* xyzrgbaMappedBuf_ = nullptr;
+    GLuint bufferGLID_ = 0;
+    cudaGraphicsResource* bufferCudaID_ = nullptr;
 };

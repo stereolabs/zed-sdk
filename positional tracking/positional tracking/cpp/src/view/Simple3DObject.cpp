@@ -41,6 +41,7 @@ void Simple3DObject::addPoint(sl::float3 pt, sl::float4 clr) {
     colors_.push_back(clr);
     indices_.push_back((int)indices_.size());
     need_update = true;
+    hasUniformColor_ = false; // this point carries its own colour: the buffer is no longer uniform
 }
 
 void Simple3DObject::addFace(sl::float3 p1, sl::float3 p2, sl::float3 p3, sl::float3 clr) {
@@ -94,10 +95,27 @@ void Simple3DObject::clear() {
     vertices_.shrink_to_fit();
     colors_.shrink_to_fit();
     indices_.shrink_to_fit();
+
+    hasUniformColor_ = false; // nothing left to be uniformly coloured
 }
 
 void Simple3DObject::setDrawingType(GLenum type) {
     drawingType_ = type;
+}
+
+void Simple3DObject::setUniformColor(sl::float4 color) {
+    // Bail out when nothing changes. Callers set this from the render loop, where the colour only
+    // actually moves on a user toggle; without this guard every frame rewrote colors_ and marked
+    // the object dirty, so pushToGPU() re-uploaded all three vertex buffers on every single frame.
+    if (hasUniformColor_ && uniformColor_ == color)
+        return;
+
+    for (auto& c : colors_)
+        c = color;
+
+    uniformColor_ = color;
+    hasUniformColor_ = true;
+    need_update = true;
 }
 
 void Simple3DObject::draw() {
